@@ -250,7 +250,7 @@ function buildBibleSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
   let brideName = ev.bride_name || '';
   if (invertNames) { [groomName, brideName] = [brideName, groomName]; }
   const coupleSize = parseFloat(ev.couple_size || 2.4);
-  const coupleFontSize = `clamp(1rem, ${Math.min(coupleSize * 0.6, 1.8)}rem, 1.8rem)`;
+  const coupleFontSize = `${Math.max(1, coupleSize * 0.55)}rem`;
   const coupleFontFamily = ev.custom_font_family ? `'${ev.custom_font_family}', serif` : 'inherit';
   const coupleNamesHtml = (groomName || brideName) ? `
     <div class="reveal" style="margin-top:1.25rem;text-align:center">
@@ -506,7 +506,13 @@ function buildGallerySection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
 }
 
 function buildManualSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
-  const items = Store.eventManualItems || DEFAULT_MANUAL_ITEMS;
+  // Parse manual_items from event data (JSON string) or fall back to Store/defaults
+  let items = DEFAULT_MANUAL_ITEMS;
+  if (ev.manual_items) {
+    try { items = JSON.parse(ev.manual_items); } catch(e) {}
+  } else if (Store.eventManualItems) {
+    items = Store.eventManualItems;
+  }
   const evColor = ev.event_color || '#007f9f';
   const cards = items.map(it => `<div class="manual-item">
     <div class="mi-icon" style="background:color-mix(in srgb,${evColor} 15%,white)"><i data-lucide="${it.icon}" style="color:${evColor}"></i></div>
@@ -521,7 +527,13 @@ function buildManualSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
 }
 
 function buildScheduleSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
-  const items = Store.eventScheduleItems || DEFAULT_SCHEDULE_ITEMS;
+  // Parse schedule_items from event data (JSON string) or fall back to Store/defaults
+  let items = DEFAULT_SCHEDULE_ITEMS;
+  if (ev.schedule_items) {
+    try { items = JSON.parse(ev.schedule_items); } catch(e) {}
+  } else if (Store.eventScheduleItems) {
+    items = Store.eventScheduleItems;
+  }
   const evColor = ev.event_color || '#007f9f';
   const rows = items.map((it, i) => {
     const isLeft = i % 2 === 0;
@@ -887,7 +899,14 @@ function buildDresscodeSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
       </div>
       <h3 class="section-title">Dress Code</h3>
       ${ev.dresscode_text ? `<p style="font-size:1rem;font-weight:600;color:#1e293b;margin-bottom:0.5rem">${escapeHTML(ev.dresscode_text)}</p>` : ''}
-      ${ev.dresscode_colors ? `<p style="font-size:0.82rem;color:#6b7280">${escapeHTML(ev.dresscode_colors)}</p>` : ''}
+      ${(() => {
+        if (!ev.dresscode_colors) return '';
+        const cols = ev.dresscode_colors.split(/\n|,/).map(c => c.trim()).filter(c => /^#[0-9a-fA-F]{3,6}$/.test(c)).slice(0,4);
+        if (!cols.length) return '';
+        return `<div style="display:flex;gap:0.75rem;justify-content:center;margin-top:0.75rem">
+          ${cols.map(c => `<div title="${c}" style="width:36px;height:36px;border-radius:50%;background:${c};border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.15)"></div>`).join('')}
+        </div>`;
+      })()}
     </div>
   </div>`;
 }

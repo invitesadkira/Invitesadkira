@@ -2976,6 +2976,37 @@ async function openIntakeFormMain(eventId) {
     slot.appendChild(xBtn);
   });
 
+  // ── Auto-save intake form to sessionStorage (persist on tab close/reopen) ──
+  const _intakeKey = `intake_draft_${eventId}`;
+  const _savedDraft = sessionStorage.getItem(_intakeKey);
+  if (_savedDraft) {
+    try {
+      const draft = JSON.parse(_savedDraft);
+      Object.keys(draft).forEach(id => {
+        const el = document.getElementById(id);
+        if (el && el.tagName !== 'INPUT' || (el && el.type !== 'file')) {
+          el.value = draft[id];
+        }
+      });
+      toast('Rascunho restaurado!');
+    } catch(e) {}
+  }
+
+  // Auto-save on any input change
+  const _intakeFields = ['int-groom','int-bride','int-bible','int-bibleref','int-groom-parents','int-bride-parents','int-invite','int-date','int-time','int-deadline','int-music','int-iban','int-iban-holder','int-civil-loc','int-civil-time','int-relig-loc','int-relig-time','int-copa-loc','int-copa-time','int-story'];
+  const _autoSave = () => {
+    const draft = {};
+    _intakeFields.forEach(id => { const el = document.getElementById(id); if (el) draft[id] = el.value; });
+    sessionStorage.setItem(_intakeKey, JSON.stringify(draft));
+  };
+  _intakeFields.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('input', _autoSave);
+  });
+  // Clear draft on successful submit
+  const _origSubmit = window._intakeSubmitFn;
+  window._intakeDraftKey = _intakeKey;
+
   // ── Gallery slot state ──
   const _galleryUploaded = [null, null, null, null];
 

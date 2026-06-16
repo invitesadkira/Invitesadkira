@@ -2363,38 +2363,77 @@ async function saveFAQ(btn) {
 
 // ===================== PACKAGE PAYMENT MODAL =====================
 function showPackagePayment(name, price) {
-  const IBAN   = 'AO06 0040 0000 3066 6927 1014 1';
-  const EXPRESS = '959 823 409';
+  const priceNum = parseFloat(String(price).replace(/[^0-9]/g, ''));
+  const URGENCY_FEE = 8000;
+  const modalId = '_pkg-pay-' + Date.now();
+
+  function calcAndRender() {
+    const urgent = document.getElementById(modalId + '-urgent')?.checked;
+    const total = priceNum + (urgent ? URGENCY_FEE : 0);
+    const p1 = Math.ceil(total * 0.7);
+    const p2 = total - p1;
+    const fmt = n => n.toLocaleString('pt-PT') + ' Kz';
+    const el = document.getElementById(modalId + '-calc');
+    if (!el) return;
+    el.innerHTML = `
+      <div style="background:#f8fafc;border-radius:0.75rem;padding:1rem;margin-top:0.75rem">
+        <div style="display:flex;justify-content:space-between;margin-bottom:0.5rem">
+          <span style="font-size:0.85rem;color:#374151">Valor do pacote</span>
+          <span style="font-size:0.85rem;font-weight:600">${fmt(priceNum)}</span>
+        </div>
+        ${urgent ? `<div style="display:flex;justify-content:space-between;margin-bottom:0.5rem">
+          <span style="font-size:0.85rem;color:#374151">Taxa de urgência</span>
+          <span style="font-size:0.85rem;font-weight:600;color:#ef4444">+ ${fmt(URGENCY_FEE)}</span>
+        </div>` : ''}
+        <div style="border-top:1px solid #e5e7eb;padding-top:0.5rem;margin-top:0.25rem">
+          <div style="display:flex;justify-content:space-between;margin-bottom:0.35rem">
+            <span style="font-size:0.82rem;color:#6b7280">1ª prestação (70%)</span>
+            <span style="font-size:0.9rem;font-weight:800;color:#007f9f">${fmt(p1)}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between">
+            <span style="font-size:0.82rem;color:#6b7280">2ª prestação (30%)</span>
+            <span style="font-size:0.9rem;font-weight:700;color:#374151">${fmt(p2)}</span>
+          </div>
+        </div>
+        <div style="margin-top:0.75rem;background:#dbeafe;border-radius:0.5rem;padding:0.5rem 0.75rem;font-size:0.78rem;color:#1e40af">
+          📅 Entrega em 48h úteis${urgent ? ' (urgência: 24h)' : ''} após confirmação do pagamento
+        </div>
+      </div>`;
+  }
+
   const modal = document.createElement('div');
-  modal.className = 'modal-overlay';
+  modal.id = modalId;
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem';
   modal.innerHTML = `
-    <div class="modal-content bg-white rounded-2xl shadow-lg p-6" style="max-width:440px">
-      <h3 class="text-lg font-bold text-gray-800 mb-1">Pacote ${escapeHTML(name)}</h3>
-      <p class="text-gray-500 text-sm mb-4">Total a pagar: <strong>${escapeHTML(price)}</strong></p>
-      <div class="space-y-3">
-        <div class="bg-teal-50 rounded-xl p-4">
-          <p class="text-xs text-gray-400 mb-0.5 font-semibold uppercase tracking-wide">IBAN</p>
-          <p class="font-mono font-bold text-sm text-gray-800" id="pkg-iban">${IBAN}</p>
-          <button class="text-xs text-teal-600 font-semibold mt-1" onclick="copyText('${IBAN}','Copiado!')">Copiar IBAN</button>
-        </div>
-        <div class="bg-teal-50 rounded-xl p-4">
-          <p class="text-xs text-gray-400 mb-0.5 font-semibold uppercase tracking-wide">Express (Multicaixa)</p>
-          <p class="font-mono font-bold text-sm text-gray-800" id="pkg-express">${EXPRESS}</p>
-          <button class="text-xs text-teal-600 font-semibold mt-1" onclick="copyText('${EXPRESS}','Copiado!')">Copiar número</button>
-        </div>
+    <div style="background:#fff;border-radius:1.25rem;padding:1.75rem;max-width:420px;width:100%">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+        <h3 style="font-size:1.05rem;font-weight:800;color:#1e293b;margin:0">Encomendar — ${escapeHTML(name)}</h3>
+        <button id="${modalId}-close" style="background:#f3f4f6;border:none;border-radius:50%;width:32px;height:32px;cursor:pointer;display:flex;align-items:center;justify-content:center">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#374151" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
       </div>
-      <div class="mt-4 p-4 bg-amber-50 rounded-xl text-sm text-amber-800">
-        Após o pagamento, envia o comprovativo por WhatsApp para activação imediata.
-      </div>
-      <a href="https://wa.me/244959823409?text=Ol%C3%A1%2C%20quero%20o%20Pacote%20${encodeURIComponent(name)}%20(${encodeURIComponent(price)})" 
-         target="_blank"
-         class="block w-full text-center mt-3 bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded-xl transition" 
-         style="text-decoration:none">
-        📲 Enviar comprovativo pelo WhatsApp
+
+      <label style="display:flex;align-items:center;gap:0.5rem;font-size:0.85rem;font-weight:600;color:#374151;cursor:pointer;padding:0.75rem;background:#fef3c7;border-radius:0.65rem">
+        <input type="checkbox" id="${modalId}-urgent" onchange="(function(){${modalId.replace(/-/g,'_')}_recalc()})()">
+        Adicionar urgência +${URGENCY_FEE.toLocaleString('pt-PT')} Kz (entrega em 24h)
+      </label>
+
+      <div id="${modalId}-calc"></div>
+
+      <a href="https://wa.me/244959823409" target="_blank" style="display:block;margin-top:1.25rem;background:#25d366;color:#fff;border-radius:999px;padding:0.85rem;font-weight:700;font-size:0.92rem;text-align:center;text-decoration:none">
+        📲 Encomendar pelo WhatsApp
       </a>
-      <button class="btn-outline w-full mt-2 text-sm" onclick="this.closest('.modal-overlay').remove()">Fechar</button>
+      <p style="font-size:0.72rem;color:#9ca3af;text-align:center;margin-top:0.5rem">Após o pedido, enviaremos os dados de pagamento</p>
     </div>`;
   document.body.appendChild(modal);
+  document.getElementById(`${modalId}-close`).onclick = () => modal.remove();
+  modal.onclick = e => { if (e.target === modal) modal.remove(); };
+
+  // Make recalc globally accessible
+  window[modalId.replace(/-/g,'_') + '_recalc'] = calcAndRender;
+
+  // Initial render
+  calcAndRender();
 }
 
 function copyText(text, msg) {
@@ -3017,7 +3056,8 @@ async function renderLandingReviews() {
     <div style="background:#fff;border-radius:1rem;padding:1.25rem;box-shadow:0 2px 12px rgba(0,0,0,0.07)">
       <div style="display:flex;gap:2px;margin-bottom:0.5rem">${'★'.repeat(r.stars)}<span style="color:#e5e7eb">${'★'.repeat(5-r.stars)}</span></div>
       ${r.review ? `<p style="font-size:0.85rem;color:#374151;font-style:italic;margin-bottom:0.5rem">"${escapeHTML(r.review)}"</p>` : ''}
-      <p style="font-size:0.75rem;font-weight:700;color:#6b7280">— ${escapeHTML(r.name)}</p>
+      <p style="font-size:0.75rem;font-weight:700;color:#6b7280">${r.anonymous ? '— Anónimo' : '— ' + escapeHTML(r.name)}</p>
+      ${r.created_at ? `<p style="font-size:0.68rem;color:#9ca3af">${new Date(r.created_at).toLocaleDateString('pt-PT')}</p>` : ''}
     </div>`).join('');
 }
 
@@ -3030,7 +3070,11 @@ function openLeaveReview() {
     <h3 style="font-size:1.1rem;font-weight:800;color:#1e293b;margin-bottom:0.25rem">A sua avaliação</h3>
     <p style="font-size:0.82rem;color:#6b7280;margin-bottom:1rem">Ajuda-nos a melhorar e a inspirar outros clientes.</p>
     <div id="star-selector" style="font-size:2rem;letter-spacing:0.1em;margin-bottom:1rem;cursor:pointer">★★★★★</div>
-    <input id="rev-name" class="input-field" placeholder="O seu nome" style="margin-bottom:0.6rem">
+    <input id="rev-name" class="input-field" placeholder="O seu nome (obrigatório)" style="margin-bottom:0.4rem">
+    <label style="display:flex;align-items:center;gap:0.4rem;font-size:0.78rem;color:#6b7280;margin-bottom:0.6rem;cursor:pointer">
+      <input type="checkbox" id="rev-anon" style="width:14px;height:14px">
+      Publicar como anónimo (o seu nome não aparecerá no site)
+    </label>
     <textarea id="rev-text" class="input-field" rows="3" placeholder="Escreva a sua experiência (opcional)..." style="resize:none;margin-bottom:1rem"></textarea>
     <button id="rev-submit-btn" style="background:#007f9f;color:#fff;border:none;border-radius:999px;padding:0.8rem 2rem;font-weight:700;font-size:0.92rem;cursor:pointer;width:100%;font-family:inherit;margin-bottom:0.5rem">Enviar Avaliação</button>
     <button onclick="document.getElementById('_review-modal').remove()" style="background:none;border:none;color:#9ca3af;font-size:0.82rem;cursor:pointer;font-family:inherit">Cancelar</button>
@@ -3068,7 +3112,8 @@ function openLeaveReview() {
     const text = document.getElementById('rev-text')?.value?.trim() || null;
     if (!name) { toast('Por favor insere o teu nome.'); return; }
     this.disabled = true; this.textContent = 'A enviar...';
-    await supabaseRequest('site_reviews', 'POST', { name, stars: selectedStars, review: text, approved: true });
+    const isAnon = document.getElementById('rev-anon')?.checked || false;
+    await supabaseRequest('site_reviews', 'POST', { name, stars: selectedStars, review: text, approved: true, anonymous: isAnon });
     toast('Obrigado pela tua avaliação!');
     modal.remove();
     renderLandingReviews();

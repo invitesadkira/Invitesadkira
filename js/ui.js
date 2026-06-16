@@ -670,8 +670,8 @@ function renderHeroCoupleNames(ev) {
   nameEl.innerHTML = firstName(groom) + amp + firstName(bride);
 
   // Responsive font size using clamp
-  const size = Math.min(parseFloat(ev.couple_size || 2.4), 3);
-  nameEl.style.fontSize = `clamp(1.6rem, ${size * 2.2}vw, ${size}rem)`;
+  const size = parseFloat(ev.couple_size || 2.4);
+  nameEl.style.fontSize = `${size}rem`;
 }
 
 
@@ -706,7 +706,7 @@ function changeCoupleSize(delta) {
   const lbl = document.getElementById('couple-size-label');
   if (!inp) return;
   let v = parseFloat(inp.value) || 2.4;
-  v = Math.max(1.0, Math.min(6.0, parseFloat((v + delta * 0.2).toFixed(1))));
+  v = Math.max(1.0, Math.min(16.0, parseFloat((v + delta * 0.2).toFixed(1))));
   inp.value = v;
   if (lbl) lbl.textContent = v + 'rem';
 }
@@ -720,4 +720,13 @@ function limitToThreeWords(input, max) {
     input.style.borderColor = '#ef4444';
     setTimeout(() => { input.style.borderColor = ''; }, 800);
   }
+}
+
+function updateDressCodeSwatches(value) {
+  const container = document.getElementById('evt-dresscode-swatches');
+  if (!container) return;
+  const colors = value.split(/\n|,/).map(c => c.trim()).filter(c => /^#[0-9a-fA-F]{3,6}$/.test(c)).slice(0, 4);
+  container.innerHTML = colors.map(c =>
+    `<div style="width:32px;height:32px;border-radius:50%;background:${c};border:2px solid #e5e7eb;flex-shrink:0" title="${c}"></div>`
+  ).join('');
 }

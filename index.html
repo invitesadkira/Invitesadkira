@@ -203,10 +203,21 @@
       <button class="flex items-center gap-1 text-teal-500 font-semibold mb-4 hover:text-teal-600 transition" onclick="Router.go('home')"> <i data-lucide="arrow-left" class="w-5 h-5"></i> Voltar </button>
       <div class="bg-white rounded-2xl shadow-md p-6">
        <h2 class="text-2xl font-bold text-gray-800 mb-1">Criar Conta</h2>
-       <p class="text-gray-400 text-sm mb-5">Preencha os campos abaixo</p>
+       <p class="text-gray-400 text-sm mb-2">Precisa de um código de acesso fornecido pela AdKira.</p>
+       <div style="background:#f0f9fb;border-radius:0.65rem;padding:0.75rem;margin-bottom:1rem;font-size:0.78rem;color:#374151">
+        Encomende um pacote e a <strong>AdKira</strong> enviará o seu código pelo WhatsApp.
+       </div>
        <form onsubmit="handleRegister(event)">
-        <label class="block text-sm font-semibold text-gray-600 mb-1">Telefone ou ID</label> <input id="reg-phone" class="input-field mb-4" placeholder="Ex: 912345678" required> <label class="block text-sm font-semibold text-gray-600 mb-1">Senha</label> <input id="reg-pass" type="password" class="input-field mb-4" placeholder="Mínimo 4 caracteres" required> <label class="block text-sm font-semibold text-gray-600 mb-1">Confirmar Senha</label> <input id="reg-pass2" type="password" class="input-field mb-1" placeholder="Repita a senha" required>
-        <p id="reg-error" class="text-red-500 text-sm mb-4 hidden"></p><button type="submit" class="btn-main w-full text-base mt-2">Criar Conta</button>
+        <label class="block text-sm font-semibold text-gray-600 mb-1">Código de Acesso</label>
+        <input id="reg-access-token" class="input-field mb-4" placeholder="Ex: ADKIRA-XXXX-XXXX" required>
+        <label class="block text-sm font-semibold text-gray-600 mb-1">Telefone ou ID</label>
+        <input id="reg-phone" class="input-field mb-4" placeholder="Ex: 912345678" required>
+        <label class="block text-sm font-semibold text-gray-600 mb-1">Senha</label>
+        <input id="reg-pass" type="password" class="input-field mb-4" placeholder="Mínimo 4 caracteres" required>
+        <label class="block text-sm font-semibold text-gray-600 mb-1">Confirmar Senha</label>
+        <input id="reg-pass2" type="password" class="input-field mb-1" placeholder="Repita a senha" required>
+        <p id="reg-error" class="text-red-500 text-sm mb-4 hidden"></p>
+        <button type="submit" class="btn-main w-full text-base mt-2">Criar Conta</button>
        </form>
       </div>
      </div>
@@ -470,7 +481,9 @@ para testemunhar o seu enlace matrimonial</textarea>
         </div>
         <div id="dresscode-extra" class="hidden pl-4 space-y-2">
          <input id="evt-dresscode-text" class="input-field text-sm" placeholder="Ex: Traje social ou Roupa a rigor">
-         <input id="evt-dresscode-colors" class="input-field text-sm" placeholder="Paleta de cores sugerida (ex: Branco, Dourado, Verde)">
+         <label class="text-xs text-gray-500 mt-1 block">Paleta de cores (códigos HEX, um por linha, máx. 4)</label>
+         <div id="evt-dresscode-swatches" style="display:flex;gap:0.5rem;margin-bottom:0.4rem;flex-wrap:wrap"></div>
+         <input id="evt-dresscode-colors" class="input-field text-sm" placeholder="#FFFFFF&#10;#C9A84C&#10;#2D6A4F" oninput="updateDressCodeSwatches(this.value)">
         </div>
 
         <div class="flex items-center justify-between">

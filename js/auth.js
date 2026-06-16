@@ -1,33 +1,57 @@
-// ===================== AUTH =====================
-function handleRegister(e) {
+async function handleRegister(e) {
   e.preventDefault();
+  const accessToken = document.getElementById('reg-access-token')?.value?.trim().toUpperCase();
   const phone = document.getElementById('reg-phone').value.trim();
-  const pass = document.getElementById('reg-pass').value;
+  const pass  = document.getElementById('reg-pass').value;
   const pass2 = document.getElementById('reg-pass2').value;
   const errEl = document.getElementById('reg-error');
+  const showErr = (msg) => { errEl.textContent = msg; errEl.classList.remove('hidden'); };
 
-  if (pass.length < 4) { errEl.textContent = 'Senha deve ter no mínimo 4 caracteres.'; errEl.classList.remove('hidden'); return; }
-  if (pass !== pass2) { errEl.textContent = 'As senhas não coincidem.'; errEl.classList.remove('hidden'); return; }
+  if (!accessToken) { showErr('Insere o código de acesso fornecido pela AdKira.'); return; }
+  if (!phone) { showErr('Insere o teu telefone ou ID.'); return; }
+  if (pass.length < 4) { showErr('A senha deve ter pelo menos 4 caracteres.'); return; }
+  if (pass !== pass2) { showErr('As senhas não coincidem.'); return; }
+  errEl.classList.add('hidden');
 
-  toast('Registando conta...');
-  
-  // ✅ CRÍTICO: Contas NOVAS ficam como 'pending' até admin aprovar!
-  supabaseRequest('accounts', 'POST', {
-    phone: phone,
-    password: pass, // ⚠️ NOTA: Em produção usar bcrypt no Supabase
-    role: 'user',
-    status: 'pending', // 🔒 PENDENTE até admin aprovar
-    event_limit: null
-  }).then(result => {
-    if (result && result.length > 0) {
-      toast(' Conta criada! Aguarde aprovação do administrador.');
-      Router.go('home');
-    } else {
-      errEl.textContent = 'Erro ao criar conta. Telefone pode estar em uso.';
-      errEl.classList.remove('hidden');
+  const btn = e.target.querySelector('button[type="submit"]');
+  if (btn) { btn.disabled = true; btn.textContent = 'A verificar código...'; }
+
+  try {
+    const tokenRows = await supabaseRequest(
+      `intake_tokens?token=eq.${encodeURIComponent(accessToken)}&select=token,locked,expires_at,event_id&limit=1`
+    );
+    const tk = tokenRows && tokenRows[0];
+    if (!tk) { showErr('Código inválido. Verifica e tenta novamente.'); if (btn) { btn.disabled = false; btn.textContent = 'Criar Conta'; } return; }
+    if (tk.locked) { showErr('Este código já foi utilizado.'); if (btn) { btn.disabled = false; btn.textContent = 'Criar Conta'; } return; }
+    if (tk.expires_at && new Date(tk.expires_at) < new Date()) { showErr('Este código expirou. Contacta a AdKira.'); if (btn) { btn.disabled = false; btn.textContent = 'Criar Conta'; } return; }
+
+    if (btn) btn.textContent = 'A criar conta...';
+    const result = await supabaseRequest('accounts', 'POST', {
+      phone, password: pass, role: 'user', approved: true, event_limit: 1, login_count: 0
+    });
+    if (!result || !result[0]) {
+      showErr('Erro ao criar conta. O telefone pode já estar em uso.');
+      if (btn) { btn.disabled = false; btn.textContent = 'Criar Conta'; }
+      return;
     }
-  });
+    await supabaseRequest(`intake_tokens?token=eq.${encodeURIComponent(accessToken)}`, 'PATCH', {
+      locked: true, locked_at: new Date().toISOString(), locked_by: phone
+    });
+    const newAccount = result[0];
+    localStorage.setItem('authToken', newAccount.id);
+    localStorage.setItem('userId', newAccount.id);
+    localStorage.setItem('userPhone', phone);
+    localStorage.setItem('userRole', 'user');
+    Store.currentUser = { id: newAccount.id, phone, role: 'user' };
+    toast('Conta criada com sucesso!');
+    if (tk.event_id) { Store._intakeEventId = tk.event_id; openIntakeForm(tk.event_id); }
+    else { Router.go('dashboard'); }
+  } catch(err) {
+    showErr('Erro ao criar conta. Tenta novamente.');
+    if (btn) { btn.disabled = false; btn.textContent = 'Criar Conta'; }
+  }
 }
+
 
 async function handleLogin(e) {
   e.preventDefault();
