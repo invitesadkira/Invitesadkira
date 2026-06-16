@@ -3076,23 +3076,43 @@ function openLeaveReview() {
 }
 
 // ===================== STATS =====================
+function _animateCounter(el, target, suffix) {
+  if (!el) return;
+  const duration = 1800;
+  const start = performance.now();
+  function tick(now) {
+    const p = Math.min((now - start) / duration, 1);
+    const ease = 1 - Math.pow(1 - p, 3); // cubic ease out
+    el.textContent = Math.floor(ease * target) + suffix;
+    if (p < 1) requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+}
+
 async function loadLandingStats() {
   try {
     const cfg = await supabaseRequest('site_config?key=in.(stats_users,stats_events,stats_confirmations)&select=key,value');
-    if (cfg) cfg.forEach(row => {
-      const el = document.getElementById('stat-' + row.key.replace('stats_',''));
-      if (el) el.textContent = row.value + '+';
-    });
-    // Also count real events and users
-    const [evCount, userCount] = await Promise.all([
-      supabaseRequest('events?select=count', 'GET').catch(() => null),
-      supabaseRequest('accounts?select=count', 'GET').catch(() => null),
-    ]);
-    if (evCount && evCount[0]?.count) {
-      const base = 150;
-      const real = parseInt(evCount[0].count) + base;
-      const el = document.getElementById('stat-events');
-      if (el) el.textContent = real + '+';
-    }
+    const vals = {};
+    if (cfg) cfg.forEach(r => { vals[r.key] = parseInt(r.value) || 0; });
+
+    const statMap = {
+      'stat-events':        { val: vals.stats_events        || 150, suffix: '+' },
+      'stat-users':         { val: vals.stats_users         || 100, suffix: '+' },
+      'stat-confirmations': { val: vals.stats_confirmations || 850, suffix: '+' },
+    };
+
+    // Use IntersectionObserver to trigger animation when visible
+    const statsSection = document.querySelector('[id*="stat-events"]')?.closest('.landing-section');
+    if (!statsSection) { Object.keys(statMap).forEach(id => { const el = document.getElementById(id); if(el) el.textContent = statMap[id].val + statMap[id].suffix; }); return; }
+
+    let animated = false;
+    const obs = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting && !animated) {
+        animated = true;
+        Object.keys(statMap).forEach(id => _animateCounter(document.getElementById(id), statMap[id].val, statMap[id].suffix));
+        obs.disconnect();
+      }
+    }, { threshold: 0.3 });
+    obs.observe(statsSection);
   } catch(e) {}
 }

@@ -322,23 +322,88 @@ async function rsvpSubmit() {
 }
 
 // ── Edit response ─────────────────────────────────────────────────────
-function rsvpEdit() {
-  rsvpClearConfirmed(Store.currentEventId);
+async function rsvpEdit() {
+  const eventId = Store.currentEventId;
+
+  // Load previous answer from Supabase before clearing confirmation
+  const ev = Store.guestEventData;
+  const confirmed = rsvpCheckConfirmed(eventId);
+  const prevName = confirmed?.name || '';
+  let prevData = null;
+
+  if (prevName) {
+    try {
+      const rows = await supabaseRequest(
+        `rsvps?event_id=eq.${eventId}&guest_name=ilike.${encodeURIComponent(prevName)}&select=guest_name,attending,side,companions,kids,message&limit=1`
+      );
+      if (rows && rows[0]) prevData = rows[0];
+    } catch(e) {}
+  }
+
+  rsvpClearConfirmed(eventId);
   _rsvpRender('FORM');
 
-  // Pre-fill previous data if available
-  const confirmed = Store._rsvp?.[Store.currentEventId];
-  if (confirmed && confirmed.name) {
-    setTimeout(() => {
+  // Pre-fill all fields with previous answers
+  setTimeout(() => {
+    if (prevData) {
       const nameEl = document.getElementById('rsvp-name-new');
-      if (nameEl) nameEl.value = confirmed.name;
-      if (confirmed.attending !== undefined) {
-        const val = confirmed.attending ? 'yes' : 'no';
-        const radio = document.querySelector(`input[name="rsvp-attending"][value="${val}"]`);
-        if (radio) { radio.checked = true; _rsvpToggleAttending(val); }
+      if (nameEl) nameEl.value = prevData.guest_name || prevName;
+
+      // Attending
+      const attVal = prevData.attending === true ? 'yes' : prevData.attending === false ? 'no' : null;
+      if (attVal) {
+        const radio = document.querySelector(`input[name="rsvp-attending"][value="${attVal}"]`);
+        if (radio) { radio.checked = true; _rsvpToggleAttending(attVal); }
       }
-    }, 50);
-  }
+
+      // Side
+      if (prevData.side) {
+        const sideRadio = document.querySelector(`input[name="rsvp-side"][value="${prevData.side}"]`);
+        if (sideRadio) {
+          sideRadio.checked = true;
+          document.getElementById('rsvp-side1-lbl')?.classList.toggle('active', prevData.side === 'side1');
+          document.getElementById('rsvp-side2-lbl')?.classList.toggle('active', prevData.side === 'side2');
+        }
+      }
+
+      // Companions
+      const compList = document.getElementById('rsvp-comp-list');
+      if (compList && prevData.companions) {
+        const names = prevData.companions.split('|').filter(Boolean);
+        names.forEach(name => {
+          const div = document.createElement('div');
+          div.style.cssText = 'display:flex;gap:0.4rem;margin-bottom:0.4rem;align-items:center';
+          div.innerHTML = `<input class="input-field" placeholder="Nome (máx. 3 palavras)" oninput="limitToThreeWords(this,3)" style="flex:1;font-size:0.85rem" value="${escapeHTML(name)}">
+            <button type="button" onclick="this.parentElement.remove()" style="background:#fee2e2;border:none;border-radius:0.5rem;padding:0.4rem 0.6rem;cursor:pointer;color:#ef4444;flex-shrink:0">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>`;
+          compList.appendChild(div);
+        });
+      }
+
+      // Kids
+      const kidsList = document.getElementById('rsvp-kids-list-new');
+      if (kidsList && prevData.kids) {
+        const names = prevData.kids.split('|').filter(Boolean);
+        names.forEach(name => {
+          const div = document.createElement('div');
+          div.style.cssText = 'display:flex;gap:0.4rem;margin-bottom:0.4rem;align-items:center';
+          div.innerHTML = `<input class="input-field" placeholder="Nome da criança" oninput="limitToThreeWords(this,3)" style="flex:1;font-size:0.85rem" value="${escapeHTML(name)}">
+            <button type="button" onclick="this.parentElement.remove()" style="background:#fee2e2;border:none;border-radius:0.5rem;padding:0.4rem 0.6rem;cursor:pointer;color:#ef4444;flex-shrink:0">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>`;
+          kidsList.appendChild(div);
+        });
+      }
+
+      // Message
+      const msgEl = document.getElementById('rsvp-msg-new');
+      if (msgEl && prevData.message) msgEl.value = prevData.message;
+    } else if (prevName) {
+      const nameEl = document.getElementById('rsvp-name-new');
+      if (nameEl) nameEl.value = prevName;
+    }
+  }, 80);
 }
 
 // ── Felicitações overlay ──────────────────────────────────────────────

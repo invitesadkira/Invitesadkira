@@ -796,3 +796,9 @@ html, body { height: 100%; margin: 0; width: 100%; overflow-x: hidden; }
 .music-icon { background: var(--ev-color) !important; }
 
 /* ═══ VENUE TITLE EDITABLE ═══ */
+
+/* ── Music player autoplay blocked pulse ── */
+@keyframes musicPulseAttention {
+  0%,100% { box-shadow: 0 2px 12px rgba(0,0,0,0.08); transform: scale(1); }
+  50%      { box-shadow: 0 4px 24px color-mix(in srgb, var(--ev-color) 40%, transparent); transform: scale(1.02); }
+}

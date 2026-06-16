@@ -103,6 +103,8 @@ async function renderGuestSections(eventData) {
       case 'manual':   if (_yesOrTrue(eventData.show_manual)) html += buildManualSection(eventData); break;
       case 'schedule': if (_yesOrTrue(eventData.show_schedule)) html += buildScheduleSection(eventData); break;
       case 'dresscode': if (_yesOrTrue(eventData.show_dresscode) && eventData.dresscode_text) html += buildDresscodeSection(eventData); break;
+      case 'couplемsg': if (_yesOrTrue(eventData.show_couplемsg) && eventData.couplемsg_text) html += buildCoupleMsgSection(eventData); break;
+      case 'couplемsg': if (_yesOrTrue(eventData.show_couplемsg) && eventData.couplемsg_text) html += buildCoupleMsgSection(eventData); break;
       case 'rsvp':     break; // always last, separate element
     }
   });
@@ -225,13 +227,20 @@ function buildBibleSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
   const hasParents = ev.groom_parents || ev.bride_parents;
   // Always show the hardcoded blessing label — never use invite_blessing as the label
   const blessingLabel = 'Com a bênção de Deus e de seus pais';
+
+  // Apply invert_names to parents in this section too
+  const _invertNamesB = _yesOrTrue(ev.invert_names);
+  let _groomParentsB = ev.groom_parents;
+  let _brideParentsB = ev.bride_parents;
+  if (_invertNamesB) { [_groomParentsB, _brideParentsB] = [_brideParentsB, _groomParentsB]; }
+
   const parentsHtml = hasParents ? `
     <div class="reveal" style="margin-top:1.5rem">
       <p class="invitation-text" style="margin-bottom:1rem;font-size:0.9rem">${blessingLabel}</p>
       <div style="display:flex;gap:2rem;justify-content:center;flex-wrap:nowrap;text-align:center">
-        ${ev.groom_parents ? (() => { return '<div>' + ev.groom_parents.split('\n').filter(l=>l.trim()).map(l=>{ const im=l.includes('(em memória)'); const n=l.replace('(em memória)','').trim(); return '<p style="font-weight:600;color:#1e293b;line-height:1.85;font-size:0.88rem">'+escapeHTML(n)+(im?' <span style="color:#6b7280;font-size:0.78rem;font-style:italic">(em memória)</span>':'')+'</p>'; }).join('') + '</div>'; })() : ''}
-        ${ev.groom_parents && ev.bride_parents ? '<div style="width:1px;background:linear-gradient(to bottom,transparent,var(--ev-color,#007f9f) 20%,var(--ev-color,#007f9f) 80%,transparent);align-self:stretch;flex-shrink:0;min-height:60px"></div>' : ''}
-        ${ev.bride_parents ? (() => { return '<div>' + ev.bride_parents.split('\n').filter(l=>l.trim()).map(l=>{ const im=l.includes('(em memória)'); const n=l.replace('(em memória)','').trim(); return '<p style="font-weight:600;color:#1e293b;line-height:1.85;font-size:0.88rem">'+escapeHTML(n)+(im?' <span style="color:#6b7280;font-size:0.78rem;font-style:italic">(em memória)</span>':'')+'</p>'; }).join('') + '</div>'; })() : ''}
+        ${_groomParentsB ? (() => { return '<div>' + _groomParentsB.split('\n').filter(l=>l.trim()).map(l=>{ const im=l.includes('(em memória)'); const n=l.replace('(em memória)','').trim(); return '<p style="font-weight:600;color:#1e293b;line-height:1.85;font-size:0.88rem">'+escapeHTML(n)+(im?' <span style="color:#6b7280;font-size:0.78rem;font-style:italic">(em memória)</span>':'')+'</p>'; }).join('') + '</div>'; })() : ''}
+        ${_groomParentsB && _brideParentsB ? '<div style="width:1px;background:linear-gradient(to bottom,transparent,var(--ev-color,#007f9f) 20%,var(--ev-color,#007f9f) 80%,transparent);align-self:stretch;flex-shrink:0;min-height:60px"></div>' : ''}
+        ${_brideParentsB ? (() => { return '<div>' + _brideParentsB.split('\n').filter(l=>l.trim()).map(l=>{ const im=l.includes('(em memória)'); const n=l.replace('(em memória)','').trim(); return '<p style="font-weight:600;color:#1e293b;line-height:1.85;font-size:0.88rem">'+escapeHTML(n)+(im?' <span style="color:#6b7280;font-size:0.78rem;font-style:italic">(em memória)</span>':'')+'</p>'; }).join('') + '</div>'; })() : ''}
       </div>
     </div>` : '';
 
@@ -743,7 +752,8 @@ const ALL_SECTION_DEFS = [
   { key: 'gallery',   label: 'Galeria de Fotos',                     icon: 'image' },
   { key: 'manual',    label: 'Manual do Bom Convidado',              icon: 'list-checks' },
   { key: 'schedule',  label: 'Itinerário',                           icon: 'clock' },
-  { key: 'dresscode', label: 'Dress Code',                             icon: 'shirt' },
+  { key: 'dresscode',  label: 'Dress Code',                             icon: 'shirt' },
+  { key: 'couplemsg',  label: 'Mensagem dos Noivos',                   icon: 'message-circle' },
 ];
 
 function getDefaultSectionOrder() {

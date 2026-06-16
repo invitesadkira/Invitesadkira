@@ -78,7 +78,7 @@ async function renderGuestView() {
     }
   }
 
-  document.getElementById('guest-title').textContent = eventData.title;
+  // guest-title hidden — couple names not shown in CTA section
 
   // ── Check event expiry ──
   if (eventData.expires_at) {

@@ -110,9 +110,9 @@
 
     <!-- ── STATS ── -->
     <div class="landing-section" style="background:linear-gradient(135deg,#0f172a,#1e3a4a);color:#fff;padding:3rem 1.25rem;text-align:center">
-      <h2 style="font-size:1.4rem;font-weight:800;margin-bottom:0.35rem">A confiança de milhares</h2>
+      <h2 style="font-size:1.4rem;font-weight:800;margin-bottom:0.35rem">A confiança de muitos</h2>
       <p style="color:#94a3b8;font-size:0.88rem;margin-bottom:2.5rem">Junte-se a quem já celebra connosco</p>
-      <div style="display:flex;gap:2rem;justify-content:center;flex-wrap:wrap">
+      <div style="display:flex;gap:2rem;justify-content:center;flex-wrap:nowrap;overflow-x:auto">
         <div>
           <div id="stat-events" style="font-size:2.5rem;font-weight:900;color:#5eead4">150+</div>
           <div style="font-size:0.82rem;color:#94a3b8;margin-top:0.25rem">Convites Criados</div>
@@ -454,6 +454,15 @@ para testemunhar o seu enlace matrimonial</textarea>
          <input id="gallery-file-input" type="file" accept="image/*" multiple class="hidden" onchange="handleGalleryUpload(this)">
         </div>
 
+        <!-- Mensagem dos Noivos -->
+        <div class="flex items-center justify-between">
+         <span class="text-sm font-semibold text-gray-700">Mensagem dos Noivos</span>
+         <div id="sw-couplemsg" class="switch" onclick="toggleSwitch(this, 'couplemsg-extra')"></div>
+        </div>
+        <div id="couplemsg-extra" class="hidden pl-4">
+         <textarea id="evt-couplemsg-text" class="input-field text-sm" rows="4" placeholder="Ex: Cada um de vocês representa um capítulo especial da nossa história..."></textarea>
+        </div>
+
         <!-- Dress Code -->
         <div class="flex items-center justify-between">
          <span class="text-sm font-semibold text-gray-700">Dress Code</span>
@@ -654,7 +663,7 @@ para testemunhar o seu enlace matrimonial</textarea>
     <!-- ── RSVP CTA SECTION ── -->
     <div class="rsvp-cta-section reveal" id="rsvp-section">
      <div class="section-inner">
-      <h2 id="guest-title" class="rsvp-cta-title"></h2>
+      <!-- guest-title removed -->
       <p id="guest-deadline-text" class="rsvp-cta-sub" style="margin-bottom:1.25rem;font-size:0.85rem;opacity:0.85"></p>
       <!-- Prazo countdown -->
       <div class="rsvp-cta-deadline" id="rsvp-deadline-countdown" style="display:none">

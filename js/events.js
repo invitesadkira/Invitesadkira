@@ -698,6 +698,8 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
           decor_ornament_url: document.getElementById('evt-decor-ornament-url')?.value || null,
           show_decor:    document.getElementById('sw-decor')?.classList.contains('active') ? 'yes' : 'no',
           show_dresscode: document.getElementById('sw-dresscode')?.classList.contains('active') ? 'yes' : 'no',
+          show_couplemsg: document.getElementById('sw-couplemsg')?.classList.contains('active') ? 'yes' : 'no',
+          couplemsg_text: document.getElementById('evt-couplemsg-text')?.value?.trim() || null,
           dresscode_text:   document.getElementById('evt-dresscode-text')?.value?.trim() || null,
           dresscode_colors: document.getElementById('evt-dresscode-colors')?.value?.trim() || null,
           show_story:    document.getElementById('sw-story')?.classList.contains('active') ? 'yes' : 'no',
@@ -1476,6 +1478,8 @@ function _fillEditForm(ev) {
   // Decor
   _setSwitch('sw-decor', _yesOrTrue(ev.show_decor), 'decor-extra');
   _setSwitch('sw-dresscode', _yesOrTrue(ev.show_dresscode), 'dresscode-extra');
+  _setSwitch('sw-couplemsg', _yesOrTrue(ev.show_couplemsg), 'couplemsg-extra');
+  { const el = document.getElementById('evt-couplemsg-text'); if (el) el.value = ev.couplemsg_text || ''; }
   const _svDC = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
   _svDC('evt-dresscode-text',   ev.dresscode_text);
   _svDC('evt-dresscode-colors', ev.dresscode_colors);

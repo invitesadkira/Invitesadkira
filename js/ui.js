@@ -507,11 +507,12 @@ function startMusicAutoplay(ytId, audioSrc) {
     ytFrame.dataset.playing = '1';
     // Optimista: assumir que está a tocar; se o browser bloquear o iframe não emite erro detectável
     setMusicPlayingUI(true);
-    // Fallback: se após 3s não houver evento de playing, marcar como pausado
+    // YT iframe autoplay is often blocked — after 2s show "tap to play" state
+    // so the user knows to interact with the player
     setTimeout(() => {
-      // Não temos forma fiável de saber se o YT autoplay foi bloqueado via iframe
-      // Deixamos o UI optimista — o utilizador vê o botão de play se quiser forçar
-    }, 3000);
+      // If user hasn't interacted, assume blocked and show play prompt
+      if (sub && sub.textContent !== '') sub.textContent = 'Toca para ouvir';
+    }, 2000);
   } else if (audioSrc) {
     const audio = document.getElementById('guest-audio');
     if (audio) {
@@ -523,9 +524,34 @@ function startMusicAutoplay(ytId, audioSrc) {
         playPromise.then(() => {
           setMusicPlayingUI(true);
         }).catch(() => {
-          // Browser bloqueou autoplay — mostrar botão para o utilizador iniciar
+          // Browser blocked autoplay (expected on GitHub Pages / any https host)
+          // Show a prominent "tap to play" state on the music player
           setMusicPlayingUI(false);
-          if (sub) sub.textContent = 'Clique para tocar';
+          if (sub) sub.textContent = 'Toca para ouvir';
+
+          // Pulse the music player to draw attention
+          const playerEl = document.getElementById('guest-music-player');
+          if (playerEl) {
+            playerEl.style.animation = 'musicPulseAttention 1.2s ease-in-out 3';
+            setTimeout(() => { if (playerEl) playerEl.style.animation = ''; }, 4000);
+          }
+
+          // Show floating button immediately (don't wait for scroll)
+          const floatBtn = document.getElementById('floating-music-btn');
+          if (floatBtn) floatBtn.classList.add('visible');
+
+          // One-time: try to play on any user interaction
+          const tryPlay = () => {
+            audio.play().then(() => {
+              setMusicPlayingUI(true);
+              const floatBtn = document.getElementById('floating-music-btn');
+              if (floatBtn) floatBtn.classList.remove('visible');
+            }).catch(() => {});
+            document.removeEventListener('touchstart', tryPlay);
+            document.removeEventListener('click', tryPlay);
+          };
+          document.addEventListener('touchstart', tryPlay, { once: true, passive: true });
+          document.addEventListener('click', tryPlay, { once: true });
         });
       }
     }
