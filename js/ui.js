@@ -672,6 +672,11 @@ function renderHeroCoupleNames(ev) {
   // Responsive font size using clamp
   const size = parseFloat(ev.couple_size || 2.4);
   nameEl.style.fontSize = `${size}rem`;
+  nameEl.style.whiteSpace = 'nowrap';
+  nameEl.style.display = 'flex';
+  nameEl.style.alignItems = 'center';
+  nameEl.style.justifyContent = 'center';
+  nameEl.style.gap = '0.3em';
 }
 
 

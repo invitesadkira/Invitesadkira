@@ -2158,12 +2158,12 @@ async function openMusicFromStorage() {
       return;
     }
     listEl.innerHTML = files.map(f => {
-      const url = `${SUPABASE_URL}/storage/v1/object/public/event-music/\${f.name}`;
+      const url  = SUPABASE_URL + '/storage/v1/object/public/event-music/' + f.name;
       const name = f.name.replace(/^music_\d+_[a-z0-9]+\./, '').replace(/\.[^.]+$/, '');
       return `<div class="flex items-center gap-3 py-2 border-b border-gray-100">
         <i data-lucide="music" class="w-4 h-4 text-teal-500 flex-shrink-0"></i>
-        <span class="flex-1 text-xs text-gray-700 truncate" title="\${f.name}">\${f.name}</span>
-        <button class="text-xs btn-main px-3 py-1" onclick="selectStorageMusic('\${url}','\${name}',this)">Usar</button>
+        <span class="flex-1 text-xs text-gray-700 truncate" title="${f.name}">${name}</span>
+        <button class="text-xs btn-main px-3 py-1" onclick="selectStorageMusic('${url}','${name}',this)">Usar</button>
       </div>`;
     }).join('');
     lucide.createIcons();
@@ -2956,8 +2956,8 @@ async function renderLandingPackages(pkgsData) {
     <div class="lp-card ${i === 1 ? 'lp-featured' : ''}">
       <div class="lp-badge" style="${BADGE_STYLES[i] || BADGE_STYLES[0]}">${escapeHTML(p.name)}</div>
       <div class="lp-price">${escapeHTML(p.price)}</div>
-      <div class="lp-desc">Ideal para eventos até <strong>${escapeHTML(String(p.people || ''))} pessoas</strong></div>
-      <div class="lp-detail">${escapeHTML(p.invites || '')}</div>
+<!-- no desc line -->
+      <div class="lp-detail" style="font-size:0.85rem;color:#6b7280;margin-bottom:0.75rem">${escapeHTML(p.invites || '')}</div>
       <button class="lp-btn" onclick="showPackagePayment('${escapeHTML(p.name)}','${escapeHTML(p.price)}')">Encomendar</button>
     </div>`).join('');
 }
@@ -3160,4 +3160,85 @@ async function loadLandingStats() {
     }, { threshold: 0.3 });
     obs.observe(statsSection);
   } catch(e) {}
+}
+
+// ===================== NOTIFICATIONS SYSTEM =====================
+async function loadUserNotifications() {
+  const userId = Store.currentUser?.id;
+  if (!userId) return;
+
+  const rows = await supabaseRequest(
+    `notifications?select=id,title,body,read,created_at&user_id=eq.${userId}&order=created_at.desc&limit=20`
+  ).catch(() => []);
+
+  const badge = document.getElementById('notif-badge');
+  const unread = (rows || []).filter(n => !n.read).length;
+  if (badge) {
+    badge.textContent = unread;
+    badge.style.display = unread > 0 ? 'flex' : 'none';
+  }
+  return rows || [];
+}
+
+function openNotificationsPanel() {
+  loadUserNotifications().then(rows => {
+    const modal = document.createElement('div');
+    modal.id = '_notif-modal';
+    modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:flex-start;justify-content:flex-end;padding:3rem 1rem 0';
+    modal.innerHTML = `<div style="background:#fff;border-radius:1rem;width:100%;max-width:360px;max-height:70vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,0.18)">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:1rem 1.25rem;border-bottom:1px solid #e5e7eb;position:sticky;top:0;background:#fff">
+        <h3 style="font-size:1rem;font-weight:800;color:#1e293b;margin:0">Notificações</h3>
+        <button id="_notif-close" style="background:none;border:none;cursor:pointer;color:#9ca3af">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div id="_notif-list" style="padding:0.75rem">
+        ${!rows || !rows.length ? '<p style="text-align:center;color:#9ca3af;padding:2rem;font-size:0.85rem">Sem notificações.</p>' :
+          rows.map(n => `<div style="padding:0.75rem;border-radius:0.65rem;margin-bottom:0.4rem;background:${n.read?'#f8fafc':'#eff6ff'};border:1px solid ${n.read?'#e5e7eb':'#bfdbfe'}">
+            <p style="font-size:0.85rem;font-weight:700;color:#1e293b;margin-bottom:0.2rem">${escapeHTML(n.title)}</p>
+            <p style="font-size:0.8rem;color:#374151">${escapeHTML(n.body || '')}</p>
+            <p style="font-size:0.68rem;color:#9ca3af;margin-top:0.3rem">${new Date(n.created_at).toLocaleDateString('pt-PT')}</p>
+          </div>`).join('')}
+      </div>
+    </div>`;
+    document.body.appendChild(modal);
+    document.getElementById('_notif-close').onclick = () => modal.remove();
+    modal.onclick = e => { if (e.target === modal) modal.remove(); };
+
+    // Mark all as read
+    const userId2 = Store.currentUser?.id;
+    if (userId2) {
+      supabaseRequest(`notifications?user_id=eq.${userId2}&read=eq.false`, 'PATCH', { read: true }).catch(() => {});
+      const badge = document.getElementById('notif-badge');
+      if (badge) badge.style.display = 'none';
+    }
+  });
+}
+
+// ── Admin: send notification to all users ──
+function openSendNotificationModal() {
+  const modal = document.createElement('div');
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem';
+  modal.innerHTML = `<div style="background:#fff;border-radius:1.25rem;padding:1.75rem;max-width:420px;width:100%">
+    <h3 style="font-size:1rem;font-weight:800;color:#1e293b;margin-bottom:1rem">Enviar Notificação</h3>
+    <input id="_notif-title" class="input-field" placeholder="Título" style="margin-bottom:0.6rem">
+    <textarea id="_notif-body" class="input-field" rows="3" placeholder="Mensagem..." style="resize:none;margin-bottom:1rem"></textarea>
+    <button id="_notif-send-btn" style="background:#007f9f;color:#fff;border:none;border-radius:999px;padding:0.8rem;font-weight:700;width:100%;cursor:pointer;font-family:inherit">Enviar para Todos</button>
+    <button onclick="this.closest('[style*=position:fixed]').remove()" style="background:none;border:none;color:#9ca3af;font-size:0.82rem;cursor:pointer;width:100%;margin-top:0.5rem;font-family:inherit">Cancelar</button>
+  </div>`;
+  document.body.appendChild(modal);
+  document.getElementById('_notif-send-btn').onclick = async function() {
+    const title = document.getElementById('_notif-title')?.value?.trim();
+    const body  = document.getElementById('_notif-body')?.value?.trim();
+    if (!title) { toast('Insere um título.'); return; }
+    this.disabled = true; this.textContent = 'A enviar...';
+    // Get all user IDs
+    const users = await supabaseRequest('accounts?select=id&role=eq.user&limit=1000').catch(() => []);
+    const inserts = (users || []).map(u => ({ user_id: u.id, title, body: body || '', read: false }));
+    if (inserts.length > 0) {
+      await supabaseRequest('notifications', 'POST', inserts).catch(() => {});
+    }
+    toast(`Notificação enviada para ${inserts.length} utilizadores!`);
+    modal.remove();
+  };
 }

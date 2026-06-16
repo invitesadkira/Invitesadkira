@@ -237,7 +237,7 @@ function buildBibleSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
   const parentsHtml = hasParents ? `
     <div class="reveal" style="margin-top:1.5rem">
       <p class="invitation-text" style="margin-bottom:1rem;font-size:0.9rem">${blessingLabel}</p>
-      <div style="display:flex;gap:2rem;justify-content:center;flex-wrap:nowrap;text-align:center">
+      <div style="display:flex;gap:1.5rem;justify-content:center;flex-wrap:wrap;text-align:center;max-width:380px;margin:0 auto">
         ${_groomParentsB ? (() => { return '<div>' + _groomParentsB.split('\n').filter(l=>l.trim()).map(l=>{ const im=l.includes('(em memória)'); const n=l.replace('(em memória)','').trim(); return '<p style="font-weight:600;color:#1e293b;line-height:1.85;font-size:0.88rem">'+escapeHTML(n)+(im?' <span style="color:#6b7280;font-size:0.78rem;font-style:italic">(em memória)</span>':'')+'</p>'; }).join('') + '</div>'; })() : ''}
         ${_groomParentsB && _brideParentsB ? '<div style="width:1px;background:linear-gradient(to bottom,transparent,var(--ev-color,#007f9f) 20%,var(--ev-color,#007f9f) 80%,transparent);align-self:stretch;flex-shrink:0;min-height:60px"></div>' : ''}
         ${_brideParentsB ? (() => { return '<div>' + _brideParentsB.split('\n').filter(l=>l.trim()).map(l=>{ const im=l.includes('(em memória)'); const n=l.replace('(em memória)','').trim(); return '<p style="font-weight:600;color:#1e293b;line-height:1.85;font-size:0.88rem">'+escapeHTML(n)+(im?' <span style="color:#6b7280;font-size:0.78rem;font-style:italic">(em memória)</span>':'')+'</p>'; }).join('') + '</div>'; })() : ''}

@@ -140,7 +140,9 @@ async function renderGuestView() {
 
   // ── Fallback: if critical visual fields still null, reload from events table directly ──
   const _criticalNulls = ['bible_text','gallery_urls','invite_text','groom_parents','bride_parents',
-    'iban_number','story_text','event_color','groom_name','bride_name','music_url','schedule_items'];
+    'iban_number','story_text','event_color','groom_name','bride_name','music_url','schedule_items',
+    'manual_items','couplemsg_text','show_couplemsg','show_manual','show_schedule','show_story',
+    'dresscode_text','show_dresscode'];
   const _stillMissing = _criticalNulls.filter(k => !eventData[k]);
   if (_stillMissing.length > 0) {
     try {

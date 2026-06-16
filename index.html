@@ -47,7 +47,7 @@
 
     <!-- ── HERO ── -->
     <!-- Site notices banner -->
-    <div id="site-notices-banner" style="display:none;background:#fef3c7;border-bottom:1px solid #f59e0b;padding:0.6rem 1.5rem;text-align:center;font-size:0.82rem;font-weight:600;color:#92400e;position:relative;z-index:100">
+    <div id="site-notices-banner" style="display:none;background:#fef3c7;border-bottom:1px solid #f59e0b;padding:0.6rem 1.5rem;text-align:center;font-size:0.82rem;font-weight:600;color:#92400e;position:sticky;top:0;z-index:9999">
       <span id="site-notices-text"></span>
       <button onclick="this.parentElement.style.display='none'" style="position:absolute;right:1rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#92400e;font-size:1rem;line-height:1">×</button>
     </div>
@@ -102,9 +102,9 @@
       <p class="landing-section-sub">Pagamento único, activação imediata após comprovativo.</p>
       <div class="landing-packages" id="landing-packages-grid">
         <!-- Populated by renderLandingPackages() from Supabase -->
-        <div class="lp-card"><div class="lp-badge" style="background:#e0f2fe;color:#0369a1">Básico</div><div class="lp-price">99 999 Kz</div><div class="lp-desc">Ideal para eventos até <strong>110 pessoas</strong></div><div class="lp-detail">60–66 convites digitais</div><button class="lp-btn" onclick="showPackagePayment('Básico','99 999 Kz')">Encomendar</button></div>
-        <div class="lp-card lp-featured"><div class="lp-badge" style="background:#fef3c7;color:#92400e">Popular</div><div class="lp-price">159 999 Kz</div><div class="lp-desc">Ideal para eventos até <strong>230 pessoas</strong></div><div class="lp-detail">126–136 convites digitais</div><button class="lp-btn" onclick="showPackagePayment('Popular','159 999 Kz')">Encomendar</button></div>
-        <div class="lp-card"><div class="lp-badge" style="background:#e0fdf4;color:#065f46">Premium</div><div class="lp-price">219 999 Kz</div><div class="lp-desc">Ideal para eventos até <strong>300 pessoas</strong></div><div class="lp-detail">166–176 convites digitais</div><button class="lp-btn" onclick="showPackagePayment('Premium','219 999 Kz')">Encomendar</button></div>
+        <div class="lp-card"><div class="lp-badge" style="background:#e0f2fe;color:#0369a1">Básico</div><div class="lp-price">99 999 Kz</div><div class="lp-detail">60–66 convites digitais</div><button class="lp-btn" onclick="showPackagePayment('Básico','99 999 Kz')">Encomendar</button></div>
+        <div class="lp-card lp-featured"><div class="lp-badge" style="background:#fef3c7;color:#92400e">Popular</div><div class="lp-price">159 999 Kz</div><div class="lp-detail">126–136 convites digitais</div><button class="lp-btn" onclick="showPackagePayment('Popular','159 999 Kz')">Encomendar</button></div>
+        <div class="lp-card"><div class="lp-badge" style="background:#e0fdf4;color:#065f46">Premium</div><div class="lp-price">219 999 Kz</div><div class="lp-detail">166–176 convites digitais</div><button class="lp-btn" onclick="showPackagePayment('Premium','219 999 Kz')">Encomendar</button></div>
       </div>
     </div>
 
@@ -246,7 +246,13 @@
      <!-- Header boas-vindas -->
      <div class="mb-5">
       <p id="admin-mode-badge" class="text-xs text-amber-600 font-semibold mb-1 hidden">A gerir como: <span id="admin-mode-user"></span></p>
+      <div style="display:flex;align-items:center;justify-content:space-between">
       <h1 class="text-xl font-bold text-gray-800" id="dashboard-greeting">Os Meus Eventos</h1>
+      <button onclick="openNotificationsPanel()" style="position:relative;background:none;border:1px solid #e5e7eb;border-radius:50%;width:36px;height:36px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#374151" stroke-width="2" stroke-linecap="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        <span id="notif-badge" style="position:absolute;top:-2px;right:-2px;background:#ef4444;color:#fff;border-radius:50%;width:16px;height:16px;font-size:0.6rem;font-weight:700;display:none;align-items:center;justify-content:center">0</span>
+      </button>
+     </div>
       <p class="text-sm text-gray-400" id="dashboard-sub">Gere os seus eventos abaixo</p>
      </div>
      <!-- Quick-action grid (estilo app bancário) -->
@@ -677,7 +683,9 @@ para testemunhar o seu enlace matrimonial</textarea>
     <div class="rsvp-cta-section reveal" id="rsvp-section">
      <div class="section-inner">
       <!-- guest-title removed -->
-      <p id="guest-deadline-text" class="rsvp-cta-sub" style="margin-bottom:1.25rem;font-size:0.85rem;opacity:0.85"></p>
+      <p style="font-size:0.68rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;opacity:0.6;margin-bottom:0.25rem">Prazo para confirmação</p>
+      <p id="guest-deadline-text" class="rsvp-cta-sub" style="margin-bottom:1rem;font-size:0.85rem;opacity:0.85"></p>
+      <p style="font-size:0.7rem;color:inherit;opacity:0.55;margin-bottom:0.5rem" id="rsvp-countdown-label">Tempo restante para confirmar</p>
       <!-- Prazo countdown -->
       <div class="rsvp-cta-deadline" id="rsvp-deadline-countdown" style="display:none">
        <div class="rsvp-cta-box"><div class="n" id="rdl-days">--</div><div class="l">Dias</div></div>
