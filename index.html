@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AdKira — Confirmação de Presença</title>
+  <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { theme: { extend: { colors: { teal: { 500: '#007f9f', 600: '#006b86' } } } } }</script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💌</text></svg>">
+  <link rel="stylesheet" href="css/main.css?v=550367">
+</head>
+<body class="h-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+
+<!-- ===== TOPBAR (hambúrguer) ===== -->
+  <div id="app-topbar">
+   <button class="hamburger-btn" id="hamburger-btn" onclick="toggleDrawer()" aria-label="Menu">
+    <span></span><span></span><span></span>
+   </button>
+   <div class="topbar-logo" style="opacity:0;pointer-events:none;width:1px"></div>
+   <div class="topbar-user" id="topbar-username">—</div>
+  </div>
+
+  <!-- ===== SIDE DRAWER ===== -->
+  <div id="drawer-overlay" onclick="closeDrawer()"></div>
+  <div id="side-drawer">
+   <div class="drawer-header">
+    <div class="drawer-avatar"></div>
+    <div class="drawer-username" id="drawer-username">Utilizador</div>
+    <div class="drawer-role" id="drawer-role">Conta Standard</div>
+   </div>
+   <nav class="drawer-nav" id="drawer-nav">
+    <!-- preenchido dinamicamente consoante role -->
+   </nav>
+   <div class="drawer-footer">
+    <button class="drawer-logout" onclick="handleLogout(); closeDrawer();">
+     <i data-lucide="log-out" style="width:18px;height:18px"></i> Sair da Conta
+    </button>
+   </div>
+  </div>
+
+  <div id="app-root" class="w-full overflow-auto" style="min-height:calc(100vh - 56px)">
+   <!-- ========== SCREEN: HOME ========== -->
+   <section id="screen-home" class="page-section hidden">
+  <div class="landing-page">
+
+    <!-- ── HERO ── -->
+    <!-- Site notices banner -->
+    <div id="site-notices-banner" style="display:none;background:#fef3c7;border-bottom:1px solid #f59e0b;padding:0.6rem 1.5rem;text-align:center;font-size:0.82rem;font-weight:600;color:#92400e;position:relative;z-index:100">
+      <span id="site-notices-text"></span>
+      <button onclick="this.parentElement.style.display='none'" style="position:absolute;right:1rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#92400e;font-size:1rem;line-height:1">×</button>
+    </div>
+
+    <div class="landing-hero">
+      <!-- Nav bar -->
+      <nav id="landing-nav" class="landing-nav" style="position:fixed;top:0;left:0;right:0;display:flex;align-items:center;justify-content:space-between;padding:1rem 2rem;z-index:10">
+        <div style="font-weight:900;font-size:1.1rem;color:#fff;letter-spacing:-0.01em">Invites Web</div>
+        <div style="display:flex;gap:0.25rem">
+          <a href="#" onclick="document.querySelector('.landing-hero').scrollIntoView({behavior:'smooth'});return false" style="color:rgba(255,255,255,0.8);text-decoration:none;font-weight:600;font-size:0.85rem;padding:0.4rem 0.85rem;border-radius:999px;transition:background 0.2s" onmouseover="this.style.background='rgba(255,255,255,0.12)'" onmouseout="this.style.background='transparent'">Início</a>
+          <a href="#" onclick="document.getElementById('landing-packages-section').scrollIntoView({behavior:'smooth'});return false" style="color:rgba(255,255,255,0.8);text-decoration:none;font-weight:600;font-size:0.85rem;padding:0.4rem 0.85rem;border-radius:999px;transition:background 0.2s" onmouseover="this.style.background='rgba(255,255,255,0.12)'" onmouseout="this.style.background='transparent'">Preços</a>
+          <a href="#" onclick="document.getElementById('landing-faq-section').scrollIntoView({behavior:'smooth'});return false" style="color:rgba(255,255,255,0.8);text-decoration:none;font-weight:600;font-size:0.85rem;padding:0.4rem 0.85rem;border-radius:999px;transition:background 0.2s" onmouseover="this.style.background='rgba(255,255,255,0.12)'" onmouseout="this.style.background='transparent'">FAQ</a>
+          <button onclick="Router.go('login')" style="background:rgba(255,255,255,0.15);border:1.5px solid rgba(255,255,255,0.4);color:#fff;font-weight:700;font-size:0.82rem;padding:0.4rem 1rem;border-radius:999px;cursor:pointer;transition:background 0.2s" onmouseover="this.style.background='rgba(255,255,255,0.25)'" onmouseout="this.style.background='rgba(255,255,255,0.15)'">Entrar</button>
+        </div>
+      </nav>
+      <div class="landing-hero-inner">
+        <div class="landing-badge">Invites-Web</div>
+        <h1 class="landing-h1">Fácil como partilhar<br><span style="color:#c9a84c">um link</span></h1>
+                <div class="landing-actions">
+          <button class="landing-btn-primary" onclick="Router.go('register')">Criar Conta Grátis</button>
+          <button class="landing-btn-outline" onclick="Router.go('login')">Entrar</button>
+        </div>
+        <div class="landing-search">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input id="home-search" type="text" placeholder="Já tens código do convite? Pesquisa aqui..." onkeydown="if(event.key==='Enter')searchEvent()">
+          <button onclick="searchEvent()">Abrir</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── FUNCIONALIDADES ── -->
+    <div class="landing-section" style="background:#fff">
+      <h2 class="landing-section-title">Tudo o que precisas num convite digital</h2>
+      <div class="landing-features">
+        <div class="lf-card"><div class="lf-icon"><svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#007f9f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div><h3>Galeria de Fotos</h3><p>Partilha os melhores momentos com todos os convidados.</p></div>
+        <div class="lf-card"><div class="lf-icon"><svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#007f9f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></div><h3>Música de Fundo</h3><p>Define a música do evento — YouTube ou MP3 directo.</p></div>
+        <div class="lf-card"><div class="lf-icon"><svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#007f9f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div><h3>Confirmação de Presença</h3><p>Os convidados confirmam com um clique. Sem papel, sem chamadas.</p></div>
+        <div class="lf-card"><div class="lf-icon"><svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#007f9f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg></div><h3>Todos os Dispositivos</h3><p>iPhone, Android, tablet, desktop — funciona em tudo.</p></div>
+        <div class="lf-card"><div class="lf-icon"><svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#007f9f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg></div><h3>Sugestão de Presente</h3><p>Inclui IBAN para transferência directa. Fácil para todos.</p></div>
+        <div class="lf-card"><div class="lf-icon"><svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#007f9f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r="0.5"/><circle cx="17.5" cy="10.5" r="0.5"/><circle cx="8.5" cy="7.5" r="0.5"/><circle cx="6.5" cy="12.5" r="0.5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/></svg></div><h3>Cor Personalizada</h3><p>Escolhe a cor do teu evento. O site adapta-se ao teu estilo.</p></div>
+      </div>
+    </div>
+
+
+
+    <!-- ── PACOTES ── -->
+    <div class="landing-section" id="landing-packages-section" style="background:#fff">
+      <h2 class="landing-section-title">Escolhe o teu Pacote</h2>
+        <p class="landing-section-sub" style="margin-top:-0.5rem;margin-bottom:1.5rem">
+          Entrega em <strong>48h</strong> · Urgência 24h (taxa adicional de 8.000 Kz)
+        </p>
+      <p class="landing-section-sub">Pagamento único, activação imediata após comprovativo.</p>
+      <div class="landing-packages" id="landing-packages-grid">
+        <!-- Populated by renderLandingPackages() from Supabase -->
+        <div class="lp-card"><div class="lp-badge" style="background:#e0f2fe;color:#0369a1">Básico</div><div class="lp-price">99 999 Kz</div><div class="lp-desc">Ideal para eventos até <strong>110 pessoas</strong></div><div class="lp-detail">60–66 convites digitais</div><button class="lp-btn" onclick="showPackagePayment('Básico','99 999 Kz')">Encomendar</button></div>
+        <div class="lp-card lp-featured"><div class="lp-badge" style="background:#fef3c7;color:#92400e">Popular</div><div class="lp-price">159 999 Kz</div><div class="lp-desc">Ideal para eventos até <strong>230 pessoas</strong></div><div class="lp-detail">126–136 convites digitais</div><button class="lp-btn" onclick="showPackagePayment('Popular','159 999 Kz')">Encomendar</button></div>
+        <div class="lp-card"><div class="lp-badge" style="background:#e0fdf4;color:#065f46">Premium</div><div class="lp-price">219 999 Kz</div><div class="lp-desc">Ideal para eventos até <strong>300 pessoas</strong></div><div class="lp-detail">166–176 convites digitais</div><button class="lp-btn" onclick="showPackagePayment('Premium','219 999 Kz')">Encomendar</button></div>
+      </div>
+    </div>
+
+    <!-- ── STATS ── -->
+    <div class="landing-section" style="background:linear-gradient(135deg,#0f172a,#1e3a4a);color:#fff;padding:3rem 1.25rem;text-align:center">
+      <h2 style="font-size:1.4rem;font-weight:800;margin-bottom:0.35rem">A confiança de milhares</h2>
+      <p style="color:#94a3b8;font-size:0.88rem;margin-bottom:2.5rem">Junte-se a quem já celebra connosco</p>
+      <div style="display:flex;gap:2rem;justify-content:center;flex-wrap:wrap">
+        <div>
+          <div id="stat-events" style="font-size:2.5rem;font-weight:900;color:#5eead4">150+</div>
+          <div style="font-size:0.82rem;color:#94a3b8;margin-top:0.25rem">Convites Criados</div>
+        </div>
+        <div>
+          <div id="stat-users" style="font-size:2.5rem;font-weight:900;color:#5eead4">100+</div>
+          <div style="font-size:0.82rem;color:#94a3b8;margin-top:0.25rem">Clientes Satisfeitos</div>
+        </div>
+        <div>
+          <div id="stat-confirmations" style="font-size:2.5rem;font-weight:900;color:#5eead4">850+</div>
+          <div style="font-size:0.82rem;color:#94a3b8;margin-top:0.25rem">Presenças Confirmadas</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── AVALIAÇÕES ── -->
+    <div class="landing-section" style="background:#f8fafc" id="landing-reviews-section">
+      <h2 class="landing-section-title">O que dizem os nossos clientes</h2>
+      <div id="reviews-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:1rem;max-width:800px;margin:0 auto 2rem">
+        <!-- Loaded from Supabase -->
+      </div>
+      <div style="text-align:center">
+        <button onclick="openLeaveReview()" style="background:#007f9f;color:#fff;border:none;border-radius:999px;padding:0.75rem 2rem;font-weight:700;font-size:0.9rem;cursor:pointer;font-family:inherit">
+          Deixar Avaliação
+        </button>
+      </div>
+    </div>
+
+    <!-- ── FAQ ── -->
+    <div class="landing-section" id="landing-faq-section" style="background:#f8fafc">
+      <h2 class="landing-section-title">Perguntas Frequentes</h2>
+      <div id="faq-container" class="faq-list">
+        <!-- preenchido pelo JS com FAQ do admin ou padrão -->
+      </div>
+      <div id="faq-edit-btn" class="hidden" style="text-align:center;margin-top:1rem">
+        <button class="landing-btn-outline text-sm" onclick="openFaqEditor()">Editar FAQ</button>
+      </div>
+    </div>
+
+    <!-- ── RODAPÉ COMERCIAL ── -->
+    <footer class="landing-footer">
+      <div class="landing-footer-inner">
+        <div>
+          <strong style="font-size:1.05rem;color:#fff">Invites Web-Convites</strong><br>
+          Uma marca <em>AdKira</em><br>
+          Viana, Luanda Sul, Projecto Morar<br>
+          Luanda · Angola<br>
+          <span style="font-size:0.78rem;opacity:0.6">Seg–Sex 08h–17h · Sáb e Feriados 08h–13h</span>
+        </div>
+        <div>
+          <strong>Contacto</strong><br>
+          <a href="https://wa.me/244959823409" target="_blank">WhatsApp 959 823 409</a><br>
+          <a href="mailto:invitesadkira@gmail.com">invitesadkira@gmail.com</a>
+        </div>
+
+        <div>
+          <strong>Legal</strong><br>
+          <a href="#" onclick="showPrivacyModal();return false">Política de Privacidade</a><br>
+          <a href="#" onclick="showTermsModal();return false">Termos de Uso</a>
+        </div>
+      </div>
+      <!-- Social icons row -->
+      <div style="display:flex;justify-content:center;gap:1.25rem;margin-bottom:1.5rem;flex-wrap:wrap">
+        <a href="https://www.instagram.com/invites_digitais/" target="_blank" rel="noopener" title="Instagram" style="display:flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,0.1);color:#fff;transition:background 0.2s" onmouseover="this.style.background='rgba(255,255,255,0.22)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+        </a>
+        <a href="https://www.facebook.com/profile.php?id=100088498032550" target="_blank" rel="noopener" title="Facebook" style="display:flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,0.1);color:#fff;transition:background 0.2s" onmouseover="this.style.background='rgba(255,255,255,0.22)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
+        </a>
+        <a href="https://www.tiktok.com/@invites.ao" target="_blank" rel="noopener" title="TikTok" style="display:flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,0.1);color:#fff;transition:background 0.2s" onmouseover="this.style.background='rgba(255,255,255,0.22)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.19 8.19 0 0 0 4.78 1.52V6.76a4.85 4.85 0 0 1-1.01-.07z"/></svg>
+        </a>
+        <a href="https://www.pinterest.com/invitesdigitais/" target="_blank" rel="noopener" title="Pinterest" style="display:flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,0.1);color:#fff;transition:background 0.2s" onmouseover="this.style.background='rgba(255,255,255,0.22)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12c0 5.084 3.163 9.426 7.627 11.174-.105-.949-.2-2.405.042-3.441.218-.937 1.407-5.965 1.407-5.965s-.359-.719-.359-1.782c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283 1.194.599 2.169 1.777 2.169 2.133 0 3.772-2.249 3.772-5.495 0-2.873-2.064-4.882-5.012-4.882-3.414 0-5.418 2.561-5.418 5.207 0 1.031.397 2.138.893 2.738a.36.36 0 0 1 .083.345l-.333 1.36c-.053.22-.174.267-.402.161-1.499-.698-2.436-2.889-2.436-4.649 0-3.785 2.75-7.262 7.929-7.262 4.163 0 7.398 2.967 7.398 6.931 0 4.136-2.607 7.464-6.227 7.464-1.216 0-2.359-.632-2.75-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146C9.57 23.812 10.763 24 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0z"/></svg>
+        </a>
+        <a href="https://www.youtube.com/@invitesDigitais" target="_blank" rel="noopener" title="YouTube" style="display:flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,0.1);color:#fff;transition:background 0.2s" onmouseover="this.style.background='rgba(255,255,255,0.22)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+        </a>
+      </div>
+      <div class="landing-footer-copy">© 2026 Invites Web-Convites. Todos os direitos reservados.</div>
+    </footer>
+
+  </div>
+</section><!-- ========== SCREEN: REGISTER ========== -->
+   <section id="screen-register" class="page-section hidden">
+    <div class="page-transition flex flex-col items-center justify-center min-h-full px-4 py-10">
+     <div class="w-full max-w-md">
+      <button class="flex items-center gap-1 text-teal-500 font-semibold mb-4 hover:text-teal-600 transition" onclick="Router.go('home')"> <i data-lucide="arrow-left" class="w-5 h-5"></i> Voltar </button>
+      <div class="bg-white rounded-2xl shadow-md p-6">
+       <h2 class="text-2xl font-bold text-gray-800 mb-1">Criar Conta</h2>
+       <p class="text-gray-400 text-sm mb-5">Preencha os campos abaixo</p>
+       <form onsubmit="handleRegister(event)">
+        <label class="block text-sm font-semibold text-gray-600 mb-1">Telefone ou ID</label> <input id="reg-phone" class="input-field mb-4" placeholder="Ex: 912345678" required> <label class="block text-sm font-semibold text-gray-600 mb-1">Senha</label> <input id="reg-pass" type="password" class="input-field mb-4" placeholder="Mínimo 4 caracteres" required> <label class="block text-sm font-semibold text-gray-600 mb-1">Confirmar Senha</label> <input id="reg-pass2" type="password" class="input-field mb-1" placeholder="Repita a senha" required>
+        <p id="reg-error" class="text-red-500 text-sm mb-4 hidden"></p><button type="submit" class="btn-main w-full text-base mt-2">Criar Conta</button>
+       </form>
+      </div>
+     </div>
+    </div>
+   </section><!-- ========== SCREEN: LOGIN ========== -->
+   <section id="screen-login" class="page-section hidden">
+    <div class="page-transition flex flex-col items-center justify-center min-h-full px-4 py-10">
+     <div class="w-full max-w-md">
+      <button class="flex items-center gap-1 text-teal-500 font-semibold mb-4 hover:text-teal-600 transition" onclick="Router.go('home')"> <i data-lucide="arrow-left" class="w-5 h-5"></i> Voltar </button>
+      <div class="bg-white rounded-2xl shadow-md p-6">
+       <h2 class="text-2xl font-bold text-gray-800 mb-1">Entrar</h2>
+       <p class="text-gray-400 text-sm mb-5">Acesse sua conta</p>
+       <form onsubmit="handleLogin(event)">
+        <label class="block text-sm font-semibold text-gray-600 mb-1">Telefone ou ID</label> <input id="login-phone" class="input-field mb-4" placeholder="Ex: 912345678" required> <label class="block text-sm font-semibold text-gray-600 mb-1">Senha</label>
+        <div class="relative mb-3">
+         <input id="login-pass" type="password" class="input-field pr-10" placeholder="Sua senha" required> <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-teal-500 transition" onclick="togglePassVisibility('login-pass', this)"> <i data-lucide="eye" class="w-5 h-5"></i> </button>
+        </div><label class="flex items-center gap-2 mb-4 cursor-pointer select-none"> <input type="checkbox" class="w-4 h-4 accent-teal-500"> <span class="text-sm text-gray-600">Manter-me conectado</span> </label>
+        <p id="login-error" class="text-red-500 text-sm mb-3 hidden"></p><button type="submit" class="btn-main w-full text-base">Entrar</button>
+       </form>
+      </div>
+     </div>
+    </div>
+   </section><!-- ========== SCREEN: DASHBOARD ========== -->
+   <section id="screen-dashboard" class="page-section hidden">
+    <div class="page-transition w-full px-4 sm:px-6 lg:px-10 py-6">
+     <!-- Header boas-vindas -->
+     <div class="mb-5">
+      <p id="admin-mode-badge" class="text-xs text-amber-600 font-semibold mb-1 hidden">A gerir como: <span id="admin-mode-user"></span></p>
+      <h1 class="text-xl font-bold text-gray-800" id="dashboard-greeting">Os Meus Eventos</h1>
+      <p class="text-sm text-gray-400" id="dashboard-sub">Gere os seus eventos abaixo</p>
+     </div>
+     <!-- Quick-action grid (estilo app bancário) -->
+     <div class="quick-grid" id="dashboard-quick-grid">
+      <!-- Botões inseridos pelo JS consoante role -->
+     </div>
+     <!-- Lista de eventos -->
+     <div id="dashboard-events"></div>
+    </div>
+   </section><!-- ========== SCREEN: CREATE EVENT ========== -->
+   <section id="screen-create-event" class="page-section hidden">
+    <div class="page-transition w-full px-4 sm:px-6 lg:px-10 py-8 max-w-2xl mx-auto">
+     <button class="flex items-center gap-1 text-teal-500 font-semibold mb-4 hover:text-teal-600 transition" onclick="Router.go('dashboard')"> <i data-lucide="arrow-left" class="w-5 h-5"></i> Voltar </button>
+     <div class="bg-white rounded-2xl shadow-md p-6">
+      <h2 class="text-2xl font-bold text-gray-800 mb-5">Criar Evento</h2>
+      <form onsubmit="handleCreateEvent(event)">
+       <!-- Cover --> <label class="block text-sm font-semibold text-gray-600 mb-1">Imagem de Capa</label>
+       <div id="cover-preview" class="w-full h-40 rounded-xl bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center cursor-pointer mb-4 overflow-hidden hover:border-teal-400 transition" onclick="document.getElementById('cover-input').click()">
+        <span id="cover-placeholder" class="text-gray-400 flex flex-col items-center"><i data-lucide="image" class="w-8 h-8 mb-1"></i><span class="text-sm">Carregar imagem</span></span> <img id="cover-img" class="hidden w-full h-full object-contain bg-white">
+       </div><input id="cover-input" type="file" accept="image/*" class="hidden" onchange="previewCover(this)"> <label class="block text-sm font-semibold text-gray-600 mb-1">Título do Evento</label> <input id="evt-title" class="input-field mb-3" placeholder="Ex: Casamento Ana &amp; Pedro" required>
+       <div class="grid grid-cols-2 gap-3 mb-3">
+        <div>
+         <label class="block text-sm font-semibold text-gray-600 mb-1">Data</label> <input id="evt-date" type="date" class="input-field" required onchange="validateDeadlineDate()">
+        </div>
+        <div>
+         <label class="block text-sm font-semibold text-gray-600 mb-1">Hora</label> <input id="evt-time" type="time" class="input-field" required>
+        </div>
+       </div><label class="block text-sm font-semibold text-gray-600 mb-1">Data limite para confirmação</label>
+       <div class="grid grid-cols-2 gap-3 mb-4">
+        <div>
+         <input id="evt-deadline" type="date" class="input-field" required onchange="validateDeadlineDate()">
+        </div>
+        <div>
+         <input id="evt-deadline-time" type="time" class="input-field" value="23:59" required>
+        </div>
+       </div><!-- Switches -->
+       <div class="space-y-3 mb-4">
+        <div class="flex items-center justify-between">
+         <span class="text-sm font-semibold text-gray-700">Permitir acompanhantes</span>
+         <div id="sw-companions" class="switch" onclick="toggleSwitch(this, 'companions-extra')"></div>
+        </div>
+        <div id="companions-extra" class="hidden pl-4">
+         <label class="text-xs text-gray-500">Máximo de acompanhantes</label> <input id="evt-max-comp" type="number" min="1" max="20" value="2" class="input-field w-24">
+        </div>
+        <div class="flex items-center justify-between">
+         <span class="text-sm font-semibold text-gray-700">Permitir presentes</span>
+         <div id="sw-gifts" class="switch active" onclick="toggleSwitch(this)"></div>
+        </div>
+        <p class="text-xs text-gray-500 pl-1">Se quiser um evento apenas para presentes, crie normalmente e partilhe o "Link Só Presentes" no painel do evento.</p>
+        <div class="flex items-center justify-between">
+         <span class="text-sm font-semibold text-gray-700">Permitir crianças</span>
+         <div id="sw-kids" class="switch" onclick="toggleSwitch(this, 'kids-extra')"></div>
+        </div>
+        <div id="kids-extra" class="hidden pl-4">
+         <label class="text-xs text-gray-500">Máximo de crianças</label> <input id="evt-max-kids" type="number" min="1" max="20" value="2" class="input-field w-24">
+        </div>
+        <div class="flex items-center justify-between">
+         <span class="text-sm font-semibold text-gray-700">Permitir escolher lado</span>
+         <div id="sw-sides" class="switch active" onclick="toggleSwitch(this, 'sides-extra')"></div>
+        </div>
+        <div id="sides-extra" class="pl-4">
+         <label class="text-xs text-gray-500 mb-2 block">Personalizar nomes dos lados</label>
+         <div class="flex gap-2 mb-2">
+          <input id="evt-side1-name" type="text" class="input-field flex-1" placeholder="Ex: Família" value="Grupo 1"> <input id="evt-side2-name" type="text" class="input-field flex-1" placeholder="Ex: Amigos" value="Grupo 2">
+         </div>
+        </div>
+        <div class="flex items-center justify-between">
+         <span class="text-sm font-semibold text-gray-700">Mostrar hora para convidados</span>
+         <div id="sw-show-time" class="switch active" onclick="toggleSwitch(this)"></div>
+        </div>
+        <div class="flex items-center justify-between">
+         <span class="text-sm font-semibold text-gray-700">Permitir felicitações dos convidados</span>
+         <div id="sw-messages" class="switch" onclick="toggleSwitch(this, 'messages-extra')"></div>
+        </div>
+        <div id="messages-extra" class="hidden pl-4">
+         <label class="text-xs text-gray-500 mb-2 block">Opções dos recados</label>
+         <div class="flex items-center gap-2 mb-2">
+          <input type="checkbox" id="evt-show-messages" class="accent-teal-500"> <label for="evt-show-messages" class="text-xs text-gray-600">Convidados podem Ver Felicitações de outros</label>
+         </div>
+        </div>
+        <div class="flex items-center justify-between">
+         <span class="text-sm font-semibold text-gray-700">Música do Evento</span>
+         <div id="sw-music" class="switch" onclick="toggleSwitch(this, 'music-extra')"></div>
+        </div>
+        <div id="music-extra" class="hidden pl-4 space-y-2">
+         <label class="text-xs text-gray-500 block">Link do YouTube ou URL directa de áudio (MP3, OGG...)</label>
+         <input id="evt-music-url" type="url" class="input-field" placeholder="https://youtu.be/... ou https://servidor.com/musica.mp3">
+         <div class="flex items-center gap-2 my-1">
+          <div class="flex-1 h-px bg-gray-200"></div><span class="text-xs text-gray-400">ou</span><div class="flex-1 h-px bg-gray-200"></div>
+         </div>
+         <div class="flex gap-2 mb-1"><div id="music-upload-area" class="flex-1 rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 flex flex-col items-center justify-center py-3 cursor-pointer hover:border-teal-400 hover:bg-teal-50 transition" onclick="document.getElementById('music-file-input').click()">
+          <i data-lucide="music" class="w-6 h-6 text-gray-400 mb-1"></i>
+          <span class="text-xs text-gray-500 font-semibold">Carregar ficheiro MP3 / OGG</span>
+          <span class="text-xs text-gray-400 mt-0.5">Máx. 10 MB</span>
+         </div><button type="button" class="flex-shrink-0 btn-outline text-xs px-2 py-1 self-start mt-0" onclick="openMusicFromStorage()">Reutilizar</button></div>
+         <input id="music-file-input" type="file" accept="audio/mpeg,audio/ogg,audio/wav,audio/mp4,.mp3,.ogg,.wav,.m4a" class="hidden" onchange="handleMusicFileUpload(this)">
+         <div id="music-upload-status" class="hidden text-xs text-teal-600 font-semibold flex items-center gap-1">
+          <i data-lucide="check-circle" class="w-3 h-3"></i> <span id="music-upload-filename">Ficheiro carregado</span>
+         </div>
+         <input id="evt-music-title" type="text" class="input-field" placeholder="Nome da música (opcional)">
+        </div>
+        <div class="flex items-center justify-between">
+         <span class="text-sm font-semibold text-gray-700">Sugestão de Presente (IBAN)</span>
+         <div id="sw-iban" class="switch" onclick="toggleSwitch(this, 'iban-extra')"></div>
+        </div>
+        <div id="iban-extra" class="hidden pl-4 space-y-2">
+         <label class="text-xs text-gray-500 block">Mensagem personalizada (aparece antes do IBAN)</label>
+         <textarea id="evt-iban-message" class="input-field text-sm" rows="4" placeholder="Ex: Queridos familiares e amigos, a vossa presença é o maior presente. Para quem desejar oferecer uma lembrança...">Queridos familiares e amigos,
+A vossa presença neste dia tão especial é, para nós, o maior presente. No entanto, para aqueles que desejem oferecer-nos uma lembrança, agradecemos que o façam através de transferência bancária para o seguinte IBAN:</textarea>
+         <input id="evt-iban-number" type="text" class="input-field font-mono" placeholder="IBAN: AO06 0006 0000 0000 0000 0000 0">
+         <input id="evt-iban-holder" type="text" class="input-field" placeholder="Titular da conta">
+         <input id="evt-iban-footer" type="text" class="input-field" placeholder="Assinatura final (ex: Com carinho, Os Noivos)">
+        </div>
+
+        <!-- ══ CONFIGURAÇÕES VISUAIS DA PÁGINA DO CONVIDADO ══ -->
+        <div class="pt-2 pb-1"><div class="h-px bg-gray-200"></div><p class="text-xs font-bold text-gray-400 uppercase tracking-wider mt-3 mb-2">Aspecto Visual da Página</p></div>
+
+        <!-- Tipo de Evento -->
+        <div>
+         <label class="block text-sm font-semibold text-gray-700 mb-1">Tipo de Evento</label>
+         <select id="evt-event-type" class="input-field">
+          <option value="wedding">Casamento</option>
+          <option value="engagement">Noivado</option>
+          <option value="birthday">Aniversário</option>
+          <option value="other">Outro</option>
+         </select>
+        </div>
+
+        <div class="flex items-center justify-between">
+         <span class="text-sm font-semibold text-gray-700">Nomes dos Noivos no Hero</span>
+         <div id="sw-couple" class="switch" onclick="toggleSwitch(this, 'couple-extra')"></div>
+        </div>
+        <div id="couple-extra" class="hidden pl-4 space-y-2">
+         <input id="evt-groom-name" type="text" class="input-field" placeholder="Nome do Noivo / Aniversariante">
+         <input id="evt-bride-name" type="text" class="input-field" placeholder="Nome da Noiva (opcional)">
+         <label class="text-xs text-gray-500">Tamanho do texto</label>
+         <div class="flex items-center gap-2">
+          <button type="button" class="w-8 h-8 rounded-lg border border-gray-300 flex items-center justify-center font-bold" onclick="changeCoupleSize(-2)"><i data-lucide="minus" class="w-3 h-3"></i></button>
+          <span id="couple-size-label" class="text-sm font-semibold w-12 text-center">2.4rem</span>
+          <button type="button" class="w-8 h-8 rounded-lg border border-gray-300 flex items-center justify-center font-bold" onclick="changeCoupleSize(2)"><i data-lucide="plus" class="w-3 h-3"></i></button>
+         </div>
+         <input id="evt-couple-size" type="hidden" value="2.4">
+         <label class="text-xs text-gray-500">Fonte de letra</label>
+         <div class="flex gap-2 items-center">
+          <select id="evt-font-select" class="input-field flex-1 text-sm"><option value="">Fonte padrão</option></select>
+          <button type="button" id="btn-font-upload" class="btn-outline text-xs px-2 py-1 flex-shrink-0 hidden" onclick="showFontUploadModal()" title="Carregar nova fonte (apenas admin)"><i data-lucide="upload" class="w-3 h-3"></i></button>
+         </div>
+         <!-- Inverter nomes — visible only when couple names are active -->
+         <div class="flex items-center justify-between pt-1" style="border-top:1px solid #f3f4f6;margin-top:0.25rem">
+          <div>
+           <span class="text-xs font-semibold text-gray-600">Inverter ordem</span>
+           <p class="text-xs text-gray-400">Noiva aparece primeiro</p>
+          </div>
+          <div id="sw-invert-names" class="switch" onclick="toggleSwitch(this)"></div>
+         </div>
+        </div>
+
+        <div class="flex items-center justify-between">
+         <span class="text-sm font-semibold text-gray-700">Imagem de Fundo (toda a página)</span>
+         <div id="sw-bg" class="switch" onclick="toggleSwitch(this, 'bg-extra')"></div>
+        </div>
+        <div id="bg-extra" class="hidden pl-4 space-y-2">
+         <div id="bg-upload-area" class="w-full rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 flex flex-col items-center justify-center py-3 cursor-pointer hover:border-teal-400 transition text-xs text-gray-500" onclick="document.getElementById('bg-file-input').click()">
+          <i data-lucide="image" class="w-5 h-5 mb-1 text-gray-400"></i> Carregar imagem de fundo
+         </div>
+         <input id="bg-file-input" type="file" accept="image/*" class="hidden" onchange="handleBgUpload(this)">
+         <input id="evt-bg-url" type="url" class="input-field" placeholder="Ou colar URL da imagem">
+         <label class="text-xs text-gray-500">Escurecimento do fundo (0–80%)</label>
+         <input id="evt-bg-overlay" type="range" min="0" max="80" value="35" class="w-full accent-teal-500" oninput="document.getElementById('bg-overlay-val').textContent=this.value+'%'">
+         <span id="bg-overlay-val" class="text-xs font-semibold text-teal-600">35%</span>
+        </div>
+
+        <!-- ══ SECÇÕES DA PÁGINA ══ -->
+        <div class="pt-2 pb-1"><div class="h-px bg-gray-200"></div><p class="text-xs font-bold text-gray-400 uppercase tracking-wider mt-3 mb-2">Secções da Página</p></div>
+
+        <div class="flex items-center justify-between">
+         <span class="text-sm font-semibold text-gray-700">Versículo Bíblico</span>
+         <div id="sw-bible" class="switch" onclick="toggleSwitch(this, 'bible-extra')"></div>
+        </div>
+        <div id="bible-extra" class="hidden pl-4 space-y-2">
+         <textarea id="evt-bible-text" class="input-field text-sm" rows="3" placeholder="Ex: O amor é paciente, o amor é bondoso..."></textarea>
+         <input id="evt-bible-ref" type="text" class="input-field" placeholder="Referência (ex: 1 Coríntios 13:4)">
+        </div>
+
+        <div class="flex items-center justify-between">
+         <span class="text-sm font-semibold text-gray-700">Texto de Convite</span>
+         <div id="sw-invite" class="switch" onclick="toggleSwitch(this, 'invite-extra')"></div>
+        </div>
+        <div id="invite-extra" class="hidden pl-4 space-y-2">
+         <textarea id="evt-invite-text" class="input-field text-sm" rows="5" placeholder="Ex: Têm a honra de convidar Exmo.(a) Sr.(a) para testemunhar...">Têm a honra de convidar
+Exmo.(a) Sr.(a)
+para testemunhar o seu enlace matrimonial</textarea>
+         <p class="text-xs text-gray-400">Cada linha ficará centrada. Use linha em branco para separar parágrafos.</p>
+        </div>
+
+        <div class="flex items-center justify-between">
+         <span class="text-sm font-semibold text-gray-700">Nomes dos Pais</span>
+         <div id="sw-parents" class="switch" onclick="toggleSwitch(this, 'parents-extra')"></div>
+        </div>
+        <div id="parents-extra" class="hidden pl-4 space-y-2">
+         <p class="text-xs text-gray-500">Coloque um nome por linha. Para indicar "em memória", escreva "(em memória)" no final.</p>
+         <label class="text-xs font-semibold text-gray-600">Pais do Noivo</label>
+         <textarea id="evt-groom-parents" class="input-field text-sm" rows="3" placeholder="Ex: João Silva&#10;Maria Silva (em memória)"></textarea>
+         <label class="text-xs font-semibold text-gray-600">Pais da Noiva</label>
+         <textarea id="evt-bride-parents" class="input-field text-sm" rows="3" placeholder="Ex: Pedro Santos&#10;Ana Santos"></textarea>
+        </div>
+
+        <div class="flex items-center justify-between">
+         <span class="text-sm font-semibold text-gray-700">Galeria de Fotos</span>
+         <div id="sw-gallery" class="switch" onclick="toggleSwitch(this, 'gallery-extra')"></div>
+        </div>
+        <div id="gallery-extra" class="hidden pl-4">
+         <p class="text-xs text-gray-500 mb-2">Adicione URLs de imagens (uma por linha) ou carregue ficheiros.</p>
+         <textarea id="evt-gallery-urls" class="input-field text-sm" rows="4" placeholder="https://exemplo.com/foto1.jpg&#10;https://exemplo.com/foto2.jpg"></textarea>
+         <button type="button" class="mt-2 text-xs text-teal-600 font-semibold" onclick="addGalleryImage()">+ Carregar imagem</button>
+         <input id="gallery-file-input" type="file" accept="image/*" multiple class="hidden" onchange="handleGalleryUpload(this)">
+        </div>
+
+        <!-- Dress Code -->
+        <div class="flex items-center justify-between">
+         <span class="text-sm font-semibold text-gray-700">Dress Code</span>
+         <div id="sw-dresscode" class="switch" onclick="toggleSwitch(this, 'dresscode-extra')"></div>
+        </div>
+        <div id="dresscode-extra" class="hidden pl-4 space-y-2">
+         <input id="evt-dresscode-text" class="input-field text-sm" placeholder="Ex: Traje social ou Roupa a rigor">
+         <input id="evt-dresscode-colors" class="input-field text-sm" placeholder="Paleta de cores sugerida (ex: Branco, Dourado, Verde)">
+        </div>
+
+        <div class="flex items-center justify-between">
+         <span class="text-sm font-semibold text-gray-700">Manual do Bom Convidado</span>
+         <div id="sw-manual" class="switch" onclick="toggleSwitch(this, 'manual-extra')"></div>
+        </div>
+        <div id="manual-extra" class="hidden pl-4">
+         <p class="text-xs text-gray-500">Os itens por omissão são partilhados por todos. Pode editar para este evento.</p>
+         <button type="button" class="mt-1 text-xs text-teal-600 font-semibold" onclick="openManualEditor()">Editar itens do manual</button>
+        </div>
+
+        <div class="flex items-center justify-between">
+         <span class="text-sm font-semibold text-gray-700">Monograma do Dia</span>
+         <div id="sw-schedule" class="switch" onclick="toggleSwitch(this, 'schedule-extra')"></div>
+        </div>
+        <div id="schedule-extra" class="hidden pl-4">
+         <p class="text-xs text-gray-500 mb-2">Os momentos por omissão são partilhados. Pode personalizar para este evento.</p>
+         <button type="button" class="mt-1 text-xs text-teal-600 font-semibold" onclick="openScheduleEditor()">Editar momentos</button>
+        </div>
+        <!-- LOCAIS DO EVENTO -->
+        <div class="flex items-center justify-between">
+         <span class="text-sm font-semibold text-gray-700">Locais do Evento</span>
+         <div id="sw-venues" class="switch" onclick="toggleSwitch(this, 'venues-extra')"></div>
+        </div>
+        <div id="venues-extra" class="hidden pl-4 space-y-3">
+         <div>
+          <label class="text-xs font-semibold text-gray-600 block mb-1">Título da secção</label>
+          <input id="evt-venues-title" class="input-field text-sm" placeholder="Ex: Locais do Evento, O Grande Dia, ...">
+         </div>
+         <p class="text-xs text-gray-500">Preenche apenas os locais que se aplicam ao teu evento.</p>
+         <div>
+          <label class="text-xs font-semibold text-gray-600 block mb-1">Cerimónia Religiosa</label>
+          <input id="evt-venue-ceremony" class="input-field text-sm mb-1" placeholder="Nome do local">
+          <input id="evt-venue-ceremony-date" class="input-field text-sm mb-1" type="date" placeholder="Data (se diferente)">
+          <input id="evt-venue-ceremony-maps" class="input-field text-sm" placeholder="Link Google Maps (opcional)">
+         </div>
+         <div>
+          <label class="text-xs font-semibold text-gray-600 block mb-1">Cerimónia Civil</label>
+          <input id="evt-venue-civil" class="input-field text-sm mb-1" placeholder="Nome do local">
+          <input id="evt-venue-civil-date" class="input-field text-sm mb-1" type="date" placeholder="Data (se diferente)">
+          <input id="evt-venue-civil-maps" class="input-field text-sm" placeholder="Link Google Maps (opcional)">
+         </div>
+         <div>
+          <label class="text-xs font-semibold text-gray-600 block mb-1">Copo d'Água / Recepção</label>
+          <input id="evt-venue-reception" class="input-field text-sm mb-1" placeholder="Nome do local">
+          <input id="evt-venue-reception-maps" class="input-field text-sm" placeholder="Link Google Maps (opcional)">
+         </div>
+        </div>
+
+        <!-- Decoração de Flores (PNG lateral) -->
+        <div class="flex items-center justify-between">
+         <span class="text-sm font-semibold text-gray-700">Decoração de Flores (PNG)</span>
+         <div id="sw-decor" class="switch" onclick="toggleSwitch(this, 'decor-extra')"></div>
+        </div>
+        <div id="decor-extra" class="hidden pl-4 space-y-2">
+         <p class="text-xs text-gray-500">Carrega uma imagem PNG de flores para as laterais de cada secção. Afecta apenas o teu evento.</p>
+         <div class="flex gap-2 items-center">
+          <div id="decor-side-upload-area" class="flex-1 rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 flex flex-col items-center justify-center py-3 cursor-pointer hover:border-teal-400 transition text-xs text-gray-500" onclick="document.getElementById('decor-side-file').click()">
+           <i data-lucide="image" class="w-5 h-5 mb-1 text-gray-400"></i> PNG flores laterais
+          </div>
+          <input type="file" id="decor-side-file" accept="image/png" class="hidden" onchange="handleDecorSideUpload(this)">
+         </div>
+         <input type="hidden" id="evt-decor-side-url">
+         <div class="flex gap-2 items-center">
+          <div id="decor-ornament-upload-area" class="flex-1 rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 flex flex-col items-center justify-center py-3 cursor-pointer hover:border-teal-400 transition text-xs text-gray-500" onclick="document.getElementById('decor-ornament-file').click()">
+           <i data-lucide="sparkles" class="w-5 h-5 mb-1 text-gray-400"></i> PNG ornamento (substitui ✦)
+          </div>
+          <input type="file" id="decor-ornament-file" accept="image/png" class="hidden" onchange="handleDecorOrnamentUpload(this)">
+         </div>
+         <input type="hidden" id="evt-decor-ornament-url">
+         <div id="decor-preview" class="hidden flex gap-2 mt-1">
+          <img id="decor-side-preview" class="h-12 object-contain rounded" style="display:none">
+          <img id="decor-ornament-preview" class="h-12 object-contain rounded" style="display:none">
+         </div>
+        </div>
+
+        <!-- Reordenar Secções -->
+        <div class="mt-2 pt-2 border-t border-gray-100">
+         <button type="button" class="flex items-center gap-2 text-sm font-semibold text-teal-600 hover:text-teal-700 transition" onclick="openSectionOrderEditor()">
+          <i data-lucide="move-vertical" class="w-4 h-4"></i> Organizar ordem das secções
+         </button>
+        </div>
+
+        <div class="flex items-center justify-between">
+         <span class="text-sm font-semibold text-gray-700">Capítulo do Nosso Amor</span>
+         <div id="sw-story" class="switch" onclick="toggleSwitch(this, 'story-extra')"></div>
+        </div>
+        <div id="story-extra" class="hidden pl-4 space-y-2">
+         <input id="evt-invite-blessing" type="text" class="input-field text-sm" placeholder="Texto de bênção (ex: Com a bênção de Deus e de seus pais)" value="Com a bênção de Deus e de seus pais">
+         <label class="text-xs text-gray-500">Nossa História (aparece como texto da secção)</label>
+         <textarea id="evt-story-text" class="input-field text-sm" rows="5" placeholder="Conta a vossa história aqui..."></textarea>
+        </div>
+        <div class="flex items-center justify-between">
+         <span class="text-sm font-semibold text-gray-700">Contagem Regressiva</span>
+         <div id="sw-countdown" class="switch active"></div>
+        </div>
+        <!-- Cor do evento -->
+        <div class="flex items-center justify-between">
+         <span class="text-sm font-semibold text-gray-700">Cor do Evento</span>
+         <div class="flex items-center gap-2">
+          <input id="evt-event-color" type="color" value="#007f9f" class="w-10 h-8 rounded-lg border border-gray-300 cursor-pointer p-0.5" oninput="const h=document.getElementById('evt-event-color-hex');if(h)h.value=this.value">
+          <input type="text" id="evt-event-color-hex" class="input-field w-24 text-xs font-mono" value="#007f9f" placeholder="#007f9f" oninput="document.getElementById('evt-event-color').value=this.value" >
+         </div>
+        </div>
+       </div><button type="submit" class="btn-main w-full text-base">Criar Evento</button>
+      </form>
+     </div>
+    </div>
+   </section><!-- ========== SCREEN: EVENT DETAILS ========== -->
+   <section id="screen-event-details" class="page-section hidden">
+    <div class="page-transition w-full px-4 sm:px-6 lg:px-10 py-8">
+     <button class="flex items-center gap-1 text-teal-500 font-semibold mb-4 hover:text-teal-600 transition" onclick="Router.go('dashboard')"> <i data-lucide="arrow-left" class="w-5 h-5"></i> Voltar </button>
+     <div class="bg-white rounded-2xl shadow-md overflow-hidden">
+      <div id="detail-cover" class="w-full h-48 bg-gradient-to-r from-teal-500 to-blue-400 flex items-center justify-center">
+       <i data-lucide="calendar-heart" class="w-16 h-16 text-white/60"></i>
+      </div>
+      <div class="p-6">
+       <h2 id="detail-title" class="text-2xl font-bold text-gray-800 mb-1"></h2>
+       <p id="detail-date" class="text-gray-500 mb-4"></p><label class="text-xs font-semibold text-gray-500">Link do Evento</label>
+       <div class="flex gap-2 mb-4">
+        <input id="detail-link" class="input-field text-sm" readonly> <button class="btn-main px-3 text-sm flex-shrink-0" onclick="copyEventLink()"> <i data-lucide="copy" class="w-4 h-4"></i> </button>
+       </div>
+       <div id="detail-gifts-link-wrap" class="hidden mb-4">
+        <label class="text-xs font-semibold text-gray-500">Link Só Presentes</label>
+        <div class="flex gap-2 mt-1">
+         <input id="detail-gifts-link" class="input-field text-sm" readonly> <button class="btn-main px-3 text-sm flex-shrink-0" onclick="copyEventLink('detail-gifts-link')"> <i data-lucide="copy" class="w-4 h-4"></i> </button>
+        </div>
+        <p class="text-xs text-gray-500 mt-2">Use este link quando quiser receber apenas escolhas de presentes, sem confirmação de presença.</p>
+       </div>
+       <div id="detail-rsvp-toggle" class="flex items-center gap-2 mb-4 hidden">
+        <label class="text-xs font-semibold text-gray-600">Permitir confirmação de presença</label>
+        <div id="sw-allow-rsvp" class="switch active" onclick="toggleRSVPAllowed()"></div>
+       </div>
+       <div class="flex flex-wrap gap-2 mb-6">
+        <button class="btn-outline text-sm" id="btn-intake-link" onclick="showIntakeLink(Store.currentEventId)" style="display:none"><span class="flex items-center gap-1"><i data-lucide="link" class="w-4 h-4"></i> Link Cliente</span></button>
+        <button class="btn-outline text-sm" onclick="viewAsGuest()"> <span class="flex items-center gap-1"><i data-lucide="eye" class="w-4 h-4"></i> Ver como Convidado</span> </button> <button class="btn-outline text-sm" onclick="downloadGuestListCSV()"> <span class="flex items-center gap-1"><i data-lucide="users" class="w-4 h-4"></i> Exportar Lista</span> </button> <button id="btn-manage-intake" class="btn-outline text-sm hidden" onclick="openIntakeManager(Store.currentEventId)"> <span class="flex items-center gap-1"><i data-lucide="link" class="w-4 h-4"></i> Links Cliente</span> </button> <button class="btn-outline text-sm" onclick="downloadPDF()"> <span class="flex items-center gap-1"><i data-lucide="download" class="w-4 h-4"></i> Baixar PDF</span> </button> <button id="btn-download-gifts-pdf" class="btn-outline text-sm hidden" onclick="downloadGiftsPDF()"> <span class="flex items-center gap-1"><i data-lucide="download" class="w-4 h-4"></i> Baixar Presentes PDF</span> </button> <button id="btn-manage-gifts" class="btn-outline text-sm hidden" onclick="manageGifts()"> <span class="flex items-center gap-1"><i data-lucide="gift" class="w-4 h-4"></i> Editar Presentes</span> </button> <button id="btn-upload-gifts" class="btn-outline text-sm hidden" onclick="showUploadGiftsListModal()"> <span class="flex items-center gap-1"><i data-lucide="upload" class="w-4 h-4"></i> Carregar Presentes</span> </button> <button class="btn-outline text-sm" onclick="editEventURL(Store.currentEventId)"> <span class="flex items-center gap-1"><i data-lucide="link" class="w-4 h-4"></i> Trocar Código</span> </button> <button class="btn-outline text-sm" onclick="editEvent()"> <span class="flex items-center gap-1"><i data-lucide="pencil" class="w-4 h-4"></i> Editar</span> </button> <button id="btn-delete-event" class="bg-red-500 hover:bg-red-600 text-white text-sm rounded-lg py-2 px-3 font-semibold transition hidden" onclick="deleteEventModal()"> <span class="flex items-center gap-1"><i data-lucide="trash-2" class="w-4 h-4"></i> Eliminar</span> </button>
+       </div><!-- Stats -->
+       <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6" id="detail-stats"></div><!-- Confirmations List -->
+       <h3 class="font-bold text-gray-700 mb-3">Confirmações</h3>
+       <div id="detail-confirmations"></div>
+      </div>
+     </div>
+    </div>
+   </section><!-- ========== SCREEN: GUEST VIEW (RSVP) ========== -->
+   <section id="screen-guest" class="page-section hidden">
+    <!-- ── HERO (capa + nomes dos noivos) ── -->
+    <div class="guest-hero" id="guest-hero">
+     <div class="guest-hero-bg" id="guest-hero-bg"></div>
+     <div class="guest-hero-overlay" id="guest-hero-overlay"></div>
+     <div id="save-the-date-overlay" style="display:none;position:absolute;inset:0;flex-direction:column;align-items:center;justify-content:center;z-index:2"></div>
+     <div class="guest-hero-content">
+      <div id="hero-couple-names" class="couple-names" style="font-size:2.4rem"></div>
+     </div>
+     <div class="scroll-hint" id="scroll-hint">
+      <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      <span>Rolar para baixo</span>
+     </div>
+     <!-- Share button — top-right of hero -->
+     <button onclick="shareGuestEvent()" style="position:absolute;top:1rem;right:1rem;background:rgba(255,255,255,0.15);border:1.5px solid rgba(255,255,255,0.4);color:#fff;border-radius:999px;padding:0.4rem 0.9rem;font-size:0.78rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:0.4rem;backdrop-filter:blur(4px)">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+      Partilhar
+     </button>
+    </div>
+
+    <!-- ── MUSIC PLAYER SECTION ── -->
+    <div class="music-player-section">
+    <div id="guest-music-player" class="hidden music-player">
+     <audio id="guest-audio" preload="none" loop></audio>
+     <div class="music-icon" onclick="toggleMusicPlayer()" style="flex-shrink:0">
+      <i data-lucide="play" class="w-4 h-4 text-white" id="music-play-icon"></i>
+     </div>
+     <div class="music-info" style="flex:1;overflow:hidden">
+      <div class="music-title" id="music-player-title">Música do Evento</div>
+      <div class="music-sub" id="music-sub-text">Toca para ouvir</div>
+     </div>
+     <div class="music-equalizer paused" id="music-equalizer">
+      <span></span><span></span><span></span><span></span>
+     </div>
+    </div>
+    </div><!-- end music-player-section -->
+
+    <!-- ── FLOATING MUSIC BUTTON ── -->
+    <button id="floating-music-btn" onclick="toggleMusicPlayer()" title="Música">
+     <div class="fmb-ring"></div>
+    </button>
+
+    <!-- ── DYNAMIC SECTIONS (preenchidas por JS) ── -->
+    <div id="guest-sections-container" style="background:#fafafa;min-height:20vh"></div>
+
+    <!-- ── RSVP CTA SECTION ── -->
+    <div class="rsvp-cta-section reveal" id="rsvp-section">
+     <div class="section-inner">
+      <h2 id="guest-title" class="rsvp-cta-title"></h2>
+      <p id="guest-deadline-text" class="rsvp-cta-sub" style="margin-bottom:1.25rem;font-size:0.85rem;opacity:0.85"></p>
+      <!-- Prazo countdown -->
+      <div class="rsvp-cta-deadline" id="rsvp-deadline-countdown" style="display:none">
+       <div class="rsvp-cta-box"><div class="n" id="rdl-days">--</div><div class="l">Dias</div></div>
+       <div class="rsvp-cta-box"><div class="n" id="rdl-hours">--</div><div class="l">Horas</div></div>
+       <div class="rsvp-cta-box"><div class="n" id="rdl-mins">--</div><div class="l">Min</div></div>
+       <div class="rsvp-cta-box"><div class="n" id="rdl-secs">--</div><div class="l">Seg</div></div>
+      </div>
+      <button class="rsvp-cta-btn" onclick="openRsvpDrawer()">
+       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+       Confirmar Presença
+      </button>
+     </div>
+    </div>
+
+    <!-- ── RSVP SLIDE-UP DRAWER ── -->
+    <div id="rsvp-drawer">
+     <div id="rsvp-drawer-backdrop" onclick="closeRsvpDrawer()"></div>
+     <div id="rsvp-drawer-panel">
+      <!-- Content injected by rsvp.js → _rsvpRender() -->
+     </div>
+    </div><!-- end rsvp-drawer -->
+    <!-- ── COPYRIGHT — LAST ELEMENT ── -->
+    <div class="guest-copyright-footer">
+      © 2026 Invites Web-Convites. Todos os direitos reservados.
+    </div>
+   </section>
+   <section id="screen-gifts" class="page-section hidden">
+    <div class="page-transition w-full px-4 sm:px-6 lg:px-10 py-8">
+     <button class="flex items-center gap-1 text-teal-500 font-semibold mb-4 hover:text-teal-600 transition" onclick="backFromGifts()"> <i data-lucide="arrow-left" class="w-5 h-5"></i> Voltar </button>
+     <h2 class="text-2xl font-bold text-gray-800 mb-6">Lista de Presentes</h2>
+     <div id="gifts-container" class="grid grid-cols-1 md:grid-cols-2 gap-8"></div>
+    </div>
+   </section><!-- ========== SCREEN: GIFT CONFIRMED ========== -->
+   <section id="screen-gift-confirmed" class="page-section hidden">
+    <div class="page-transition flex flex-col items-center justify-center min-h-full px-4 py-10">
+     <div class="bg-white rounded-2xl shadow-md p-8 text-center max-w-sm w-full">
+      <div class="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
+       <i data-lucide="check-circle" class="w-10 h-10 text-green-500"></i>
+      </div>
+      <h2 class="text-2xl font-bold text-gray-800 mb-2">Presente Confirmado!</h2>
+      <p class="text-gray-500 mb-6">Sua escolha foi registrada com sucesso.</p><button class="btn-main w-full" onclick="editGuestResponse()">Editar Resposta</button>
+     </div>
+    </div>
+   </section><!-- ========== SCREEN: NOT FOUND ========== -->
+   <section id="screen-not-found" class="page-section hidden">
+    <div class="page-transition flex flex-col items-center justify-center min-h-full px-4 py-10">
+     <div class="bg-white rounded-2xl shadow-md p-8 text-center max-w-sm w-full">
+      <div class="w-20 h-20 rounded-full bg-amber-100 flex items-center justify-center mx-auto mb-4">
+       <i data-lucide="alert-triangle" class="w-10 h-10 text-amber-500"></i>
+      </div>
+      <h2 class="text-2xl font-bold text-gray-800 mb-2">Evento Não Encontrado</h2>
+      <p class="text-gray-500 mb-6">O evento que procura não existe ou foi removido.</p><button class="btn-main w-full" onclick="Router.go('home')">Voltar ao Início</button>
+     </div>
+    </div>
+   </section><!-- ========== SCREEN: ADMIN ========== -->
+   <section id="screen-admin" class="page-section hidden">
+    <div class="page-transition w-full px-4 sm:px-6 lg:px-10 py-6">
+     <div class="mb-5">
+      <h1 class="text-xl font-bold text-gray-800">Painel Administrativo</h1>
+      <p class="text-sm text-gray-400">Gestão completa do sistema</p>
+     </div>
+     <!-- Quick-grid admin -->
+     <div class="quick-grid" id="admin-quick-grid">
+      <!-- JS preenche -->
+     </div>
+     <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6" id="admin-stats"></div>
+     <h3 class="font-bold text-gray-700 mb-3">Contas Registradas</h3>
+     <div class="bg-white rounded-xl shadow-sm p-4 mb-6">
+      <div class="flex gap-2"><input id="admin-search-input" type="text" class="input-field text-sm flex-1" placeholder="Pesquisar por telefone/username..." onkeyup="filterAdminAccounts()"> <button class="btn-main px-4 text-sm" onclick="clearAdminSearch()">Limpar</button>
+      </div>
+     </div>
+     <div id="admin-accounts" class="space-y-3"></div>
+    </div>
+   </section>
+
+   <!-- ========== SCREEN: CONTAS POR APROVAR ========== -->
+   <section id="screen-pending-accounts" class="page-section hidden">
+    <div class="page-transition w-full px-4 sm:px-6 lg:px-10 py-6">
+     <button class="flex items-center gap-1 text-teal-500 font-semibold mb-5 hover:text-teal-600 transition" onclick="Router.go('admin')">
+      <i data-lucide="arrow-left" class="w-5 h-5"></i> Voltar ao Admin
+     </button>
+     <div class="flex items-center gap-3 mb-6">
+      <div class="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center">
+       <i data-lucide="user-check" class="w-5 h-5 text-amber-600"></i>
+      </div>
+      <div>
+       <h1 class="text-xl font-bold text-gray-800">Contas por Aprovar</h1>
+       <p class="text-sm text-gray-400">Reveja e aprove as contas pendentes</p>
+      </div>
+     </div>
+     <div id="pending-accounts-list" class="space-y-3"></div>
+    </div>
+   </section>
+
+   <!-- ========== SCREEN: DEFINICOES ========== -->
+   <section id="screen-settings" class="page-section hidden">
+    <div class="page-transition w-full px-4 sm:px-6 lg:px-10 py-6">
+     <button class="flex items-center gap-1 text-teal-500 font-semibold mb-5 hover:text-teal-600 transition" onclick="Router.go('admin')">
+      <i data-lucide="arrow-left" class="w-5 h-5"></i> Voltar ao Admin
+     </button>
+     <div class="flex items-center gap-3 mb-6">
+      <div class="w-10 h-10 rounded-xl bg-teal-100 flex items-center justify-center">
+       <i data-lucide="settings" class="w-5 h-5 text-teal-600"></i>
+      </div>
+      <div>
+       <h1 class="text-xl font-bold text-gray-800">Definicoes</h1>
+       <p class="text-sm text-gray-400">Ferramentas e configuracoes do sistema</p>
+      </div>
+     </div>
+     <!-- Settings grid -->
+     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div class="bg-white rounded-2xl shadow-sm p-5 border border-gray-100">
+       <h3 class="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+        <i data-lucide="download" class="w-4 h-4 text-teal-500"></i> Exportar Dados
+       </h3>
+       <div class="space-y-2">
+        <button class="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-gray-50 hover:bg-teal-50 hover:text-teal-700 transition font-semibold text-sm text-gray-700 border border-gray-200" onclick="exportJSON()">
+         <i data-lucide="file-json" class="w-4 h-4 flex-shrink-0"></i> Exportar JSON
+        </button>
+        <button class="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-gray-50 hover:bg-teal-50 hover:text-teal-700 transition font-semibold text-sm text-gray-700 border border-gray-200" onclick="exportCSV()">
+         <i data-lucide="file-spreadsheet" class="w-4 h-4 flex-shrink-0"></i> Exportar CSV
+        </button>
+        <button class="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-gray-50 hover:bg-teal-50 hover:text-teal-700 transition font-semibold text-sm text-gray-700 border border-gray-200" onclick="exportnossa plataformaSchema()">
+         <i data-lucide="database" class="w-4 h-4 flex-shrink-0"></i> Exportar Schema BD
+        </button>
+       </div>
+      </div>
+      <div class="bg-white rounded-2xl shadow-sm p-5 border border-gray-100">
+       <h3 class="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+        <i data-lucide="upload" class="w-4 h-4 text-teal-500"></i> Importar Dados
+       </h3>
+       <div class="space-y-2">
+        <button class="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-gray-50 hover:bg-teal-50 hover:text-teal-700 transition font-semibold text-sm text-gray-700 border border-gray-200" onclick="triggerImport()">
+         <i data-lucide="upload" class="w-4 h-4 flex-shrink-0"></i> Importar Dados
+        </button>
+        <input id="import-file" type="file" accept=".json,.csv" class="hidden" onchange="handleImport(event)">
+        <button class="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-gray-50 hover:bg-teal-50 hover:text-teal-700 transition font-semibold text-sm text-gray-700 border border-gray-200" onclick="showPasteModal()">
+         <i data-lucide="clipboard" class="w-4 h-4 flex-shrink-0"></i> Colar Dados
+        </button>
+        <button class="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-gray-50 hover:bg-teal-50 hover:text-teal-700 transition font-semibold text-sm text-gray-700 border border-gray-200" onclick="showUploadGuestListModal()">
+         <i data-lucide="users" class="w-4 h-4 flex-shrink-0"></i> Upload Lista de Convidados
+        </button>
+       </div>
+      </div>
+      <div class="bg-white rounded-2xl shadow-sm p-5 border border-gray-100">
+       <h3 class="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+        <i data-lucide="wrench" class="w-4 h-4 text-teal-500"></i> Manutencao
+       </h3>
+       <div class="space-y-2">
+        <button class="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-gray-50 hover:bg-amber-50 hover:text-amber-700 transition font-semibold text-sm text-gray-700 border border-gray-200" onclick="showLegacyURLManager()">
+         <i data-lucide="link" class="w-4 h-4 flex-shrink-0"></i> URLs Antigos
+        </button>
+        <button class="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-gray-50 hover:bg-amber-50 hover:text-amber-700 transition font-semibold text-sm text-gray-700 border border-gray-200" onclick="cleanupEventCodes()">
+         <i data-lucide="trash-2" class="w-4 h-4 flex-shrink-0"></i> Limpar Codigos
+        </button>
+       </div>
+      </div>
+      <div class="bg-white rounded-2xl shadow-sm p-5 border border-amber-100">
+       <h3 class="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+        <i data-lucide="star" class="w-4 h-4 text-amber-500"></i> Evento Exemplo (Site Comercial)
+       </h3>
+       <p class="text-xs text-gray-400 mb-3">Define qual evento é mostrado como exemplo no site comercial. O evento deve existir e estar activo.</p>
+       <div class="flex gap-2">
+        <input id="demo-event-id-input" class="input-field text-sm flex-1" placeholder="ID ou código do evento">
+        <button class="btn-main text-xs px-4" onclick="setDemoEventFromInput()">Activar</button>
+       </div>
+       <div id="current-demo-event" class="mt-2 text-xs text-gray-400"></div>
+      </div>
+      <div class="bg-white rounded-2xl shadow-sm p-5 border border-teal-100 sm:col-span-2">
+       <h3 class="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+        <i data-lucide="type" class="w-4 h-4 text-teal-500"></i> Fontes de Letra
+       </h3>
+       <p class="text-xs text-gray-400 mb-3">Carregue fontes TTF, OTF ou WOFF2. Ficam disponíveis para todos os utilizadores escolherem nos seus eventos.</p>
+       <button class="btn-main text-xs px-4 py-2 mb-3" onclick="showFontUploadModal()">
+        <i data-lucide="upload" class="w-3 h-3"></i> Carregar Nova Fonte
+       </button>
+       <div id="fonts-list" class="mt-2 space-y-1 text-xs text-gray-500"></div>
+       <button class="text-xs text-teal-600 font-semibold mt-2 block" onclick="loadAvailableFonts()">↺ Actualizar lista</button>
+      </div>
+      <div class="bg-white rounded-2xl shadow-sm p-5 border border-gray-100">
+       <h3 class="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+        <i data-lucide="shield-alert" class="w-4 h-4 text-red-500"></i> Zona de Perigo
+       </h3>
+       <div class="space-y-2">
+        <button class="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-red-50 hover:bg-red-100 text-red-700 transition font-semibold text-sm border border-red-200" onclick="repairCorruptedData()">
+         <i data-lucide="alert-triangle" class="w-4 h-4 flex-shrink-0"></i> Reparar Dados Corrompidos
+        </button>
+       </div>
+      </div>
+     </div>
+    </div>
+   </section>
+  </div><!-- Toast container -->
+  <div id="toast-container"></div>
+
+  <!-- ── WhatsApp floating button ── -->
+  <a id="wa-float-btn" href="https://wa.me/244959823409" target="_blank" rel="noopener" class="wa-float" title="Falar connosco no WhatsApp" style="display:none">
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 2C6.477 2 2 6.477 2 12c0 1.775.464 3.479 1.346 4.99L2 22l5.15-1.32A9.944 9.944 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm0 18a8.15 8.15 0 01-4.158-1.143l-.298-.177-3.06.785.817-2.966-.194-.305A8.145 8.145 0 013.82 12c0-4.51 3.675-8.18 8.18-8.18S20.18 7.49 20.18 12c0 4.51-3.675 8-8.18 8z"/></svg>
+  </a>
+
+  <!-- ===================== SCRIPTS (ordem importa) ===================== -->
+  <script src="js/config.js?v=550367"></script>
+  <script src="js/store.js?v=550367"></script>
+  <script src="js/visuals.js?v=550367"></script>
+  <script src="js/venues.js?v=550367"></script>
+  <script src="js/rsvp.js?v=550367"></script>
+  <script src="js/ui.js?v=550367"></script>
+  <script src="js/auth.js?v=550367"></script>
+  <script src="js/dashboard.js?v=550367"></script>
+  <script src="js/events.js?v=550367"></script>
+  <script src="js/guest.js?v=550367"></script>
+  <script src="js/sections.js?v=550367"></script>
+  <script src="js/admin.js?v=550367"></script>
+  <script src="js/router.js?v=550367"></script>
+
+</body>
+</html>

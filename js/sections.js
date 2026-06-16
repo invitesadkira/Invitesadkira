@@ -1,0 +1,883 @@
+function hexToRgba(hex, alpha) {
+  try {
+    const h = (hex||'#007f9f').replace('#','');
+    const r=parseInt(h.substring(0,2),16),g=parseInt(h.substring(2,4),16),b=parseInt(h.substring(4,6),16);
+    if(isNaN(r)||isNaN(g)||isNaN(b)) return `rgba(0,127,159,${alpha})`;
+    return `rgba(${r},${g},${b},${alpha})`;
+  } catch(e) { return `rgba(0,127,159,${alpha})`; }
+}
+
+
+// ===================== SAVE THE DATE MODE =====================
+function buildSaveTheDateHero(ev) {
+  const evColor = ev.event_color || '#007f9f';
+  const d = ev.date ? new Date(ev.date + 'T12:00:00') : null;
+  const months = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  const days   = ['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'];
+  const dateStr = d ? `${days[d.getDay()]}, ${d.getDate()} de ${months[d.getMonth()]} de ${d.getFullYear()}` : '';
+  const names = [ev.groom_name, ev.bride_name].filter(Boolean).join(' & ');
+
+  const container = document.getElementById('save-the-date-overlay');
+  if (!container) return;
+  container.style.display = 'flex';
+  container.innerHTML = `
+    <div style="text-align:center;color:#fff;padding:2rem 1.5rem;width:100%">
+      <div style="font-size:0.85rem;font-weight:700;letter-spacing:0.25em;text-transform:uppercase;opacity:0.8;margin-bottom:1rem">Save the Date</div>
+      ${names ? `<div style="font-size:2.5rem;font-weight:900;text-shadow:0 2px 16px rgba(0,0,0,0.5);margin-bottom:0.75rem;font-family:'${ev.custom_font_family||'Quicksand'}',sans-serif">${names}</div>` : ''}
+      ${dateStr ? `<div style="font-size:1rem;font-weight:600;opacity:0.9;margin-bottom:2rem">${dateStr}</div>` : ''}
+    </div>`;
+}
+
+// ===================== GUEST SECTIONS RENDER =====================
+
+const DEFAULT_MANUAL_ITEMS = [
+  { icon: 'users', text: 'Contamos com\na sua presença!' },
+  { icon: 'clock', text: 'Seja\npontual!' },
+  { icon: 'user-x', text: 'Convidado\nnão convida!' },
+  { icon: 'heart', text: 'Comemore a\nnossa união!' },
+  { icon: 'shirt', text: 'Branco é a cor\nexclusiva da noiva!' },
+  { icon: 'camera', text: 'Faça fotos e Stories\nsem atrapalhar o fotógrafo!' },
+  { icon: 'smile', text: 'Sorria e seja\nmuito feliz!' },
+  { icon: 'baby', text: 'Não levar\ncriança' }
+];
+
+const DEFAULT_SCHEDULE_ITEMS = [
+  { icon: 'door-open',   time: '14h30', label: 'Chegada dos Convidados',   sub: 'Recepção e boas-vindas' },
+  { icon: 'gem',        time: '15h00', label: 'Cerimónia',                sub: 'Troca de votos' },
+  { icon: 'camera',      time: '15h45', label: 'Sessão de Fotos',          sub: 'Com os noivos' },
+  { icon: 'utensils',    time: '17h00', label: 'Cocktail',                 sub: 'Petiscos e bebidas' },
+  { icon: 'music',       time: '20h00', label: 'Jantar',                   sub: 'Mesa posta' },
+  { icon: 'party-popper',time: '22h00', label: 'Festa',                    sub: 'Dança e celebração' }
+];
+
+// Store for per-event overrides (kept in memory, persisted via Supabase event JSON field)
+Store.eventManualItems   = null;  // null = use defaults
+Store.eventScheduleItems = null;
+
+async function renderGuestSections(eventData) {
+  // Load venues from dedicated table
+  try {
+    const venues = await loadEventVenues(eventData.id || Store.currentEventId);
+    if (venues) Object.keys(venues).forEach(k => {
+      if (k !== 'event_id' && k !== 'updated_at' && venues[k] !== null && venues[k] !== undefined) eventData[k] = venues[k];
+    });
+  } catch(e) { console.warn('loadEventVenues failed:', e); }
+  const container = document.getElementById('guest-sections-container');
+  if (!container) return;
+  if (!eventData) { container.innerHTML = ''; return; }
+
+  // DEBUG: Log what data we have for each section
+  console.group('renderGuestSections — section data check');
+  console.log('bible_text:', eventData.bible_text ? '✓ '+String(eventData.bible_text).substring(0,30) : '✗ null');
+  console.log('gallery_urls:', eventData.gallery_urls ? '✓ '+String(eventData.gallery_urls).substring(0,50) : '✗ null');
+  console.log('groom_parents:', eventData.groom_parents ? '✓' : '✗');
+  console.log('iban_number:', eventData.iban_number ? '✓' : '✗');
+  console.log('invite_text:', eventData.invite_text ? '✓' : '✗');
+  console.log('event_color:', eventData.event_color);
+  console.log('section_order:', eventData.section_order ? JSON.parse(eventData.section_order) : 'default');
+  console.groupEnd();
+
+  applyGuestBackground(eventData);
+
+  let html = '';
+  const sections = getSectionOrder(eventData);
+
+  sections.forEach(sec => {
+    switch(sec) {
+      case 'bible':    if (eventData.bible_text) html += buildBibleSection(eventData); break;
+      case 'invite':
+        // Only show standalone if bible section is NOT shown (invite merged into bible)
+        if (eventData.invite_text && !eventData.bible_text) html += buildInviteSection(eventData);
+        break;
+      case 'date':     html += buildDateSection(eventData); break;
+      case 'countdown':html += buildCountdownSection(eventData); break;
+      case 'parents':
+        // Only show standalone if bible section is NOT being shown (parents are merged into bible)
+        if ((eventData.groom_parents || eventData.bride_parents) && !eventData.bible_text)
+          html += buildParentsSection(eventData);
+        break;
+      case 'story':    if (eventData.story_text && _yesOrTrue(eventData.show_story)) html += buildStorySection(eventData); break;
+      case 'iban':     if (eventData.iban_number) html += buildIbanSection(eventData); break;
+      case 'gallery':  if (eventData.gallery_urls) html += buildGallerySection(eventData); break;
+      case 'venues':   if (_yesOrTrue(eventData.show_venues) && (eventData.venue_ceremony || eventData.venue_civil || eventData.venue_reception)) html += buildVenueSection(eventData); break;
+      case 'manual':   if (_yesOrTrue(eventData.show_manual)) html += buildManualSection(eventData); break;
+      case 'schedule': if (_yesOrTrue(eventData.show_schedule)) html += buildScheduleSection(eventData); break;
+      case 'dresscode': if (_yesOrTrue(eventData.show_dresscode) && eventData.dresscode_text) html += buildDresscodeSection(eventData); break;
+      case 'rsvp':     break; // always last, separate element
+    }
+  });
+
+  // Wrap sections with subtle dividers
+  const sectionParts = html.split('<!-- SECTION_DIVIDER -->').filter(Boolean);
+  const sideUrl = eventData.decor_side_url || '';
+  container.innerHTML = sectionParts.map((part, i) => {
+    const div = i === 0 ? '' : `<div class="section-divider"><div class="section-divider-line"></div></div>`;
+    if (sideUrl && _yesOrTrue(eventData.show_decor)) {
+      return div + `<div class="decor-side-wrap" style="position:relative">
+        <div class="decor-side-img left" style="background-image:url('${sideUrl}')"></div>
+        <div class="decor-side-img right" style="background-image:url('${sideUrl}')"></div>
+        ${part}
+      </div>`;
+    }
+    return div + part;
+  }).join('');
+
+  lucide.createIcons();
+
+  // ── Story node scroll animation (IntersectionObserver) ──
+  setTimeout(() => {
+    const nodes = container.querySelectorAll('.story-node');
+    if (nodes.length > 0) {
+      const storyObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          const node = entry.target;
+          const card = node.closest('.story-row')?.querySelector('.story-card');
+          if (entry.isIntersecting && entry.intersectionRatio > 0.5) {
+            node.classList.add('active');
+            if (card) card.classList.add('active');
+          } else {
+            node.classList.remove('active');
+            if (card) card.classList.remove('active');
+          }
+        });
+      }, { threshold: [0.5], rootMargin: '-10% 0px -10% 0px' });
+      nodes.forEach(n => storyObserver.observe(n));
+    }
+  }, 300);
+
+  // Apply alternating section backgrounds (event color vs white)
+  const evColor = eventData.event_color || '#007f9f';
+  const secEls = container.querySelectorAll('.event-section');
+  secEls.forEach((s, i) => {
+    if (i % 2 === 0) {
+      // Odd sections: very light tint of event color
+      s.style.background = hexToRgba(evColor, 0.04);
+    } else {
+      s.style.background = '#fff';
+    }
+  });
+
+  // Lightbox for gallery
+  container.querySelectorAll('.gallery-item img').forEach(img => {
+    img.addEventListener('click', () => openLightbox(img.src));
+  });
+
+  // Start countdown interval if present
+  if (eventData.date) startCountdownInterval(eventData.date, eventData.time);
+
+  // Initialise scroll reveal
+  initScrollReveal();
+  // Init floating music button
+  initFloatingMusicBtn();
+}
+
+function getSectionOrder(ev) {
+  // ALWAYS start with all sections — never hide any based on order
+  const allKeys = getDefaultSectionOrder();
+
+  let saved = null;
+  if (ev.section_order) { try { saved = JSON.parse(ev.section_order); } catch(e) {} }
+  if (!saved && Store.eventSectionOrder) saved = Store.eventSectionOrder;
+  if (!saved) return allKeys;
+
+  // Apply saved ORDER to the keys that exist in both saved and allKeys
+  // Keys in saved order come first (respecting user's arrangement)
+  // Keys NOT in saved order are appended at the end
+  const ordered = saved.filter(k => allKeys.includes(k));
+  allKeys.forEach(k => { if (!ordered.includes(k)) ordered.push(k); });
+  return ordered;
+}
+
+function applyGuestBackground(ev) {
+  const bgUrl = ev.bg_url || '';
+  const overlayPct = parseFloat(ev.bg_overlay ?? 35);
+  const overlayAlpha = Math.min(Math.max(overlayPct, 0), 80) / 100;
+
+  // Remove previous background elements
+  document.querySelectorAll('.guest-bg-cover, .guest-bg-overlay-el').forEach(e => e.remove());
+
+  const guestEl = document.getElementById('screen-guest');
+
+  if (bgUrl) {
+    // Fixed full-screen background div (works on all screen sizes)
+    const bg = document.createElement('div');
+    bg.className = 'guest-bg-cover';
+    bg.style.backgroundImage = `url('${bgUrl}')`;
+    document.body.insertBefore(bg, document.body.firstChild);
+
+    const ov = document.createElement('div');
+    ov.className = 'guest-bg-overlay-el';
+    ov.style.background = `rgba(0,0,0,${overlayAlpha})`;
+    document.body.insertBefore(ov, document.body.firstChild);
+
+    if (guestEl) guestEl.style.background = 'transparent';
+  } else {
+    if (guestEl) guestEl.removeAttribute('style');
+  }
+
+  // Hero overlay (cover image already set in renderGuestView, just set overlay opacity)
+  const heroOvEl = document.getElementById('guest-hero-overlay');
+  if (heroOvEl) heroOvEl.style.background = `rgba(0,0,0,${overlayAlpha})`;
+}
+
+function buildBibleSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
+  const lines = (ev.bible_text || '').split('\n').filter(Boolean).map(l => `<p class="bible-verse" style="font-size:0.92rem;line-height:1.8;font-style:italic">${escapeHTML(l)}</p>`).join('');
+  const hasParents = ev.groom_parents || ev.bride_parents;
+  // Always show the hardcoded blessing label — never use invite_blessing as the label
+  const blessingLabel = 'Com a bênção de Deus e de seus pais';
+  const parentsHtml = hasParents ? `
+    <div class="reveal" style="margin-top:1.5rem">
+      <p class="invitation-text" style="margin-bottom:1rem;font-size:0.9rem">${blessingLabel}</p>
+      <div style="display:flex;gap:2rem;justify-content:center;flex-wrap:nowrap;text-align:center">
+        ${ev.groom_parents ? (() => { return '<div>' + ev.groom_parents.split('\n').filter(l=>l.trim()).map(l=>{ const im=l.includes('(em memória)'); const n=l.replace('(em memória)','').trim(); return '<p style="font-weight:600;color:#1e293b;line-height:1.85;font-size:0.88rem">'+escapeHTML(n)+(im?' <span style="color:#6b7280;font-size:0.78rem;font-style:italic">(em memória)</span>':'')+'</p>'; }).join('') + '</div>'; })() : ''}
+        ${ev.groom_parents && ev.bride_parents ? '<div style="width:1px;background:linear-gradient(to bottom,transparent,var(--ev-color,#007f9f) 20%,var(--ev-color,#007f9f) 80%,transparent);align-self:stretch;flex-shrink:0;min-height:60px"></div>' : ''}
+        ${ev.bride_parents ? (() => { return '<div>' + ev.bride_parents.split('\n').filter(l=>l.trim()).map(l=>{ const im=l.includes('(em memória)'); const n=l.replace('(em memória)','').trim(); return '<p style="font-weight:600;color:#1e293b;line-height:1.85;font-size:0.88rem">'+escapeHTML(n)+(im?' <span style="color:#6b7280;font-size:0.78rem;font-style:italic">(em memória)</span>':'')+'</p>'; }).join('') + '</div>'; })() : ''}
+      </div>
+    </div>` : '';
+
+  // Couple names — with font/size from event settings (same as hero)
+  const invertNames = _yesOrTrue(ev.invert_names);
+  let groomName = ev.groom_name || '';
+  let brideName = ev.bride_name || '';
+  if (invertNames) { [groomName, brideName] = [brideName, groomName]; }
+  const coupleSize = parseFloat(ev.couple_size || 2.4);
+  const coupleFontSize = `clamp(1rem, ${Math.min(coupleSize * 0.6, 1.8)}rem, 1.8rem)`;
+  const coupleFontFamily = ev.custom_font_family ? `'${ev.custom_font_family}', serif` : 'inherit';
+  const coupleNamesHtml = (groomName || brideName) ? `
+    <div class="reveal" style="margin-top:1.25rem;text-align:center">
+      <p style="font-size:${coupleFontSize};font-weight:700;color:${ev.event_color||'#007f9f'};letter-spacing:0.01em;font-family:${coupleFontFamily}">
+        ${escapeHTML(groomName)}${groomName && brideName ? ` <span style="font-weight:300;opacity:0.65">&amp;</span> ` : ''}${escapeHTML(brideName)}
+      </p>
+    </div>` : '';
+
+  const inviteHtml = ev.invite_text ? `
+    <div class="reveal" style="margin-top:1.5rem">
+      ${ev.invite_text.split('\n').map(l => l.trim()==='' ? '<br>' : `<p class="invitation-text">${escapeHTML(l)}</p>`).join('')}
+    </div>` : '';
+
+  return _SD + `<div class="event-section" style="background:#fdfaf6;text-align:center">
+    <div class="section-inner">
+      <div class="reveal scale-in">
+        ${lines}
+        ${ev.bible_ref ? `<p class="bible-ref" style="margin-top:0.75rem">${escapeHTML(ev.bible_ref)}</p>` : ''}
+        <div style="font-size:1.2rem;color:${ev.event_color||'#c9a84c'};margin-top:0.75rem;letter-spacing:0.2em">✦</div>
+      </div>
+      ${parentsHtml}
+      ${coupleNamesHtml}
+      ${inviteHtml}
+    </div>
+  </div>`;
+}
+
+function buildInviteSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
+  const lines = (ev.invite_text || '').split('\n').map(l =>
+    l.trim() === '' ? '<br>' : `<p class="invitation-text">${escapeHTML(l)}</p>`
+  ).join('');
+  return _SD + `<div class="event-section" style="background:#fff"><div class="section-inner reveal">${lines}</div></div>`;
+}
+
+function buildDateSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
+  if (!ev.date) return '';
+  // Parse date safely - handle all formats
+  let _dateStr = ev.date;
+  if (!_dateStr) return '';
+  // If it's an HTMLInputElement somehow, get its value
+  if (typeof _dateStr === 'object' && _dateStr.value !== undefined) _dateStr = _dateStr.value;
+  _dateStr = String(_dateStr).trim();
+  // Extract YYYY-MM-DD part
+  const _dateMatch = _dateStr.match(/(\d{4}-\d{2}-\d{2})/);
+  if (!_dateMatch) return '';
+  const _datePart = _dateMatch[1];
+  const d = new Date(_datePart + 'T12:00:00');
+  if (isNaN(d.getTime())) return '';
+  const months = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  const days   = ['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'];
+  const eventColor = ev.event_color || '#3a5a2a';
+  // Build time string safely
+  let _timeRaw = ev.time;
+  if (typeof _timeRaw === 'object' && _timeRaw !== null && _timeRaw.value !== undefined) _timeRaw = _timeRaw.value;
+  const _timeStr = _timeRaw ? String(_timeRaw).trim().substring(0, 5) : '';
+  // Check show_time — accept both 'yes' string, boolean true, and showTime boolean
+  const showTime = (_yesOrTrue(ev.show_time) || ev.showTime === true) && _timeStr;
+  const timeLabel = showTime ? `Às ${_timeStr}` : '';
+  // Heart SVG inline
+  const heart = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.27 2 8.5 2 5.41 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.41 22 8.5c0 3.77-3.4 6.86-8.55 11.53L12 21.35z"/></svg>`;
+  return _SD + `<div class="event-section" style="background:#fff;padding:1.25rem 1rem">
+    <div class="section-inner">
+      <div class="date-display reveal scale-in" style="--ev-color:${eventColor}">
+        <div class="date-weekday-top" style="color:${eventColor}">
+          ${heart} ${days[d.getDay()]} ${heart}
+        </div>
+        <div class="date-row">
+          <div class="date-side" style="--ec:${eventColor}">
+            <span class="date-side-label">${months[d.getMonth()]}</span>
+          </div>
+          <div class="date-day-num" style="color:${eventColor}">${String(d.getDate()).padStart(2,'0')}</div>
+          <div class="date-side" style="--ec:${eventColor}">
+            <span class="date-side-label">${showTime ? timeLabel : ''}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function buildCountdownSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
+  if (!ev.date) return '';
+  return _SD + `<div class="event-section" style="background:linear-gradient(135deg,#f0f9fb,#e6f4f7)">
+    <div class="section-inner" style="text-align:center">
+      <div class="reveal">
+        <span class="section-tag">Contagem Regressiva</span>
+        <div class="countdown-section-grid">
+          <div class="countdown-section-box" style="background:${ev.event_color||'#007f9f'}"><div class="cdb-num" id="cd-days">--</div><div class="cdb-label">Dias</div></div>
+          <div class="countdown-section-box" style="background:${ev.event_color||'#007f9f'}"><div class="cdb-num" id="cd-hours">--</div><div class="cdb-label">Horas</div></div>
+          <div class="countdown-section-box" style="background:${ev.event_color||'#007f9f'}"><div class="cdb-num" id="cd-mins">--</div><div class="cdb-label">Min</div></div>
+          <div class="countdown-section-box" style="background:${ev.event_color||'#007f9f'}"><div class="cdb-num" id="cd-secs">--</div><div class="cdb-label">Seg</div></div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function startCountdownInterval(dateStr, timeStr) {
+  if (window._countdownInterval) clearInterval(window._countdownInterval);
+  function parseEventDate(d, t) {
+    if (!d) return null;
+    // Remove time if already embedded in date string
+    const datePart = d.includes('T') ? d.split('T')[0] : d.split(' ')[0];
+    // Build time part (strip seconds if present e.g. "20:33:00" -> "20:33")
+    let timePart = (t || '00:00').trim();
+    if (timePart.split(':').length > 2) timePart = timePart.split(':').slice(0,2).join(':');
+    return new Date(datePart + 'T' + timePart + ':00');
+  }
+  function update() {
+    const t = parseEventDate(dateStr, timeStr);
+    if (!t || isNaN(t.getTime())) return;
+    const diff = t - new Date();
+    const dEl = document.getElementById('cd-days');
+    if (!dEl) { clearInterval(window._countdownInterval); return; }
+    if (diff <= 0) { ['cd-days','cd-hours','cd-mins','cd-secs'].forEach(id=>{const e=document.getElementById(id);if(e)e.textContent='0';}); return; }
+    document.getElementById('cd-days').textContent  = Math.floor(diff/86400000);
+    document.getElementById('cd-hours').textContent = Math.floor((diff%86400000)/3600000);
+    document.getElementById('cd-mins').textContent  = Math.floor((diff%3600000)/60000);
+    document.getElementById('cd-secs').textContent  = Math.floor((diff%60000)/1000);
+  }
+  update();
+  window._countdownInterval = setInterval(update, 1000);
+}
+
+function buildStorySection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
+  if (!ev.story_text) return '';
+  const evColor = ev.event_color || '#007f9f';
+
+  // Parse story text: chapters separated by double newline
+  // Each chapter: first line = date/title, rest = body text
+  const chapters = ev.story_text.split(/\n\n+/).filter(c => c.trim());
+
+  const heartSvg = `<svg width="18" height="18" viewBox="0 0 24 24" fill="${evColor}" xmlns="http://www.w3.org/2000/svg"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>`;
+
+  if (chapters.length <= 1) {
+    // Plain text fallback
+    return _SD + `<div class="event-section story-section">
+      <div class="section-inner" style="text-align:center">
+        <div class="reveal">
+          <h2 class="section-title">Nossa História</h2>
+          <p class="story-text">${escapeHTML(ev.story_text)}</p>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // Zigzag timeline
+  const rows = chapters.map((ch, i) => {
+    const lines = ch.trim().split('\n');
+    const titleLine = lines[0] || '';
+    const body = lines.slice(1).join(' ').trim();
+    const isLeft = i % 2 === 0;
+
+    const card = `<div class="story-card ${isLeft ? 'story-left' : 'story-right'} reveal" style="background:transparent;border:none;box-shadow:none;padding:0.5rem 0.9rem">
+      <div class="story-date" style="font-size:0.65rem;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:${evColor};margin-bottom:0.2rem">${escapeHTML(titleLine)}</div>
+      ${body ? `<p class="story-body" style="font-size:0.78rem;color:#4b5563;line-height:1.55;margin:0">${escapeHTML(body)}</p>` : ''}
+    </div>`;
+    const node = `<div class="story-node" style="width:10px;height:10px;border-radius:50%;background:${evColor};flex-shrink:0;position:relative;z-index:3;box-shadow:0 0 0 3px #fff,0 0 0 4px color-mix(in srgb,${evColor} 30%,transparent);transition:width 0.3s ease,height 0.3s ease;"></div>`;
+    const empty = `<div></div>`;
+
+    return `<div class="story-row">
+      ${isLeft ? card : empty}
+      ${node}
+      ${isLeft ? empty : card}
+    </div>`;
+  }).join('');
+
+  return _SD + `<div class="event-section story-section">
+    <div class="section-inner">
+      <h2 class="section-title reveal" style="text-align:center;margin-bottom:2.5rem">Nossa História</h2>
+      <div class="story-timeline" style="--ev-color:${evColor}">
+        <div class="story-line"></div>
+        ${rows}
+      </div>
+    </div>
+  </div>`;
+}
+
+function buildParentsSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
+  // Invert groom/bride parents if invert_names is active
+  const invertNames = _yesOrTrue(ev.invert_names);
+  let groomParents = ev.groom_parents;
+  let brideParents = ev.bride_parents;
+  if (invertNames) { [groomParents, brideParents] = [brideParents, groomParents]; }
+  // Use inverted parents
+  const _ev = { ...ev, groom_parents: groomParents, bride_parents: brideParents };
+  const groomSide = ev.side1_name || 'Família do Noivo';
+  const brideSide = ev.side2_name || 'Família da Noiva';
+  const blessingHeader = ev.invite_blessing || 'Com a bênção de Deus e de seus pais';
+  function renderCol(name, text) {
+    if (!text || !text.trim()) return '';
+    const rows = text.split('\n').filter(l=>l.trim()).map(l=>{
+      const im = l.includes('(em memória)');
+      const n = l.replace('(em memória)','').trim();
+      return `<p class="parent-name">${escapeHTML(n)}${im ? '<span class="in-memoriam">(em memória)</span>' : ''}</p>`;
+    }).join('');
+    return `<div class="parents-col"><p class="parents-col-title">${escapeHTML(name)}</p><div class="parents-name-grid">${rows}</div></div>`;
+  }
+  // Helper without title
+  function renderColNoTitle(text) {
+    if (!text || !text.trim()) return '';
+    const rows = text.split('\n').filter(l=>l.trim()).map(l=>{
+      const im = l.includes('(em memória)');
+      const n = l.replace('(em memória)','').trim();
+      return `<p class="parent-name">${escapeHTML(n)}${im ? ' <span class="in-memoriam">(em memória)</span>' : ''}</p>`;
+    }).join('');
+    return `<div class="parents-col">${rows}</div>`;
+  }
+  return _SD + `<div class="event-section" style="background:transparent;text-align:center">
+    <div class="section-inner reveal">
+      <div class="parents-columns" style="gap:2rem;justify-content:center">
+        ${renderColNoTitle(ev.groom_parents)}
+        ${ev.groom_parents && ev.bride_parents ? '<div class="parents-divider" style="flex-shrink:0;width:1px;background:linear-gradient(to bottom,transparent,var(--ev-color,#007f9f) 20%,var(--ev-color,#007f9f) 80%,transparent);align-self:stretch;min-height:60px"></div>' : ''}
+        ${renderColNoTitle(ev.bride_parents)}
+      </div>
+    </div>
+  </div>`;
+}
+
+function buildIbanSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
+  const evColor = ev.event_color || '#007f9f';
+  const msgLines = (ev.iban_message || '').split('\n').map(l => `<p style="color:#374151;font-size:0.92rem;line-height:1.7;text-align:justify">${escapeHTML(l)}</p>`).join('');
+  return _SD + `<div class="event-section" style="background:#f0f9fb">
+    <div class="section-inner reveal" style="text-align:center">
+      <div style="background:#fff;border-radius:1rem;padding:1.5rem 1.25rem;max-width:480px;margin:0 auto;border:1.5px solid color-mix(in srgb,${evColor} 25%,transparent)">
+        <div style="text-align:center;margin-bottom:1rem">
+          <div class="iban-gift-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="${evColor}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>
+          </div>
+          <span style="font-size:1.1rem;font-weight:800;color:${evColor}">Gostaria de nos presentear?</span>
+        </div>
+        ${msgLines}
+        <div class="bg-gray-50 rounded-lg px-3 py-2 mt-3 mb-1 border border-teal-100"><p class="text-xs text-gray-400 mb-0.5">IBAN</p><p class="iban-value" style="text-align:center;word-break:break-all;margin:0.25rem 0">${escapeHTML(ev.iban_number)}</p></div>
+        ${ev.iban_holder ? `<div class="bg-gray-50 rounded-lg px-3 py-2 mb-2 border border-teal-100"><p class="text-xs text-gray-400 mb-0.5">Titular</p><p class="text-sm font-semibold text-gray-700">${escapeHTML(ev.iban_holder)}</p></div>` : ''}
+        <button class="iban-copy-btn" id="iban-copy-btn" onclick="copyIban('${escapeHTML(ev.iban_number)}')">
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          Copiar IBAN
+        </button>
+        ${ev.iban_footer ? `<p class="text-xs text-gray-400 mt-3 text-right italic">${escapeHTML(ev.iban_footer)}</p>` : ''}
+      </div>
+    </div>
+  </div>`;
+}
+
+function buildGallerySection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
+  const urls = (ev.gallery_urls || '').split('\n').map(u => u.trim()).filter(Boolean);
+  if (!urls.length) return '';
+  const items = urls.map(u => `<div class="gallery-item"><img src="${u}" data-url="${u}" alt="" loading="lazy" decoding="async" style="width:100%;height:100%;object-fit:cover" onerror="this.closest('.gallery-item').style.display='none'"></div>`).join('');
+  return _SD + `<div class="event-section" style="background:#f8fafc"><div class="section-inner">
+    <h3 class="section-title reveal">Galeria</h3>
+    <div class="gallery-grid reveal-stagger">${items}</div>
+  </div></div>`;
+}
+
+function buildManualSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
+  const items = Store.eventManualItems || DEFAULT_MANUAL_ITEMS;
+  const evColor = ev.event_color || '#007f9f';
+  const cards = items.map(it => `<div class="manual-item">
+    <div class="mi-icon" style="background:color-mix(in srgb,${evColor} 15%,white)"><i data-lucide="${it.icon}" style="color:${evColor}"></i></div>
+    <p class="mi-text">${it.text.replace(/\n/g, '<br>')}</p>
+  </div>`).join('');
+  return _SD + `<div class="event-section" style="background:#f8fafc">
+    <div class="section-inner">
+      <h3 class="section-title reveal" style="color:${evColor}">Manual do Bom Convidado</h3>
+      <div class="manual-grid reveal-stagger">${cards}</div>
+    </div>
+  </div>`;
+}
+
+function buildScheduleSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
+  const items = Store.eventScheduleItems || DEFAULT_SCHEDULE_ITEMS;
+  const evColor = ev.event_color || '#007f9f';
+  const rows = items.map((it, i) => {
+    const isLeft = i % 2 === 0;
+    const timeLabel  = `<div style="font-size:0.72rem;font-weight:800;color:${evColor};text-transform:uppercase;letter-spacing:0.05em;margin-bottom:2px">${it.time}</div>`;
+    const textLabel  = `<div><div style="font-weight:700;color:#1e293b;font-size:0.88rem">${escapeHTML(it.label)}</div>${it.sub?`<div style="font-size:0.72rem;color:#6b7280;margin-top:1px">${escapeHTML(it.sub)}</div>`:''}</div>`;
+    const node = `<div style="flex-shrink:0;width:44px;height:44px;border-radius:50%;background:${evColor};display:flex;align-items:center;justify-content:center;position:relative;z-index:2;box-shadow:0 2px 8px rgba(0,0,0,0.15)"><i data-lucide="${it.icon}" style="width:18px;height:18px;color:#fff"></i></div>`;
+    if (isLeft) {
+      return `<div class="reveal" style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;margin-bottom:1.5rem;max-width:500px;margin-left:auto;margin-right:auto">
+        <div style="text-align:right;padding-right:0.75rem">${timeLabel}${textLabel}</div>
+        ${node}
+        <div></div>
+      </div>`;
+    } else {
+      return `<div class="reveal" style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;margin-bottom:1.5rem;max-width:500px;margin-left:auto;margin-right:auto">
+        <div></div>
+        ${node}
+        <div style="text-align:left;padding-left:0.75rem">${timeLabel}${textLabel}</div>
+      </div>`;
+    }
+  }).join('');
+
+  return _SD + `<div class="event-section">
+    <div class="section-inner" style="text-align:center">
+      <h3 class="section-title reveal">Itinerário</h3>
+      <div style="position:relative;max-width:500px;margin:0 auto">
+        <div style="position:absolute;left:50%;top:8px;bottom:8px;width:2px;background:linear-gradient(to bottom,transparent,${evColor} 5%,${evColor} 95%,transparent);transform:translateX(-50%);z-index:1"></div>
+        ${rows}
+      </div>
+    </div>
+  </div>`;
+}
+
+
+// ===================== MANUAL EDITOR =====================
+function openManualEditor() {
+  const items = Store.eventManualItems ? JSON.parse(JSON.stringify(Store.eventManualItems)) : JSON.parse(JSON.stringify(DEFAULT_MANUAL_ITEMS));
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.id = 'manual-editor-modal';
+
+  function renderItems() {
+    return items.map((it, i) => `
+      <div class="flex items-center gap-2 mb-2" data-idx="${i}">
+        <input class="input-field text-xs flex-1" value="${it.text.replace(/\n/g,' ')}" placeholder="Texto" id="mi-text-${i}">
+        <input class="input-field text-xs w-28" value="${it.icon}" placeholder="Ícone lucide" id="mi-icon-${i}">
+        <button type="button" class="text-red-400 px-1" onclick="removeManualItem(${i})"><i data-lucide="x" class="w-4 h-4"></i></button>
+        ${i > 0 ? `<button type="button" class="text-gray-400 px-1" onclick="moveManualItem(${i},-1)"><i data-lucide="arrow-up" class="w-3 h-3"></i></button>` : ''}
+        ${i < items.length-1 ? `<button type="button" class="text-gray-400 px-1" onclick="moveManualItem(${i},1)"><i data-lucide="arrow-down" class="w-3 h-3"></i></button>` : ''}
+      </div>`).join('');
+  }
+
+  modal.innerHTML = `<div class="modal-content bg-white rounded-2xl shadow-lg p-5 max-w-lg w-full max-h-[85vh] overflow-y-auto">
+    <h3 class="text-base font-bold text-gray-800 mb-1">Manual do Bom Convidado</h3>
+    <p class="text-xs text-gray-400 mb-2">Os ícones são nomes do <a href="https://lucide.dev/icons/" target="_blank" class="text-teal-500 underline">Lucide Icons</a>. Escreve o nome e vê a pré-visualização ao lado.</p>
+    <div id="manual-items-list">${renderItems()}</div>
+    <button type="button" class="mt-2 text-xs text-teal-600 font-semibold" onclick="addManualItem()">+ Adicionar item</button>
+    <div class="flex gap-2 mt-4">
+      <button class="flex-1 btn-main" onclick="saveManualItems()">Guardar</button>
+      <button class="flex-1 btn-outline" onclick="this.closest('.modal-overlay').remove()">Cancelar</button>
+      <button class="text-xs text-gray-400 px-2" onclick="resetManualItems()">Repor padrão</button>
+    </div>
+  </div>`;
+  document.body.appendChild(modal);
+  lucide.createIcons();
+
+  window._manualEditorItems = items;
+}
+
+function addManualItem() {
+  window._manualEditorItems.push({ icon: 'star', text: 'Novo item' });
+  refreshManualEditorList();
+}
+function removeManualItem(i) {
+  window._manualEditorItems.splice(i, 1);
+  refreshManualEditorList();
+}
+function moveManualItem(i, dir) {
+  const arr = window._manualEditorItems;
+  const j = i + dir;
+  if (j < 0 || j >= arr.length) return;
+  [arr[i], arr[j]] = [arr[j], arr[i]];
+  refreshManualEditorList();
+}
+function refreshManualEditorList() {
+  const items = window._manualEditorItems;
+  document.getElementById('manual-items-list').innerHTML = items.map((it, i) => `
+    <div class="flex items-center gap-2 mb-2 p-1.5 bg-gray-50 rounded-lg">
+      <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style="background:rgba(0,127,159,0.12)" id="mi-prev-${i}">
+        <i data-lucide="${it.icon}" style="width:16px;height:16px;color:#007f9f"></i>
+      </div>
+      <input class="input-field text-xs flex-1" value="${it.text.replace(/\n/g,' ')}" placeholder="Texto" id="mi-text-${i}">
+      <input class="input-field text-xs w-24" value="${it.icon}" placeholder="lucide icon" id="mi-icon-${i}"
+        oninput="const p=document.getElementById('mi-prev-'+${i});if(p){p.innerHTML='<i data-lucide=\''+this.value+'\' style=\'width:16px;height:16px;color:#007f9f\'></i>';try{lucide.createIcons();}catch(e){}}">
+      <button type="button" class="text-red-400" onclick="removeManualItem(${i})"><i data-lucide="x" class="w-4 h-4"></i></button>
+      ${i > 0 ? `<button type="button" class="text-gray-400" onclick="moveManualItem(${i},-1)"><i data-lucide="arrow-up" class="w-3 h-3"></i></button>` : '<div class="w-5"></div>'}
+      ${i < items.length-1 ? `<button type="button" class="text-gray-400" onclick="moveManualItem(${i},1)"><i data-lucide="arrow-down" class="w-3 h-3"></i></button>` : '<div class="w-5"></div>'}
+    </div>`).join('');
+  lucide.createIcons();
+}
+function saveManualItems() {
+  const items = window._manualEditorItems;
+  items.forEach((it, i) => {
+    it.text = (document.getElementById('mi-text-' + i)?.value || it.text).replace(/\\n/g, '\n');
+    it.icon = document.getElementById('mi-icon-' + i)?.value || it.icon;
+  });
+  Store.eventManualItems = items;
+  document.getElementById('manual-editor-modal')?.remove();
+  toast('Manual actualizado para este evento.');
+}
+function resetManualItems() {
+  window._manualEditorItems = JSON.parse(JSON.stringify(DEFAULT_MANUAL_ITEMS));
+  Store.eventManualItems = null;
+  refreshManualEditorList();
+}
+
+
+// ===================== SCHEDULE EDITOR =====================
+function openScheduleEditor() {
+  const items = Store.eventScheduleItems ? JSON.parse(JSON.stringify(Store.eventScheduleItems)) : JSON.parse(JSON.stringify(DEFAULT_SCHEDULE_ITEMS));
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.id = 'schedule-editor-modal';
+
+  function renderRows() {
+    return items.map((it, i) => `
+      <div class="flex items-start gap-2 mb-3 bg-gray-50 rounded-xl p-2">
+        <div class="flex flex-col gap-1 flex-1">
+          <div class="flex gap-2">
+            <input class="input-field text-xs w-20" value="${it.time}" placeholder="Hora" id="sc-time-${i}">
+            <input class="input-field text-xs flex-1" value="${it.label}" placeholder="Momento" id="sc-label-${i}">
+          </div>
+          <div class="flex gap-2">
+            <div style="display:flex;align-items:center;gap:4px">
+        <div class="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0" style="background:rgba(0,127,159,0.12)" id="sc-prev-${i}"><i data-lucide="${it.icon}" style="width:13px;height:13px;color:#007f9f"></i></div>
+        <input class="input-field text-xs" style="width:calc(100% - 2rem)" value="${it.icon}" placeholder="lucide icon" id="sc-icon-${i}" oninput="const p=document.getElementById('sc-prev-'+${i});if(p){p.innerHTML='<i data-lucide=\''+this.value+'\' style=\'width:13px;height:13px;color:#007f9f\'></i>';try{lucide.createIcons();}catch(e){}}">
+      </div>
+            <input class="input-field text-xs flex-1" value="${it.sub || ''}" placeholder="Subtítulo (opcional)" id="sc-sub-${i}">
+          </div>
+        </div>
+        <div class="flex flex-col gap-1 flex-shrink-0">
+          <button type="button" class="text-red-400" onclick="removeScheduleItem(${i})"><i data-lucide="x" class="w-4 h-4"></i></button>
+          ${i > 0 ? `<button type="button" class="text-gray-400" onclick="moveScheduleItem(${i},-1)"><i data-lucide="arrow-up" class="w-3 h-3"></i></button>` : ''}
+          ${i < items.length-1 ? `<button type="button" class="text-gray-400" onclick="moveScheduleItem(${i},1)"><i data-lucide="arrow-down" class="w-3 h-3"></i></button>` : ''}
+        </div>
+      </div>`).join('');
+  }
+
+  modal.innerHTML = `<div class="modal-content bg-white rounded-2xl shadow-lg p-5 max-w-lg w-full max-h-[85vh] overflow-y-auto">
+    <h3 class="text-base font-bold text-gray-800 mb-1">Monograma do Dia</h3>
+    <p class="text-xs text-gray-400 mb-2">Os ícones são nomes do <a href="https://lucide.dev/icons/" target="_blank" class="text-teal-500 underline">Lucide Icons</a>. Escreve o nome e vê a pré-visualização.</p>
+    <div id="schedule-items-list">${renderRows()}</div>
+    <button type="button" class="mt-2 text-xs text-teal-600 font-semibold" onclick="addScheduleItem()">+ Adicionar momento</button>
+    <div class="flex gap-2 mt-4">
+      <button class="flex-1 btn-main" onclick="saveScheduleItems()">Guardar</button>
+      <button class="flex-1 btn-outline" onclick="this.closest('.modal-overlay').remove()">Cancelar</button>
+      <button class="text-xs text-gray-400 px-2" onclick="resetScheduleItems()">Repor padrão</button>
+    </div>
+  </div>`;
+  document.body.appendChild(modal);
+  lucide.createIcons();
+  window._scheduleEditorItems = items;
+}
+
+function addScheduleItem() {
+  window._scheduleEditorItems.push({ icon: 'star', time: '00h00', label: 'Novo Momento', sub: '' });
+  refreshScheduleEditorList();
+}
+function removeScheduleItem(i) { window._scheduleEditorItems.splice(i, 1); refreshScheduleEditorList(); }
+function moveScheduleItem(i, dir) {
+  const arr = window._scheduleEditorItems; const j = i + dir;
+  if (j < 0 || j >= arr.length) return;
+  [arr[i], arr[j]] = [arr[j], arr[i]]; refreshScheduleEditorList();
+}
+function refreshScheduleEditorList() {
+  const items = window._scheduleEditorItems;
+  document.getElementById('schedule-items-list').innerHTML = items.map((it, i) => `
+    <div class="flex items-start gap-2 mb-3 bg-gray-50 rounded-xl p-2">
+      <div class="flex flex-col gap-1 flex-1">
+        <div class="flex gap-2">
+          <input class="input-field text-xs w-20" value="${it.time}" placeholder="Hora" id="sc-time-${i}">
+          <input class="input-field text-xs flex-1" value="${it.label}" placeholder="Momento" id="sc-label-${i}">
+        </div>
+        <div class="flex gap-2">
+          <div style="display:flex;align-items:center;gap:4px">
+        <div class="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0" style="background:rgba(0,127,159,0.12)" id="sc-prev-${i}"><i data-lucide="${it.icon}" style="width:13px;height:13px;color:#007f9f"></i></div>
+        <input class="input-field text-xs" style="width:calc(100% - 2rem)" value="${it.icon}" placeholder="lucide icon" id="sc-icon-${i}" oninput="const p=document.getElementById('sc-prev-'+${i});if(p){p.innerHTML='<i data-lucide=\''+this.value+'\' style=\'width:13px;height:13px;color:#007f9f\'></i>';try{lucide.createIcons();}catch(e){}}">
+      </div>
+          <input class="input-field text-xs flex-1" value="${it.sub || ''}" placeholder="Subtítulo" id="sc-sub-${i}">
+        </div>
+      </div>
+      <div class="flex flex-col gap-1 flex-shrink-0">
+        <button type="button" class="text-red-400" onclick="removeScheduleItem(${i})"><i data-lucide="x" class="w-4 h-4"></i></button>
+        ${i > 0 ? `<button type="button" class="text-gray-400" onclick="moveScheduleItem(${i},-1)"><i data-lucide="arrow-up" class="w-3 h-3"></i></button>` : ''}
+        ${i < items.length-1 ? `<button type="button" class="text-gray-400" onclick="moveScheduleItem(${i},1)"><i data-lucide="arrow-down" class="w-3 h-3"></i></button>` : ''}
+      </div>
+    </div>`).join('');
+  lucide.createIcons();
+}
+function saveScheduleItems() {
+  const items = window._scheduleEditorItems;
+  items.forEach((it, i) => {
+    it.time  = document.getElementById('sc-time-' + i)?.value  || it.time;
+    it.label = document.getElementById('sc-label-' + i)?.value || it.label;
+    it.icon  = document.getElementById('sc-icon-' + i)?.value  || it.icon;
+    it.sub   = document.getElementById('sc-sub-' + i)?.value   || '';
+  });
+  Store.eventScheduleItems = items;
+  document.getElementById('schedule-editor-modal')?.remove();
+  toast('Monograma actualizado para este evento.');
+}
+function resetScheduleItems() {
+  window._scheduleEditorItems = JSON.parse(JSON.stringify(DEFAULT_SCHEDULE_ITEMS));
+  Store.eventScheduleItems = null;
+  refreshScheduleEditorList();
+}
+
+
+// ===================== SECTION ORDER EDITOR =====================
+const ALL_SECTION_DEFS = [
+  { key: 'bible',     label: 'Versículo Bíblico + Bênção dos Pais', icon: 'book-open' },
+  { key: 'invite',    label: 'Texto de Convite',                     icon: 'mail' },
+  { key: 'date',      label: 'Data do Evento',                       icon: 'calendar' },
+  { key: 'countdown', label: 'Contagem Regressiva',                  icon: 'timer' },
+  { key: 'story',     label: 'Nossa História',                       icon: 'heart' },
+  { key: 'venues',    label: 'Locais do Evento',                     icon: 'map-pin' },
+  { key: 'parents',   label: 'Nomes dos Pais',                       icon: 'users' },
+  { key: 'iban',      label: 'Sugestão de Presente (IBAN)',           icon: 'credit-card' },
+  { key: 'gallery',   label: 'Galeria de Fotos',                     icon: 'image' },
+  { key: 'manual',    label: 'Manual do Bom Convidado',              icon: 'list-checks' },
+  { key: 'schedule',  label: 'Itinerário',                           icon: 'clock' },
+  { key: 'dresscode', label: 'Dress Code',                             icon: 'shirt' },
+];
+
+function getDefaultSectionOrder() {
+  return ALL_SECTION_DEFS.map(s => s.key);
+}
+
+// Store.eventSectionOrder persists for the current event editing session
+// Saved to Supabase as section_order JSON column
+Store.eventSectionOrder = null;
+
+function openSectionOrderEditor() {
+  // Start with the current saved order (from event or Store)
+  let order = Store.eventSectionOrder
+    ? [...Store.eventSectionOrder]
+    : getDefaultSectionOrder();
+
+  // Always add any missing sections (e.g. 'venues', 'story' added after event creation)
+  const allKeys = getDefaultSectionOrder();
+  allKeys.forEach(k => { if (!order.includes(k)) order.push(k); });
+  // Remove any stale keys not in current definitions
+  order = order.filter(k => allKeys.includes(k));
+
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.id = 'section-order-modal';
+
+  function renderList() {
+    return order.map((key, i) => {
+      const def = ALL_SECTION_DEFS.find(d => d.key === key) || { label: key, icon: 'layout' };
+      return `<div class="section-reorder-item" data-key="${key}">
+        <span class="sr-handle"><i data-lucide="grip-vertical" class="w-4 h-4"></i></span>
+        <span class="sr-label">${def.label}</span>
+        <button type="button" class="text-gray-300 hover:text-gray-500 px-1" onclick="moveSectionUp(${i})" ${i===0?'disabled style="opacity:0.3"':''}>
+          <i data-lucide="chevron-up" class="w-4 h-4"></i>
+        </button>
+        <button type="button" class="text-gray-300 hover:text-gray-500 px-1" onclick="moveSectionDown(${i})" ${i===order.length-1?'disabled style="opacity:0.3"':''}>
+          <i data-lucide="chevron-down" class="w-4 h-4"></i>
+        </button>
+      </div>`;
+    }).join('');
+  }
+
+  modal.innerHTML = `<div class="modal-content bg-white rounded-2xl shadow-lg p-5 max-w-md w-full" style="max-height:85vh;overflow-y:auto">
+    <h3 class="text-base font-bold text-gray-800 mb-1">Organizar Secções</h3>
+    <p class="text-xs text-gray-400 mb-3">Use as setas para reordenar as secções da página do convidado.</p>
+    <div id="section-order-list">${renderList()}</div>
+    <div class="flex gap-2 mt-4">
+      <button class="flex-1 btn-main" onclick="saveSectionOrder()">Guardar</button>
+      <button class="flex-1 btn-outline" onclick="this.closest('.modal-overlay').remove()">Cancelar</button>
+      <button class="text-xs text-gray-400 px-2" onclick="resetSectionOrder()">Repor</button>
+    </div>
+  </div>`;
+  document.body.appendChild(modal);
+  lucide.createIcons();
+  window._sectionOrderCurrent = order;
+}
+
+function moveSectionUp(i) {
+  const order = window._sectionOrderCurrent;
+  if (i > 0) { [order[i-1], order[i]] = [order[i], order[i-1]]; refreshSectionOrderList(); }
+}
+function moveSectionDown(i) {
+  const order = window._sectionOrderCurrent;
+  if (i < order.length-1) { [order[i+1], order[i]] = [order[i], order[i+1]]; refreshSectionOrderList(); }
+}
+function refreshSectionOrderList() {
+  const order = window._sectionOrderCurrent;
+  document.getElementById('section-order-list').innerHTML = order.map((key, i) => {
+    const def = ALL_SECTION_DEFS.find(d => d.key === key) || { label: key, icon: 'layout' };
+    return `<div class="section-reorder-item" data-key="${key}">
+      <span class="sr-handle"><i data-lucide="grip-vertical" class="w-4 h-4"></i></span>
+      <span class="sr-label">${def.label}</span>
+      <button type="button" class="text-gray-300 hover:text-gray-500 px-1" onclick="moveSectionUp(${i})" ${i===0?'disabled style="opacity:0.3"':''}>
+        <i data-lucide="chevron-up" class="w-4 h-4"></i>
+      </button>
+      <button type="button" class="text-gray-300 hover:text-gray-500 px-1" onclick="moveSectionDown(${i})" ${i===order.length-1?'disabled style="opacity:0.3"':''}>
+        <i data-lucide="chevron-down" class="w-4 h-4"></i>
+      </button>
+    </div>`;
+  }).join('');
+  lucide.createIcons();
+}
+function saveSectionOrder() {
+  Store.eventSectionOrder = [...window._sectionOrderCurrent];
+  document.getElementById('section-order-modal')?.remove();
+  toast('Ordem das secções guardada.');
+}
+function resetSectionOrder() {
+  window._sectionOrderCurrent = getDefaultSectionOrder();
+  refreshSectionOrderList();
+  Store.eventSectionOrder = null;
+}
+
+
+// ── VENUES SECTION ──
+function buildVenueSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
+  const evColor = ev.event_color || '#007f9f';
+  const venues = [];
+  if (ev.venue_ceremony) venues.push({ icon: 'church',      title: 'Cerimónia Religiosa', name: ev.venue_ceremony, maps: ev.venue_ceremony_maps });
+  if (ev.venue_civil)    venues.push({ icon: 'file-text',   title: 'Cerimónia Civil',     name: ev.venue_civil,    maps: ev.venue_civil_maps });
+  if (ev.venue_reception)venues.push({ icon: 'glass-water', title: "Copo d'Água",          name: ev.venue_reception,maps: ev.venue_reception_maps });
+  if (!venues.length) return '';
+
+  const cards = venues.map(v => `
+    <div style="background:#fff;border-radius:1rem;padding:1.25rem 1rem;border:1.5px solid color-mix(in srgb,${evColor} 20%,#e5e7eb);text-align:center;flex:1;min-width:180px">
+      <div style="width:44px;height:44px;border-radius:50%;background:color-mix(in srgb,${evColor} 12%,white);display:flex;align-items:center;justify-content:center;margin:0 auto 0.6rem">
+        <i data-lucide="${v.icon}" style="width:20px;height:20px;color:${evColor}"></i>
+      </div>
+      <div style="font-size:0.7rem;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;color:${evColor};margin-bottom:0.25rem">${escapeHTML(v.title)}</div>
+      <div style="font-weight:700;color:#1e293b;font-size:0.9rem;margin-bottom:0.5rem">${escapeHTML(v.name)}</div>
+      ${v.maps ? `<a href="${v.maps}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:0.35rem;background:${evColor};color:#fff;font-size:0.72rem;font-weight:700;padding:0.35rem 0.85rem;border-radius:999px;text-decoration:none">
+        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        Ver no Mapa</a>` : ''}
+    </div>`).join('');
+
+  return _SD + `<div class="event-section">
+    <div class="section-inner reveal">
+      <h3 class="section-title">${escapeHTML(ev.venues_title || 'Locais do Evento')}</h3>
+      <div style="display:flex;gap:1rem;flex-wrap:wrap;justify-content:center">${cards}</div>
+    </div>
+  </div>`;
+}
+
+// ── DRESS CODE SECTION ──
+function buildDresscodeSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
+  const evColor = ev.event_color || '#007f9f';
+  return _SD + `<div class="event-section">
+    <div class="section-inner reveal" style="text-align:center">
+      <div style="width:52px;height:52px;border-radius:50%;background:color-mix(in srgb,${evColor} 12%,white);display:flex;align-items:center;justify-content:center;margin:0 auto 0.75rem">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="${evColor}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.38 3.46 16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.57a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.57a2 2 0 0 0-1.34-2.23z"/></svg>
+      </div>
+      <h3 class="section-title">Dress Code</h3>
+      ${ev.dresscode_text ? `<p style="font-size:1rem;font-weight:600;color:#1e293b;margin-bottom:0.5rem">${escapeHTML(ev.dresscode_text)}</p>` : ''}
+      ${ev.dresscode_colors ? `<p style="font-size:0.82rem;color:#6b7280">${escapeHTML(ev.dresscode_colors)}</p>` : ''}
+    </div>
+  </div>`;
+}
