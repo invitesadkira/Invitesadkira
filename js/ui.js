@@ -309,7 +309,9 @@ function buildAdminQuickGrid() {
     { icon:'package',      label:'Pacotes',          action:"openPackageEditor()" },
     { icon:'send',         label:'Link Cliente',     action:"openIntakeLinkPicker()" },
     { icon:'megaphone',    label:'Avisos Site',      action:"openSiteNoticesManager()" },
-    { icon:'star',         label:'Avaliações',       action:"openLeaveReview()" },
+    { icon:'star',         label:'Avaliações',       action:"openReviewsManager()" },
+    { icon:'shopping-bag', label:'Encomendas',       action:"openOrdersManager()" },
+    { icon:'bell',         label:'Notificar Todos',  action:"openSendNotificationModal()" },
   ];
   grid.innerHTML = items.map(it => `
     <button class="quick-card" onclick="${it.action}" style="position:relative">
@@ -541,17 +543,31 @@ function startMusicAutoplay(ytId, audioSrc) {
           if (floatBtn) floatBtn.classList.add('visible');
 
           // One-time: try to play on any user interaction
+          // Note: long-press-to-scroll on mobile fires touchstart but the browser
+          // may not count it as a "user gesture" for audio until touchend/click/scroll
+          let _played = false;
           const tryPlay = () => {
+            if (_played) return;
             audio.play().then(() => {
+              _played = true;
               setMusicPlayingUI(true);
               const floatBtn = document.getElementById('floating-music-btn');
               if (floatBtn) floatBtn.classList.remove('visible');
+              _removeAllTryPlayListeners();
             }).catch(() => {});
-            document.removeEventListener('touchstart', tryPlay);
-            document.removeEventListener('click', tryPlay);
           };
-          document.addEventListener('touchstart', tryPlay, { once: true, passive: true });
-          document.addEventListener('click', tryPlay, { once: true });
+          function _removeAllTryPlayListeners() {
+            document.removeEventListener('touchstart', tryPlay);
+            document.removeEventListener('touchend', tryPlay);
+            document.removeEventListener('click', tryPlay);
+            document.removeEventListener('scroll', tryPlay);
+            window.removeEventListener('scroll', tryPlay);
+          }
+          document.addEventListener('touchstart', tryPlay, { passive: true });
+          document.addEventListener('touchend', tryPlay, { passive: true });
+          document.addEventListener('click', tryPlay);
+          document.addEventListener('scroll', tryPlay, { passive: true, once: true });
+          window.addEventListener('scroll', tryPlay, { passive: true, once: true });
         });
       }
     }
@@ -712,6 +728,16 @@ function changeCoupleSize(delta) {
   if (!inp) return;
   let v = parseFloat(inp.value) || 2.4;
   v = Math.max(1.0, Math.min(16.0, parseFloat((v + delta * 0.2).toFixed(1))));
+  inp.value = v;
+  if (lbl) lbl.textContent = v + 'rem';
+}
+
+function changeParentsSize(delta) {
+  const inp = document.getElementById('evt-parents-size');
+  const lbl = document.getElementById('parents-size-label');
+  if (!inp) return;
+  let v = parseFloat(inp.value) || 0.88;
+  v = Math.max(0.6, Math.min(2.5, parseFloat((v + delta * 0.08).toFixed(2))));
   inp.value = v;
   if (lbl) lbl.textContent = v + 'rem';
 }

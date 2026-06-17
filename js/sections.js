@@ -103,8 +103,7 @@ async function renderGuestSections(eventData) {
       case 'manual':   if (_yesOrTrue(eventData.show_manual)) html += buildManualSection(eventData); break;
       case 'schedule': if (_yesOrTrue(eventData.show_schedule)) html += buildScheduleSection(eventData); break;
       case 'dresscode': if (_yesOrTrue(eventData.show_dresscode) && eventData.dresscode_text) html += buildDresscodeSection(eventData); break;
-      case 'couplемsg': if (_yesOrTrue(eventData.show_couplемsg) && eventData.couplемsg_text) html += buildCoupleMsgSection(eventData); break;
-      case 'couplемsg': if (_yesOrTrue(eventData.show_couplемsg) && eventData.couplемsg_text) html += buildCoupleMsgSection(eventData); break;
+      case 'couplemsg': if (_yesOrTrue(eventData.show_couplemsg) && eventData.couplemsg_text) html += buildCoupleMsgSection(eventData); break;
       case 'rsvp':     break; // always last, separate element
     }
   });
@@ -238,9 +237,9 @@ function buildBibleSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
     <div class="reveal" style="margin-top:1.5rem">
       <p class="invitation-text" style="margin-bottom:1rem;font-size:0.9rem">${blessingLabel}</p>
       <div style="display:flex;gap:1.5rem;justify-content:center;flex-wrap:wrap;text-align:center;max-width:380px;margin:0 auto">
-        ${_groomParentsB ? (() => { return '<div>' + _groomParentsB.split('\n').filter(l=>l.trim()).map(l=>{ const im=l.includes('(em memória)'); const n=l.replace('(em memória)','').trim(); return '<p style="font-weight:600;color:#1e293b;line-height:1.85;font-size:0.88rem">'+escapeHTML(n)+(im?' <span style="color:#6b7280;font-size:0.78rem;font-style:italic">(em memória)</span>':'')+'</p>'; }).join('') + '</div>'; })() : ''}
+        ${_groomParentsB ? (() => { return '<div>' + _groomParentsB.split('\n').filter(l=>l.trim()).map(l=>{ const hasCross=l.includes('✟'); const im=l.includes('(em memória)')||hasCross; let n=l.replace('(em memória)','').replace(/✟/g,'').trim(); const _pSize = ev.parents_size || '0.88'; return '<p style="font-weight:600;color:#1e293b;line-height:1.85;font-size:'+_pSize+'rem">'+escapeHTML(n)+(hasCross?' <span style="opacity:0.7">✟</span>':(im?' <span style="color:#6b7280;font-size:0.78rem;font-style:italic">(em memória)</span>':''))+'</p>'; }).join('') + '</div>'; })() : ''}
         ${_groomParentsB && _brideParentsB ? '<div style="width:1px;background:linear-gradient(to bottom,transparent,var(--ev-color,#007f9f) 20%,var(--ev-color,#007f9f) 80%,transparent);align-self:stretch;flex-shrink:0;min-height:60px"></div>' : ''}
-        ${_brideParentsB ? (() => { return '<div>' + _brideParentsB.split('\n').filter(l=>l.trim()).map(l=>{ const im=l.includes('(em memória)'); const n=l.replace('(em memória)','').trim(); return '<p style="font-weight:600;color:#1e293b;line-height:1.85;font-size:0.88rem">'+escapeHTML(n)+(im?' <span style="color:#6b7280;font-size:0.78rem;font-style:italic">(em memória)</span>':'')+'</p>'; }).join('') + '</div>'; })() : ''}
+        ${_brideParentsB ? (() => { return '<div>' + _brideParentsB.split('\n').filter(l=>l.trim()).map(l=>{ const hasCross=l.includes('✟'); const im=l.includes('(em memória)')||hasCross; let n=l.replace('(em memória)','').replace(/✟/g,'').trim(); const _pSize = ev.parents_size || '0.88'; return '<p style="font-weight:600;color:#1e293b;line-height:1.85;font-size:'+_pSize+'rem">'+escapeHTML(n)+(hasCross?' <span style="opacity:0.7">✟</span>':(im?' <span style="color:#6b7280;font-size:0.78rem;font-style:italic">(em memória)</span>':''))+'</p>'; }).join('') + '</div>'; })() : ''}
       </div>
     </div>` : '';
 
@@ -337,6 +336,7 @@ function buildCountdownSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
     <div class="section-inner" style="text-align:center">
       <div class="reveal">
         <span class="section-tag">Contagem Regressiva</span>
+        <p style="font-size:0.75rem;color:#6b7280;margin:0.25rem 0 0.75rem;font-weight:500">Contagem regressiva até a data do evento</p>
         <div class="countdown-section-grid">
           <div class="countdown-section-box" style="background:${ev.event_color||'#007f9f'}"><div class="cdb-num" id="cd-days">--</div><div class="cdb-label">Dias</div></div>
           <div class="countdown-section-box" style="background:${ev.event_color||'#007f9f'}"><div class="cdb-num" id="cd-hours">--</div><div class="cdb-label">Horas</div></div>
@@ -443,9 +443,11 @@ function buildParentsSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
   function renderCol(name, text) {
     if (!text || !text.trim()) return '';
     const rows = text.split('\n').filter(l=>l.trim()).map(l=>{
-      const im = l.includes('(em memória)');
-      const n = l.replace('(em memória)','').trim();
-      return `<p class="parent-name">${escapeHTML(n)}${im ? '<span class="in-memoriam">(em memória)</span>' : ''}</p>`;
+      const hasCross = l.includes('✟');
+      const im = l.includes('(em memória)') || hasCross;
+      const n = l.replace('(em memória)','').replace(/✟/g,'').trim();
+      const marker = hasCross ? '<span class="in-memoriam" style="opacity:0.7">✟</span>' : (im ? '<span class="in-memoriam">(em memória)</span>' : '');
+      return `<p class="parent-name">${escapeHTML(n)}${marker}</p>`;
     }).join('');
     return `<div class="parents-col"><p class="parents-col-title">${escapeHTML(name)}</p><div class="parents-name-grid">${rows}</div></div>`;
   }
@@ -453,9 +455,11 @@ function buildParentsSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
   function renderColNoTitle(text) {
     if (!text || !text.trim()) return '';
     const rows = text.split('\n').filter(l=>l.trim()).map(l=>{
-      const im = l.includes('(em memória)');
-      const n = l.replace('(em memória)','').trim();
-      return `<p class="parent-name">${escapeHTML(n)}${im ? ' <span class="in-memoriam">(em memória)</span>' : ''}</p>`;
+      const hasCross = l.includes('✟');
+      const im = l.includes('(em memória)') || hasCross;
+      const n = l.replace('(em memória)','').replace(/✟/g,'').trim();
+      const marker = hasCross ? ' <span class="in-memoriam" style="opacity:0.7">✟</span>' : (im ? ' <span class="in-memoriam">(em memória)</span>' : '');
+      return `<p class="parent-name">${escapeHTML(n)}${marker}</p>`;
     }).join('');
     return `<div class="parents-col">${rows}</div>`;
   }
@@ -515,7 +519,7 @@ function buildManualSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
   }
   const evColor = ev.event_color || '#007f9f';
   const cards = items.map(it => `<div class="manual-item">
-    <div class="mi-icon" style="background:color-mix(in srgb,${evColor} 15%,white)"><i data-lucide="${it.icon}" style="color:${evColor}"></i></div>
+    <div class="mi-icon" style="background:color-mix(in srgb,${evColor} 15%,white)">${it.icon && it.icon.startsWith('http') ? `<img src="${it.icon}" style="width:20px;height:20px;object-fit:contain">` : `<i data-lucide="${it.icon}" style="color:${evColor}"></i>`}</div>
     <p class="mi-text">${it.text.replace(/\n/g, '<br>')}</p>
   </div>`).join('');
   return _SD + `<div class="event-section" style="background:#f8fafc">
@@ -539,7 +543,7 @@ function buildScheduleSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
     const isLeft = i % 2 === 0;
     const timeLabel  = `<div style="font-size:0.72rem;font-weight:800;color:${evColor};text-transform:uppercase;letter-spacing:0.05em;margin-bottom:2px">${it.time}</div>`;
     const textLabel  = `<div><div style="font-weight:700;color:#1e293b;font-size:0.88rem">${escapeHTML(it.label)}</div>${it.sub?`<div style="font-size:0.72rem;color:#6b7280;margin-top:1px">${escapeHTML(it.sub)}</div>`:''}</div>`;
-    const node = `<div style="flex-shrink:0;width:44px;height:44px;border-radius:50%;background:${evColor};display:flex;align-items:center;justify-content:center;position:relative;z-index:2;box-shadow:0 2px 8px rgba(0,0,0,0.15)"><i data-lucide="${it.icon}" style="width:18px;height:18px;color:#fff"></i></div>`;
+    const node = `<div style="flex-shrink:0;width:44px;height:44px;border-radius:50%;background:${evColor};display:flex;align-items:center;justify-content:center;position:relative;z-index:2;box-shadow:0 2px 8px rgba(0,0,0,0.15)">${it.icon && it.icon.startsWith('http') ? `<img src="${it.icon}" style="width:20px;height:20px;object-fit:contain;filter:brightness(0) invert(1)">` : `<i data-lucide="${it.icon}" style="width:18px;height:18px;color:#fff"></i>`}</div>`;
     if (isLeft) {
       return `<div class="reveal" style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;margin-bottom:1.5rem;max-width:500px;margin-left:auto;margin-right:auto">
         <div style="text-align:right;padding-right:0.75rem">${timeLabel}${textLabel}</div>
@@ -622,26 +626,45 @@ function refreshManualEditorList() {
   document.getElementById('manual-items-list').innerHTML = items.map((it, i) => `
     <div class="flex items-center gap-2 mb-2 p-1.5 bg-gray-50 rounded-lg">
       <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style="background:rgba(0,127,159,0.12)" id="mi-prev-${i}">
-        <i data-lucide="${it.icon}" style="width:16px;height:16px;color:#007f9f"></i>
+        ${it.icon && it.icon.startsWith('http') ? `<img src="${it.icon}" style="width:16px;height:16px;object-fit:contain">` : `<i data-lucide="${it.icon}" style="width:16px;height:16px;color:#007f9f"></i>`}
       </div>
       <input class="input-field text-xs flex-1" value="${it.text.replace(/\n/g,' ')}" placeholder="Texto" id="mi-text-${i}">
-      <input class="input-field text-xs w-24" value="${it.icon}" placeholder="lucide icon" id="mi-icon-${i}"
+      <input class="input-field text-xs w-20" value="${it.icon}" placeholder="lucide icon" id="mi-icon-${i}"
         oninput="const p=document.getElementById('mi-prev-'+${i});if(p){p.innerHTML='<i data-lucide=\''+this.value+'\' style=\'width:16px;height:16px;color:#007f9f\'></i>';try{lucide.createIcons();}catch(e){}}">
+      <button type="button" onclick="openIconPickerModal('manual', url => { const inp=document.getElementById('mi-icon-${i}'); if(inp) inp.value=url; const p=document.getElementById('mi-prev-${i}'); if(p) p.innerHTML='<img src=\\''+url+'\\' style=\\'width:16px;height:16px;object-fit:contain\\'>'; })" style="background:#f0f9fb;color:#007f9f;border:none;border-radius:0.4rem;padding:0.3rem;font-size:0.6rem;font-weight:700;cursor:pointer;flex-shrink:0" title="Escolher SVG da biblioteca">SVG</button>
       <button type="button" class="text-red-400" onclick="removeManualItem(${i})"><i data-lucide="x" class="w-4 h-4"></i></button>
       ${i > 0 ? `<button type="button" class="text-gray-400" onclick="moveManualItem(${i},-1)"><i data-lucide="arrow-up" class="w-3 h-3"></i></button>` : '<div class="w-5"></div>'}
       ${i < items.length-1 ? `<button type="button" class="text-gray-400" onclick="moveManualItem(${i},1)"><i data-lucide="arrow-down" class="w-3 h-3"></i></button>` : '<div class="w-5"></div>'}
     </div>`).join('');
   lucide.createIcons();
 }
-function saveManualItems() {
+async function saveManualItems() {
   const items = window._manualEditorItems;
   items.forEach((it, i) => {
     it.text = (document.getElementById('mi-text-' + i)?.value || it.text).replace(/\\n/g, '\n');
     it.icon = document.getElementById('mi-icon-' + i)?.value || it.icon;
   });
   Store.eventManualItems = items;
+
+  // Persist immediately to Supabase
+  const eventId = Store.currentEventId;
+  if (eventId) {
+    try {
+      await saveEventVisuals(eventId, {
+        manual_items: JSON.stringify(items),
+        show_manual: 'yes'
+      });
+      const swManual = document.getElementById('sw-manual');
+      if (swManual && !swManual.classList.contains('active')) swManual.classList.add('active');
+      const ev2 = Store.events.find(e => e.id === eventId);
+      if (ev2) { ev2.manual_items = JSON.stringify(items); ev2.show_manual = 'yes'; }
+    } catch(e) {
+      console.warn('Erro ao guardar manual:', e);
+    }
+  }
+
   document.getElementById('manual-editor-modal')?.remove();
-  toast('Manual actualizado para este evento.');
+  toast('Manual guardado com sucesso!');
 }
 function resetManualItems() {
   window._manualEditorItems = JSON.parse(JSON.stringify(DEFAULT_MANUAL_ITEMS));
@@ -717,9 +740,10 @@ function refreshScheduleEditorList() {
           <input class="input-field text-xs flex-1" value="${it.label}" placeholder="Momento" id="sc-label-${i}">
         </div>
         <div class="flex gap-2">
-          <div style="display:flex;align-items:center;gap:4px">
-        <div class="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0" style="background:rgba(0,127,159,0.12)" id="sc-prev-${i}"><i data-lucide="${it.icon}" style="width:13px;height:13px;color:#007f9f"></i></div>
-        <input class="input-field text-xs" style="width:calc(100% - 2rem)" value="${it.icon}" placeholder="lucide icon" id="sc-icon-${i}" oninput="const p=document.getElementById('sc-prev-'+${i});if(p){p.innerHTML='<i data-lucide=\''+this.value+'\' style=\'width:13px;height:13px;color:#007f9f\'></i>';try{lucide.createIcons();}catch(e){}}">
+          <div style="display:flex;align-items:center;gap:4px;width:100%">
+        <div class="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0" style="background:rgba(0,127,159,0.12)" id="sc-prev-${i}">${it.icon && it.icon.startsWith('http') ? `<img src="${it.icon}" style="width:13px;height:13px;object-fit:contain">` : `<i data-lucide="${it.icon}" style="width:13px;height:13px;color:#007f9f"></i>`}</div>
+        <input class="input-field text-xs flex-1" value="${it.icon}" placeholder="lucide icon" id="sc-icon-${i}" oninput="const p=document.getElementById('sc-prev-'+${i});if(p){p.innerHTML='<i data-lucide=\''+this.value+'\' style=\'width:13px;height:13px;color:#007f9f\'></i>';try{lucide.createIcons();}catch(e){}}">
+        <button type="button" onclick="openIconPickerModal('schedule', url => { const inp=document.getElementById('sc-icon-${i}'); if(inp) inp.value=url; const p=document.getElementById('sc-prev-${i}'); if(p) p.innerHTML='<img src=\\''+url+'\\' style=\\'width:13px;height:13px;object-fit:contain\\'>'; })" style="background:#f0f9fb;color:#007f9f;border:none;border-radius:0.4rem;padding:0.25rem 0.35rem;font-size:0.58rem;font-weight:700;cursor:pointer;flex-shrink:0">SVG</button>
       </div>
           <input class="input-field text-xs flex-1" value="${it.sub || ''}" placeholder="Subtítulo" id="sc-sub-${i}">
         </div>
@@ -732,7 +756,7 @@ function refreshScheduleEditorList() {
     </div>`).join('');
   lucide.createIcons();
 }
-function saveScheduleItems() {
+async function saveScheduleItems() {
   const items = window._scheduleEditorItems;
   items.forEach((it, i) => {
     it.time  = document.getElementById('sc-time-' + i)?.value  || it.time;
@@ -741,8 +765,28 @@ function saveScheduleItems() {
     it.sub   = document.getElementById('sc-sub-' + i)?.value   || '';
   });
   Store.eventScheduleItems = items;
+
+  // Persist immediately to Supabase — don't wait for the main event form save
+  const eventId = Store.currentEventId;
+  if (eventId) {
+    try {
+      await saveEventVisuals(eventId, {
+        schedule_items: JSON.stringify(items),
+        show_schedule: 'yes'   // Always enable display once the user has customised it
+      });
+      // Keep the main form switch in sync so a subsequent full-form save doesn't wipe it
+      const swSchedule = document.getElementById('sw-schedule');
+      if (swSchedule && !swSchedule.classList.contains('active')) swSchedule.classList.add('active');
+      // Update local cache too
+      const ev2 = Store.events.find(e => e.id === eventId);
+      if (ev2) { ev2.schedule_items = JSON.stringify(items); ev2.show_schedule = 'yes'; }
+    } catch(e) {
+      console.warn('Erro ao guardar monograma:', e);
+    }
+  }
+
   document.getElementById('schedule-editor-modal')?.remove();
-  toast('Monograma actualizado para este evento.');
+  toast('Monograma guardado com sucesso!');
 }
 function resetScheduleItems() {
   window._scheduleEditorItems = JSON.parse(JSON.stringify(DEFAULT_SCHEDULE_ITEMS));
@@ -899,6 +943,7 @@ function buildDresscodeSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
       </div>
       <h3 class="section-title">Dress Code</h3>
       ${ev.dresscode_text ? `<p style="font-size:1rem;font-weight:600;color:#1e293b;margin-bottom:0.5rem">${escapeHTML(ev.dresscode_text)}</p>` : ''}
+      ${ev.dresscode_detail ? `<p style="font-size:0.85rem;color:#374151;line-height:1.6;max-width:420px;margin:0 auto 0.5rem">${escapeHTML(ev.dresscode_detail)}</p>` : ''}
       ${(() => {
         if (!ev.dresscode_colors) return '';
         const cols = ev.dresscode_colors.split(/\n|,/).map(c => c.trim()).filter(c => /^#[0-9a-fA-F]{3,6}$/.test(c)).slice(0,4);
@@ -909,4 +954,77 @@ function buildDresscodeSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
       })()}
     </div>
   </div>`;
+}
+
+
+// ===================== SHARED ICON LIBRARY (SVG uploads) =====================
+// Icons uploaded by ANY user become available to ALL users (shared library)
+async function uploadIconToLibrary(file, category) {
+  if (!file) return null;
+  if (file.type !== 'image/svg+xml' && !file.name.endsWith('.svg')) {
+    toast('Apenas ficheiros SVG são permitidos.');
+    return null;
+  }
+  if (file.size > 100 * 1024) {
+    toast('Ícone muito grande. Máx. 100 KB.');
+    return null;
+  }
+  try {
+    const url = await uploadImageToStorage(file, 'event-covers');
+    if (!url) return null;
+    await supabaseRequest('icon_library', 'POST', {
+      name: file.name.replace(/\.svg$/i, ''), url, category: category || 'manual',
+      uploaded_by: Store.currentUser?.id || null
+    });
+    toast('Ícone adicionado à biblioteca partilhada!');
+    return url;
+  } catch(e) {
+    toast('Erro ao carregar ícone.');
+    return null;
+  }
+}
+
+async function loadIconLibrary(category) {
+  const rows = await supabaseRequest(`icon_library?category=eq.${category}&select=id,name,url&order=created_at.desc&limit=60`).catch(() => []);
+  return rows || [];
+}
+
+async function openIconPickerModal(category, onSelect) {
+  const icons = await loadIconLibrary(category);
+  const modal = document.createElement('div');
+  modal.id = '_icon-picker-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:99999;display:flex;align-items:center;justify-content:center;padding:1rem';
+  modal.innerHTML = `<div style="background:#fff;border-radius:1.25rem;padding:1.5rem;max-width:480px;width:100%;max-height:80vh;overflow-y:auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+      <h3 style="font-size:1rem;font-weight:800;color:#1e293b;margin:0">Escolher Ícone</h3>
+      <button id="_icon-picker-close" style="background:#f3f4f6;border:none;border-radius:50%;width:30px;height:30px;cursor:pointer">×</button>
+    </div>
+    <label style="display:block;background:#f0f9fb;border:1.5px dashed #007f9f;border-radius:0.75rem;padding:0.75rem;text-align:center;cursor:pointer;margin-bottom:1rem;font-size:0.82rem;color:#007f9f;font-weight:600">
+      + Carregar novo ícone SVG (ficará disponível para todos)
+      <input type="file" accept=".svg,image/svg+xml" style="display:none" id="_icon-upload-input">
+    </label>
+    <div id="_icon-grid" style="display:grid;grid-template-columns:repeat(5,1fr);gap:0.6rem">
+      ${icons.map(ic => `<div onclick="window._iconPickerSelect('${ic.url}')" style="aspect-ratio:1;border:1px solid #e5e7eb;border-radius:0.6rem;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0.5rem;background:#f8fafc" title="${escapeHTML(ic.name)}">
+        <img src="${ic.url}" style="width:100%;height:100%;object-fit:contain" onerror="this.parentElement.style.display='none'">
+      </div>`).join('') || '<p style="grid-column:1/-1;text-align:center;color:#9ca3af;font-size:0.8rem;padding:1rem">Nenhum ícone na biblioteca ainda. Sê o primeiro a carregar um!</p>'}
+    </div>
+  </div>`;
+  document.body.appendChild(modal);
+  document.getElementById('_icon-picker-close').onclick = () => modal.remove();
+  modal.onclick = e => { if (e.target === modal) modal.remove(); };
+
+  window._iconPickerSelect = (url) => {
+    onSelect(url);
+    modal.remove();
+  };
+
+  document.getElementById('_icon-upload-input').onchange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const url = await uploadIconToLibrary(file, category);
+    if (url) {
+      onSelect(url);
+      modal.remove();
+    }
+  };
 }

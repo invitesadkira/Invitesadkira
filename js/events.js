@@ -294,6 +294,12 @@ function saveEventWithCover(eventId, title, date, time, deadline, coverImageURL,
     // but the event was still created — treat null as success for POST
     const success = result && result.length > 0;
     if (success || result === null || (Array.isArray(result) && result[0]?.success)) {
+      // Increment permanent event counter (never decreases, even if event is later deleted)
+      supabaseRequest('site_config?key=eq.total_events_ever&select=value&limit=1').then(rows => {
+        const current = parseInt(rows?.[0]?.value || '0');
+        supabaseRequest('site_config?key=eq.total_events_ever', 'PATCH', { value: String(current + 1) }).catch(() => {});
+      }).catch(() => {});
+
       // Always add to Store so the event is visible immediately
       const newEvent = {
         id: eventId,
@@ -700,8 +706,10 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
           show_dresscode: document.getElementById('sw-dresscode')?.classList.contains('active') ? 'yes' : 'no',
           show_couplemsg: document.getElementById('sw-couplemsg')?.classList.contains('active') ? 'yes' : 'no',
           couplemsg_text: document.getElementById('evt-couplemsg-text')?.value?.trim() || null,
+          parents_size: document.getElementById('evt-parents-size')?.value || '0.88',
           dresscode_text:   document.getElementById('evt-dresscode-text')?.value?.trim() || null,
           dresscode_colors: document.getElementById('evt-dresscode-colors')?.value?.trim() || null,
+          dresscode_detail: document.getElementById('evt-dresscode-detail')?.value?.trim() || null,
           show_story:    document.getElementById('sw-story')?.classList.contains('active') ? 'yes' : 'no',
           section_order: Store.eventSectionOrder ? JSON.stringify(Store.eventSectionOrder) : null,
           invert_names:  document.getElementById('sw-invert-names')?.classList.contains('active') ? 'yes' : 'no',
@@ -1512,9 +1520,11 @@ function _fillEditForm(ev) {
   _setSwitch('sw-dresscode', _yesOrTrue(ev.show_dresscode), 'dresscode-extra');
   _setSwitch('sw-couplemsg', _yesOrTrue(ev.show_couplemsg), 'couplemsg-extra');
   { const el = document.getElementById('evt-couplemsg-text'); if (el) el.value = ev.couplemsg_text || ''; }
+  { const psInp = document.getElementById('evt-parents-size'); const psLbl = document.getElementById('parents-size-label'); const psVal = ev.parents_size || '0.88'; if (psInp) psInp.value = psVal; if (psLbl) psLbl.textContent = psVal + 'rem'; }
   const _svDC = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
   _svDC('evt-dresscode-text',   ev.dresscode_text);
   _svDC('evt-dresscode-colors', ev.dresscode_colors);
+  _svDC('evt-dresscode-detail', ev.dresscode_detail);
   _setSwitch('sw-invert-names', _yesOrTrue(ev.invert_names));
   const evTypeEl = document.getElementById('evt-event-type');
   if (evTypeEl) evTypeEl.value = ev.event_type || 'wedding';
@@ -2778,8 +2788,9 @@ async function openIntakeForm(eventId) {
 
 async function openIntakeFormMain(eventId) {
   // Load full event data including visuals to pre-fill existing values
+  // Select ALL relevant fields from events table as fallback (in case event_visuals row is incomplete)
   const result = await supabaseRequest(
-    `events?id=eq.${eventId}&select=id,title,date,time,confirm_by_date,cover_image,groom_name,bride_name,music_url,iban_number,iban_holder&limit=1`
+    `events?id=eq.${eventId}&select=id,title,date,time,confirm_by_date,cover_image,groom_name,bride_name,music_url,iban_number,iban_holder,bible_text,bible_ref,groom_parents,bride_parents,gallery_urls,invite_text,story_text&limit=1`
   );
   const evBase = (result && result[0]) ? result[0] : {};
   const visuals = await loadEventVisuals(eventId).catch(() => ({}));
@@ -2835,6 +2846,7 @@ async function openIntakeFormMain(eventId) {
                 <div id="int-gal-slot-${i}" onclick="document.getElementById('int-gal-file-${i}').click()" style="aspect-ratio:1;border:2px dashed #cbd5e1;border-radius:0.6rem;display:flex;align-items:center;justify-content:center;cursor:pointer;background:#f8fafc;overflow:hidden;position:relative" onmouseover="this.style.borderColor='#007f9f'" onmouseout="this.style.borderColor=(document.getElementById('int-gal-preview-${i}').style.display?'#007f9f':'#cbd5e1')">
                   <img id="int-gal-preview-${i}" style="display:none;width:100%;height:100%;object-fit:cover;position:absolute;inset:0">
                   <svg id="int-gal-icon-${i}" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  <button type="button" id="int-gal-remove-${i}" onclick="event.stopPropagation(); intakeRemoveGalleryPhoto(${i})" style="display:none;position:absolute;top:2px;right:2px;background:rgba(239,68,68,0.9);color:#fff;border:none;border-radius:50%;width:18px;height:18px;font-size:10px;cursor:pointer;z-index:2;line-height:1;align-items:center;justify-content:center">×</button>
                 </div>
                 <input type="file" id="int-gal-file-${i}" accept="image/jpeg,image/png,image/jpg" style="display:none" onchange="intakePreviewGallery(this,${i})">`).join('')}
             </div>
@@ -2931,6 +2943,25 @@ async function openIntakeFormMain(eventId) {
   _pf('int-relig-time',    ev.venue_ceremony_time);
   _pf('int-copa-loc',      ev.venue_reception);
   _pf('int-copa-time',     ev.venue_reception_time);
+
+  // ── Pre-fill gallery with existing photos ──
+  if (ev.gallery_urls) {
+    const existingUrls = ev.gallery_urls.split('|').filter(Boolean);
+    existingUrls.slice(0, 8).forEach((url, i) => {
+      const preview = document.getElementById(`int-gal-preview-${i}`);
+      const icon = document.getElementById(`int-gal-icon-${i}`);
+      const removeBtn = document.getElementById(`int-gal-remove-${i}`);
+      if (preview) {
+        preview.src = url;
+        preview.style.display = 'block';
+        preview.dataset.existingUrl = url;
+      }
+      if (icon) icon.style.display = 'none';
+      if (removeBtn) removeBtn.style.display = 'flex';
+    });
+    // Store existing URLs so they're preserved if user doesn't change that slot
+    window._intakeExistingGalleryUrls = existingUrls;
+  }
 
 
   // ── Pre-fill existing cover photo ──
@@ -3072,17 +3103,18 @@ async function openIntakeFormMain(eventId) {
         coverUrl = await uploadImageToStorage(coverFile, 'event-covers');
       }
 
-      // Upload gallery photos — merge with existing, respect deletions
+      // Upload gallery photos — merge with existing, respect deletions (8 slots max)
       const galleryUrls = [];
-      for (let i = 0; i < 4; i++) {
-        const existingInput = document.getElementById(`int-gal-existing-${i}`);
-        const existingUrl = existingInput?.value || null;
+      for (let i = 0; i < 8; i++) {
+        const preview = document.getElementById(`int-gal-preview-${i}`);
+        const existingUrl = preview?.dataset?.existingUrl || null;
         const newFile = document.getElementById(`int-gal-file-${i}`)?.files[0];
+        const wasDeleted = preview?.dataset?.deleted === 'true';
         if (newFile) {
-          progress.textContent = `A carregar foto da galeria ${i+1} de 4...`;
+          progress.textContent = `A carregar foto da galeria ${i+1} de 8...`;
           const url = await uploadImageToStorage(newFile, 'event-covers');
           if (url) galleryUrls.push(url);
-        } else if (existingUrl && existingUrl !== '__DELETE__') {
+        } else if (existingUrl && !wasDeleted) {
           galleryUrls.push(existingUrl);
         }
       }
@@ -3245,10 +3277,23 @@ function intakePreviewGallery(input, idx) {
   reader.onload = e => {
     const prev = document.getElementById(`int-gal-preview-${idx}`);
     const icon = document.getElementById(`int-gal-icon-${idx}`);
-    if (prev) { prev.src = e.target.result; prev.style.display = 'block'; }
+    const removeBtn = document.getElementById(`int-gal-remove-${idx}`);
+    if (prev) { prev.src = e.target.result; prev.style.display = 'block'; prev.dataset.deleted = 'false'; delete prev.dataset.existingUrl; }
     if (icon) icon.style.display = 'none';
+    if (removeBtn) removeBtn.style.display = 'flex';
   };
   reader.readAsDataURL(file);
+}
+
+function intakeRemoveGalleryPhoto(idx) {
+  const prev = document.getElementById(`int-gal-preview-${idx}`);
+  const icon = document.getElementById(`int-gal-icon-${idx}`);
+  const removeBtn = document.getElementById(`int-gal-remove-${idx}`);
+  const fileInput = document.getElementById(`int-gal-file-${idx}`);
+  if (prev) { prev.style.display = 'none'; prev.src = ''; prev.dataset.deleted = 'true'; }
+  if (icon) icon.style.display = 'block';
+  if (removeBtn) removeBtn.style.display = 'none';
+  if (fileInput) fileInput.value = '';
 }
 
 // ── Intake token management ──

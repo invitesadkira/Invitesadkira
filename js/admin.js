@@ -2362,78 +2362,102 @@ async function saveFAQ(btn) {
 }
 
 // ===================== PACKAGE PAYMENT MODAL =====================
-function showPackagePayment(name, price) {
+function startPackageOrder(name, price) {
   const priceNum = parseFloat(String(price).replace(/[^0-9]/g, ''));
   const URGENCY_FEE = 8000;
-  const modalId = '_pkg-pay-' + Date.now();
-
-  function calcAndRender() {
-    const urgent = document.getElementById(modalId + '-urgent')?.checked;
-    const total = priceNum + (urgent ? URGENCY_FEE : 0);
-    const p1 = Math.ceil(total * 0.7);
-    const p2 = total - p1;
-    const fmt = n => n.toLocaleString('pt-PT') + ' Kz';
-    const el = document.getElementById(modalId + '-calc');
-    if (!el) return;
-    el.innerHTML = `
-      <div style="background:#f8fafc;border-radius:0.75rem;padding:1rem;margin-top:0.75rem">
-        <div style="display:flex;justify-content:space-between;margin-bottom:0.5rem">
-          <span style="font-size:0.85rem;color:#374151">Valor do pacote</span>
-          <span style="font-size:0.85rem;font-weight:600">${fmt(priceNum)}</span>
-        </div>
-        ${urgent ? `<div style="display:flex;justify-content:space-between;margin-bottom:0.5rem">
-          <span style="font-size:0.85rem;color:#374151">Taxa de urgência</span>
-          <span style="font-size:0.85rem;font-weight:600;color:#ef4444">+ ${fmt(URGENCY_FEE)}</span>
-        </div>` : ''}
-        <div style="border-top:1px solid #e5e7eb;padding-top:0.5rem;margin-top:0.25rem">
-          <div style="display:flex;justify-content:space-between;margin-bottom:0.35rem">
-            <span style="font-size:0.82rem;color:#6b7280">1ª prestação (70%)</span>
-            <span style="font-size:0.9rem;font-weight:800;color:#007f9f">${fmt(p1)}</span>
-          </div>
-          <div style="display:flex;justify-content:space-between">
-            <span style="font-size:0.82rem;color:#6b7280">2ª prestação (30%)</span>
-            <span style="font-size:0.9rem;font-weight:700;color:#374151">${fmt(p2)}</span>
-          </div>
-        </div>
-        <div style="margin-top:0.75rem;background:#dbeafe;border-radius:0.5rem;padding:0.5rem 0.75rem;font-size:0.78rem;color:#1e40af">
-          📅 Entrega em 48h úteis${urgent ? ' (urgência: 24h)' : ''} após confirmação do pagamento
-        </div>
-      </div>`;
-  }
+  const modalId = '_pkg-order-' + Date.now();
 
   const modal = document.createElement('div');
   modal.id = modalId;
   modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem';
-  modal.innerHTML = `
-    <div style="background:#fff;border-radius:1.25rem;padding:1.75rem;max-width:420px;width:100%">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
-        <h3 style="font-size:1.05rem;font-weight:800;color:#1e293b;margin:0">Encomendar — ${escapeHTML(name)}</h3>
-        <button id="${modalId}-close" style="background:#f3f4f6;border:none;border-radius:50%;width:32px;height:32px;cursor:pointer;display:flex;align-items:center;justify-content:center">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#374151" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-        </button>
-      </div>
+  modal.innerHTML = `<div style="background:#fff;border-radius:1.25rem;padding:1.75rem;max-width:440px;width:100%;max-height:90vh;overflow-y:auto">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+      <h3 style="font-size:1.05rem;font-weight:800;color:#1e293b;margin:0">Encomendar — ${escapeHTML(name)}</h3>
+      <button id="${modalId}-close" style="background:#f3f4f6;border:none;border-radius:50%;width:32px;height:32px;cursor:pointer;display:flex;align-items:center;justify-content:center">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#374151" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
 
-      <label style="display:flex;align-items:center;gap:0.5rem;font-size:0.85rem;font-weight:600;color:#374151;cursor:pointer;padding:0.75rem;background:#fef3c7;border-radius:0.65rem">
-        <input type="checkbox" id="${modalId}-urgent" onchange="(function(){${modalId.replace(/-/g,'_')}_recalc()})()">
-        Adicionar urgência +${URGENCY_FEE.toLocaleString('pt-PT')} Kz (entrega em 24h)
-      </label>
+    <label style="display:flex;align-items:center;gap:0.5rem;font-size:0.85rem;font-weight:600;color:#374151;cursor:pointer;padding:0.75rem;background:#fef3c7;border-radius:0.65rem;margin-bottom:0.75rem">
+      <input type="checkbox" id="${modalId}-urgent">
+      Adicionar urgência +${URGENCY_FEE.toLocaleString('pt-PT')} Kz (entrega em 24h)
+    </label>
 
-      <div id="${modalId}-calc"></div>
+    <div id="${modalId}-calc"></div>
 
-      <a href="https://wa.me/244959823409" target="_blank" style="display:block;margin-top:1.25rem;background:#25d366;color:#fff;border-radius:999px;padding:0.85rem;font-weight:700;font-size:0.92rem;text-align:center;text-decoration:none">
-        📲 Encomendar pelo WhatsApp
-      </a>
-      <p style="font-size:0.72rem;color:#9ca3af;text-align:center;margin-top:0.5rem">Após o pedido, enviaremos os dados de pagamento</p>
-    </div>`;
+    <div style="background:#f0f9fb;border-radius:0.75rem;padding:0.85rem;margin:0.75rem 0">
+      <p style="font-size:0.8rem;font-weight:700;color:#007f9f;margin-bottom:0.5rem">Dados de pagamento (IBAN)</p>
+      <p style="font-size:0.78rem;color:#374151;margin-bottom:0.2rem"><strong>IBAN:</strong> 0040 0000 3066 6927 1014 1</p>
+      <p style="font-size:0.78rem;color:#374151"><strong>Titular:</strong> AdKira — Invites Web-Convites</p>
+    </div>
+
+    <div style="border-top:1px solid #e5e7eb;margin:0.75rem 0;padding-top:0.75rem">
+      <label style="font-size:0.82rem;font-weight:700;color:#374151;display:block;margin-bottom:0.4rem">O seu nome</label>
+      <input id="${modalId}-name" class="input-field" placeholder="Nome completo" style="margin-bottom:0.6rem">
+      <label style="font-size:0.82rem;font-weight:700;color:#374151;display:block;margin-bottom:0.4rem">WhatsApp para contacto</label>
+      <input id="${modalId}-wa" class="input-field" placeholder="Ex: 244912345678">
+    </div>
+
+    <button id="${modalId}-submit" style="background:#007f9f;color:#fff;border:none;border-radius:999px;padding:0.85rem;font-weight:700;font-size:0.92rem;cursor:pointer;width:100%;font-family:inherit;margin-top:0.75rem">
+      Encomendar
+    </button>
+    <p style="font-size:0.72rem;color:#9ca3af;text-align:center;margin-top:0.5rem">A AdKira enviará um código de acesso pelo WhatsApp após confirmação.</p>
+  </div>`;
   document.body.appendChild(modal);
   document.getElementById(`${modalId}-close`).onclick = () => modal.remove();
   modal.onclick = e => { if (e.target === modal) modal.remove(); };
 
-  // Make recalc globally accessible
-  window[modalId.replace(/-/g,'_') + '_recalc'] = calcAndRender;
+  function calc() {
+    const urgent = document.getElementById(`${modalId}-urgent`)?.checked;
+    const total = priceNum + (urgent ? URGENCY_FEE : 0);
+    const p1 = Math.ceil(total * 0.7);
+    const p2 = total - p1;
+    const fmt = n => n.toLocaleString('pt-PT') + ' Kz';
+    const el = document.getElementById(`${modalId}-calc`);
+    if (!el) return;
+    el.innerHTML = `<div style="background:#f8fafc;border-radius:0.75rem;padding:1rem">
+      <div style="display:flex;justify-content:space-between;margin-bottom:0.4rem"><span style="font-size:0.85rem;color:#374151">Valor do pacote</span><span style="font-size:0.85rem;font-weight:600">${fmt(priceNum)}</span></div>
+      ${urgent ? `<div style="display:flex;justify-content:space-between;margin-bottom:0.4rem"><span style="font-size:0.85rem;color:#374151">Taxa de urgência</span><span style="font-size:0.85rem;font-weight:600;color:#ef4444">+ ${fmt(URGENCY_FEE)}</span></div>` : ''}
+      <div style="border-top:1px solid #e5e7eb;padding-top:0.5rem;margin-top:0.25rem">
+        <div style="display:flex;justify-content:space-between;margin-bottom:0.3rem"><span style="font-size:0.82rem;color:#6b7280">1ª prestação (70%)</span><span style="font-size:0.9rem;font-weight:800;color:#007f9f">${fmt(p1)}</span></div>
+        <div style="display:flex;justify-content:space-between"><span style="font-size:0.82rem;color:#6b7280">2ª prestação (30%)</span><span style="font-size:0.9rem;font-weight:700;color:#374151">${fmt(p2)}</span></div>
+      </div>
+      <div style="margin-top:0.6rem;background:#dbeafe;border-radius:0.5rem;padding:0.4rem 0.65rem;font-size:0.75rem;color:#1e40af">Entrega em 48h úteis${urgent?' (urgência: 24h)':''}</div>
+    </div>`;
+  }
+  document.getElementById(`${modalId}-urgent`).addEventListener('change', calc);
+  calc();
 
-  // Initial render
-  calcAndRender();
+  document.getElementById(`${modalId}-submit`).onclick = async function() {
+    const name = document.getElementById(`${modalId}-name`)?.value?.trim();
+    const wa   = document.getElementById(`${modalId}-wa`)?.value?.trim();
+    if (!name) { toast('Insere o teu nome.'); return; }
+    if (!wa)   { toast('Insere o teu WhatsApp.'); return; }
+
+    const urgent = document.getElementById(`${modalId}-urgent`)?.checked;
+    const urgencyFee = urgent ? URGENCY_FEE : 0;
+    const total = priceNum + urgencyFee;
+    const p1 = Math.ceil(total * 0.7);
+    const p2 = total - p1;
+
+    this.disabled = true; this.textContent = 'A processar...';
+
+    const order = await supabaseRequest('orders', 'POST', {
+      customer_name: name, whatsapp: wa, package_name: name + ' — ' + (document.querySelector(`#${modalId} h3`)?.textContent || ''),
+      package_price: priceNum, urgency_fee: urgencyFee, total_price: total,
+      installment1: p1, installment2: p2, status: 'pending'
+    }).catch(() => null);
+
+    if (!order || !order[0]) { toast('Erro ao processar encomenda. Tenta novamente.'); this.disabled = false; this.textContent = 'Encomendar'; return; }
+
+    modal.innerHTML = `<div style="padding:1.5rem;text-align:center">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin:0 auto 1rem"><circle cx="12" cy="12" r="10"/><polyline points="9 12 11 14 15 10"/></svg>
+      <h3 style="font-size:1.1rem;font-weight:800;color:#1e293b;margin-bottom:0.5rem">Encomenda Recebida!</h3>
+      <p style="font-size:0.85rem;color:#6b7280;margin-bottom:1.25rem">Entraremos em contacto pelo WhatsApp <strong>${escapeHTML(wa)}</strong> com o código de acesso e instruções de pagamento.</p>
+      <button onclick="document.getElementById('${modalId}').remove()" style="background:#007f9f;color:#fff;border:none;border-radius:999px;padding:0.75rem 2rem;font-weight:700;cursor:pointer;font-family:inherit">Fechar</button>
+    </div>`;
+    toast('Encomenda enviada! Acompanha o teu WhatsApp.');
+  };
 }
 
 function copyText(text, msg) {
@@ -2694,17 +2718,17 @@ function renderPackageEditorList(pkgs) {
   return pkgs.map((p, i) => `
     <div class="bg-gray-50 rounded-xl p-3 mb-3" id="pkg-item-${i}">
       <div class="grid grid-cols-2 gap-2 mb-2">
-        <input class="input-field text-sm" value="${escapeHTML(p.name)}" placeholder="Nome" id="pkg-name-${i}">
+        <input class="input-field text-sm" value="${escapeHTML(p.name)}" placeholder="Nome (ex: Básico)" id="pkg-name-${i}">
         <input class="input-field text-sm" value="${escapeHTML(p.price)}" placeholder="Preço (ex: 99 999 Kz)" id="pkg-price-${i}">
-        <input class="input-field text-sm" type="number" value="${p.people}" placeholder="Nº pessoas" id="pkg-people-${i}">
-        <input class="input-field text-sm" value="${escapeHTML(p.invites)}" placeholder="Convites (ex: 60–66)" id="pkg-invites-${i}">
       </div>
+      <input class="input-field text-sm mb-2" value="${escapeHTML(p.invites || '')}" placeholder="Nº de convites (ex: 60–66 convites digitais)" id="pkg-invites-${i}">
+      <textarea class="input-field text-sm mb-2" rows="2" placeholder="Descrição/detalhe (opcional)" id="pkg-desc-${i}">${escapeHTML(p.description || '')}</textarea>
       <button type="button" class="text-red-400 text-xs" onclick="removePackageItem(${i})">Remover</button>
     </div>`).join('');
 }
 
 function addPackageItem() {
-  Store._editPackages.push({ name: 'Novo', price: '0 Kz', people: 0, invites: '0', badge: 'Novo', color: '#f3f4f6', textColor: '#374151' });
+  Store._editPackages.push({ name: 'Novo', price: '0 Kz', invites: '', description: '', badge: 'Novo' });
   document.getElementById('pkg-editor-list').innerHTML = renderPackageEditorList(Store._editPackages);
 }
 
@@ -2717,10 +2741,10 @@ async function savePackages(btn) {
   btn.textContent = 'A guardar...'; btn.disabled = true;
   const pkgs = Store._editPackages.map((p, i) => ({
     ...p,
-    name:    document.getElementById(`pkg-name-${i}`)?.value?.trim()    || p.name,
-    price:   document.getElementById(`pkg-price-${i}`)?.value?.trim()   || p.price,
-    people:  parseInt(document.getElementById(`pkg-people-${i}`)?.value) || p.people,
-    invites: document.getElementById(`pkg-invites-${i}`)?.value?.trim() || p.invites,
+    name:        document.getElementById(`pkg-name-${i}`)?.value?.trim()    || p.name,
+    price:       document.getElementById(`pkg-price-${i}`)?.value?.trim()   || p.price,
+    invites:     document.getElementById(`pkg-invites-${i}`)?.value?.trim() || p.invites,
+    description: document.getElementById(`pkg-desc-${i}`)?.value?.trim()   || '',
   }));
   const val = JSON.stringify(pkgs);
   const ts  = new Date().toISOString();
@@ -2955,10 +2979,10 @@ async function renderLandingPackages(pkgsData) {
   grid.innerHTML = pkgs.map((p, i) => `
     <div class="lp-card ${i === 1 ? 'lp-featured' : ''}">
       <div class="lp-badge" style="${BADGE_STYLES[i] || BADGE_STYLES[0]}">${escapeHTML(p.name)}</div>
+      <div class="lp-detail" style="font-size:0.95rem;font-weight:700;color:#1e293b;margin-bottom:0.35rem">${escapeHTML(p.invites || '')}</div>
       <div class="lp-price">${escapeHTML(p.price)}</div>
-<!-- no desc line -->
-      <div class="lp-detail" style="font-size:0.85rem;color:#6b7280;margin-bottom:0.75rem">${escapeHTML(p.invites || '')}</div>
-      <button class="lp-btn" onclick="showPackagePayment('${escapeHTML(p.name)}','${escapeHTML(p.price)}')">Encomendar</button>
+      ${p.description ? `<p style="font-size:0.78rem;color:#6b7280;margin:0.5rem 0;line-height:1.5">${escapeHTML(p.description)}</p>` : ''}
+      <button class="lp-btn" onclick="startPackageOrder('${escapeHTML(p.name)}','${escapeHTML(p.price)}')">Encomendar</button>
     </div>`).join('');
 }
 
@@ -3241,4 +3265,111 @@ function openSendNotificationModal() {
     toast(`Notificação enviada para ${inserts.length} utilizadores!`);
     modal.remove();
   };
+}
+
+// ===================== ADMIN: ORDERS MANAGER =====================
+async function openOrdersManager() {
+  const orders = await supabaseRequest('orders?select=*&order=created_at.desc&limit=100').catch(() => []);
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.id = '_orders-modal';
+  const STATUS_LABELS = {
+    pending: 'Pendente', token_sent: 'Código Enviado', account_created: 'Conta Criada',
+    paid_70: '70% Pago', paid_100: '100% Pago', completed: 'Concluído', cancelled: 'Cancelado'
+  };
+  const STATUS_COLORS = {
+    pending: '#f59e0b', token_sent: '#3b82f6', account_created: '#8b5cf6',
+    paid_70: '#06b6d4', paid_100: '#16a34a', completed: '#16a34a', cancelled: '#ef4444'
+  };
+  modal.innerHTML = `<div class="modal-content bg-white rounded-2xl p-5" style="max-width:680px;max-height:88vh;overflow-y:auto">
+    <h3 class="text-base font-bold mb-3">Encomendas</h3>
+    <div id="orders-list">
+      ${(orders||[]).map(o => `<div style="background:#f8fafc;border-radius:0.75rem;padding:0.85rem;margin-bottom:0.65rem;border:1px solid #e5e7eb">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:0.4rem">
+          <div>
+            <p style="font-weight:700;font-size:0.88rem;color:#1e293b;margin:0">${escapeHTML(o.customer_name)}</p>
+            <p style="font-size:0.75rem;color:#6b7280;margin:0.1rem 0 0">${escapeHTML(o.whatsapp)} · ${escapeHTML(o.package_name||'')}</p>
+          </div>
+          <span style="font-size:0.68rem;font-weight:700;padding:2px 8px;border-radius:999px;background:${STATUS_COLORS[o.status]}18;color:${STATUS_COLORS[o.status]};flex-shrink:0">${STATUS_LABELS[o.status]||o.status}</span>
+        </div>
+        <div style="display:flex;gap:1rem;font-size:0.72rem;color:#6b7280;margin-bottom:0.5rem">
+          <span>Total: <strong>${o.total_price?.toLocaleString('pt-PT')} Kz</strong></span>
+          <span>1ª: ${o.installment1?.toLocaleString('pt-PT')} Kz</span>
+          <span>2ª: ${o.installment2?.toLocaleString('pt-PT')} Kz</span>
+        </div>
+        ${o.access_token ? `<p style="font-size:0.72rem;color:#374151;background:#fff;border:1px dashed #cbd5e1;border-radius:0.4rem;padding:0.3rem 0.5rem;margin-bottom:0.5rem;font-family:monospace">${o.access_token}</p>` : ''}
+        <div style="display:flex;gap:0.4rem;flex-wrap:wrap">
+          ${!o.access_token ? `<button onclick="adminGenerateOrderToken('${o.id}')" style="background:#007f9f;color:#fff;border:none;border-radius:0.5rem;padding:0.3rem 0.7rem;font-size:0.7rem;font-weight:700;cursor:pointer">Gerar Código</button>` : `<button onclick="copyOrderToken('${o.access_token}')" style="background:#f3f4f6;color:#374151;border:none;border-radius:0.5rem;padding:0.3rem 0.7rem;font-size:0.7rem;font-weight:600;cursor:pointer">Copiar Código</button>`}
+          <button onclick="adminUpdateOrderStatus('${o.id}','paid_70')" style="background:#e0f2fe;color:#0369a1;border:none;border-radius:0.5rem;padding:0.3rem 0.7rem;font-size:0.7rem;cursor:pointer">Marcar 70% Pago</button>
+          <button onclick="adminUpdateOrderStatus('${o.id}','paid_100')" style="background:#dcfce7;color:#166534;border:none;border-radius:0.5rem;padding:0.3rem 0.7rem;font-size:0.7rem;cursor:pointer">Marcar 100% Pago</button>
+          <button onclick="adminUpdateOrderStatus('${o.id}','cancelled')" style="background:#fee2e2;color:#991b1b;border:none;border-radius:0.5rem;padding:0.3rem 0.7rem;font-size:0.7rem;cursor:pointer">Cancelar</button>
+        </div>
+      </div>`).join('') || '<p style="text-align:center;color:#9ca3af;padding:1.5rem">Nenhuma encomenda ainda.</p>'}
+    </div>
+    <button class="btn-outline w-full mt-3 text-sm" onclick="this.closest('.modal-overlay').remove()">Fechar</button>
+  </div>`;
+  document.body.appendChild(modal);
+}
+
+async function adminGenerateOrderToken(orderId) {
+  const token = 'ADKIRA-' + Math.random().toString(36).substring(2,6).toUpperCase() + '-' + Math.random().toString(36).substring(2,6).toUpperCase();
+  await supabaseRequest('intake_tokens', 'POST', { token, event_id: null, used: false, locked: false, label: 'Encomenda #' + orderId.substring(0,8) });
+  await supabaseRequest(`orders?id=eq.${orderId}`, 'PATCH', { access_token: token, status: 'token_sent', updated_at: new Date().toISOString() });
+  toast('Código gerado: ' + token);
+  navigator.clipboard.writeText(token).catch(() => {});
+  document.getElementById('_orders-modal')?.remove();
+  openOrdersManager();
+}
+
+function copyOrderToken(token) {
+  navigator.clipboard.writeText(token).then(() => toast('Código copiado!')).catch(() => prompt('Código:', token));
+}
+
+async function adminUpdateOrderStatus(orderId, status) {
+  await supabaseRequest(`orders?id=eq.${orderId}`, 'PATCH', { status, updated_at: new Date().toISOString() });
+  toast('Estado actualizado!');
+  document.getElementById('_orders-modal')?.remove();
+  openOrdersManager();
+}
+
+// ===================== ADMIN: REVIEWS MANAGER =====================
+async function openReviewsManager() {
+  const reviews = await supabaseRequest('site_reviews?select=*&order=created_at.desc&limit=100').catch(() => []);
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.id = '_reviews-mgr-modal';
+  modal.innerHTML = `<div class="modal-content bg-white rounded-2xl p-5" style="max-width:560px;max-height:85vh;overflow-y:auto">
+    <h3 class="text-base font-bold mb-3">Gerir Avaliações</h3>
+    <div id="reviews-mgr-list">
+      ${(reviews||[]).map(r => `<div style="background:#f8fafc;border-radius:0.75rem;padding:0.85rem;margin-bottom:0.6rem;border:1px solid #e5e7eb">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:0.4rem">
+          <div>
+            <div style="color:#fbbf24;font-size:0.9rem">${'★'.repeat(r.stars)}<span style="color:#e5e7eb">${'★'.repeat(5-r.stars)}</span></div>
+            <p style="font-size:0.75rem;color:#6b7280;margin:0.15rem 0 0">${r.anonymous ? 'Anónimo' : escapeHTML(r.name)} · ${new Date(r.created_at).toLocaleDateString('pt-PT')}</p>
+          </div>
+          <button onclick="adminDeleteReview('${r.id}')" style="background:#fee2e2;color:#991b1b;border:none;border-radius:0.4rem;padding:0.25rem 0.6rem;font-size:0.68rem;cursor:pointer;flex-shrink:0">Apagar</button>
+        </div>
+        <textarea id="rev-edit-${r.id}" class="input-field text-xs" rows="2" style="margin-bottom:0.4rem">${escapeHTML(r.review || '')}</textarea>
+        <button onclick="adminSaveReviewEdit('${r.id}')" style="background:#007f9f;color:#fff;border:none;border-radius:0.4rem;padding:0.3rem 0.7rem;font-size:0.7rem;font-weight:700;cursor:pointer">Guardar Edição</button>
+      </div>`).join('') || '<p style="text-align:center;color:#9ca3af;padding:1.5rem">Nenhuma avaliação ainda.</p>'}
+    </div>
+    <button class="btn-outline w-full mt-3 text-sm" onclick="this.closest('.modal-overlay').remove()">Fechar</button>
+  </div>`;
+  document.body.appendChild(modal);
+}
+
+async function adminSaveReviewEdit(id) {
+  const text = document.getElementById(`rev-edit-${id}`)?.value?.trim() || '';
+  await supabaseRequest(`site_reviews?id=eq.${id}`, 'PATCH', { review: text });
+  toast('Avaliação actualizada!');
+  if (typeof renderLandingReviews === 'function') renderLandingReviews();
+}
+
+async function adminDeleteReview(id) {
+  if (!confirm('Apagar esta avaliação?')) return;
+  await supabaseRequest(`site_reviews?id=eq.${id}`, 'DELETE');
+  toast('Avaliação apagada.');
+  document.getElementById('_reviews-mgr-modal')?.remove();
+  openReviewsManager();
+  if (typeof renderLandingReviews === 'function') renderLandingReviews();
 }

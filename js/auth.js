@@ -43,9 +43,46 @@ async function handleRegister(e) {
     localStorage.setItem('userPhone', phone);
     localStorage.setItem('userRole', 'user');
     Store.currentUser = { id: newAccount.id, phone, role: 'user' };
+
+    // Increment permanent account counter (never decreases)
+    try {
+      const cfgRows = await supabaseRequest('site_config?key=eq.total_accounts_ever&select=value&limit=1');
+      const current = parseInt(cfgRows?.[0]?.value || '0');
+      await supabaseRequest('site_config?key=eq.total_accounts_ever', 'PATCH', { value: String(current + 1) });
+    } catch(e) {}
+
+    // Link order to this account if this token came from an order
+    try {
+      await supabaseRequest(`orders?access_token=eq.${encodeURIComponent(accessToken)}`, 'PATCH', {
+        account_id: newAccount.id, status: 'account_created', updated_at: new Date().toISOString()
+      });
+    } catch(e) {}
+
     toast('Conta criada com sucesso!');
-    if (tk.event_id) { Store._intakeEventId = tk.event_id; openIntakeForm(tk.event_id); }
-    else { Router.go('dashboard'); }
+
+    // If token has an event_id, go to intake form; otherwise create a blank event first
+    if (tk.event_id) {
+      Store._intakeEventId = tk.event_id;
+      openIntakeForm(tk.event_id);
+    } else {
+      // Create a new blank event for this user, then open intake form for it
+      const newEvent = await supabaseRequest('events', 'POST', {
+        title: 'O Meu Evento', user_id: newAccount.id, event_code: Math.random().toString(36).substring(2,10).toUpperCase()
+      }).catch(() => null);
+      if (newEvent && newEvent[0]) {
+        // Increment permanent event counter
+        try {
+          const cfgRows2 = await supabaseRequest('site_config?key=eq.total_events_ever&select=value&limit=1');
+          const current2 = parseInt(cfgRows2?.[0]?.value || '0');
+          await supabaseRequest('site_config?key=eq.total_events_ever', 'PATCH', { value: String(current2 + 1) });
+        } catch(e) {}
+        await supabaseRequest(`orders?access_token=eq.${encodeURIComponent(accessToken)}`, 'PATCH', { event_id: newEvent[0].id }).catch(() => {});
+        Store._intakeEventId = newEvent[0].id;
+        openIntakeForm(newEvent[0].id);
+      } else {
+        Router.go('dashboard');
+      }
+    }
   } catch(err) {
     showErr('Erro ao criar conta. Tenta novamente.');
     if (btn) { btn.disabled = false; btn.textContent = 'Criar Conta'; }
@@ -136,7 +173,24 @@ async function handleLogin(e) {
   localStorage.setItem('userId', user.id);
   localStorage.setItem('userPhone', user.phone);
   localStorage.setItem('userRole', userRole);
-  
+
+  // ── Increment login count and check for notices to show ──
+  const newLoginCount = (user.login_count || 0) + 1;
+  supabaseRequest(`accounts?id=eq.${user.id}`, 'PATCH', { login_count: newLoginCount }).catch(() => {});
+  Store.currentUser.loginCount = newLoginCount;
+
+  // Show active site notices (e.g. maintenance) up to 2 times per user
+  _checkAndShowLoginNotices(user.id).catch(() => {});
+
+  // Prompt for review on exactly the 5th login (once only)
+  if (newLoginCount === 5 && !user.review_requested) {
+    setTimeout(() => {
+      if (typeof openLeaveReview === 'function') {
+        _showReviewPrompt(user.id);
+      }
+    }, 1500);
+  }
+
   toast('Bem-vindo! Carregando seus dados...');
 
   // 🎯 Carregar dados do Supabase
@@ -600,4 +654,71 @@ function saveUserPhone(userId, modal) {
   modal.remove();
   toast(`Username alterado de "${oldPhone}" para "${newPhone}"`);
   renderAdmin();
+}
+
+
+// ── Show active site notices up to 2 times per logged-in user ──
+async function _checkAndShowLoginNotices(userId) {
+  const notices = await supabaseRequest(`site_notices?active=eq.true&select=id,title,message,type&order=created_at.desc&limit=5`).catch(() => []);
+  if (!notices || !notices.length) return;
+
+  for (const notice of notices) {
+    const viewRows = await supabaseRequest(
+      `notice_views?notice_id=eq.${notice.id}&user_id=eq.${userId}&select=id,view_count&limit=1`
+    ).catch(() => []);
+
+    const existing = viewRows && viewRows[0];
+    const viewCount = existing ? existing.view_count : 0;
+
+    if (viewCount >= 2) continue; // Already shown twice, skip
+
+    // Show the notice
+    _showNoticeModal(notice);
+
+    // Increment view count
+    if (existing) {
+      await supabaseRequest(`notice_views?id=eq.${existing.id}`, 'PATCH', { view_count: viewCount + 1 }).catch(() => {});
+    } else {
+      await supabaseRequest('notice_views', 'POST', { notice_id: notice.id, user_id: userId, view_count: 1 }).catch(() => {});
+    }
+    break; // Show only one notice per login
+  }
+}
+
+function _showNoticeModal(notice) {
+  const TYPE_COLORS = { info: '#3b82f6', warning: '#f59e0b', maintenance: '#ef4444' };
+  const TYPE_ICONS = { info: 'info', warning: 'alert-triangle', maintenance: 'tool' };
+  const color = TYPE_COLORS[notice.type] || TYPE_COLORS.info;
+
+  const modal = document.createElement('div');
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:99999;display:flex;align-items:center;justify-content:center;padding:1rem';
+  modal.innerHTML = `<div style="background:#fff;border-radius:1.25rem;padding:1.75rem;max-width:420px;width:100%;text-align:center">
+    <div style="width:52px;height:52px;border-radius:50%;background:${color}18;display:flex;align-items:center;justify-content:center;margin:0 auto 1rem">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    </div>
+    <h3 style="font-size:1.05rem;font-weight:800;color:#1e293b;margin-bottom:0.5rem">${escapeHTML(notice.title)}</h3>
+    <p style="font-size:0.88rem;color:#6b7280;line-height:1.6;margin-bottom:1.25rem">${escapeHTML(notice.message)}</p>
+    <button onclick="this.closest('div[style*=fixed]').remove()" style="background:${color};color:#fff;border:none;border-radius:999px;padding:0.75rem 2rem;font-weight:700;cursor:pointer;font-family:inherit">Entendido</button>
+  </div>`;
+  document.body.appendChild(modal);
+  modal.querySelector('button').closest('div').parentElement.onclick = null; // avoid duplicate
+  modal.onclick = e => { if (e.target === modal) modal.remove(); };
+}
+
+// ── Review prompt on 5th login ──
+function _showReviewPrompt(userId) {
+  const modal = document.createElement('div');
+  modal.id = '_review-prompt-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:99999;display:flex;align-items:center;justify-content:center;padding:1rem';
+  modal.innerHTML = `<div style="background:#fff;border-radius:1.25rem;padding:1.75rem;max-width:400px;width:100%;text-align:center">
+    <div style="font-size:2rem;margin-bottom:0.5rem">⭐</div>
+    <h3 style="font-size:1.05rem;font-weight:800;color:#1e293b;margin-bottom:0.5rem">Gostas da AdKira?</h3>
+    <p style="font-size:0.85rem;color:#6b7280;margin-bottom:1.25rem">A tua opinião ajuda-nos a crescer. Gostarias de deixar uma avaliação rápida?</p>
+    <button onclick="document.getElementById('_review-prompt-modal').remove(); if(typeof openLeaveReview==='function') openLeaveReview();" style="background:#007f9f;color:#fff;border:none;border-radius:999px;padding:0.75rem 2rem;font-weight:700;cursor:pointer;width:100%;margin-bottom:0.5rem;font-family:inherit">Avaliar Agora</button>
+    <button onclick="document.getElementById('_review-prompt-modal').remove()" style="background:none;border:none;color:#9ca3af;font-size:0.82rem;cursor:pointer;font-family:inherit">Talvez depois</button>
+  </div>`;
+  document.body.appendChild(modal);
+
+  // Mark as requested so it never shows again
+  supabaseRequest(`accounts?id=eq.${userId}`, 'PATCH', { review_requested: true }).catch(() => {});
 }

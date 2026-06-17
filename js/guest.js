@@ -142,7 +142,7 @@ async function renderGuestView() {
   const _criticalNulls = ['bible_text','gallery_urls','invite_text','groom_parents','bride_parents',
     'iban_number','story_text','event_color','groom_name','bride_name','music_url','schedule_items',
     'manual_items','couplemsg_text','show_couplemsg','show_manual','show_schedule','show_story',
-    'dresscode_text','show_dresscode'];
+    'dresscode_text','show_dresscode','dresscode_detail','parents_size'];
   const _stillMissing = _criticalNulls.filter(k => !eventData[k]);
   if (_stillMissing.length > 0) {
     try {

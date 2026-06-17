@@ -18,6 +18,12 @@ function renderDashboard() {
   // Quick grid
   buildDashboardQuickGrid(Store.currentUser);
 
+  // Load and display the user's order(s), if any
+  if (!Store.adminModeActive) renderUserOrdersPanel(Store.currentUser.id);
+
+  // Refresh notification badge
+  if (typeof loadUserNotifications === 'function') loadUserNotifications();
+
   // Show font upload button only for admins
   const fontUploadBtn = document.getElementById('btn-font-upload');
   if (fontUploadBtn) fontUploadBtn.classList.toggle('hidden', Store.currentUser.role !== 'admin');
@@ -123,4 +129,50 @@ function goToCreateEvent() {
   
   // Navegar para create-event
   Router.go('create-event');
+}
+
+// ===================== USER ORDERS PANEL =====================
+async function renderUserOrdersPanel(accountId) {
+  const container = document.getElementById('dashboard-events');
+  if (!container) return;
+
+  let panel = document.getElementById('user-orders-panel');
+  if (!panel) {
+    panel = document.createElement('div');
+    panel.id = 'user-orders-panel';
+    panel.style.marginBottom = '1.25rem';
+    container.parentElement.insertBefore(panel, container);
+  }
+
+  const orders = await supabaseRequest(
+    `orders?account_id=eq.${accountId}&select=*&order=created_at.desc&limit=10`
+  ).catch(() => []);
+
+  if (!orders || !orders.length) { panel.innerHTML = ''; return; }
+
+  const STATUS_LABELS = {
+    pending: 'Pendente', token_sent: 'Código Enviado', account_created: 'Conta Criada',
+    paid_70: '70% Pago — falta 30%', paid_100: '100% Pago', completed: 'Concluído', cancelled: 'Cancelado'
+  };
+  const STATUS_COLORS = {
+    pending: '#f59e0b', token_sent: '#3b82f6', account_created: '#8b5cf6',
+    paid_70: '#06b6d4', paid_100: '#16a34a', completed: '#16a34a', cancelled: '#ef4444'
+  };
+
+  panel.innerHTML = `<p style="font-size:0.85rem;font-weight:700;color:#374151;margin-bottom:0.6rem">As Minhas Encomendas</p>
+    ${orders.map(o => {
+      const remaining = (o.status === 'paid_70') ? o.installment2 : 0;
+      return `<div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:0.75rem;padding:0.85rem;margin-bottom:0.6rem">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:0.4rem">
+          <p style="font-weight:700;font-size:0.88rem;color:#1e293b;margin:0">${escapeHTML(o.package_name||'')}</p>
+          <span style="font-size:0.68rem;font-weight:700;padding:2px 8px;border-radius:999px;background:${STATUS_COLORS[o.status]}18;color:${STATUS_COLORS[o.status]};flex-shrink:0">${STATUS_LABELS[o.status]||o.status}</span>
+        </div>
+        <p style="font-size:0.72rem;color:#9ca3af;margin-bottom:0.5rem">${new Date(o.created_at).toLocaleDateString('pt-PT')}</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.4rem;font-size:0.78rem;color:#374151">
+          <div>Total: <strong>${o.total_price?.toLocaleString('pt-PT')} Kz</strong></div>
+          <div>1ª prestação: ${o.installment1?.toLocaleString('pt-PT')} Kz</div>
+          ${remaining > 0 ? `<div style="color:#ef4444;font-weight:700">Falta pagar: ${remaining.toLocaleString('pt-PT')} Kz</div>` : ''}
+        </div>
+      </div>`;
+    }).join('')}`;
 }
