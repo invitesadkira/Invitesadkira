@@ -9,7 +9,7 @@
   <script>tailwind.config = { theme: { extend: { colors: { teal: { 500: '#007f9f', 600: '#006b86' } } } } }</script>
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💌</text></svg>">
-  <link rel="stylesheet" href="css/main.css?v=551000">
+  <link rel="stylesheet" href="css/main.css?v=551500">
 </head>
 <body class="h-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
 
@@ -324,6 +324,43 @@
          <div id="sw-show-time" class="switch active" onclick="toggleSwitch(this)"></div>
         </div>
         <div class="flex items-center justify-between">
+         <span class="text-sm font-semibold text-gray-700">Permitir Confirmação de Presença</span>
+         <div id="sw-rsvp-enabled" class="switch active" onclick="toggleSwitch(this)"></div>
+        </div>
+        <p class="text-xs text-gray-400 -mt-1 mb-1">Se desactivado, o botão "Confirmar Presença" não aparece para os convidados.</p>
+
+        <div class="flex items-center justify-between">
+         <span class="text-sm font-semibold text-gray-700">Activar "Save the Date"</span>
+         <div id="sw-std" class="switch" onclick="toggleSwitch(this, 'std-extra')"></div>
+        </div>
+        <div id="std-extra" class="hidden pl-4 space-y-2">
+         <p class="text-xs text-gray-500">Quando activo, o link abre primeiro uma tela simples de "Save the Date" antes do convite completo.</p>
+         <label class="text-xs font-semibold text-gray-600">Título</label>
+         <input id="evt-std-title" class="input-field text-sm" placeholder="Save the Date" value="Save the Date">
+         <label class="text-xs font-semibold text-gray-600">Subtítulo</label>
+         <input id="evt-std-subtitle" class="input-field text-sm" placeholder="Nosso Casamento" value="Nosso Casamento">
+         <label class="text-xs font-semibold text-gray-600">Fonte de letra (opcional)</label>
+         <select id="evt-std-font-select" class="input-field text-sm">
+          <option value="">Padrão</option>
+         </select>
+         <button type="button" class="text-xs text-teal-600 font-semibold" onclick="document.getElementById('evt-std-font-upload').click()">+ Carregar nova fonte</button>
+         <input type="file" id="evt-std-font-upload" accept=".ttf,.otf,.woff,.woff2" style="display:none" onchange="handleStdFontUpload(this)">
+         <label class="text-xs font-semibold text-gray-600">Quando liberar o convite completo?</label>
+         <select id="evt-std-release-type" class="input-field text-sm" onchange="toggleStdReleaseFields(this.value)">
+          <option value="manual">Manualmente (eu decido quando)</option>
+          <option value="on_confirmation">Quando o convidado confirmar presença</option>
+          <option value="by_date">A partir de uma data específica</option>
+         </select>
+         <div id="std-release-date-wrap" class="hidden">
+          <label class="text-xs font-semibold text-gray-600">Data de liberação</label>
+          <input id="evt-std-release-date" type="datetime-local" class="input-field text-sm">
+         </div>
+         <div id="std-manual-release-wrap" class="flex items-center justify-between pt-1">
+          <span class="text-xs font-semibold text-gray-600">Convite já liberado para todos?</span>
+          <div id="sw-std-released" class="switch" onclick="toggleSwitch(this)"></div>
+         </div>
+        </div>
+        <div class="flex items-center justify-between">
          <span class="text-sm font-semibold text-gray-700">Permitir felicitações dos convidados</span>
          <div id="sw-messages" class="switch" onclick="toggleSwitch(this, 'messages-extra')"></div>
         </div>
@@ -383,9 +420,9 @@ A vossa presença neste dia tão especial é, para nós, o maior presente. No en
 
         <div class="flex items-center justify-between">
          <span class="text-sm font-semibold text-gray-700">Nomes dos Noivos no Hero</span>
-         <div id="sw-couple" class="switch" onclick="toggleSwitch(this, 'couple-extra')"></div>
+         <div id="sw-couple" class="switch active" onclick="toggleSwitch(this, 'couple-extra')"></div>
         </div>
-        <div id="couple-extra" class="hidden pl-4 space-y-2">
+        <div id="couple-extra" class="pl-4 space-y-2">
          <input id="evt-groom-name" type="text" class="input-field" placeholder="Nome do Noivo / Aniversariante">
          <input id="evt-bride-name" type="text" class="input-field" placeholder="Nome da Noiva (opcional)">
          <label class="text-xs text-gray-500">Tamanho do texto</label>
@@ -430,18 +467,18 @@ A vossa presença neste dia tão especial é, para nós, o maior presente. No en
 
         <div class="flex items-center justify-between">
          <span class="text-sm font-semibold text-gray-700">Versículo Bíblico</span>
-         <div id="sw-bible" class="switch" onclick="toggleSwitch(this, 'bible-extra')"></div>
+         <div id="sw-bible" class="switch active" onclick="toggleSwitch(this, 'bible-extra')"></div>
         </div>
-        <div id="bible-extra" class="hidden pl-4 space-y-2">
+        <div id="bible-extra" class="pl-4 space-y-2">
          <textarea id="evt-bible-text" class="input-field text-sm" rows="3" placeholder="Ex: O amor é paciente, o amor é bondoso..."></textarea>
          <input id="evt-bible-ref" type="text" class="input-field" placeholder="Referência (ex: 1 Coríntios 13:4)">
         </div>
 
         <div class="flex items-center justify-between">
          <span class="text-sm font-semibold text-gray-700">Texto de Convite</span>
-         <div id="sw-invite" class="switch" onclick="toggleSwitch(this, 'invite-extra')"></div>
+         <div id="sw-invite" class="switch active" onclick="toggleSwitch(this, 'invite-extra')"></div>
         </div>
-        <div id="invite-extra" class="hidden pl-4 space-y-2">
+        <div id="invite-extra" class="pl-4 space-y-2">
          <textarea id="evt-invite-text" class="input-field text-sm" rows="5" placeholder="Ex: Têm a honra de convidar Exmo.(a) Sr.(a) para testemunhar...">Têm a honra de convidar
 Exmo.(a) Sr.(a)
 para testemunhar o seu enlace matrimonial</textarea>
@@ -450,9 +487,9 @@ para testemunhar o seu enlace matrimonial</textarea>
 
         <div class="flex items-center justify-between">
          <span class="text-sm font-semibold text-gray-700">Nomes dos Pais</span>
-         <div id="sw-parents" class="switch" onclick="toggleSwitch(this, 'parents-extra')"></div>
+         <div id="sw-parents" class="switch active" onclick="toggleSwitch(this, 'parents-extra')"></div>
         </div>
-        <div id="parents-extra" class="hidden pl-4 space-y-2">
+        <div id="parents-extra" class="pl-4 space-y-2">
          <p class="text-xs text-gray-500">Coloque um nome por linha. Para indicar "em memória", escreva "(em memória)" ou adicione o símbolo ✟ no final do nome.</p>
          <label class="text-xs font-semibold text-gray-600">Pais do Noivo</label>
          <textarea id="evt-groom-parents" class="input-field text-sm" rows="3" placeholder="Ex: João Silva&#10;Maria Silva (em memória)"></textarea>
@@ -469,9 +506,9 @@ para testemunhar o seu enlace matrimonial</textarea>
 
         <div class="flex items-center justify-between">
          <span class="text-sm font-semibold text-gray-700">Galeria de Fotos</span>
-         <div id="sw-gallery" class="switch" onclick="toggleSwitch(this, 'gallery-extra')"></div>
+         <div id="sw-gallery" class="switch active" onclick="toggleSwitch(this, 'gallery-extra')"></div>
         </div>
-        <div id="gallery-extra" class="hidden pl-4">
+        <div id="gallery-extra" class="pl-4">
          <p class="text-xs text-gray-500 mb-2">Adicione URLs de imagens (uma por linha) ou carregue ficheiros.</p>
          <textarea id="evt-gallery-urls" class="input-field text-sm" rows="4" placeholder="https://exemplo.com/foto1.jpg&#10;https://exemplo.com/foto2.jpg"></textarea>
          <button type="button" class="mt-2 text-xs text-teal-600 font-semibold" onclick="addGalleryImage()">+ Carregar imagem</button>
@@ -481,18 +518,18 @@ para testemunhar o seu enlace matrimonial</textarea>
         <!-- Mensagem dos Noivos -->
         <div class="flex items-center justify-between">
          <span class="text-sm font-semibold text-gray-700">Mensagem dos Noivos</span>
-         <div id="sw-couplemsg" class="switch" onclick="toggleSwitch(this, 'couplemsg-extra')"></div>
+         <div id="sw-couplemsg" class="switch active" onclick="toggleSwitch(this, 'couplemsg-extra')"></div>
         </div>
-        <div id="couplemsg-extra" class="hidden pl-4">
+        <div id="couplemsg-extra" class="pl-4">
          <textarea id="evt-couplemsg-text" class="input-field text-sm" rows="4" placeholder="Ex: Cada um de vocês representa um capítulo especial da nossa história..."></textarea>
         </div>
 
         <!-- Dress Code -->
         <div class="flex items-center justify-between">
          <span class="text-sm font-semibold text-gray-700">Dress Code</span>
-         <div id="sw-dresscode" class="switch" onclick="toggleSwitch(this, 'dresscode-extra')"></div>
+         <div id="sw-dresscode" class="switch active" onclick="toggleSwitch(this, 'dresscode-extra')"></div>
         </div>
-        <div id="dresscode-extra" class="hidden pl-4 space-y-2">
+        <div id="dresscode-extra" class="pl-4 space-y-2">
          <input id="evt-dresscode-text" class="input-field text-sm" placeholder="Ex: Traje social ou Roupa a rigor">
          <label class="text-xs text-gray-500 mt-1 block">Paleta de cores (códigos HEX, um por linha, máx. 4)</label>
          <div id="evt-dresscode-swatches" style="display:flex;gap:0.5rem;margin-bottom:0.4rem;flex-wrap:wrap"></div>
@@ -503,27 +540,27 @@ para testemunhar o seu enlace matrimonial</textarea>
 
         <div class="flex items-center justify-between">
          <span class="text-sm font-semibold text-gray-700">Manual do Bom Convidado</span>
-         <div id="sw-manual" class="switch" onclick="toggleSwitch(this, 'manual-extra')"></div>
+         <div id="sw-manual" class="switch active" onclick="toggleSwitch(this, 'manual-extra')"></div>
         </div>
-        <div id="manual-extra" class="hidden pl-4">
+        <div id="manual-extra" class="pl-4">
          <p class="text-xs text-gray-500">Os itens por omissão são partilhados por todos. Pode editar para este evento.</p>
          <button type="button" class="mt-1 text-xs text-teal-600 font-semibold" onclick="openManualEditor()">Editar itens do manual</button>
         </div>
 
         <div class="flex items-center justify-between">
          <span class="text-sm font-semibold text-gray-700">Monograma do Dia</span>
-         <div id="sw-schedule" class="switch" onclick="toggleSwitch(this, 'schedule-extra')"></div>
+         <div id="sw-schedule" class="switch active" onclick="toggleSwitch(this, 'schedule-extra')"></div>
         </div>
-        <div id="schedule-extra" class="hidden pl-4">
+        <div id="schedule-extra" class="pl-4">
          <p class="text-xs text-gray-500 mb-2">Os momentos por omissão são partilhados. Pode personalizar para este evento.</p>
          <button type="button" class="mt-1 text-xs text-teal-600 font-semibold" onclick="openScheduleEditor()">Editar momentos</button>
         </div>
         <!-- LOCAIS DO EVENTO -->
         <div class="flex items-center justify-between">
          <span class="text-sm font-semibold text-gray-700">Locais do Evento</span>
-         <div id="sw-venues" class="switch" onclick="toggleSwitch(this, 'venues-extra')"></div>
+         <div id="sw-venues" class="switch active" onclick="toggleSwitch(this, 'venues-extra')"></div>
         </div>
-        <div id="venues-extra" class="hidden pl-4 space-y-3">
+        <div id="venues-extra" class="pl-4 space-y-3">
          <div>
           <label class="text-xs font-semibold text-gray-600 block mb-1">Título da secção</label>
           <input id="evt-venues-title" class="input-field text-sm" placeholder="Ex: Locais do Evento, O Grande Dia, ...">
@@ -584,9 +621,9 @@ para testemunhar o seu enlace matrimonial</textarea>
 
         <div class="flex items-center justify-between">
          <span class="text-sm font-semibold text-gray-700">Capítulo do Nosso Amor</span>
-         <div id="sw-story" class="switch" onclick="toggleSwitch(this, 'story-extra')"></div>
+         <div id="sw-story" class="switch active" onclick="toggleSwitch(this, 'story-extra')"></div>
         </div>
-        <div id="story-extra" class="hidden pl-4 space-y-2">
+        <div id="story-extra" class="pl-4 space-y-2">
          <input id="evt-invite-blessing" type="text" class="input-field text-sm" placeholder="Texto de bênção (ex: Com a bênção de Deus e de seus pais)" value="Com a bênção de Deus e de seus pais">
          <label class="text-xs text-gray-500">Nossa História (aparece como texto da secção)</label>
          <textarea id="evt-story-text" class="input-field text-sm" rows="5" placeholder="Conta a vossa história aqui..."></textarea>
@@ -692,9 +729,8 @@ para testemunhar o seu enlace matrimonial</textarea>
     <div class="rsvp-cta-section reveal" id="rsvp-section">
      <div class="section-inner">
       <!-- guest-title removed -->
-      <p style="font-size:0.68rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;opacity:0.6;margin-bottom:0.25rem">Prazo para confirmação</p>
+      <p style="font-size:0.68rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;opacity:0.6;margin-bottom:0.4rem">Prazo para Confirmação de Presença</p>
       <p id="guest-deadline-text" class="rsvp-cta-sub" style="margin-bottom:1rem;font-size:0.85rem;opacity:0.85"></p>
-      <p style="font-size:0.7rem;color:inherit;opacity:0.55;margin-bottom:0.5rem" id="rsvp-countdown-label">Tempo restante para confirmar</p>
       <!-- Prazo countdown -->
       <div class="rsvp-cta-deadline" id="rsvp-deadline-countdown" style="display:none">
        <div class="rsvp-cta-box"><div class="n" id="rdl-days">--</div><div class="l">Dias</div></div>
@@ -896,19 +932,19 @@ para testemunhar o seu enlace matrimonial</textarea>
   </a>
 
   <!-- ===================== SCRIPTS (ordem importa) ===================== -->
-  <script src="js/config.js?v=551000"></script>
-  <script src="js/store.js?v=551000"></script>
-  <script src="js/visuals.js?v=551000"></script>
-  <script src="js/venues.js?v=551000"></script>
-  <script src="js/rsvp.js?v=551000"></script>
-  <script src="js/ui.js?v=551000"></script>
-  <script src="js/auth.js?v=551000"></script>
-  <script src="js/dashboard.js?v=551000"></script>
-  <script src="js/events.js?v=551000"></script>
-  <script src="js/guest.js?v=551000"></script>
-  <script src="js/sections.js?v=551000"></script>
-  <script src="js/admin.js?v=551000"></script>
-  <script src="js/router.js?v=551000"></script>
+  <script src="js/config.js?v=551500"></script>
+  <script src="js/store.js?v=551500"></script>
+  <script src="js/visuals.js?v=551500"></script>
+  <script src="js/venues.js?v=551500"></script>
+  <script src="js/rsvp.js?v=551500"></script>
+  <script src="js/ui.js?v=551500"></script>
+  <script src="js/auth.js?v=551500"></script>
+  <script src="js/dashboard.js?v=551500"></script>
+  <script src="js/events.js?v=551500"></script>
+  <script src="js/guest.js?v=551500"></script>
+  <script src="js/sections.js?v=551500"></script>
+  <script src="js/admin.js?v=551500"></script>
+  <script src="js/router.js?v=551500"></script>
 
 </body>
 </html>

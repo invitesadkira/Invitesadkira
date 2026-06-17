@@ -263,6 +263,7 @@ function saveEventWithCover(eventId, title, date, time, deadline, coverImageURL,
     allow_gifts: allowGifts ? 'yes' : 'no',
     allow_sides: allowSides ? 'yes' : 'no', side1_name: side1Name, side2_name: side2Name,
     show_time: document.getElementById('sw-show-time').classList.contains('active') ? 'yes' : 'no',
+        rsvp_enabled: document.getElementById('sw-rsvp-enabled')?.classList.contains('active') ?? true,
     allow_messages: allowMessages ? 'yes' : 'no',
     show_guest_messages: showGuestMessages ? 'yes' : 'no',
     music_url: musicUrl || null, music_title: musicTitle || null,
@@ -321,6 +322,7 @@ function saveEventWithCover(eventId, title, date, time, deadline, coverImageURL,
         allow_messages: allowMessages ? 'yes' : 'no', allowMessages,
         show_guest_messages: showGuestMessages ? 'yes' : 'no', showGuestMessages,
         show_time: document.getElementById('sw-show-time').classList.contains('active') ? 'yes' : 'no',
+        rsvp_enabled: document.getElementById('sw-rsvp-enabled')?.classList.contains('active') ?? true,
         music_url: musicUrl || null,
         music_title: musicTitle || null,
         iban_message: ibanMessage || null,
@@ -620,6 +622,14 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
     side1_name: finalSide1Name,
     side2_name: finalSide2Name,
     show_time: showTimeActive ? 'yes' : 'no',
+    rsvp_enabled: document.getElementById('sw-rsvp-enabled')?.classList.contains('active') ?? true,
+    save_the_date_enabled: document.getElementById('sw-std')?.classList.contains('active') || false,
+    release_type: document.getElementById('evt-std-release-type')?.value || 'manual',
+    release_date: document.getElementById('evt-std-release-date')?.value ? new Date(document.getElementById('evt-std-release-date').value).toISOString() : null,
+    is_invite_released: document.getElementById('sw-std-released')?.classList.contains('active') || false,
+    std_title: document.getElementById('evt-std-title')?.value?.trim() || 'Save the Date',
+    std_subtitle: document.getElementById('evt-std-subtitle')?.value?.trim() || 'Nosso Casamento',
+    std_font_family: document.getElementById('evt-std-font-select')?.value || null,
     allow_messages: allowMessagesActive ? 'yes' : 'no',
     show_guest_messages: showGuestMessagesChecked ? 'yes' : 'no',
     music_url: newMusicUrl, music_title: newMusicTitle,
@@ -1348,7 +1358,7 @@ async function editEvent() {
   // Fetch fresh data from Supabase (no localStorage)
   try {
     const result = await supabaseRequest(
-      `events?id=eq.${eventId}&select=id,title,date,time,confirm_by_date,cover_image,event_code,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,music_url,music_title,iban_message,iban_number,iban_holder,iban_footer,show_couple,groom_name,bride_name,couple_size,bg_url,bg_overlay,show_bible,bible_text,bible_ref,show_invite,invite_text,show_parents,groom_parents,bride_parents,show_gallery,gallery_urls,show_manual,manual_items,show_schedule,schedule_items,custom_font_family,section_order,story_text,invite_blessing,event_color&limit=1`
+      `events?id=eq.${eventId}&select=id,title,date,time,confirm_by_date,cover_image,event_code,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,rsvp_enabled,save_the_date_enabled,release_type,release_date,is_invite_released,std_title,std_subtitle,std_font_family,allow_messages,show_guest_messages,music_url,music_title,iban_message,iban_number,iban_holder,iban_footer,show_couple,groom_name,bride_name,couple_size,bg_url,bg_overlay,show_bible,bible_text,bible_ref,show_invite,invite_text,show_parents,groom_parents,bride_parents,show_gallery,gallery_urls,show_manual,manual_items,show_schedule,schedule_items,custom_font_family,section_order,story_text,invite_blessing,event_color&limit=1`
     );
     const fresh = (result && result[0]) ? result[0] : evStore;
     // Load visual data from event_visuals table
@@ -1415,6 +1425,15 @@ function _fillEditForm(ev) {
   _setSwitch('sw-gifts',      _yesOrTrue(ev.allow_gifts));
   _setSwitch('sw-kids',       _yesOrTrue(ev.allow_kids), 'kids-extra');
   _setSwitch('sw-show-time',  _yesOrTrue(ev.show_time));
+  _setSwitch('sw-rsvp-enabled', ev.rsvp_enabled !== false);
+  _setSwitch('sw-std', ev.save_the_date_enabled === true || ev.save_the_date_enabled === 'yes', 'std-extra');
+  { const rt = document.getElementById('evt-std-release-type'); if (rt) rt.value = ev.release_type || 'manual'; }
+  { const rd = document.getElementById('evt-std-release-date'); if (rd && ev.release_date) { const d = new Date(ev.release_date); rd.value = d.toISOString().slice(0,16); } }
+  _setSwitch('sw-std-released', ev.is_invite_released === true || ev.is_invite_released === 'yes');
+  { const t = document.getElementById('evt-std-title'); if (t) t.value = ev.std_title || 'Save the Date'; }
+  { const s = document.getElementById('evt-std-subtitle'); if (s) s.value = ev.std_subtitle || 'Nosso Casamento'; }
+  { const sf = document.getElementById('evt-std-font-select'); if (sf) sf.value = ev.std_font_family || ''; }
+  if (typeof toggleStdReleaseFields === 'function') toggleStdReleaseFields(ev.release_type || 'manual');
   _setSwitch('sw-messages',   _yesOrTrue(ev.allow_messages), 'messages-extra');
   _setSwitch('sw-sides',      _yesOrTrue(ev.allow_sides), 'sides-extra');
 
@@ -1889,7 +1908,7 @@ async function searchEvent() {
     // ✅ PASSO 1: Carregar eventos do Supabase COM JOIN para trazer RSVPS e GIFTS
     console.log('📥 Buscando evento DIRETO do Supabase...');
     
-    const allEvents = await supabaseRequest(`events?select=id,title,date,time,confirm_by_date,cover_image,event_code,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,rsvps(guest_name,attending,side,companions,kids,wants_gift,message,created_at,updated_at),gifts(id,name,category,reserved,reserved_by)`);
+    const allEvents = await supabaseRequest(`events?select=id,title,date,time,confirm_by_date,cover_image,event_code,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,rsvp_enabled,save_the_date_enabled,release_type,release_date,is_invite_released,std_title,std_subtitle,std_font_family,allow_messages,show_guest_messages,rsvps(guest_name,attending,side,companions,kids,wants_gift,message,created_at,updated_at),gifts(id,name,category,reserved,reserved_by)`);
     
     console.log(' Total de eventos no Supabase:', allEvents?.length || 0);
     console.log('🔍 Query de busca (uppercase):', query);
@@ -2304,7 +2323,7 @@ async function checkURLForEvent() {
     
     // ✅ Query otimizada: procurar por event_code OU id, com LIMIT 1
     let eventsData = await supabaseRequest(
-      `events?or=(event_code.eq.${eventCode},id.eq.${eventCode})&select=id,title,date,time,confirm_by_date,cover_image,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,music_url,music_title,iban_message,iban_number,iban_holder,iban_footer,groom_name,bride_name,couple_size,show_couple,bg_url,bg_overlay,bible_text,bible_ref,show_bible,invite_text,show_invite,groom_parents,bride_parents,show_parents,gallery_urls,show_gallery,show_manual,manual_items,show_schedule,schedule_items,custom_font_family,section_order,story_text,invite_blessing,event_color,rsvps(guest_name,attending,side,companions,kids,wants_gift,message,created_at,updated_at),gifts(id,name,category,reserved,reserved_by)&limit=1`
+      `events?or=(event_code.eq.${eventCode},id.eq.${eventCode})&select=id,title,date,time,confirm_by_date,cover_image,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,rsvp_enabled,save_the_date_enabled,release_type,release_date,is_invite_released,std_title,std_subtitle,std_font_family,allow_messages,show_guest_messages,music_url,music_title,iban_message,iban_number,iban_holder,iban_footer,groom_name,bride_name,couple_size,show_couple,bg_url,bg_overlay,bible_text,bible_ref,show_bible,invite_text,show_invite,groom_parents,bride_parents,show_parents,gallery_urls,show_gallery,show_manual,manual_items,show_schedule,schedule_items,custom_font_family,section_order,story_text,invite_blessing,event_color,rsvps(guest_name,attending,side,companions,kids,wants_gift,message,created_at,updated_at),gifts(id,name,category,reserved,reserved_by)&limit=1`
     );
     
     console.log('📥 Resultado da busca:', eventsData?.length === 1 ? 'Encontrado' : 'Não encontrado');
@@ -2787,10 +2806,13 @@ async function openIntakeForm(eventId) {
 }
 
 async function openIntakeFormMain(eventId) {
+  // CRITICAL: set currentEventId so Manual/Schedule editors can save directly to Supabase
+  Store.currentEventId = eventId;
+
   // Load full event data including visuals to pre-fill existing values
   // Select ALL relevant fields from events table as fallback (in case event_visuals row is incomplete)
   const result = await supabaseRequest(
-    `events?id=eq.${eventId}&select=id,title,date,time,confirm_by_date,cover_image,groom_name,bride_name,music_url,iban_number,iban_holder,bible_text,bible_ref,groom_parents,bride_parents,gallery_urls,invite_text,story_text&limit=1`
+    `events?id=eq.${eventId}&select=id,title,date,time,confirm_by_date,cover_image,groom_name,bride_name,music_url,iban_number,iban_holder,bible_text,bible_ref,groom_parents,bride_parents,gallery_urls,invite_text,story_text,manual_items,schedule_items,show_manual,show_schedule&limit=1`
   );
   const evBase = (result && result[0]) ? result[0] : {};
   const visuals = await loadEventVisuals(eventId).catch(() => ({}));
@@ -2894,6 +2916,25 @@ async function openIntakeFormMain(eventId) {
           <div><label style="display:block;font-size:0.85rem;font-weight:700;color:#374151;margin-bottom:0.4rem">Data limite para confirmação de presença</label>
           <input class="input-field" id="int-deadline" type="date"></div>
 
+          <div><label style="display:block;font-size:0.85rem;font-weight:700;color:#374151;margin-bottom:0.4rem">Mensagem dos Noivos <span style="font-weight:400;color:#6b7280">(opcional)</span></label>
+          <textarea class="input-field" id="int-couplemsg" rows="3" placeholder="Uma mensagem especial para os vossos convidados..."></textarea></div>
+
+          <div><label style="display:block;font-size:0.85rem;font-weight:700;color:#374151;margin-bottom:0.4rem">Dress Code <span style="font-weight:400;color:#6b7280">(opcional)</span></label>
+          <input class="input-field" id="int-dresscode" placeholder="Ex: Traje social ou Roupa a rigor" style="margin-bottom:0.5rem">
+          <textarea class="input-field" id="int-dresscode-detail" rows="2" placeholder="Detalhe adicional (opcional)"></textarea></div>
+
+          <div style="border:1.5px solid #e5e7eb;border-radius:0.75rem;padding:1rem;background:#fafafa">
+            <p style="font-size:0.85rem;font-weight:700;color:#374151;margin-bottom:0.25rem">Manual do Bom Convidado <span style="font-weight:400;color:#6b7280">(opcional)</span></p>
+            <p style="font-size:0.72rem;color:#9ca3af;margin-bottom:0.6rem">Os itens por omissão já são partilhados com todos os convidados. Podes personalizar para o teu evento.</p>
+            <button type="button" onclick="openManualEditor()" style="background:#007f9f;color:#fff;border:none;border-radius:0.6rem;padding:0.6rem 1rem;font-size:0.82rem;font-weight:700;cursor:pointer">Editar Manual do Bom Convidado</button>
+          </div>
+
+          <div style="border:1.5px solid #e5e7eb;border-radius:0.75rem;padding:1rem;background:#fafafa">
+            <p style="font-size:0.85rem;font-weight:700;color:#374151;margin-bottom:0.25rem">Monograma do Dia <span style="font-weight:400;color:#6b7280">(opcional)</span></p>
+            <p style="font-size:0.72rem;color:#9ca3af;margin-bottom:0.6rem">Define os momentos especiais do teu grande dia.</p>
+            <button type="button" onclick="openScheduleEditor()" style="background:#007f9f;color:#fff;border:none;border-radius:0.6rem;padding:0.6rem 1rem;font-size:0.82rem;font-weight:700;cursor:pointer">Editar Monograma</button>
+          </div>
+
 
           <div style="border:1.5px solid #e5e7eb;border-radius:0.75rem;padding:1rem;background:#fafafa">
             <label style="display:block;font-size:0.85rem;font-weight:700;color:#374151;margin-bottom:0.6rem">IBAN para presente <span style="font-weight:400;color:#6b7280">(opcional)</span></label>
@@ -2943,6 +2984,13 @@ async function openIntakeFormMain(eventId) {
   _pf('int-relig-time',    ev.venue_ceremony_time);
   _pf('int-copa-loc',      ev.venue_reception);
   _pf('int-copa-time',     ev.venue_reception_time);
+  _pf('int-couplemsg',         ev.couplemsg_text);
+  _pf('int-dresscode',         ev.dresscode_text);
+  _pf('int-dresscode-detail',  ev.dresscode_detail);
+
+  // ── Load existing manual/schedule items into Store so editors show current data ──
+  Store.eventManualItems   = ev.manual_items   ? (() => { try { return JSON.parse(ev.manual_items); } catch(e) { return null; } })() : null;
+  Store.eventScheduleItems = ev.schedule_items ? (() => { try { return JSON.parse(ev.schedule_items); } catch(e) { return null; } })() : null;
 
   // ── Pre-fill gallery with existing photos ──
   if (ev.gallery_urls) {
@@ -3147,13 +3195,23 @@ if (g('int-groom'))        patches.groom_name    = g('int-groom');
       if (g('int-iban-holder'))  visualPatches.iban_holder   = g('int-iban-holder');
       if (g('int-music'))        visualPatches.music_url     = g('int-music');
       if (galleryUrls.length)    visualPatches.gallery_urls  = galleryUrls.join('|');
+      if (g('int-couplemsg')) { visualPatches.couplemsg_text = g('int-couplemsg'); visualPatches.show_couplemsg = 'yes'; }
+      if (g('int-dresscode')) { visualPatches.dresscode_text = g('int-dresscode'); visualPatches.show_dresscode = 'yes'; }
+      if (g('int-dresscode-detail')) visualPatches.dresscode_detail = g('int-dresscode-detail');
 
-      // Ceremonies
-      const schedItems = [];
-      if (g('int-civil-time') || g('int-civil-loc'))   schedItems.push({ icon:'file-text',   time: g('int-civil-time') || '', label: 'Cerimónia Civil',     sub: g('int-civil-loc') || '' });
-      if (g('int-relig-time') || g('int-relig-loc'))   schedItems.push({ icon:'church',      time: g('int-relig-time') || '', label: 'Cerimónia Religiosa', sub: g('int-relig-loc') || '' });
-      if (g('int-copa-time')  || g('int-copa-loc'))    schedItems.push({ icon:'glass-water', time: g('int-copa-time')  || '', label: "Copo d'Água",         sub: g('int-copa-loc')  || '' });
-      if (schedItems.length) visualPatches.schedule_items = JSON.stringify(schedItems);
+      // Venue/ceremony locations — saved to event_venues table (NOT schedule_items,
+      // which is reserved for the Monograma editor's custom moments)
+      const venuePatches = {};
+      if (g('int-civil-loc'))  venuePatches.venue_civil          = g('int-civil-loc');
+      if (g('int-civil-time')) venuePatches.venue_civil_time     = g('int-civil-time');
+      if (g('int-relig-loc'))  venuePatches.venue_ceremony       = g('int-relig-loc');
+      if (g('int-relig-time')) venuePatches.venue_ceremony_time  = g('int-relig-time');
+      if (g('int-copa-loc'))   venuePatches.venue_reception      = g('int-copa-loc');
+      if (g('int-copa-time'))  venuePatches.venue_reception_time = g('int-copa-time');
+      if (Object.keys(venuePatches).length > 0) {
+        venuePatches.show_venues = 'yes';
+        await saveEventVenues(eventId, venuePatches).catch(() => {});
+      }
 
       if (Object.keys(visualPatches).length > 0) {
         await saveEventVisuals(eventId, visualPatches);
@@ -3407,7 +3465,7 @@ async function openIntakePreview(eventId) {
 
   try {
     const result = await supabaseRequest(
-      `events?id=eq.${eventId}&select=id,title,date,time,confirm_by_date,cover_image,event_code,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,groom_name,bride_name,couple_size,show_couple,bg_url,bg_overlay,show_bible,bible_text,bible_ref,show_invite,invite_text,show_parents,groom_parents,bride_parents,show_gallery,gallery_urls,show_manual,manual_items,show_schedule,schedule_items,custom_font_family,section_order,story_text,show_story,event_color,iban_message,iban_number,iban_holder,iban_footer,music_url,music_title,rsvps(guest_name,attending,side,companions,kids,wants_gift,message),gifts(id,name,category,reserved,reserved_by)&limit=1`
+      `events?id=eq.${eventId}&select=id,title,date,time,confirm_by_date,cover_image,event_code,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,rsvp_enabled,save_the_date_enabled,release_type,release_date,is_invite_released,std_title,std_subtitle,std_font_family,allow_messages,show_guest_messages,groom_name,bride_name,couple_size,show_couple,bg_url,bg_overlay,show_bible,bible_text,bible_ref,show_invite,invite_text,show_parents,groom_parents,bride_parents,show_gallery,gallery_urls,show_manual,manual_items,show_schedule,schedule_items,custom_font_family,section_order,story_text,show_story,event_color,iban_message,iban_number,iban_holder,iban_footer,music_url,music_title,rsvps(guest_name,attending,side,companions,kids,wants_gift,message),gifts(id,name,category,reserved,reserved_by)&limit=1`
     );
     if (!result || !result[0]) throw new Error('not found');
 
@@ -3493,76 +3551,4 @@ async function openIntakePreview(eventId) {
 }
 
 
-async function openIntakePreview(eventId) {
-  // Show loading overlay
-  const overlay = document.createElement('div');
-  overlay.style.cssText = 'position:fixed;inset:0;background:#f8fafc;z-index:99999;overflow-y:auto;font-family:Quicksand,sans-serif';
-  overlay.innerHTML = '<div style="text-align:center;padding:3rem;color:#6b7280">A carregar pré-visualização...</div>';
-  document.body.appendChild(overlay);
 
-  try {
-    // Load full event data
-    const result = await supabaseRequest(
-      `events?id=eq.${eventId}&select=id,title,date,time,confirm_by_date,cover_image,event_code,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,music_url,music_title,iban_message,iban_number,iban_holder,iban_footer,groom_name,bride_name,couple_size,show_couple,bg_url,bg_overlay,bible_text,bible_ref,show_bible,invite_text,show_invite,groom_parents,bride_parents,show_parents,gallery_urls,show_gallery,show_manual,manual_items,show_schedule,schedule_items,custom_font_family,section_order,story_text,event_color,rsvps(guest_name,attending,side,companions,kids,wants_gift,message),gifts(id,name,category,reserved,reserved_by)&limit=1`
-    );
-    if (!result || !result[0]) {
-      overlay.innerHTML = '<div style="text-align:center;padding:3rem;color:#ef4444">Erro ao carregar o evento.</div>';
-      return;
-    }
-    const evBase = result[0];
-    const visuals = await loadEventVisuals(eventId).catch(() => ({}));
-    const venues = await loadEventVenues(eventId).catch(() => ({}));
-    const evData = { ...evBase, ...visuals, ...venues,
-      confirmations: (evBase.rsvps || []).map(r => ({
-        name: r.guest_name, attending: r.attending, side: r.side,
-        companions: r.companions ? r.companions.split('|').filter(Boolean) : [],
-        kids: r.kids ? r.kids.split('|').filter(Boolean) : [],
-        wantsGift: r.wants_gift, message: r.message || ''
-      })),
-      gifts: evBase.gifts || []
-    };
-
-    // Build preview HTML
-    const coverHtml = evData.cover_image
-      ? `<div style="width:100%;height:260px;background:url('${evData.cover_image}') center/cover no-repeat;position:relative;display:flex;align-items:flex-end;justify-content:center;padding-bottom:2rem">
-           <div style="position:absolute;inset:0;background:rgba(0,0,0,0.35)"></div>
-           <h1 style="position:relative;color:#fff;font-size:clamp(1.4rem,5vw,2.2rem);font-weight:800;text-align:center;text-shadow:0 2px 12px rgba(0,0,0,0.4)">${escapeHTML(evData.groom_name||'')}${evData.groom_name&&evData.bride_name?' &amp; ':''}${escapeHTML(evData.bride_name||'')}</h1>
-         </div>` : '';
-
-    overlay.innerHTML = `
-      <div style="position:sticky;top:0;background:rgba(15,23,42,0.9);color:#fff;display:flex;align-items:center;justify-content:space-between;padding:0.75rem 1.25rem;z-index:10">
-        <div>
-          <p style="font-size:0.7rem;opacity:0.7;margin:0;letter-spacing:0.05em;text-transform:uppercase">Pré-visualização</p>
-          <p style="font-weight:700;margin:0;font-size:0.95rem">${escapeHTML(evData.title||'Convite')}</p>
-        </div>
-        <button onclick="this.closest('[style*=z-index\:99999]').remove()" style="background:rgba(255,255,255,0.15);border:1.5px solid rgba(255,255,255,0.3);color:#fff;border-radius:999px;padding:0.35rem 0.85rem;font-size:0.8rem;font-weight:700;cursor:pointer;font-family:inherit">
-          Fechar
-        </button>
-      </div>
-      <div style="max-width:680px;margin:0 auto;padding-bottom:3rem">
-        ${coverHtml}
-        <div id="intake-preview-sections" style="padding:0 1rem"></div>
-        <div style="text-align:center;padding:2rem;color:#9ca3af;font-size:0.78rem">
-          — Fim da pré-visualização —<br>
-          <span style="font-size:0.72rem">Esta é uma pré-visualização. O convite final pode ter diferenças de formatação.</span>
-        </div>
-      </div>`;
-
-    // Render sections into preview
-    const container = document.getElementById('intake-preview-sections');
-    if (container && typeof renderGuestSections === 'function') {
-      // Set event color CSS variable
-      document.documentElement.style.setProperty('--ev-color', evData.event_color || '#007f9f');
-      Store.guestEventData = evData;
-      Store.currentEventId = eventId;
-      await renderGuestSections(evData);
-      const secs = document.getElementById('guest-sections-container');
-      if (secs) container.innerHTML = secs.innerHTML;
-    } else {
-      container.innerHTML = '<p style="text-align:center;color:#6b7280;padding:2rem">Pré-visualização das secções não disponível neste modo.</p>';
-    }
-  } catch(e) {
-    console.error('Preview error:', e);
-    overlay.innerHTML = '<div style="text-align:center;padding:3rem;color:#ef4444">Erro ao carregar pré-visualização. Tente novamente.</div>';
-  }
-}

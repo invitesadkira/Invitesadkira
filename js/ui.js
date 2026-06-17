@@ -521,56 +521,99 @@ function startMusicAutoplay(ytId, audioSrc) {
       audio.src = audioSrc;
       audio.loop = true;
       audio.volume = 1.0;
-      const playPromise = audio.play();
-      if (playPromise !== undefined) {
-        playPromise.then(() => {
+
+      // ── Trick: browsers allow MUTED autoplay even without interaction ──
+      // Start muted+playing immediately, then unmute on the very first
+      // user gesture (tap/scroll/click). This makes the music feel like
+      // it "was already playing" the instant the user does anything,
+      // rather than requiring them to find and tap the player.
+      audio.muted = true;
+      const mutedPlayPromise = audio.play();
+
+      const _unmuteOnInteraction = () => {
+        audio.muted = false;
+        setMusicPlayingUI(true);
+        const floatBtn = document.getElementById('floating-music-btn');
+        if (floatBtn) floatBtn.classList.remove('visible');
+        _removeUnmuteListeners();
+      };
+      function _removeUnmuteListeners() {
+        document.removeEventListener('touchstart', _unmuteOnInteraction);
+        document.removeEventListener('touchend', _unmuteOnInteraction);
+        document.removeEventListener('click', _unmuteOnInteraction);
+        document.removeEventListener('scroll', _unmuteOnInteraction);
+        window.removeEventListener('scroll', _unmuteOnInteraction);
+      }
+
+      if (mutedPlayPromise !== undefined) {
+        mutedPlayPromise.then(() => {
+          // Muted autoplay succeeded — audio is silently playing.
+          // Show as "ready" with a gentle prompt to unmute on first touch.
           setMusicPlayingUI(true);
+          if (sub) sub.textContent = 'Toca para ativar o som';
+          document.addEventListener('touchstart', _unmuteOnInteraction, { passive: true });
+          document.addEventListener('touchend', _unmuteOnInteraction, { passive: true });
+          document.addEventListener('click', _unmuteOnInteraction);
+          document.addEventListener('scroll', _unmuteOnInteraction, { passive: true, once: true });
+          window.addEventListener('scroll', _unmuteOnInteraction, { passive: true, once: true });
         }).catch(() => {
-          // Browser blocked autoplay (expected on GitHub Pages / any https host)
-          // Show a prominent "tap to play" state on the music player
-          setMusicPlayingUI(false);
-          if (sub) sub.textContent = 'Toca para ouvir';
-
-          // Pulse the music player to draw attention
-          const playerEl = document.getElementById('guest-music-player');
-          if (playerEl) {
-            playerEl.style.animation = 'musicPulseAttention 1.2s ease-in-out 3';
-            setTimeout(() => { if (playerEl) playerEl.style.animation = ''; }, 4000);
-          }
-
-          // Show floating button immediately (don't wait for scroll)
-          const floatBtn = document.getElementById('floating-music-btn');
-          if (floatBtn) floatBtn.classList.add('visible');
-
-          // One-time: try to play on any user interaction
-          // Note: long-press-to-scroll on mobile fires touchstart but the browser
-          // may not count it as a "user gesture" for audio until touchend/click/scroll
-          let _played = false;
-          const tryPlay = () => {
-            if (_played) return;
-            audio.play().then(() => {
-              _played = true;
-              setMusicPlayingUI(true);
-              const floatBtn = document.getElementById('floating-music-btn');
-              if (floatBtn) floatBtn.classList.remove('visible');
-              _removeAllTryPlayListeners();
-            }).catch(() => {});
-          };
-          function _removeAllTryPlayListeners() {
-            document.removeEventListener('touchstart', tryPlay);
-            document.removeEventListener('touchend', tryPlay);
-            document.removeEventListener('click', tryPlay);
-            document.removeEventListener('scroll', tryPlay);
-            window.removeEventListener('scroll', tryPlay);
-          }
-          document.addEventListener('touchstart', tryPlay, { passive: true });
-          document.addEventListener('touchend', tryPlay, { passive: true });
-          document.addEventListener('click', tryPlay);
-          document.addEventListener('scroll', tryPlay, { passive: true, once: true });
-          window.addEventListener('scroll', tryPlay, { passive: true, once: true });
+          // Even muted autoplay was blocked — fall back to full manual start
+          _startAudioFullyManual(audio, sub);
         });
       }
+      return;
     }
+  }
+}
+
+function _startAudioFullyManual(audio, sub) {
+  const playPromise = audio.play();
+  if (playPromise !== undefined) {
+    playPromise.then(() => {
+      setMusicPlayingUI(true);
+    }).catch(() => {
+      // Browser blocked autoplay entirely (expected on most https hosts)
+      setMusicPlayingUI(false);
+      if (sub) sub.textContent = 'Toca para ouvir';
+
+      // Pulse the music player to draw attention
+      const playerEl = document.getElementById('guest-music-player');
+      if (playerEl) {
+        playerEl.style.animation = 'musicPulseAttention 1.2s ease-in-out 3';
+        setTimeout(() => { if (playerEl) playerEl.style.animation = ''; }, 4000);
+      }
+
+      // Show floating button immediately (don't wait for scroll)
+      const floatBtn = document.getElementById('floating-music-btn');
+      if (floatBtn) floatBtn.classList.add('visible');
+
+      // One-time: try to play on any user interaction
+      // Note: long-press-to-scroll on mobile fires touchstart but the browser
+      // may not count it as a "user gesture" for audio until touchend/click/scroll
+      let _played = false;
+      const tryPlay = () => {
+        if (_played) return;
+        audio.play().then(() => {
+          _played = true;
+          setMusicPlayingUI(true);
+          const fb = document.getElementById('floating-music-btn');
+          if (fb) fb.classList.remove('visible');
+          _removeAllTryPlayListeners();
+        }).catch(() => {});
+      };
+      function _removeAllTryPlayListeners() {
+        document.removeEventListener('touchstart', tryPlay);
+        document.removeEventListener('touchend', tryPlay);
+        document.removeEventListener('click', tryPlay);
+        document.removeEventListener('scroll', tryPlay);
+        window.removeEventListener('scroll', tryPlay);
+      }
+      document.addEventListener('touchstart', tryPlay, { passive: true });
+      document.addEventListener('touchend', tryPlay, { passive: true });
+      document.addEventListener('click', tryPlay);
+      document.addEventListener('scroll', tryPlay, { passive: true, once: true });
+      window.addEventListener('scroll', tryPlay, { passive: true, once: true });
+    });
   }
 }
 
@@ -760,4 +803,12 @@ function updateDressCodeSwatches(value) {
   container.innerHTML = colors.map(c =>
     `<div style="width:32px;height:32px;border-radius:50%;background:${c};border:2px solid #e5e7eb;flex-shrink:0" title="${c}"></div>`
   ).join('');
+}
+
+
+function toggleStdReleaseFields(releaseType) {
+  const dateWrap = document.getElementById('std-release-date-wrap');
+  const manualWrap = document.getElementById('std-manual-release-wrap');
+  if (dateWrap) dateWrap.classList.toggle('hidden', releaseType !== 'by_date');
+  if (manualWrap) manualWrap.classList.toggle('hidden', releaseType !== 'manual');
 }

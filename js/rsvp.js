@@ -314,6 +314,11 @@ async function rsvpSubmit() {
       _rsvpShowDecline();
     }
 
+    // ── If Save the Date gate uses 'on_confirmation' release, unlock it now ──
+    if (attending === 'yes' && typeof window._stdCheckUnlockAfterRsvp === 'function') {
+      setTimeout(() => window._stdCheckUnlockAfterRsvp(), 800);
+    }
+
   } catch(e) {
     console.error('RSVP submit error:', e);
     toast('Erro ao enviar. Tenta novamente.');
@@ -538,35 +543,7 @@ function rsvpLeaveFelicitacao() {
   setTimeout(() => document.getElementById('fel-msg-input')?.focus(), 100);
 }
 
-async function rsvpSubmitFelicitacao(btn) {
-  const name = document.getElementById('fel-name-input')?.value?.trim();
-  const msg  = document.getElementById('fel-msg-input')?.value?.trim();
-  if (!name) { toast('Por favor insere o teu nome.'); return; }
-  if (!msg)  { toast('Escreve uma mensagem antes de enviar.'); return; }
 
-  btn.disabled = true; btn.textContent = 'A enviar...'; btn.style.opacity = '0.6';
-
-  const eventId = Store.currentEventId;
-  try {
-    // Upsert RSVP with message
-    const existing = await supabaseRequest(
-      `rsvps?event_id=eq.${eventId}&guest_name=ilike.${encodeURIComponent(name)}&select=id,attending&limit=1`
-    );
-    if (existing && existing[0]) {
-      await supabaseRequest(`rsvps?id=eq.${existing[0].id}`, 'PATCH', { message: msg, updated_at: new Date().toISOString() });
-    } else {
-      await supabaseRequest('rsvps', 'POST', {
-        event_id: eventId, guest_name: name, attending: false,
-        message: msg, wants_gift: false, updated_at: new Date().toISOString()
-      });
-    }
-    toast('Mensagem enviada com carinho! 💌');
-    btn.closest('[style*="position:fixed"]')?.remove();
-  } catch(e) {
-    toast('Erro ao enviar mensagem. Tenta novamente.');
-    btn.disabled = false; btn.textContent = 'Enviar Mensagem'; btn.style.opacity = '1';
-  }
-}
 
 
 

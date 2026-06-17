@@ -113,6 +113,12 @@ async function renderGuestView() {
     showGuestMessages: eventData.showGuestMessages, show_guest_messages: eventData.show_guest_messages,
     // identity
     id: eventData.id, eventCode: eventData.eventCode, cover_image: eventData.cover_image,
+    rsvp_enabled: eventData.rsvp_enabled,
+    save_the_date_enabled: eventData.save_the_date_enabled,
+    release_type: eventData.release_type, release_date: eventData.release_date,
+    is_invite_released: eventData.is_invite_released,
+    std_title: eventData.std_title, std_subtitle: eventData.std_subtitle,
+    std_font_family: eventData.std_font_family,
     // Visual data that's ALREADY in events table — keep unless visuals has a better value
     event_color: eventData.event_color,
     bible_text: eventData.bible_text, bible_ref: eventData.bible_ref,
@@ -142,7 +148,8 @@ async function renderGuestView() {
   const _criticalNulls = ['bible_text','gallery_urls','invite_text','groom_parents','bride_parents',
     'iban_number','story_text','event_color','groom_name','bride_name','music_url','schedule_items',
     'manual_items','couplemsg_text','show_couplemsg','show_manual','show_schedule','show_story',
-    'dresscode_text','show_dresscode','dresscode_detail','parents_size'];
+    'dresscode_text','show_dresscode','dresscode_detail','parents_size',
+    'save_the_date_enabled','release_type','release_date','is_invite_released','std_title','std_subtitle'];
   const _stillMissing = _criticalNulls.filter(k => !eventData[k]);
   if (_stillMissing.length > 0) {
     try {
@@ -166,7 +173,7 @@ async function renderGuestView() {
     if (dates.confirm_by_date) eventData.confirm_by_date = dates.confirm_by_date;
   } catch(e) { console.warn('loadEventDates failed:', e); }
 
-  const RSVP_ONLY_FIELDS = new Set(['show_time','time','date','title','confirm_by_date','deadline','allowCompanions','allow_companions','maxCompanions','max_companions','allowKids','allow_kids','maxKids','max_kids','allowGifts','allow_gifts','allowSides','allow_sides','side1_name','side2_name','allowMessages','allow_messages','showGuestMessages','show_guest_messages','id','eventCode','cover_image']);
+  const RSVP_ONLY_FIELDS = new Set(['show_time','time','date','title','confirm_by_date','deadline','allowCompanions','allow_companions','maxCompanions','max_companions','allowKids','allow_kids','maxKids','max_kids','allowGifts','allow_gifts','allowSides','allow_sides','side1_name','side2_name','allowMessages','allow_messages','showGuestMessages','show_guest_messages','id','eventCode','cover_image','rsvp_enabled','save_the_date_enabled','release_type','release_date','is_invite_released','std_title','std_subtitle','std_font_family']);
 
   // Restore all fields: RSVP fields always from events table; visual fields use
   // whichever source (visuals or events table) has a non-null value
@@ -186,12 +193,21 @@ async function renderGuestView() {
   // ── CRITICAL: Update Store.guestEventData with fully merged eventData ──
   Store.guestEventData = eventData;
 
+  // (Save the Date gate check happens at the END of this function, after
+  // the full invite — including RSVP drawer and music player — has been
+  // set up. This way the gate is just a visual overlay and everything
+  // underneath remains fully functional once unlocked.)
+
   // ── Apply event color — AFTER all merges ──
   // Check both sources: visuals table first, then events table, then default
   const _evCol = eventData.event_color || '#007f9f';
   document.documentElement.style.setProperty('--ev-color', _evCol);
   const _rsvpSec = document.getElementById('rsvp-section');
-  if (_rsvpSec) _rsvpSec.style.background = _evCol;
+  if (_rsvpSec) {
+    _rsvpSec.style.background = _evCol;
+    // Hide entire RSVP CTA section if organiser disabled it for this event
+    _rsvpSec.style.display = (eventData.rsvp_enabled === false) ? 'none' : '';
+  }
   // Also apply to music player icon
   document.querySelectorAll('.music-icon').forEach(el => el.style.background = _evCol);
 
@@ -234,6 +250,18 @@ async function renderGuestView() {
       musicPlayerEl.classList.add('hidden');
       if (guestAudio) { guestAudio.pause(); guestAudio.src = ''; }
     }
+  }
+
+  // ===== SAVE THE DATE GATE =====
+  // Decide whether to show the minimalist "Save the Date" screen instead of
+  // the full invite, based on the event's release rules.
+  const stdDecision = _evaluateSaveTheDate(eventData);
+  if (stdDecision.showSaveTheDate) {
+    renderSaveTheDateScreen(eventData, stdDecision);
+    return; // Stop here — do not render the full invite sections
+  } else {
+    // Ensure the Save the Date overlay (if any) is removed so the full invite shows
+    document.getElementById('std-screen-overlay')?.remove();
   }
 
   // ===== RENDER SECTIONS (awaited so venues load properly) =====
@@ -289,6 +317,21 @@ async function renderGuestView() {
   }
 
   renderGuestMessageWall(eventData);
+
+  // ── SAVE THE DATE GATE (overlay) ──────────────────────────────────
+  // The full invite above is already fully rendered and functional
+  // (RSVP drawer, music, sections). If Save the Date is enabled and the
+  // release condition isn't met yet, show the gate screen on top.
+  if (eventData.save_the_date_enabled === true || eventData.save_the_date_enabled === 'true') {
+    const _shouldShowSTD = await _shouldShowSaveTheDate(eventData);
+    if (_shouldShowSTD) {
+      renderSaveTheDateScreen(eventData);
+    } else {
+      document.getElementById('save-the-date-screen')?.remove();
+    }
+  } else {
+    document.getElementById('save-the-date-screen')?.remove();
+  }
 }
 
 async function replyToGuestMessage(confIndex) {
@@ -1855,6 +1898,38 @@ function showFontUploadModal() {
   lucide.createIcons();
 }
 
+// Quick inline font upload from the Save the Date settings (derives name from filename)
+async function handleStdFontUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) { toast('Fonte muito grande. Máx. 5 MB.'); return; }
+  const name = file.name.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ').trim();
+  toast('A carregar fonte...');
+  try {
+    const ext = file.name.split('.').pop();
+    const fileName = `font_${name.replace(/\s+/g,'_')}_${Date.now()}.${ext}`;
+    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/event-covers/${fileName}`, {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/octet-stream',
+        'x-upsert': 'true'
+      },
+      body: file
+    });
+    if (!res.ok) throw new Error(await res.text());
+    const url = `${SUPABASE_URL}/storage/v1/object/public/event-covers/${fileName}`;
+    await supabaseRequest('fonts', 'POST', { name, url, created_by: Store.currentUser?.id || null });
+    toast(`Fonte "${name}" carregada!`);
+    await loadAvailableFonts();
+    const stdSel = document.getElementById('evt-std-font-select');
+    if (stdSel) stdSel.value = name;
+  } catch(e) {
+    toast('Erro ao carregar fonte.');
+  }
+}
+
 async function uploadFontFile(input) {
   const file = input.files[0];
   const name = document.getElementById('font-name-input').value.trim();
@@ -1914,11 +1989,12 @@ async function loadAvailableFonts() {
 }
 
 function updateFontSelector() {
-  const sel = document.getElementById('evt-font-select');
-  if (!sel) return;
   const fonts = Store.availableFonts || [];
   const opts = `<option value="">Fonte padrão</option>` + fonts.map(f => `<option value="${f.name}">${f.name}</option>`).join('');
-  sel.innerHTML = opts;
+  const sel = document.getElementById('evt-font-select');
+  if (sel) sel.innerHTML = opts;
+  const stdSel = document.getElementById('evt-std-font-select');
+  if (stdSel) stdSel.innerHTML = opts;
 }
 
 // ── Share guest event ──
@@ -1933,4 +2009,291 @@ function shareGuestEvent() {
       prompt('Copia este link:', url);
     });
   }
+}
+
+
+// ===================== SAVE THE DATE =====================
+// Decide if the minimalist "Save the Date" screen should show instead of
+// the full invite, based on save_the_date_enabled + release_type rules.
+function _evaluateSaveTheDate(ev) {
+  // Feature off entirely → always show full invite (current behaviour)
+  if (!ev.save_the_date_enabled || ev.save_the_date_enabled === false || ev.save_the_date_enabled === 'no') {
+    return { showSaveTheDate: false };
+  }
+
+  const releaseType = ev.release_type || 'manual';
+
+  // Condition C: Manual — admin/organiser controls is_invite_released directly
+  if (releaseType === 'manual') {
+    if (ev.is_invite_released === true || ev.is_invite_released === 'yes') {
+      return { showSaveTheDate: false };
+    }
+    return { showSaveTheDate: true, reason: 'manual' };
+  }
+
+  // Condition B: By date — invite opens for everyone once release_date has passed
+  if (releaseType === 'by_date') {
+    if (ev.release_date) {
+      const releaseAt = new Date(ev.release_date);
+      if (!isNaN(releaseAt.getTime()) && new Date() >= releaseAt) {
+        return { showSaveTheDate: false };
+      }
+    }
+    return { showSaveTheDate: true, reason: 'by_date', releaseDate: ev.release_date };
+  }
+
+  // Condition A: On confirmation — invite opens only for the specific guest
+  // once THEY confirm attendance positively (checked via sessionStorage RSVP state)
+  if (releaseType === 'on_confirmation') {
+    const eventId = ev.id || Store.currentEventId;
+    const confirmed = rsvpCheckConfirmed(eventId);
+    if (confirmed && confirmed.attending === true) {
+      return { showSaveTheDate: false };
+    }
+    return { showSaveTheDate: true, reason: 'on_confirmation' };
+  }
+
+  // Unknown release_type — default to safe behaviour (show full invite)
+  return { showSaveTheDate: false };
+}
+
+function renderSaveTheDateScreen(ev, decision) {
+  const appRoot = document.getElementById('app-root') || document.body;
+  const evColor = ev.event_color || '#007f9f';
+  const invertNames = _yesOrTrue(ev.invert_names);
+  let groom = ev.groom_name || ''; let bride = ev.bride_name || '';
+  if (invertNames && groom && bride) { [groom, bride] = [bride, groom]; }
+  const coupleNames = (groom || bride) ? `${escapeHTML(groom)}${groom && bride ? ' &amp; ' : ''}${escapeHTML(bride)}` : '';
+
+  const stdTitle = ev.std_title || 'Save the Date';
+  const stdSubtitle = ev.std_subtitle || 'Nosso Casamento';
+
+  let dateLabel = '';
+  if (ev.date) {
+    const d = new Date(String(ev.date).split('T')[0] + 'T00:00:00');
+    if (!isNaN(d.getTime())) {
+      const months = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+      dateLabel = `${String(d.getDate()).padStart(2,'0')} de ${months[d.getMonth()]} de ${d.getFullYear()}`;
+    }
+  }
+
+  // Remove any previous instance before re-rendering
+  document.getElementById('std-screen-overlay')?.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'std-screen-overlay';
+  overlay.style.cssText = `position:fixed;inset:0;z-index:9000;overflow-y:auto;background:${ev.bg_url ? `url('${ev.bg_url}') center/cover no-repeat` : `linear-gradient(160deg, ${evColor}, #0d2a35)`};display:flex;align-items:center;justify-content:center;padding:1.5rem`;
+
+  overlay.innerHTML = `
+    <div style="position:absolute;inset:0;background:rgba(0,0,0,0.45)"></div>
+    <div style="position:relative;z-index:1;max-width:420px;width:100%;text-align:center;color:#fff">
+      <p style="font-size:0.78rem;letter-spacing:0.25em;text-transform:uppercase;opacity:0.85;margin-bottom:0.5rem">${escapeHTML(stdTitle)}</p>
+      <h1 style="font-size:1.5rem;font-weight:700;margin-bottom:1.5rem;opacity:0.95">${escapeHTML(stdSubtitle)}</h1>
+      ${coupleNames ? `<h2 style="font-family:var(--event-font, 'Playfair Display', serif);font-size:2.4rem;margin-bottom:1rem;line-height:1.3">${coupleNames}</h2>` : ''}
+      ${dateLabel ? `<p style="font-size:1.05rem;font-weight:600;margin-bottom:2rem;opacity:0.92">${dateLabel}</p>` : ''}
+
+      <div id="std-countdown-grid" style="display:flex;gap:0.75rem;justify-content:center;margin-bottom:2rem">
+        <div style="background:rgba(255,255,255,0.12);border-radius:0.75rem;padding:0.75rem 0.5rem;min-width:60px"><div id="std-days" style="font-size:1.5rem;font-weight:800">--</div><div style="font-size:0.65rem;opacity:0.75;text-transform:uppercase">Dias</div></div>
+        <div style="background:rgba(255,255,255,0.12);border-radius:0.75rem;padding:0.75rem 0.5rem;min-width:60px"><div id="std-hours" style="font-size:1.5rem;font-weight:800">--</div><div style="font-size:0.65rem;opacity:0.75;text-transform:uppercase">Horas</div></div>
+        <div style="background:rgba(255,255,255,0.12);border-radius:0.75rem;padding:0.75rem 0.5rem;min-width:60px"><div id="std-mins" style="font-size:1.5rem;font-weight:800">--</div><div style="font-size:0.65rem;opacity:0.75;text-transform:uppercase">Min</div></div>
+        <div style="background:rgba(255,255,255,0.12);border-radius:0.75rem;padding:0.75rem 0.5rem;min-width:60px"><div id="std-secs" style="font-size:1.5rem;font-weight:800">--</div><div style="font-size:0.65rem;opacity:0.75;text-transform:uppercase">Seg</div></div>
+      </div>
+      <p style="font-size:0.7rem;opacity:0.65;margin-top:-1.5rem;margin-bottom:1.5rem">Contagem até à data limite de confirmação</p>
+
+      <button id="std-rsvp-btn" style="background:#fff;color:${evColor};border:none;border-radius:999px;padding:0.9rem 2.5rem;font-weight:800;font-size:0.95rem;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,0.25)">
+        Confirmar Presença
+      </button>
+    </div>`;
+  appRoot.appendChild(overlay);
+
+  // Wire RSVP button — opens the same drawer/flow as the full invite would
+  document.getElementById('std-rsvp-btn').onclick = () => {
+    if (typeof openRsvpDrawer === 'function') openRsvpDrawer();
+  };
+
+  // Countdown to confirm_by_date (RSVP deadline), falling back to event date
+  const targetStr = ev.confirm_by_date || ev.date;
+  if (targetStr) {
+    const target = new Date(String(targetStr).includes('T') ? targetStr : targetStr + 'T23:59:59');
+    if (!isNaN(target.getTime())) {
+      if (window._stdCountdownInterval) clearInterval(window._stdCountdownInterval);
+      const tick = () => {
+        const diff = target - new Date();
+        if (diff <= 0) { clearInterval(window._stdCountdownInterval); return; }
+        const d = Math.floor(diff/86400000), h = Math.floor((diff%86400000)/3600000),
+              m = Math.floor((diff%3600000)/60000), s = Math.floor((diff%60000)/1000);
+        const set = (id,v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+        set('std-days', d); set('std-hours', h); set('std-mins', m); set('std-secs', s);
+      };
+      tick();
+      window._stdCountdownInterval = setInterval(tick, 1000);
+    }
+  }
+
+  // Background music still plays per the normal music player logic (already
+  // initialised in renderGuestView before this screen is shown).
+
+  // If gated "on_confirmation": once the guest confirms via the drawer, re-check
+  // and remove this screen automatically without a full page reload.
+  if (decision.reason === 'on_confirmation') {
+    window._stdRecheckInterval = setInterval(() => {
+      const confirmed = rsvpCheckConfirmed(ev.id || Store.currentEventId);
+      if (confirmed && confirmed.attending === true) {
+        clearInterval(window._stdRecheckInterval);
+        overlay.remove();
+        renderGuestView(); // Re-render to show the full invite now
+      }
+    }, 1500);
+  }
+}
+
+
+// ===================== SAVE THE DATE =====================
+// Decides whether the gate screen should show, based on release_type.
+async function _shouldShowSaveTheDate(eventData) {
+  const releaseType = eventData.release_type || 'manual';
+
+  if (releaseType === 'manual') {
+    // Show gate until admin manually flips is_invite_released
+    return !(eventData.is_invite_released === true || eventData.is_invite_released === 'true');
+  }
+
+  if (releaseType === 'by_date') {
+    // Show gate until release_date has passed
+    if (!eventData.release_date) return true;
+    const releaseAt = new Date(eventData.release_date);
+    return new Date() < releaseAt;
+  }
+
+  if (releaseType === 'on_confirmation') {
+    // Show gate until THIS guest has confirmed presence positively
+    const eventId = eventData.id || Store.currentEventId;
+    const confirmed = rsvpCheckConfirmed(eventId);
+    if (confirmed && confirmed.attending === true) return false; // unlock for this guest
+    return true; // still gated for this guest
+  }
+
+  return false; // unknown type — don't gate
+}
+
+function renderSaveTheDateScreen(eventData) {
+  const evColor = eventData.event_color || '#007f9f';
+  const invertNames = _yesOrTrue(eventData.invert_names);
+  let groom = eventData.groom_name || '';
+  let bride = eventData.bride_name || '';
+  if (invertNames && groom && bride) { [groom, bride] = [bride, groom]; }
+  const coupleNames = (groom || bride) ? `${groom}${groom && bride ? ' &amp; ' : ''}${bride}` : (eventData.title || '');
+
+  const stdTitle    = eventData.std_title || 'Save the Date';
+  const stdSubtitle = eventData.std_subtitle || 'Nosso Casamento';
+  const stdFont     = eventData.std_font_family || eventData.custom_font_family || null;
+
+  let eventDateStr = '';
+  if (eventData.date) {
+    const d = new Date(eventData.date + 'T00:00:00');
+    const months = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+    eventDateStr = `${String(d.getDate()).padStart(2,'0')} de ${months[d.getMonth()]} de ${d.getFullYear()}`;
+  }
+
+  // Apply custom font if specified
+  let fontFaceCSS = '';
+  if (stdFont) {
+    const fontDef = (Store.availableFonts || []).find(f => f.name === stdFont);
+    if (fontDef) {
+      fontFaceCSS = `@font-face { font-family: '${stdFont}'; src: url('${fontDef.url}'); font-display: swap; }`;
+    }
+  }
+
+  // IMPORTANT: render as an OVERLAY on top of the existing guest page DOM
+  // (which already has #rsvp-drawer, #guest-audio, etc.) instead of replacing
+  // app-root entirely. This means the RSVP drawer and music player keep working.
+  let screen = document.getElementById('save-the-date-screen');
+  if (!screen) {
+    screen = document.createElement('div');
+    screen.id = 'save-the-date-screen';
+    document.body.appendChild(screen);
+  }
+  screen.style.cssText = `position:fixed;inset:0;z-index:9000;overflow-y:auto;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:2rem 1.25rem;background:${eventData.bg_url ? `url('${eventData.bg_url}') center/cover no-repeat` : `linear-gradient(160deg, ${evColor}15, #fff 60%)`}`;
+
+  screen.innerHTML = `
+    <style>${fontFaceCSS}</style>
+    ${eventData.bg_url ? `<div style="position:absolute;inset:0;background:rgba(0,0,0,0.35)"></div>` : ''}
+    <div style="position:relative;z-index:2;max-width:420px;width:100%">
+      <p style="font-size:0.78rem;font-weight:700;letter-spacing:0.25em;text-transform:uppercase;color:${eventData.bg_url ? '#fff' : evColor};opacity:0.85;margin-bottom:0.5rem">${escapeHTML(stdTitle)}</p>
+      <h1 style="font-size:1.1rem;font-weight:600;color:${eventData.bg_url ? '#fff' : '#374151'};margin-bottom:1.5rem;${stdFont ? `font-family:'${stdFont}',serif` : ''}">${escapeHTML(stdSubtitle)}</h1>
+      <h2 style="font-size:2.4rem;font-weight:800;color:${eventData.bg_url ? '#fff' : evColor};margin-bottom:0.5rem;line-height:1.2;text-shadow:${eventData.bg_url ? '0 2px 12px rgba(0,0,0,0.4)' : 'none'};white-space:nowrap;display:flex;align-items:center;justify-content:center;gap:0.3em">${coupleNames}</h2>
+      <p style="font-size:1rem;font-weight:600;color:${eventData.bg_url ? '#fff' : '#6b7280'};margin-bottom:2rem">${eventDateStr}</p>
+
+      <div id="std-countdown" style="display:flex;gap:0.75rem;justify-content:center;margin-bottom:0.5rem">
+        <div style="background:${eventData.bg_url ? 'rgba(255,255,255,0.15)' : '#fff'};border-radius:0.75rem;padding:0.65rem 0.5rem;min-width:54px;box-shadow:0 2px 12px rgba(0,0,0,0.08)">
+          <div id="std-days" style="font-size:1.5rem;font-weight:800;color:${eventData.bg_url ? '#fff' : evColor}">--</div>
+          <div style="font-size:0.6rem;color:${eventData.bg_url ? '#fff' : '#9ca3af'};opacity:0.8">Dias</div>
+        </div>
+        <div style="background:${eventData.bg_url ? 'rgba(255,255,255,0.15)' : '#fff'};border-radius:0.75rem;padding:0.65rem 0.5rem;min-width:54px;box-shadow:0 2px 12px rgba(0,0,0,0.08)">
+          <div id="std-hours" style="font-size:1.5rem;font-weight:800;color:${eventData.bg_url ? '#fff' : evColor}">--</div>
+          <div style="font-size:0.6rem;color:${eventData.bg_url ? '#fff' : '#9ca3af'};opacity:0.8">Horas</div>
+        </div>
+        <div style="background:${eventData.bg_url ? 'rgba(255,255,255,0.15)' : '#fff'};border-radius:0.75rem;padding:0.65rem 0.5rem;min-width:54px;box-shadow:0 2px 12px rgba(0,0,0,0.08)">
+          <div id="std-mins" style="font-size:1.5rem;font-weight:800;color:${eventData.bg_url ? '#fff' : evColor}">--</div>
+          <div style="font-size:0.6rem;color:${eventData.bg_url ? '#fff' : '#9ca3af'};opacity:0.8">Min</div>
+        </div>
+        <div style="background:${eventData.bg_url ? 'rgba(255,255,255,0.15)' : '#fff'};border-radius:0.75rem;padding:0.65rem 0.5rem;min-width:54px;box-shadow:0 2px 12px rgba(0,0,0,0.08)">
+          <div id="std-secs" style="font-size:1.5rem;font-weight:800;color:${eventData.bg_url ? '#fff' : evColor}">--</div>
+          <div style="font-size:0.6rem;color:${eventData.bg_url ? '#fff' : '#9ca3af'};opacity:0.8">Seg</div>
+        </div>
+      </div>
+      <p style="font-size:0.72rem;color:${eventData.bg_url ? '#fff' : '#9ca3af'};opacity:0.75;margin-bottom:2rem">até à data limite de confirmação</p>
+
+      <button id="std-rsvp-btn" style="background:${evColor};color:#fff;border:none;border-radius:999px;padding:0.95rem 2.5rem;font-weight:700;font-size:0.95rem;cursor:pointer;font-family:inherit;box-shadow:0 4px 16px ${evColor}55">
+        Confirmar Presença
+      </button>
+    </div>
+  `;
+
+  // Countdown to confirm_by_date (the RSVP deadline) — falls back to event date
+  const targetDate = eventData.confirm_by_date || eventData.date;
+  if (targetDate) {
+    const clean = String(targetDate).trim().replace(' ', 'T');
+    const parts = clean.split('T');
+    const datePart = parts[0];
+    const timePart = parts[1] ? parts[1].split(':').slice(0,2).join(':') : '23:59';
+    const target = new Date(datePart + 'T' + timePart + ':00');
+    function _updateSTDCountdown() {
+      const diff = target - new Date();
+      if (diff <= 0) {
+        ['std-days','std-hours','std-mins','std-secs'].forEach(id => { const el = document.getElementById(id); if (el) el.textContent = '0'; });
+        return;
+      }
+      const d = Math.floor(diff/86400000);
+      const h = Math.floor((diff%86400000)/3600000);
+      const m = Math.floor((diff%3600000)/60000);
+      const s = Math.floor((diff%60000)/1000);
+      const dEl = document.getElementById('std-days'); if (dEl) dEl.textContent = d;
+      const hEl = document.getElementById('std-hours'); if (hEl) hEl.textContent = h;
+      const mEl = document.getElementById('std-mins'); if (mEl) mEl.textContent = m;
+      const sEl = document.getElementById('std-secs'); if (sEl) sEl.textContent = s;
+    }
+    _updateSTDCountdown();
+    if (window._stdCountdownInterval) clearInterval(window._stdCountdownInterval);
+    window._stdCountdownInterval = setInterval(_updateSTDCountdown, 1000);
+  }
+
+  // Wire RSVP button — opens the same drawer used in the full invite.
+  // The drawer markup is already in the underlying guest page DOM (rendered
+  // earlier by index.html), so this works without needing to rebuild anything.
+  document.getElementById('std-rsvp-btn').onclick = () => {
+    if (typeof openRsvpDrawer === 'function') openRsvpDrawer();
+  };
+
+  // After a successful RSVP confirmation (attending=yes) on an 'on_confirmation'
+  // release type, automatically remove this gate and show the full invite.
+  window._stdCheckUnlockAfterRsvp = () => {
+    const releaseType = eventData.release_type || 'manual';
+    if (releaseType !== 'on_confirmation') return;
+    const confirmed = rsvpCheckConfirmed(eventData.id || Store.currentEventId);
+    if (confirmed && confirmed.attending === true) {
+      screen.remove();
+      if (window._stdCountdownInterval) clearInterval(window._stdCountdownInterval);
+    }
+  };
 }

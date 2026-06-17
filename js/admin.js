@@ -2679,10 +2679,10 @@ function impersonateUser(userId, userPhone, btn) {
 
 // ===================== PACKAGE EDITOR =====================
 const DEFAULT_PACKAGES = [
-  { name: 'Único', price: '79 999 Kz', people: '∞', invites: 'PDF único sem QR Code · Link do evento incluído', badge: 'Novo', featured: false },
-  { name: 'Básico',   price: '99 999 Kz',  people: 110, invites: '60–66',  badge: 'Básico',   color: '#e0f2fe', textColor: '#0369a1' },
-  { name: 'Popular',  price: '159 999 Kz', people: 230, invites: '126–136', badge: 'Popular',  color: '#fef3c7', textColor: '#92400e', featured: true },
-  { name: 'Premium',  price: '219 999 Kz', people: 300, invites: '166–176', badge: 'Premium',  color: '#e0fdf4', textColor: '#065f46' },
+  { name: 'Único', price: '79 999 Kz', people: '∞', invites: 'Envio ilimitado para quantas pessoas desejares', description: 'Envie sem limites, obs.: não leva nomes dos convidados no PDF e nem QR Code.', badge: 'Novo', featured: false },
+  { name: 'Básico',   price: '99 999 Kz',  people: 110, invites: '60–66 convites digitais',  description: '', badge: 'Básico',   color: '#e0f2fe', textColor: '#0369a1' },
+  { name: 'Popular',  price: '159 999 Kz', people: 230, invites: '126–136 convites digitais', description: '', badge: 'Popular',  color: '#fef3c7', textColor: '#92400e', featured: true },
+  { name: 'Premium',  price: '219 999 Kz', people: 300, invites: '166–176 convites digitais', description: '', badge: 'Premium',  color: '#e0fdf4', textColor: '#065f46' },
 ];
 
 async function loadPackages() {
@@ -2976,14 +2976,21 @@ async function renderLandingPackages(pkgsData) {
     'background:#e0fdf4;color:#065f46',
   ];
 
-  grid.innerHTML = pkgs.map((p, i) => `
+  grid.innerHTML = pkgs.map((p, i) => {
+    let invitesText = p.invites || '';
+    // Defensive: ensure the word "convites" is present so it's never confused with a price
+    if (invitesText && !/convite/i.test(invitesText) && !/ilimitad|envio/i.test(invitesText)) {
+      invitesText = invitesText + ' convites';
+    }
+    return `
     <div class="lp-card ${i === 1 ? 'lp-featured' : ''}">
       <div class="lp-badge" style="${BADGE_STYLES[i] || BADGE_STYLES[0]}">${escapeHTML(p.name)}</div>
-      <div class="lp-detail" style="font-size:0.95rem;font-weight:700;color:#1e293b;margin-bottom:0.35rem">${escapeHTML(p.invites || '')}</div>
+      <div class="lp-detail" style="font-size:0.95rem;font-weight:700;color:#1e293b;margin-bottom:0.35rem">${escapeHTML(invitesText)}</div>
       <div class="lp-price">${escapeHTML(p.price)}</div>
       ${p.description ? `<p style="font-size:0.78rem;color:#6b7280;margin:0.5rem 0;line-height:1.5">${escapeHTML(p.description)}</p>` : ''}
       <button class="lp-btn" onclick="startPackageOrder('${escapeHTML(p.name)}','${escapeHTML(p.price)}')">Encomendar</button>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 // ===================== SITE NOTICES =====================
@@ -3242,15 +3249,18 @@ function openNotificationsPanel() {
 // ── Admin: send notification to all users ──
 function openSendNotificationModal() {
   const modal = document.createElement('div');
+  modal.id = '_send-notif-modal';
   modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:1rem';
   modal.innerHTML = `<div style="background:#fff;border-radius:1.25rem;padding:1.75rem;max-width:420px;width:100%">
     <h3 style="font-size:1rem;font-weight:800;color:#1e293b;margin-bottom:1rem">Enviar Notificação</h3>
     <input id="_notif-title" class="input-field" placeholder="Título" style="margin-bottom:0.6rem">
     <textarea id="_notif-body" class="input-field" rows="3" placeholder="Mensagem..." style="resize:none;margin-bottom:1rem"></textarea>
     <button id="_notif-send-btn" style="background:#007f9f;color:#fff;border:none;border-radius:999px;padding:0.8rem;font-weight:700;width:100%;cursor:pointer;font-family:inherit">Enviar para Todos</button>
-    <button onclick="this.closest('[style*=position:fixed]').remove()" style="background:none;border:none;color:#9ca3af;font-size:0.82rem;cursor:pointer;width:100%;margin-top:0.5rem;font-family:inherit">Cancelar</button>
+    <button id="_notif-cancel-btn" style="background:none;border:none;color:#9ca3af;font-size:0.82rem;cursor:pointer;width:100%;margin-top:0.5rem;font-family:inherit">Cancelar</button>
   </div>`;
   document.body.appendChild(modal);
+  document.getElementById('_notif-cancel-btn').onclick = () => modal.remove();
+  modal.onclick = e => { if (e.target === modal) modal.remove(); };
   document.getElementById('_notif-send-btn').onclick = async function() {
     const title = document.getElementById('_notif-title')?.value?.trim();
     const body  = document.getElementById('_notif-body')?.value?.trim();

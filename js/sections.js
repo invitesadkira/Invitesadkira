@@ -335,8 +335,7 @@ function buildCountdownSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
   return _SD + `<div class="event-section" style="background:linear-gradient(135deg,#f0f9fb,#e6f4f7)">
     <div class="section-inner" style="text-align:center">
       <div class="reveal">
-        <span class="section-tag">Contagem Regressiva</span>
-        <p style="font-size:0.75rem;color:#6b7280;margin:0.25rem 0 0.75rem;font-weight:500">Contagem regressiva até a data do evento</p>
+        <span class="section-tag">Contagem Regressiva até ao Grande Dia</span>
         <div class="countdown-section-grid">
           <div class="countdown-section-box" style="background:${ev.event_color||'#007f9f'}"><div class="cdb-num" id="cd-days">--</div><div class="cdb-label">Dias</div></div>
           <div class="countdown-section-box" style="background:${ev.event_color||'#007f9f'}"><div class="cdb-num" id="cd-hours">--</div><div class="cdb-label">Horas</div></div>
@@ -647,7 +646,7 @@ async function saveManualItems() {
   Store.eventManualItems = items;
 
   // Persist immediately to Supabase
-  const eventId = Store.currentEventId;
+  const eventId = Store.currentEventId || Store._intakeEventId;
   if (eventId) {
     try {
       await saveEventVisuals(eventId, {
@@ -767,7 +766,7 @@ async function saveScheduleItems() {
   Store.eventScheduleItems = items;
 
   // Persist immediately to Supabase — don't wait for the main event form save
-  const eventId = Store.currentEventId;
+  const eventId = Store.currentEventId || Store._intakeEventId;
   if (eventId) {
     try {
       await saveEventVisuals(eventId, {
