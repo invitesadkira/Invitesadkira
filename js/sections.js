@@ -66,6 +66,26 @@ async function renderGuestSections(eventData) {
   if (!container) return;
   if (!eventData) { container.innerHTML = ''; return; }
 
+  // ── Personalize the invite text with the confirmed guest's name ────────
+  // Once we know who this guest is (either via RSVP confirmation, or via a
+  // personalized link — see guest_links), replace the generic placeholder
+  // "Exmo.(a) Sr.(a)" in invite_text with their actual name, so the invite
+  // reads "Têm a honra de convidar [Nome] para testemunhar...".
+  if (eventData.invite_text) {
+    const eventId = eventData.id || Store.currentEventId;
+    let guestName = null;
+    // Priority 1: personalized link lock (most specific — see guest_links)
+    if (Store._lockedGuestName) guestName = Store._lockedGuestName;
+    // Priority 2: this browser's own RSVP confirmation for this event
+    if (!guestName) {
+      const confirmed = rsvpCheckConfirmed(eventId);
+      if (confirmed && confirmed.attending === true && confirmed.name) guestName = confirmed.name;
+    }
+    if (guestName) {
+      eventData.invite_text = eventData.invite_text.replace(/Exmo\.?\(a\)\s*Sr\.?\(a\)\.?/gi, escapeHTML(guestName));
+    }
+  }
+
   // DEBUG: Log what data we have for each section
   console.group('renderGuestSections — section data check');
   console.log('bible_text:', eventData.bible_text ? '✓ '+String(eventData.bible_text).substring(0,30) : '✗ null');
@@ -230,7 +250,9 @@ function applyGuestBackground(ev) {
 }
 
 function buildBibleSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
-  const lines = (ev.bible_text || '').split('\n').filter(Boolean).map(l => `<p class="bible-verse" style="font-size:0.92rem;line-height:1.8;font-style:italic">${escapeHTML(l)}</p>`).join('');
+  const bibleSize = parseFloat(ev.bible_size) || 0.92;
+  const lines = (ev.bible_text || '').split('\n').filter(Boolean).map(l => `<p class="bible-verse" style="font-size:${bibleSize}rem;line-height:1.8;font-style:italic">${escapeHTML(l)}</p>`).join('');
+  const lines2 = (ev.bible_text_2 || '').split('\n').filter(Boolean).map(l => `<p class="bible-verse" style="font-size:${bibleSize}rem;line-height:1.8;font-style:italic">${escapeHTML(l)}</p>`).join('');
   const hasParents = ev.groom_parents || ev.bride_parents;
   // Always show the hardcoded blessing label — never use invite_blessing as the label
   const blessingLabel = 'Com a bênção de Deus e de seus pais';
@@ -276,6 +298,7 @@ function buildBibleSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
       <div class="reveal scale-in">
         ${lines}
         ${ev.bible_ref ? `<p class="bible-ref" style="margin-top:0.75rem">${escapeHTML(ev.bible_ref)}</p>` : ''}
+        ${lines2 ? `<div style="margin-top:1rem">${lines2}${ev.bible_ref_2 ? `<p class="bible-ref" style="margin-top:0.75rem">${escapeHTML(ev.bible_ref_2)}</p>` : ''}</div>` : ''}
         <div style="font-size:1.2rem;color:${ev.event_color||'#c9a84c'};margin-top:0.75rem;letter-spacing:0.2em">✦</div>
       </div>
       ${parentsHtml}
@@ -483,7 +506,7 @@ function buildParentsSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
 
 function buildIbanSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
   const evColor = ev.event_color || '#007f9f';
-  const msgLines = (ev.iban_message || '').split('\n').map(l => `<p style="color:#374151;font-size:0.92rem;line-height:1.7;text-align:justify">${escapeHTML(l)}</p>`).join('');
+  const msgLines = (ev.iban_message || '').split('\n').map(l => `<p style="color:#374151;font-size:0.92rem;line-height:1.7;text-align:center">${escapeHTML(l)}</p>`).join('');
   return _SD + `<div class="event-section" style="background:#f0f9fb">
     <div class="section-inner reveal" style="text-align:center">
       <div style="background:#fff;border-radius:1rem;padding:1.5rem 1.25rem;max-width:480px;margin:0 auto;border:1.5px solid color-mix(in srgb,${evColor} 25%,transparent)">
@@ -580,7 +603,23 @@ function buildScheduleSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
 
 // ===================== MANUAL EDITOR =====================
 function openManualEditor() {
-  const items = Store.eventManualItems ? JSON.parse(JSON.stringify(Store.eventManualItems)) : JSON.parse(JSON.stringify(DEFAULT_MANUAL_ITEMS));
+  // Defensive fallback chain: prefer Store.eventManualItems (set when the
+  // edit/intake form loaded), but if it's somehow null, try to recover the
+  // REAL saved data from Store.events before ever falling back to defaults
+  // — this prevents accidentally overwriting genuine saved items.
+  let items;
+  if (Store.eventManualItems) {
+    items = JSON.parse(JSON.stringify(Store.eventManualItems));
+  } else {
+    const eventId = Store.currentEventId || Store._intakeEventId;
+    const evFromStore = eventId ? Store.events.find(e => e.id === eventId) : null;
+    if (evFromStore && evFromStore.manual_items) {
+      try { items = JSON.parse(JSON.stringify(JSON.parse(evFromStore.manual_items))); }
+      catch(e) { items = JSON.parse(JSON.stringify(DEFAULT_MANUAL_ITEMS)); }
+    } else {
+      items = JSON.parse(JSON.stringify(DEFAULT_MANUAL_ITEMS));
+    }
+  }
   const modal = document.createElement('div');
   modal.className = 'modal-overlay';
   modal.id = 'manual-editor-modal';
@@ -655,18 +694,25 @@ async function saveManualItems() {
 
   // Persist immediately to Supabase
   const eventId = Store.currentEventId || Store._intakeEventId;
+  console.log('📝 saveManualItems — a guardar para eventId:', eventId, 'itens:', items);
+  if (!eventId) {
+    console.error('❌ saveManualItems: nenhum eventId disponível (Store.currentEventId e Store._intakeEventId estão ambos vazios). As alterações NÃO foram guardadas no Supabase, apenas em memória.');
+    toast('Erro: não foi possível identificar o evento. As alterações podem não ter sido guardadas.');
+  }
   if (eventId) {
     try {
-      await saveEventVisuals(eventId, {
+      const saveResult = await saveEventVisuals(eventId, {
         manual_items: JSON.stringify(items),
         show_manual: 'yes'
       });
+      console.log('📝 saveManualItems — resultado da gravação:', saveResult);
       const swManual = document.getElementById('sw-manual');
       if (swManual && !swManual.classList.contains('active')) swManual.classList.add('active');
       const ev2 = Store.events.find(e => e.id === eventId);
       if (ev2) { ev2.manual_items = JSON.stringify(items); ev2.show_manual = 'yes'; }
     } catch(e) {
-      console.warn('Erro ao guardar manual:', e);
+      console.error('❌ Erro ao guardar manual:', e);
+      toast('Erro ao guardar o manual. Verifica a consola.');
     }
   }
 
@@ -681,13 +727,43 @@ function resetManualItems() {
 
 
 // ===================== SCHEDULE EDITOR =====================
-function openScheduleEditor() {
-  const items = Store.eventScheduleItems ? JSON.parse(JSON.stringify(Store.eventScheduleItems)) : JSON.parse(JSON.stringify(DEFAULT_SCHEDULE_ITEMS));
+function openScheduleEditor(clientMode) {
+  clientMode = clientMode || (typeof Store._isClientIntakeContext !== 'undefined' && Store._isClientIntakeContext);
+  let items;
+  if (Store.eventScheduleItems) {
+    items = JSON.parse(JSON.stringify(Store.eventScheduleItems));
+  } else {
+    const eventId = Store.currentEventId || Store._intakeEventId;
+    const evFromStore = eventId ? Store.events.find(e => e.id === eventId) : null;
+    if (evFromStore && evFromStore.schedule_items) {
+      try { items = JSON.parse(JSON.stringify(JSON.parse(evFromStore.schedule_items))); }
+      catch(e) { items = JSON.parse(JSON.stringify(DEFAULT_SCHEDULE_ITEMS)); }
+    } else {
+      items = JSON.parse(JSON.stringify(DEFAULT_SCHEDULE_ITEMS));
+    }
+  }
   const modal = document.createElement('div');
   modal.className = 'modal-overlay';
   modal.id = 'schedule-editor-modal';
 
   function renderRows() {
+    if (clientMode) {
+      // Simplified client view: only date/time + the moment description.
+      // Icons stay admin-only — the client never sees or edits them, but
+      // they're preserved underneath so the admin can assign them later.
+      return items.map((it, i) => `
+        <div class="flex items-start gap-2 mb-3 bg-gray-50 rounded-xl p-2">
+          <div class="flex gap-2 flex-1">
+            <input class="input-field text-xs w-24" value="${it.time}" placeholder="Hora (ex: 21h00)" id="sc-time-${i}">
+            <input class="input-field text-xs flex-1" value="${it.label}" placeholder="Momento (ex: Entrada dos noivos)" id="sc-label-${i}">
+          </div>
+          <div class="flex flex-col gap-1 flex-shrink-0">
+            <button type="button" class="text-red-400" onclick="removeScheduleItem(${i})"><i data-lucide="x" class="w-4 h-4"></i></button>
+            ${i > 0 ? `<button type="button" class="text-gray-400" onclick="moveScheduleItem(${i},-1)"><i data-lucide="arrow-up" class="w-3 h-3"></i></button>` : ''}
+            ${i < items.length-1 ? `<button type="button" class="text-gray-400" onclick="moveScheduleItem(${i},1)"><i data-lucide="arrow-down" class="w-3 h-3"></i></button>` : ''}
+          </div>
+        </div>`).join('');
+    }
     return items.map((it, i) => `
       <div class="flex items-start gap-2 mb-3 bg-gray-50 rounded-xl p-2">
         <div class="flex flex-col gap-1 flex-1">
@@ -713,21 +789,22 @@ function openScheduleEditor() {
 
   modal.innerHTML = `<div class="modal-content bg-white rounded-2xl shadow-lg p-5 max-w-lg w-full max-h-[85vh] overflow-y-auto">
     <h3 class="text-base font-bold text-gray-800 mb-1">Monograma do Dia</h3>
-    <p class="text-xs text-gray-400 mb-2">Os ícones são nomes do <a href="https://lucide.dev/icons/" target="_blank" class="text-teal-500 underline">Lucide Icons</a>. Escreve o nome e vê a pré-visualização.</p>
+    <p class="text-xs text-gray-400 mb-2">${clientMode ? 'Coloca a hora e o momento de cada parte do dia. A ordem é organizada automaticamente.' : 'Os ícones são nomes do <a href="https://lucide.dev/icons/" target="_blank" class="text-teal-500 underline">Lucide Icons</a>. Escreve o nome e vê a pré-visualização.'}</p>
     <div id="schedule-items-list">${renderRows()}</div>
-    <button type="button" class="mt-2 text-xs text-teal-600 font-semibold" onclick="addScheduleItem()">+ Adicionar momento</button>
+    <button type="button" class="mt-2 text-xs text-teal-600 font-semibold" onclick="addScheduleItem(${clientMode})">+ Adicionar momento</button>
     <div class="flex gap-2 mt-4">
       <button class="flex-1 btn-main" onclick="saveScheduleItems()">Guardar</button>
       <button class="flex-1 btn-outline" onclick="this.closest('.modal-overlay').remove()">Cancelar</button>
-      <button class="text-xs text-gray-400 px-2" onclick="resetScheduleItems()">Repor padrão</button>
+      ${!clientMode ? `<button class="text-xs text-gray-400 px-2" onclick="resetScheduleItems()">Repor padrão</button>` : ''}
     </div>
   </div>`;
   document.body.appendChild(modal);
   lucide.createIcons();
   window._scheduleEditorItems = items;
+  window._scheduleEditorClientMode = clientMode;
 }
 
-function addScheduleItem() {
+function addScheduleItem(clientMode) {
   window._scheduleEditorItems.push({ icon: 'star', time: '00h00', label: 'Novo Momento', sub: '' });
   refreshScheduleEditorList();
 }
@@ -739,7 +816,19 @@ function moveScheduleItem(i, dir) {
 }
 function refreshScheduleEditorList() {
   const items = window._scheduleEditorItems;
-  document.getElementById('schedule-items-list').innerHTML = items.map((it, i) => `
+  const clientMode = window._scheduleEditorClientMode;
+  document.getElementById('schedule-items-list').innerHTML = items.map((it, i) => clientMode ? `
+    <div class="flex items-start gap-2 mb-3 bg-gray-50 rounded-xl p-2">
+      <div class="flex gap-2 flex-1">
+        <input class="input-field text-xs w-24" value="${it.time}" placeholder="Hora (ex: 21h00)" id="sc-time-${i}">
+        <input class="input-field text-xs flex-1" value="${it.label}" placeholder="Momento (ex: Entrada dos noivos)" id="sc-label-${i}">
+      </div>
+      <div class="flex flex-col gap-1 flex-shrink-0">
+        <button type="button" class="text-red-400" onclick="removeScheduleItem(${i})"><i data-lucide="x" class="w-4 h-4"></i></button>
+        ${i > 0 ? `<button type="button" class="text-gray-400" onclick="moveScheduleItem(${i},-1)"><i data-lucide="arrow-up" class="w-3 h-3"></i></button>` : ''}
+        ${i < items.length-1 ? `<button type="button" class="text-gray-400" onclick="moveScheduleItem(${i},1)"><i data-lucide="arrow-down" class="w-3 h-3"></i></button>` : ''}
+      </div>
+    </div>` : `
     <div class="flex items-start gap-2 mb-3 bg-gray-50 rounded-xl p-2">
       <div class="flex flex-col gap-1 flex-1">
         <div class="flex gap-2">
@@ -763,6 +852,21 @@ function refreshScheduleEditorList() {
     </div>`).join('');
   lucide.createIcons();
 }
+// Parses flexible time formats like "14h30", "22h:00", "14:30", "9h", "9" into
+// minutes-since-midnight for chronological sorting. Returns Infinity if unparseable
+// (so malformed entries sort to the end rather than breaking the order).
+function _parseScheduleTimeToMinutes(timeStr) {
+  if (!timeStr) return Infinity;
+  const clean = String(timeStr).trim().toLowerCase();
+  // Match patterns: "14h30", "14h:30", "14:30", "14h", "14"
+  const m = clean.match(/^(\d{1,2})\s*[h:]?\s*(\d{1,2})?/);
+  if (!m) return Infinity;
+  const hours = parseInt(m[1], 10);
+  const mins = m[2] ? parseInt(m[2], 10) : 0;
+  if (isNaN(hours) || hours > 23 || isNaN(mins) || mins > 59) return Infinity;
+  return hours * 60 + mins;
+}
+
 async function saveScheduleItems() {
   const items = window._scheduleEditorItems;
   items.forEach((it, i) => {
@@ -771,16 +875,29 @@ async function saveScheduleItems() {
     it.icon  = document.getElementById('sc-icon-' + i)?.value  || it.icon;
     it.sub   = document.getElementById('sc-sub-' + i)?.value   || '';
   });
+
+  // ── Auto-sort chronologically by time, so guests always see the schedule
+  // in the correct order even if the organiser/client typed entries out of
+  // sequence (e.g. entering "22h00 sessão fotográfica" before "21h00 entrada
+  // dos noivos" — the earlier time should always render first). ──
+  items.sort((a, b) => _parseScheduleTimeToMinutes(a.time) - _parseScheduleTimeToMinutes(b.time));
+
   Store.eventScheduleItems = items;
 
   // Persist immediately to Supabase — don't wait for the main event form save
   const eventId = Store.currentEventId || Store._intakeEventId;
+  console.log('📝 saveScheduleItems — a guardar para eventId:', eventId, 'itens (ordenados):', items);
+  if (!eventId) {
+    console.error('❌ saveScheduleItems: nenhum eventId disponível. As alterações NÃO foram guardadas no Supabase.');
+    toast('Erro: não foi possível identificar o evento.');
+  }
   if (eventId) {
     try {
-      await saveEventVisuals(eventId, {
+      const saveResult = await saveEventVisuals(eventId, {
         schedule_items: JSON.stringify(items),
         show_schedule: 'yes'   // Always enable display once the user has customised it
       });
+      console.log('📝 saveScheduleItems — resultado da gravação:', saveResult);
       // Keep the main form switch in sync so a subsequent full-form save doesn't wipe it
       const swSchedule = document.getElementById('sw-schedule');
       if (swSchedule && !swSchedule.classList.contains('active')) swSchedule.classList.add('active');

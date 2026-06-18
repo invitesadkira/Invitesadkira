@@ -46,7 +46,7 @@ html, body { height: 100%; margin: 0; width: 100%; overflow-x: hidden; }
 .toast-msg {
   position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
   background: #1e293b; color: #fff; padding: 0.7rem 1.5rem; border-radius: 0.75rem;
-  font-weight: 600; z-index: 100; animation: toastIn 0.3s ease-out;
+  font-weight: 600; z-index: 9600; animation: toastIn 0.3s ease-out;
   max-width: calc(100vw - 2rem); text-align: center;
 }
 @keyframes toastIn { from { opacity: 0; transform: translateX(-50%) translateY(16px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
@@ -300,7 +300,7 @@ html, body { height: 100%; margin: 0; width: 100%; overflow-x: hidden; }
 .rsvp-cta-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(0,0,0,0.25); }
 
 /* ── RSVP Drawer ── */
-#rsvp-drawer { position: fixed; inset: 0; z-index: 300; display: flex; flex-direction: column; justify-content: flex-end; pointer-events: none; visibility: hidden; }
+#rsvp-drawer { position: fixed; inset: 0; z-index: 9500; display: flex; flex-direction: column; justify-content: flex-end; pointer-events: none; visibility: hidden; }
 #rsvp-drawer.open { pointer-events: all; visibility: visible; }
 #rsvp-drawer-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,0); transition: background 0.35s; }
 #rsvp-drawer.open #rsvp-drawer-backdrop { background: rgba(0,0,0,0.45); }
@@ -802,3 +802,18 @@ html, body { height: 100%; margin: 0; width: 100%; overflow-x: hidden; }
   0%,100% { box-shadow: 0 2px 12px rgba(0,0,0,0.08); transform: scale(1); }
   50%      { box-shadow: 0 4px 24px color-mix(in srgb, var(--ev-color) 40%, transparent); transform: scale(1.02); }
 }
+
+/* ── Save the Date: hide the full invite content instantly while the
+   gate decision is being evaluated, so it never flashes on screen ── */
+#screen-guest.std-pending > *:not(#save-the-date-screen):not(#std-loading-veil) {
+  visibility: hidden !important;
+}
+#std-loading-veil {
+  position: fixed; inset: 0; z-index: 8999; background: #fafafa;
+  display: flex; align-items: center; justify-content: center;
+}
+#std-loading-veil .std-spinner {
+  width: 36px; height: 36px; border: 3px solid #e5e7eb; border-top-color: var(--ev-color, #007f9f);
+  border-radius: 50%; animation: stdSpin 0.8s linear infinite;
+}
+@keyframes stdSpin { to { transform: rotate(360deg); } }

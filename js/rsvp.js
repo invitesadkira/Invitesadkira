@@ -294,6 +294,38 @@ async function rsvpSubmit() {
     // Save to in-memory store
     rsvpSetConfirmed(eventId, { name, attending: attending === 'yes', side, companions, kids, message });
 
+    // ── Generate a personalized, secure link for this guest (if enabled) ──
+    // Appends a short suffix derived from the guest's initials to the event
+    // code in the URL, registers it in guest_links (Supabase) AND localStorage
+    // (so this exact browser is recognised as the legitimate owner even if
+    // the URL is later copied elsewhere — see the lock screen in guest.js),
+    // then updates the address bar without a page reload.
+    if (attending === 'yes' && ev.personalized_links_enabled && !Store._guestLinkCode) {
+      try {
+        const initials = name.trim().split(/\s+/).map(w => w[0]).join('').toUpperCase().substring(0, 6) || 'XX';
+        const randSuffix = Math.random().toString(36).substring(2, 4).toUpperCase();
+        const baseCode = ev.eventCode || ev.event_code || eventId;
+        const personalizedCode = baseCode + initials + randSuffix;
+
+        const linkResult = await supabaseRequest('guest_links', 'POST', {
+          code: personalizedCode, event_id: eventId, guest_name: name
+        }).catch(() => null);
+
+        if (linkResult && linkResult[0]) {
+          try {
+            localStorage.setItem('adkira_guest_link_claim_' + personalizedCode, JSON.stringify({ guestName: name, claimedAt: Date.now() }));
+          } catch(e) {}
+          Store._guestLinkCode = personalizedCode;
+          Store._lockedGuestName = name;
+          const url = new URL(window.location.href);
+          url.searchParams.set('event', personalizedCode);
+          history.pushState({}, '', url.toString());
+        }
+      } catch(e) {
+        console.warn('Erro ao gerar link personalizado:', e);
+      }
+    }
+
     // Update local confirmations list
     if (ev.confirmations) {
       const existingIdx = ev.confirmations.findIndex(c => c.name?.toLowerCase() === name.toLowerCase());

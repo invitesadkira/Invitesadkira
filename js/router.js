@@ -5,6 +5,10 @@ const Router = {
     const el = document.getElementById('screen-' + screen);
     if (el) {
       el.classList.remove('hidden');
+      // Save the Date: hide all guest content instantly until the gate
+      // decision is made inside renderGuestView, so the full invite (or
+      // even the RSVP drawer/form fields) never flashes on screen first.
+      if (screen === 'guest') el.classList.add('std-pending');
       const inner = el.querySelector('.page-transition');
       if (inner) { inner.style.animation = 'none'; inner.offsetHeight; inner.style.animation = ''; }
     }
@@ -36,6 +40,11 @@ const Router = {
       // Show FAQ edit button only for admin
       const faqEdit = document.getElementById('faq-edit-btn');
       if (faqEdit) faqEdit.classList.toggle('hidden', !Store.currentUser || Store.currentUser.role !== 'admin');
+      // Analytics: log commercial site visit (once per session, fire-and-forget)
+      if (!window._stdCommercialVisitLogged) {
+        window._stdCommercialVisitLogged = true;
+        supabaseRequest('visit_log', 'POST', { visit_type: 'commercial_view' }).catch(() => {});
+      }
     }
     if (screen === 'dashboard') renderDashboard();
     if (screen === 'event-details') renderEventDetails();

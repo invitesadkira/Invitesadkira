@@ -175,20 +175,29 @@ async function handleLogin(e) {
   localStorage.setItem('userRole', userRole);
 
   // ── Increment login count and check for notices to show ──
-  const newLoginCount = (user.login_count || 0) + 1;
-  supabaseRequest(`accounts?id=eq.${user.id}`, 'PATCH', { login_count: newLoginCount }).catch(() => {});
-  Store.currentUser.loginCount = newLoginCount;
+  // NOTE: admin god accounts never see maintenance notices or review prompts —
+  // those are user-facing features and the admin's own login isn't a "customer" event.
+  if (userRole !== 'admin') {
+    const newLoginCount = (user.login_count || 0) + 1;
+    supabaseRequest(`accounts?id=eq.${user.id}`, 'PATCH', { login_count: newLoginCount }).catch(() => {});
+    Store.currentUser.loginCount = newLoginCount;
 
-  // Show active site notices (e.g. maintenance) up to 2 times per user
-  _checkAndShowLoginNotices(user.id).catch(() => {});
+    // Show active site notices (e.g. maintenance) up to 2 times per user
+    _checkAndShowLoginNotices(user.id).catch(() => {});
 
-  // Prompt for review on exactly the 5th login (once only)
-  if (newLoginCount === 5 && !user.review_requested) {
-    setTimeout(() => {
-      if (typeof openLeaveReview === 'function') {
-        _showReviewPrompt(user.id);
-      }
-    }, 1500);
+    // Prompt for review on exactly the 5th login (once only)
+    if (newLoginCount === 5 && !user.review_requested) {
+      setTimeout(() => {
+        if (typeof openLeaveReview === 'function') {
+          _showReviewPrompt(user.id);
+        }
+      }, 1500);
+    }
+  }
+
+  // ── Track login for analytics (admin logins excluded — see visit_log) ──
+  if (userRole !== 'admin') {
+    supabaseRequest('visit_log', 'POST', { visit_type: 'user_login', account_id: user.id }).catch(() => {});
   }
 
   toast('Bem-vindo! Carregando seus dados...');

@@ -312,6 +312,7 @@ function buildAdminQuickGrid() {
     { icon:'star',         label:'Avaliações',       action:"openReviewsManager()" },
     { icon:'shopping-bag', label:'Encomendas',       action:"openOrdersManager()" },
     { icon:'bell',         label:'Notificar Todos',  action:"openSendNotificationModal()" },
+    { icon:'bar-chart-3',  label:'Análise de Acessos', action:"openAnalyticsPanel()" },
   ];
   grid.innerHTML = items.map(it => `
     <button class="quick-card" onclick="${it.action}" style="position:relative">
@@ -521,43 +522,17 @@ function startMusicAutoplay(ytId, audioSrc) {
       audio.src = audioSrc;
       audio.loop = true;
       audio.volume = 1.0;
-
-      // ── Trick: browsers allow MUTED autoplay even without interaction ──
-      // Start muted+playing immediately, then unmute on the very first
-      // user gesture (tap/scroll/click). This makes the music feel like
-      // it "was already playing" the instant the user does anything,
-      // rather than requiring them to find and tap the player.
-      audio.muted = true;
-      const mutedPlayPromise = audio.play();
-
-      const _unmuteOnInteraction = () => {
-        audio.muted = false;
-        setMusicPlayingUI(true);
-        const floatBtn = document.getElementById('floating-music-btn');
-        if (floatBtn) floatBtn.classList.remove('visible');
-        _removeUnmuteListeners();
-      };
-      function _removeUnmuteListeners() {
-        document.removeEventListener('touchstart', _unmuteOnInteraction);
-        document.removeEventListener('touchend', _unmuteOnInteraction);
-        document.removeEventListener('click', _unmuteOnInteraction);
-        document.removeEventListener('scroll', _unmuteOnInteraction);
-        window.removeEventListener('scroll', _unmuteOnInteraction);
-      }
-
-      if (mutedPlayPromise !== undefined) {
-        mutedPlayPromise.then(() => {
-          // Muted autoplay succeeded — audio is silently playing.
-          // Show as "ready" with a gentle prompt to unmute on first touch.
+      // NOTE: we deliberately do NOT start muted. The user explicitly requested
+      // music never play muted under any circumstance. Browsers block
+      // non-muted autoplay without a prior user gesture, so we try a direct
+      // unmuted play() first; if blocked, we fall back to waiting for the
+      // first real interaction (tap/scroll/click) to start it — at which
+      // point it plays with full sound immediately, never silently.
+      const playPromise = audio.play();
+      if (playPromise !== undefined) {
+        playPromise.then(() => {
           setMusicPlayingUI(true);
-          if (sub) sub.textContent = 'Toca para ativar o som';
-          document.addEventListener('touchstart', _unmuteOnInteraction, { passive: true });
-          document.addEventListener('touchend', _unmuteOnInteraction, { passive: true });
-          document.addEventListener('click', _unmuteOnInteraction);
-          document.addEventListener('scroll', _unmuteOnInteraction, { passive: true, once: true });
-          window.addEventListener('scroll', _unmuteOnInteraction, { passive: true, once: true });
         }).catch(() => {
-          // Even muted autoplay was blocked — fall back to full manual start
           _startAudioFullyManual(audio, sub);
         });
       }
@@ -801,6 +776,56 @@ function changeParentsSize(delta) {
   v = Math.max(0.6, Math.min(2.5, parseFloat((v + delta * 0.08).toFixed(2))));
   inp.value = v;
   if (lbl) lbl.textContent = v + 'rem';
+}
+
+function changeBibleSize(delta) {
+  const inp = document.getElementById('evt-bible-size');
+  const lbl = document.getElementById('bible-size-label');
+  if (!inp) return;
+  let v = parseFloat(inp.value) || 0.92;
+  v = Math.max(0.6, Math.min(2.0, parseFloat((v + delta * 0.08).toFixed(2))));
+  inp.value = v;
+  if (lbl) lbl.textContent = v + 'rem';
+}
+
+function changeStdNameSize(delta) {
+  const inp = document.getElementById('evt-std-name-size');
+  const lbl = document.getElementById('std-name-size-label');
+  if (!inp) return;
+  let v = parseFloat(inp.value) || 2.4;
+  v = Math.max(1.0, Math.min(5.0, parseFloat((v + delta * 0.2).toFixed(1))));
+  inp.value = v;
+  if (lbl) lbl.textContent = v + 'rem';
+}
+
+function changeStdTitleSize(delta) {
+  const inp = document.getElementById('evt-std-title-size');
+  const lbl = document.getElementById('std-title-size-label');
+  if (!inp) return;
+  let v = parseFloat(inp.value) || 0.78;
+  v = Math.max(0.5, Math.min(2.0, parseFloat((v + delta * 0.08).toFixed(2))));
+  inp.value = v;
+  if (lbl) lbl.textContent = v + 'rem';
+}
+
+async function handleStdIntroPhotoUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (!file.type.includes('png') && !file.type.includes('jpeg') && !file.type.includes('jpg')) {
+    toast('Seleciona um ficheiro PNG ou JPG.'); return;
+  }
+  if (file.size > 4 * 1024 * 1024) { toast('Imagem muito grande. Máx. 4 MB.'); return; }
+  const prev = document.getElementById('std-intro-photo-preview');
+  if (prev) { prev.classList.add('hidden'); }
+  toast('A carregar foto...');
+  try {
+    const url = await uploadImageToStorage(file, 'event-covers');
+    document.getElementById('evt-std-intro-photo-url').value = url;
+    if (prev) { prev.src = url; prev.classList.remove('hidden'); }
+    toast('Foto de abertura carregada!');
+  } catch(e) {
+    toast('Erro ao carregar a foto.');
+  }
 }
 
 // ── Limit text input to max N words ──

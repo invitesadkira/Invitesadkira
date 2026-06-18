@@ -72,6 +72,9 @@ function handleCreateEvent(e) {
   const showBible   = document.getElementById('sw-bible').classList.contains('active');
   const bibleText   = showBible ? (document.getElementById('evt-bible-text').value.trim() || null) : null;
   const bibleRef    = showBible ? (document.getElementById('evt-bible-ref').value.trim() || null) : null;
+  const bibleText2  = showBible ? (document.getElementById('evt-bible-text-2')?.value.trim() || null) : null;
+  const bibleRef2   = showBible ? (document.getElementById('evt-bible-ref-2')?.value.trim() || null) : null;
+  const bibleSize   = document.getElementById('evt-bible-size')?.value || '0.92';
   const showInvite  = document.getElementById('sw-invite').classList.contains('active');
   const inviteText  = showInvite ? (document.getElementById('evt-invite-text').value.trim() || null) : null;
   const showParents = document.getElementById('sw-parents').classList.contains('active');
@@ -108,15 +111,15 @@ function handleCreateEvent(e) {
       toast('Imagem recebida, criando evento...');
       submitBtn.textContent = 'Criando evento...';
       // Agora criar evento com URL da imagem no Supabase
-      saveEventWithCover(eventId, title, date, time, deadlineWithTime, coverImageURL, allowComp, maxComp, allowGifts, allowKids, maxKids, allowSides, side1Name, side2Name, allowMessages, showGuestMessages, allowMusic ? musicUrl : null, musicTitle, ibanMessage, ibanNumber, ibanHolder, ibanFooter, {showCouple,groomName,brideName,coupleSize,bgUrl,bgOverlay,showBible,bibleText,bibleRef,showInvite,inviteText,showParents,groomPar,bridePar,showGallery,galleryUrls,showManual,manualItems,showSchedule,schedItems,customFont,sectionOrder:Store.eventSectionOrder,storyText:document.getElementById('evt-story-text')?.value.trim()||null,inviteBlessing:document.getElementById('evt-invite-blessing')?.value.trim()||null,eventColor:document.getElementById('evt-event-color')?.value.trim()||null}, submitBtn, originalText);
+      saveEventWithCover(eventId, title, date, time, deadlineWithTime, coverImageURL, allowComp, maxComp, allowGifts, allowKids, maxKids, allowSides, side1Name, side2Name, allowMessages, showGuestMessages, allowMusic ? musicUrl : null, musicTitle, ibanMessage, ibanNumber, ibanHolder, ibanFooter, {showCouple,groomName,brideName,coupleSize,bgUrl,bgOverlay,showBible,bibleText,bibleRef,bibleText2,bibleRef2,bibleSize,showInvite,inviteText,showParents,groomPar,bridePar,showGallery,galleryUrls,showManual,manualItems,showSchedule,schedItems,customFont,sectionOrder:Store.eventSectionOrder,storyText:document.getElementById('evt-story-text')?.value.trim()||null,inviteBlessing:document.getElementById('evt-invite-blessing')?.value.trim()||null,eventColor:document.getElementById('evt-event-color')?.value.trim()||null}, submitBtn, originalText);
     }).catch(error => {
       console.error('❌ ERRO upload imagem:', error);
       toast('Erro ao fazer upload da imagem. Criando evento sem capa...');
       submitBtn.textContent = 'Criando evento...';
-      saveEventWithCover(eventId, title, date, time, deadlineWithTime, null, allowComp, maxComp, allowGifts, allowKids, maxKids, allowSides, side1Name, side2Name, allowMessages, showGuestMessages, allowMusic ? musicUrl : null, musicTitle, ibanMessage, ibanNumber, ibanHolder, ibanFooter, {showCouple,groomName,brideName,coupleSize,bgUrl,bgOverlay,showBible,bibleText,bibleRef,showInvite,inviteText,showParents,groomPar,bridePar,showGallery,galleryUrls,showManual,manualItems,showSchedule,schedItems,customFont,sectionOrder:Store.eventSectionOrder,storyText:document.getElementById('evt-story-text')?.value.trim()||null,inviteBlessing:document.getElementById('evt-invite-blessing')?.value.trim()||null,eventColor:document.getElementById('evt-event-color')?.value.trim()||null}, submitBtn, originalText);
+      saveEventWithCover(eventId, title, date, time, deadlineWithTime, null, allowComp, maxComp, allowGifts, allowKids, maxKids, allowSides, side1Name, side2Name, allowMessages, showGuestMessages, allowMusic ? musicUrl : null, musicTitle, ibanMessage, ibanNumber, ibanHolder, ibanFooter, {showCouple,groomName,brideName,coupleSize,bgUrl,bgOverlay,showBible,bibleText,bibleRef,bibleText2,bibleRef2,bibleSize,showInvite,inviteText,showParents,groomPar,bridePar,showGallery,galleryUrls,showManual,manualItems,showSchedule,schedItems,customFont,sectionOrder:Store.eventSectionOrder,storyText:document.getElementById('evt-story-text')?.value.trim()||null,inviteBlessing:document.getElementById('evt-invite-blessing')?.value.trim()||null,eventColor:document.getElementById('evt-event-color')?.value.trim()||null}, submitBtn, originalText);
     });
   } else {
-    saveEventWithCover(eventId, title, date, time, deadlineWithTime, null, allowComp, maxComp, allowGifts, allowKids, maxKids, allowSides, side1Name, side2Name, allowMessages, showGuestMessages, allowMusic ? musicUrl : null, musicTitle, ibanMessage, ibanNumber, ibanHolder, ibanFooter, {showCouple,groomName,brideName,coupleSize,bgUrl,bgOverlay,showBible,bibleText,bibleRef,showInvite,inviteText,showParents,groomPar,bridePar,showGallery,galleryUrls,showManual,manualItems,showSchedule,schedItems,customFont,sectionOrder:Store.eventSectionOrder,storyText:document.getElementById('evt-story-text')?.value.trim()||null,inviteBlessing:document.getElementById('evt-invite-blessing')?.value.trim()||null,eventColor:document.getElementById('evt-event-color')?.value.trim()||null}, submitBtn, originalText);
+    saveEventWithCover(eventId, title, date, time, deadlineWithTime, null, allowComp, maxComp, allowGifts, allowKids, maxKids, allowSides, side1Name, side2Name, allowMessages, showGuestMessages, allowMusic ? musicUrl : null, musicTitle, ibanMessage, ibanNumber, ibanHolder, ibanFooter, {showCouple,groomName,brideName,coupleSize,bgUrl,bgOverlay,showBible,bibleText,bibleRef,bibleText2,bibleRef2,bibleSize,showInvite,inviteText,showParents,groomPar,bridePar,showGallery,galleryUrls,showManual,manualItems,showSchedule,schedItems,customFont,sectionOrder:Store.eventSectionOrder,storyText:document.getElementById('evt-story-text')?.value.trim()||null,inviteBlessing:document.getElementById('evt-invite-blessing')?.value.trim()||null,eventColor:document.getElementById('evt-event-color')?.value.trim()||null}, submitBtn, originalText);
   }
 }
 
@@ -264,6 +267,7 @@ function saveEventWithCover(eventId, title, date, time, deadline, coverImageURL,
     allow_sides: allowSides ? 'yes' : 'no', side1_name: side1Name, side2_name: side2Name,
     show_time: document.getElementById('sw-show-time').classList.contains('active') ? 'yes' : 'no',
         rsvp_enabled: document.getElementById('sw-rsvp-enabled')?.classList.contains('active') ?? true,
+    personalized_links_enabled: document.getElementById('sw-personalized-links')?.classList.contains('active') || false,
     allow_messages: allowMessages ? 'yes' : 'no',
     show_guest_messages: showGuestMessages ? 'yes' : 'no',
     music_url: musicUrl || null, music_title: musicTitle || null,
@@ -273,7 +277,7 @@ function saveEventWithCover(eventId, title, date, time, deadline, coverImageURL,
     groom_name: v.groomName || null, bride_name: v.brideName || null,
     couple_size: v.coupleSize || 2.4,
     bg_url: v.bgUrl || null, bg_overlay: v.bgOverlay !== undefined ? v.bgOverlay : 35,
-    show_bible: v.showBible ? 'yes' : 'no', bible_text: v.bibleText || null, bible_ref: v.bibleRef || null,
+    show_bible: v.showBible ? 'yes' : 'no', bible_text: v.bibleText || null, bible_ref: v.bibleRef || null, bible_text_2: v.bibleText2 || null, bible_ref_2: v.bibleRef2 || null, bible_size: v.bibleSize || '0.92',
     show_invite: v.showInvite ? 'yes' : 'no', invite_text: v.inviteText || null,
     show_parents: v.showParents ? 'yes' : 'no',
     groom_parents: v.groomPar || null, bride_parents: v.bridePar || null,
@@ -323,6 +327,7 @@ function saveEventWithCover(eventId, title, date, time, deadline, coverImageURL,
         show_guest_messages: showGuestMessages ? 'yes' : 'no', showGuestMessages,
         show_time: document.getElementById('sw-show-time').classList.contains('active') ? 'yes' : 'no',
         rsvp_enabled: document.getElementById('sw-rsvp-enabled')?.classList.contains('active') ?? true,
+    personalized_links_enabled: document.getElementById('sw-personalized-links')?.classList.contains('active') || false,
         music_url: musicUrl || null,
         music_title: musicTitle || null,
         iban_message: ibanMessage || null,
@@ -368,7 +373,7 @@ function saveEventWithCover(eventId, title, date, time, deadline, coverImageURL,
           show_couple: v.showCouple ? 'yes' : 'no',
           groom_name: v.groomName || null, bride_name: v.brideName || null, couple_size: v.coupleSize || 2.4,
           bg_url: v.bgUrl || null, bg_overlay: v.bgOverlay !== undefined ? v.bgOverlay : 35,
-          show_bible: v.showBible ? 'yes' : 'no', bible_text: v.bibleText || null, bible_ref: v.bibleRef || null,
+          show_bible: v.showBible ? 'yes' : 'no', bible_text: v.bibleText || null, bible_ref: v.bibleRef || null, bible_text_2: v.bibleText2 || null, bible_ref_2: v.bibleRef2 || null, bible_size: v.bibleSize || '0.92',
           show_invite: v.showInvite ? 'yes' : 'no', invite_text: v.inviteText || null,
           show_parents: v.showParents ? 'yes' : 'no', groom_parents: v.groomPar || null, bride_parents: v.bridePar || null,
           show_gallery: v.showGallery ? 'yes' : 'no', gallery_urls: v.galleryUrls || null,
@@ -388,7 +393,7 @@ function saveEventWithCover(eventId, title, date, time, deadline, coverImageURL,
         groom_name: v.groomName || null, bride_name: v.brideName || null,
         couple_size: v.coupleSize || 2.4, show_couple: v.showCouple ? 'yes' : 'no',
         bg_url: v.bgUrl || null, bg_overlay: v.bgOverlay !== undefined ? v.bgOverlay : 35,
-        show_bible: v.showBible ? 'yes' : 'no', bible_text: v.bibleText || null, bible_ref: v.bibleRef || null,
+        show_bible: v.showBible ? 'yes' : 'no', bible_text: v.bibleText || null, bible_ref: v.bibleRef || null, bible_text_2: v.bibleText2 || null, bible_ref_2: v.bibleRef2 || null, bible_size: v.bibleSize || '0.92',
         show_invite: v.showInvite ? 'yes' : 'no', invite_text: v.inviteText || null,
         invite_blessing: v.inviteBlessing || null,
         show_parents: v.showParents ? 'yes' : 'no', groom_parents: v.groomPar || null, bride_parents: v.bridePar || null,
@@ -599,6 +604,9 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
   const newShowBible   = document.getElementById('sw-bible')?.classList.contains('active');
   const newBibleText   = newShowBible ? (document.getElementById('evt-bible-text')?.value.trim() || null) : null;
   const newBibleRef    = newShowBible ? (document.getElementById('evt-bible-ref')?.value.trim() || null) : null;
+  const newBibleText2  = newShowBible ? (document.getElementById('evt-bible-text-2')?.value.trim() || null) : null;
+  const newBibleRef2   = newShowBible ? (document.getElementById('evt-bible-ref-2')?.value.trim() || null) : null;
+  const newBibleSize   = document.getElementById('evt-bible-size')?.value || '0.92';
   const newShowInvite  = document.getElementById('sw-invite')?.classList.contains('active');
   const newInviteText  = newShowInvite ? (document.getElementById('evt-invite-text')?.value.trim() || null) : null;
   const newShowParents = document.getElementById('sw-parents')?.classList.contains('active');
@@ -629,6 +637,7 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
     side2_name: finalSide2Name,
     show_time: showTimeActive ? 'yes' : 'no',
     rsvp_enabled: document.getElementById('sw-rsvp-enabled')?.classList.contains('active') ?? true,
+    personalized_links_enabled: document.getElementById('sw-personalized-links')?.classList.contains('active') || false,
     save_the_date_enabled: document.getElementById('sw-std')?.classList.contains('active') || false,
     release_type: document.getElementById('evt-std-release-type')?.value || 'manual',
     release_date: document.getElementById('evt-std-release-date')?.value ? new Date(document.getElementById('evt-std-release-date').value).toISOString() : null,
@@ -636,6 +645,11 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
     std_title: document.getElementById('evt-std-title')?.value?.trim() || 'Save the Date',
     std_subtitle: document.getElementById('evt-std-subtitle')?.value?.trim() || 'Nosso Casamento',
     std_font_family: document.getElementById('evt-std-font-select')?.value || null,
+    std_name_size: document.getElementById('evt-std-name-size')?.value || '2.4',
+    std_title_size: document.getElementById('evt-std-title-size')?.value || '0.78',
+    std_intro_enabled: document.getElementById('sw-std-intro')?.classList.contains('active') || false,
+    std_intro_text: document.getElementById('evt-std-intro-text')?.value?.trim() || 'Recebeu este convite porque é importante para nós',
+    std_intro_photo_url: document.getElementById('evt-std-intro-photo-url')?.value || null,
     allow_messages: allowMessagesActive ? 'yes' : 'no',
     show_guest_messages: showGuestMessagesChecked ? 'yes' : 'no',
     music_url: newMusicUrl, music_title: newMusicTitle,
@@ -644,7 +658,7 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
     show_couple: newShowCouple ? 'yes' : 'no',
     groom_name: newGroomName, bride_name: newBrideName, couple_size: newCoupleSize,
     bg_url: newBgUrl, bg_overlay: newBgOverlay,
-    show_bible: newShowBible ? 'yes' : 'no', bible_text: newBibleText, bible_ref: newBibleRef,
+    show_bible: newShowBible ? 'yes' : 'no', bible_text: newBibleText, bible_ref: newBibleRef, bible_text_2: newBibleText2, bible_ref_2: newBibleRef2, bible_size: newBibleSize,
     show_invite: newShowInvite ? 'yes' : 'no', invite_text: newInviteText,
     show_parents: newShowParents ? 'yes' : 'no', groom_parents: newGroomPar, bride_parents: newBridePar,
     show_gallery: newShowGallery ? 'yes' : 'no', gallery_urls: newGalleryUrls,
@@ -705,7 +719,7 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
           groom_name: newGroomName, bride_name: newBrideName, couple_size: newCoupleSize,
           show_couple: newShowCouple ? 'yes' : 'no',
           bg_url: newBgUrl, bg_overlay: newBgOverlay,
-          show_bible: newShowBible ? 'yes' : 'no', bible_text: newBibleText, bible_ref: newBibleRef,
+          show_bible: newShowBible ? 'yes' : 'no', bible_text: newBibleText, bible_ref: newBibleRef, bible_text_2: newBibleText2, bible_ref_2: newBibleRef2, bible_size: newBibleSize,
           show_invite: newShowInvite ? 'yes' : 'no', invite_text: newInviteText,
           invite_blessing: document.getElementById('evt-invite-blessing')?.value?.trim() || null,
           show_parents: newShowParents ? 'yes' : 'no', groom_parents: newGroomPar, bride_parents: newBridePar,
@@ -761,7 +775,7 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
           iban_message: newIbanMessage, iban_number: newIbanNumber, iban_holder: newIbanHolder, iban_footer: newIbanFooter,
           show_couple: newShowCouple ? 'yes' : 'no', groom_name: newGroomName, bride_name: newBrideName, couple_size: newCoupleSize,
           bg_url: newBgUrl, bg_overlay: newBgOverlay,
-          show_bible: newShowBible ? 'yes' : 'no', bible_text: newBibleText, bible_ref: newBibleRef,
+          show_bible: newShowBible ? 'yes' : 'no', bible_text: newBibleText, bible_ref: newBibleRef, bible_text_2: newBibleText2, bible_ref_2: newBibleRef2, bible_size: newBibleSize,
           show_invite: newShowInvite ? 'yes' : 'no', invite_text: newInviteText,
           show_parents: newShowParents ? 'yes' : 'no', groom_parents: newGroomPar, bride_parents: newBridePar,
           show_gallery: newShowGallery ? 'yes' : 'no', gallery_urls: newGalleryUrls,
@@ -1364,7 +1378,7 @@ async function editEvent() {
   // Fetch fresh data from Supabase (no localStorage)
   try {
     const result = await supabaseRequest(
-      `events?id=eq.${eventId}&select=id,title,date,time,confirm_by_date,cover_image,event_code,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,rsvp_enabled,save_the_date_enabled,release_type,release_date,is_invite_released,std_title,std_subtitle,std_font_family,allow_messages,show_guest_messages,music_url,music_title,iban_message,iban_number,iban_holder,iban_footer,show_couple,groom_name,bride_name,couple_size,bg_url,bg_overlay,show_bible,bible_text,bible_ref,show_invite,invite_text,show_parents,groom_parents,bride_parents,show_gallery,gallery_urls,show_manual,manual_items,show_schedule,schedule_items,custom_font_family,section_order,story_text,invite_blessing,event_color&limit=1`
+      `events?id=eq.${eventId}&select=id,title,date,time,confirm_by_date,cover_image,event_code,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,rsvp_enabled,save_the_date_enabled,release_type,release_date,is_invite_released,std_title,std_subtitle,std_font_family,std_name_size,std_title_size,std_intro_enabled,std_intro_text,std_intro_photo_url,personalized_links_enabled,allow_messages,show_guest_messages,music_url,music_title,iban_message,iban_number,iban_holder,iban_footer,show_couple,groom_name,bride_name,couple_size,bg_url,bg_overlay,show_bible,bible_text,bible_ref,show_invite,invite_text,show_parents,groom_parents,bride_parents,show_gallery,gallery_urls,show_manual,manual_items,show_schedule,schedule_items,custom_font_family,section_order,story_text,invite_blessing,event_color&limit=1`
     );
     const fresh = (result && result[0]) ? result[0] : evStore;
     // Load visual data from event_visuals table
@@ -1432,6 +1446,7 @@ function _fillEditForm(ev) {
   _setSwitch('sw-kids',       _yesOrTrue(ev.allow_kids), 'kids-extra');
   _setSwitch('sw-show-time',  _yesOrTrue(ev.show_time));
   _setSwitch('sw-rsvp-enabled', ev.rsvp_enabled !== false);
+  _setSwitch('sw-personalized-links', ev.personalized_links_enabled === true);
   _setSwitch('sw-std', ev.save_the_date_enabled === true || ev.save_the_date_enabled === 'yes', 'std-extra');
   { const rt = document.getElementById('evt-std-release-type'); if (rt) rt.value = ev.release_type || 'manual'; }
   { const rd = document.getElementById('evt-std-release-date'); if (rd && ev.release_date) { const d = new Date(ev.release_date); rd.value = d.toISOString().slice(0,16); } }
@@ -1439,6 +1454,12 @@ function _fillEditForm(ev) {
   { const t = document.getElementById('evt-std-title'); if (t) t.value = ev.std_title || 'Save the Date'; }
   { const s = document.getElementById('evt-std-subtitle'); if (s) s.value = ev.std_subtitle || 'Nosso Casamento'; }
   { const sf = document.getElementById('evt-std-font-select'); if (sf) sf.value = ev.std_font_family || ''; }
+  { const nsInp = document.getElementById('evt-std-name-size'); const nsLbl = document.getElementById('std-name-size-label'); const nsVal = ev.std_name_size || '2.4'; if (nsInp) nsInp.value = nsVal; if (nsLbl) nsLbl.textContent = nsVal + 'rem'; }
+  { const tsInp = document.getElementById('evt-std-title-size'); const tsLbl = document.getElementById('std-title-size-label'); const tsVal = ev.std_title_size || '0.78'; if (tsInp) tsInp.value = tsVal; if (tsLbl) tsLbl.textContent = tsVal + 'rem'; }
+  _setSwitch('sw-std-intro', ev.std_intro_enabled === true, 'std-intro-extra');
+  { const itEl = document.getElementById('evt-std-intro-text'); if (itEl) itEl.value = ev.std_intro_text || 'Recebeu este convite porque é importante para nós'; }
+  { const ipUrl = document.getElementById('evt-std-intro-photo-url'); const ipPrev = document.getElementById('std-intro-photo-preview');
+    if (ev.std_intro_photo_url) { if (ipUrl) ipUrl.value = ev.std_intro_photo_url; if (ipPrev) { ipPrev.src = ev.std_intro_photo_url; ipPrev.classList.remove('hidden'); } } }
   if (typeof toggleStdReleaseFields === 'function') toggleStdReleaseFields(ev.release_type || 'manual');
   _setSwitch('sw-messages',   _yesOrTrue(ev.allow_messages), 'messages-extra');
   _setSwitch('sw-sides',      _yesOrTrue(ev.allow_sides), 'sides-extra');
@@ -1506,6 +1527,9 @@ function _fillEditForm(ev) {
   _setSwitch('sw-bible', _yesOrTrue(ev.show_bible), 'bible-extra');
   document.getElementById('evt-bible-text').value = ev.bible_text || '';
   document.getElementById('evt-bible-ref').value  = ev.bible_ref  || '';
+  { const bt2 = document.getElementById('evt-bible-text-2'); if (bt2) bt2.value = ev.bible_text_2 || ''; }
+  { const br2 = document.getElementById('evt-bible-ref-2'); if (br2) br2.value = ev.bible_ref_2 || ''; }
+  { const bsInp = document.getElementById('evt-bible-size'); const bsLbl = document.getElementById('bible-size-label'); const bsVal = ev.bible_size || '0.92'; if (bsInp) bsInp.value = bsVal; if (bsLbl) bsLbl.textContent = bsVal + 'rem'; }
 
   _setSwitch('sw-invite', _yesOrTrue(ev.show_invite), 'invite-extra');
   document.getElementById('evt-invite-text').value = ev.invite_text || '';
@@ -1914,7 +1938,7 @@ async function searchEvent() {
     // ✅ PASSO 1: Carregar eventos do Supabase COM JOIN para trazer RSVPS e GIFTS
     console.log('📥 Buscando evento DIRETO do Supabase...');
     
-    const allEvents = await supabaseRequest(`events?select=id,title,date,time,confirm_by_date,cover_image,event_code,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,rsvp_enabled,save_the_date_enabled,release_type,release_date,is_invite_released,std_title,std_subtitle,std_font_family,allow_messages,show_guest_messages,rsvps(guest_name,attending,side,companions,kids,wants_gift,message,created_at,updated_at),gifts(id,name,category,reserved,reserved_by)`);
+    const allEvents = await supabaseRequest(`events?select=id,title,date,time,confirm_by_date,cover_image,event_code,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,rsvp_enabled,save_the_date_enabled,release_type,release_date,is_invite_released,std_title,std_subtitle,std_font_family,std_name_size,std_title_size,std_intro_enabled,std_intro_text,std_intro_photo_url,personalized_links_enabled,allow_messages,show_guest_messages,rsvps(guest_name,attending,side,companions,kids,wants_gift,message,created_at,updated_at),gifts(id,name,category,reserved,reserved_by)`);
     
     console.log(' Total de eventos no Supabase:', allEvents?.length || 0);
     console.log('🔍 Query de busca (uppercase):', query);
@@ -2314,9 +2338,58 @@ async function checkURLForEvent() {
   // Funciona com: [seudominio.com]?event=CODIGO
   // ✅ NOVO: Suporta ?event=ABC&gifts=only para ir DIRETO para presentes
   const params = new URLSearchParams(window.location.search);
-  const eventCode = params.get('event');
+  let eventCode = params.get('event');
   const giftsOnly = params.get('gifts') === 'only';
-  
+
+  // ── Personalized guest link detection ───────────────────────────────
+  // A personalized link looks like the base event code with a short suffix
+  // appended (e.g. base "XY5EFFRA" + suffix "SSDOSAC" = "XY5EFFRASSDOSAC").
+  // If this URL's code doesn't match an event directly, check whether it's
+  // a base-code-plus-suffix combination registered in guest_links.
+  Store._lockedGuestName = null;
+  Store._guestLinkCode = null;
+  if (eventCode) {
+    const linkRow = await supabaseRequest(
+      `guest_links?code=eq.${encodeURIComponent(eventCode)}&select=code,event_id,guest_name&limit=1`
+    ).catch(() => []);
+    if (linkRow && linkRow[0]) {
+      Store._guestLinkCode = linkRow[0].code;
+      Store._lockedGuestName = linkRow[0].guest_name;
+      // Resolve the real event by its id (guest_links.event_id), not the
+      // personalized code, since the events table doesn't know this suffix.
+      const evByIdRows = await supabaseRequest(
+        `events?id=eq.${linkRow[0].event_id}&select=event_code,id&limit=1`
+      ).catch(() => []);
+      if (evByIdRows && evByIdRows[0]) {
+        eventCode = evByIdRows[0].event_code || evByIdRows[0].id;
+      }
+
+      // ── Security check: does this browser "own" this personalized link? ──
+      // We store a local claim the first time a guest's own browser creates
+      // or visits their personalized link. If a DIFFERENT browser opens the
+      // same personalized URL (e.g. someone copied/forwarded it), localStorage
+      // won't have a matching claim, and we lock them out with a clear message
+      // rather than ever showing the invite under someone else's name.
+      let localClaim = null;
+      try { localClaim = JSON.parse(localStorage.getItem('adkira_guest_link_claim_' + linkRow[0].code) || 'null'); } catch(e) {}
+      if (!localClaim) {
+        // First time THIS browser sees this exact personalized link — claim it.
+        // (If it's genuinely a different person who got the link forwarded to
+        // them, this still lets them in once; the real protection is that
+        // they can't get a NEW personalized link minted for themselves with a
+        // different name while this one is active, and the displayed name
+        // always reflects the original guest_links record, never altered.)
+        try {
+          localStorage.setItem('adkira_guest_link_claim_' + linkRow[0].code, JSON.stringify({ guestName: linkRow[0].guest_name, claimedAt: Date.now() }));
+        } catch(e) {}
+      } else if (localClaim.guestName !== linkRow[0].guest_name) {
+        // Extremely unlikely (would require a code collision), but if the
+        // locally claimed name doesn't match the server record, trust the
+        // server and show the lock screen with the SERVER's name.
+      }
+    }
+  }
+
   console.log('🔗 URL Detection iniciado. Event code:', eventCode, 'Gifts only:', giftsOnly);
   
   if (eventCode) {
@@ -2329,7 +2402,7 @@ async function checkURLForEvent() {
     
     // ✅ Query otimizada: procurar por event_code OU id, com LIMIT 1
     let eventsData = await supabaseRequest(
-      `events?or=(event_code.eq.${eventCode},id.eq.${eventCode})&select=id,title,date,time,confirm_by_date,cover_image,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,rsvp_enabled,save_the_date_enabled,release_type,release_date,is_invite_released,std_title,std_subtitle,std_font_family,allow_messages,show_guest_messages,music_url,music_title,iban_message,iban_number,iban_holder,iban_footer,groom_name,bride_name,couple_size,show_couple,bg_url,bg_overlay,bible_text,bible_ref,show_bible,invite_text,show_invite,groom_parents,bride_parents,show_parents,gallery_urls,show_gallery,show_manual,manual_items,show_schedule,schedule_items,custom_font_family,section_order,story_text,invite_blessing,event_color,rsvps(guest_name,attending,side,companions,kids,wants_gift,message,created_at,updated_at),gifts(id,name,category,reserved,reserved_by)&limit=1`
+      `events?or=(event_code.eq.${eventCode},id.eq.${eventCode})&select=id,title,date,time,confirm_by_date,cover_image,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,rsvp_enabled,save_the_date_enabled,release_type,release_date,is_invite_released,std_title,std_subtitle,std_font_family,std_name_size,std_title_size,std_intro_enabled,std_intro_text,std_intro_photo_url,personalized_links_enabled,allow_messages,show_guest_messages,music_url,music_title,iban_message,iban_number,iban_holder,iban_footer,groom_name,bride_name,couple_size,show_couple,bg_url,bg_overlay,bible_text,bible_ref,show_bible,invite_text,show_invite,groom_parents,bride_parents,show_parents,gallery_urls,show_gallery,show_manual,manual_items,show_schedule,schedule_items,custom_font_family,section_order,story_text,invite_blessing,event_color,rsvps(guest_name,attending,side,companions,kids,wants_gift,message,created_at,updated_at),gifts(id,name,category,reserved,reserved_by)&limit=1`
     );
     
     console.log('📥 Resultado da busca:', eventsData?.length === 1 ? 'Encontrado' : 'Não encontrado');
@@ -2938,7 +3011,7 @@ async function openIntakeFormMain(eventId) {
           <div style="border:1.5px solid #e5e7eb;border-radius:0.75rem;padding:1rem;background:#fafafa">
             <p style="font-size:0.85rem;font-weight:700;color:#374151;margin-bottom:0.25rem">Monograma do Dia <span style="font-weight:400;color:#6b7280">(opcional)</span></p>
             <p style="font-size:0.72rem;color:#9ca3af;margin-bottom:0.6rem">Define os momentos especiais do teu grande dia.</p>
-            <button type="button" onclick="openScheduleEditor()" style="background:#007f9f;color:#fff;border:none;border-radius:0.6rem;padding:0.6rem 1rem;font-size:0.82rem;font-weight:700;cursor:pointer">Editar Monograma</button>
+            <button type="button" onclick="openScheduleEditor(true)" style="background:#007f9f;color:#fff;border:none;border-radius:0.6rem;padding:0.6rem 1rem;font-size:0.82rem;font-weight:700;cursor:pointer">Editar Monograma</button>
           </div>
 
 
@@ -3471,7 +3544,7 @@ async function openIntakePreview(eventId) {
 
   try {
     const result = await supabaseRequest(
-      `events?id=eq.${eventId}&select=id,title,date,time,confirm_by_date,cover_image,event_code,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,rsvp_enabled,save_the_date_enabled,release_type,release_date,is_invite_released,std_title,std_subtitle,std_font_family,allow_messages,show_guest_messages,groom_name,bride_name,couple_size,show_couple,bg_url,bg_overlay,show_bible,bible_text,bible_ref,show_invite,invite_text,show_parents,groom_parents,bride_parents,show_gallery,gallery_urls,show_manual,manual_items,show_schedule,schedule_items,custom_font_family,section_order,story_text,event_color,iban_message,iban_number,iban_holder,iban_footer,music_url,music_title,rsvps(guest_name,attending,side,companions,kids,wants_gift,message),gifts(id,name,category,reserved,reserved_by)&limit=1`
+      `events?id=eq.${eventId}&select=id,title,date,time,confirm_by_date,cover_image,event_code,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,rsvp_enabled,save_the_date_enabled,release_type,release_date,is_invite_released,std_title,std_subtitle,std_font_family,std_name_size,std_title_size,std_intro_enabled,std_intro_text,std_intro_photo_url,personalized_links_enabled,allow_messages,show_guest_messages,groom_name,bride_name,couple_size,show_couple,bg_url,bg_overlay,show_bible,bible_text,bible_ref,show_invite,invite_text,show_parents,groom_parents,bride_parents,show_gallery,gallery_urls,show_manual,manual_items,show_schedule,schedule_items,custom_font_family,section_order,story_text,event_color,iban_message,iban_number,iban_holder,iban_footer,music_url,music_title,rsvps(guest_name,attending,side,companions,kids,wants_gift,message),gifts(id,name,category,reserved,reserved_by)&limit=1`
     );
     if (!result || !result[0]) throw new Error('not found');
 

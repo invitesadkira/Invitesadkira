@@ -2679,8 +2679,18 @@ function showAdminUserPicker() {
 }
 
 function impersonateUser(userId, userPhone, btn) {
-  Store.adminPreviousUser = { ...Store.currentUser };
-  Store.currentUser = { ...Store.currentUser, id: userId, phone: userPhone };
+  const user = Store.users.find(u => u.id === userId) || { id: userId, phone: userPhone, role: 'user' };
+  Store.adminOriginalUser = Store.currentUser; // Guardar admin original
+  Store.adminModeActive = true;
+  localStorage.setItem('adminImpersonatingUserId', user.id);
+  localStorage.setItem('adminImpersonatingUserPhone', user.phone);
+  localStorage.setItem('adminOriginalUserId', Store.adminOriginalUser.id);
+  localStorage.setItem('adminOriginalUserPhone', Store.adminOriginalUser.phone);
+  // CRITICAL: role must become 'user', not stay 'admin' — otherwise this
+  // impersonation session would still be treated as an admin login (no
+  // notices/review prompts shown, admin-only UI visible, etc.) even though
+  // we're viewing as a customer.
+  Store.currentUser = { ...user, role: 'user' };
   btn.closest('.modal-overlay')?.remove();
   toast('A gerir como: ' + userPhone);
   if (typeof invalidateEventsCache !== 'undefined') invalidateEventsCache();
@@ -3319,6 +3329,11 @@ async function openOrdersManager() {
           <span>2ª: ${o.installment2?.toLocaleString('pt-PT')} Kz</span>
         </div>
         ${o.access_token ? `<p style="font-size:0.72rem;color:#374151;background:#fff;border:1px dashed #cbd5e1;border-radius:0.4rem;padding:0.3rem 0.5rem;margin-bottom:0.5rem;font-family:monospace">${o.access_token}</p>` : ''}
+        <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.5rem;background:#fff;border:1px solid #e5e7eb;border-radius:0.5rem;padding:0.4rem 0.6rem">
+          <span style="font-size:0.7rem;color:#6b7280;white-space:nowrap">Entrega:</span>
+          <input type="date" id="delivery-date-${o.id}" value="${o.delivery_date ? o.delivery_date.split('T')[0] : ''}" style="font-size:0.72rem;border:none;flex:1;color:#1e293b;font-weight:600">
+          <button onclick="adminSetDeliveryDate('${o.id}', document.getElementById('delivery-date-${o.id}').value)" style="background:#007f9f;color:#fff;border:none;border-radius:0.4rem;padding:0.25rem 0.6rem;font-size:0.65rem;font-weight:700;cursor:pointer;flex-shrink:0">Guardar</button>
+        </div>
         <div style="display:flex;gap:0.4rem;flex-wrap:wrap">
           ${!o.access_token ? `<button onclick="adminGenerateOrderToken('${o.id}')" style="background:#007f9f;color:#fff;border:none;border-radius:0.5rem;padding:0.3rem 0.7rem;font-size:0.7rem;font-weight:700;cursor:pointer">Gerar Código</button>` : `<button onclick="copyOrderToken('${o.access_token}')" style="background:#f3f4f6;color:#374151;border:none;border-radius:0.5rem;padding:0.3rem 0.7rem;font-size:0.7rem;font-weight:600;cursor:pointer">Copiar Código</button>`}
           <button onclick="adminUpdateOrderStatus('${o.id}','paid_70')" style="background:#e0f2fe;color:#0369a1;border:none;border-radius:0.5rem;padding:0.3rem 0.7rem;font-size:0.7rem;cursor:pointer">Marcar 70% Pago</button>
@@ -3330,6 +3345,20 @@ async function openOrdersManager() {
     <button class="btn-outline w-full mt-3 text-sm" onclick="this.closest('.modal-overlay').remove()">Fechar</button>
   </div>`;
   document.body.appendChild(modal);
+}
+
+async function adminSetDeliveryDate(orderId, dateStr) {
+  if (!dateStr) { toast('Seleciona uma data primeiro.'); return; }
+  try {
+    await supabaseRequest(`orders?id=eq.${orderId}`, 'PATCH', {
+      delivery_date: new Date(dateStr + 'T23:59:59').toISOString(),
+      updated_at: new Date().toISOString()
+    });
+    toast('Data de entrega atualizada!');
+  } catch(e) {
+    toast('Erro ao atualizar a data de entrega.');
+    console.error(e);
+  }
 }
 
 async function adminGenerateOrderToken(orderId) {
@@ -3411,4 +3440,78 @@ async function adminDeleteReview(id) {
   document.getElementById('_reviews-mgr-modal')?.remove();
   openReviewsManager();
   if (typeof renderLandingReviews === 'function') renderLandingReviews();
+}
+
+// ===================== ADMIN: ANALYTICS PANEL =====================
+async function openAnalyticsPanel() {
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.id = '_analytics-modal';
+  modal.innerHTML = `<div class="modal-content bg-white rounded-2xl p-5" style="max-width:560px;max-height:85vh;overflow-y:auto">
+    <h3 class="text-base font-bold mb-3">Análise de Acessos</h3>
+    <div id="analytics-body" style="text-align:center;padding:2rem 0;color:#9ca3af;font-size:0.85rem">A calcular...</div>
+    <button class="btn-outline w-full mt-3 text-sm" onclick="this.closest('.modal-overlay').remove()">Fechar</button>
+  </div>`;
+  document.body.appendChild(modal);
+
+  try {
+    const [loginRows, guestRows, commercialRows] = await Promise.all([
+      supabaseRequest('visit_log?visit_type=eq.user_login&select=account_id,created_at&limit=5000').catch(() => []),
+      supabaseRequest('visit_log?visit_type=eq.guest_view&select=event_id,created_at&limit=5000').catch(() => []),
+      supabaseRequest('visit_log?visit_type=eq.commercial_view&select=created_at&limit=5000').catch(() => []),
+    ]);
+
+    const totalLogins = (loginRows || []).length;
+    const uniqueUsers = new Set((loginRows || []).map(r => r.account_id)).size;
+    const totalGuestViews = (guestRows || []).length;
+    const uniqueEventsViewed = new Set((guestRows || []).map(r => r.event_id)).size;
+    const totalCommercialViews = (commercialRows || []).length;
+
+    // Per-user login counts (top 10)
+    const perUserCounts = {};
+    (loginRows || []).forEach(r => { perUserCounts[r.account_id] = (perUserCounts[r.account_id] || 0) + 1; });
+    const topUsers = Object.entries(perUserCounts).sort((a,b) => b[1]-a[1]).slice(0, 10);
+
+    // Resolve phone numbers for top users
+    let userPhones = {};
+    if (topUsers.length) {
+      const ids = topUsers.map(([id]) => id);
+      const accRows = await supabaseRequest(`accounts?id=in.(${ids.join(',')})&select=id,phone`).catch(() => []);
+      (accRows || []).forEach(a => { userPhones[a.id] = a.phone; });
+    }
+
+    document.getElementById('analytics-body').innerHTML = `
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:0.75rem;margin-bottom:1.25rem">
+        <div style="background:#f0f9fb;border-radius:0.75rem;padding:1rem;text-align:center">
+          <p style="font-size:1.6rem;font-weight:800;color:#007f9f;margin:0">${totalLogins}</p>
+          <p style="font-size:0.72rem;color:#6b7280;margin:0.2rem 0 0">Entradas de utilizadores (total)</p>
+        </div>
+        <div style="background:#f0f9fb;border-radius:0.75rem;padding:1rem;text-align:center">
+          <p style="font-size:1.6rem;font-weight:800;color:#007f9f;margin:0">${uniqueUsers}</p>
+          <p style="font-size:0.72rem;color:#6b7280;margin:0.2rem 0 0">Utilizadores únicos que entraram</p>
+        </div>
+        <div style="background:#fef3c7;border-radius:0.75rem;padding:1rem;text-align:center">
+          <p style="font-size:1.6rem;font-weight:800;color:#92400e;margin:0">${totalGuestViews}</p>
+          <p style="font-size:0.72rem;color:#6b7280;margin:0.2rem 0 0">Visitas a eventos (convidados)</p>
+        </div>
+        <div style="background:#fef3c7;border-radius:0.75rem;padding:1rem;text-align:center">
+          <p style="font-size:1.6rem;font-weight:800;color:#92400e;margin:0">${uniqueEventsViewed}</p>
+          <p style="font-size:0.72rem;color:#6b7280;margin:0.2rem 0 0">Eventos diferentes visitados</p>
+        </div>
+        <div style="background:#dcfce7;border-radius:0.75rem;padding:1rem;text-align:center;grid-column:1/-1">
+          <p style="font-size:1.6rem;font-weight:800;color:#166534;margin:0">${totalCommercialViews}</p>
+          <p style="font-size:0.72rem;color:#6b7280;margin:0.2rem 0 0">Visitas ao site comercial (total)</p>
+        </div>
+      </div>
+      <p style="font-size:0.82rem;font-weight:700;color:#374151;margin-bottom:0.6rem">Top utilizadores por nº de entradas</p>
+      ${topUsers.length ? topUsers.map(([id, count]) => `
+        <div style="display:flex;justify-content:space-between;padding:0.5rem 0.75rem;background:#f8fafc;border-radius:0.5rem;margin-bottom:0.4rem">
+          <span style="font-size:0.82rem;color:#374151">${escapeHTML(userPhones[id] || id)}</span>
+          <span style="font-size:0.82rem;font-weight:700;color:#007f9f">${count}× </span>
+        </div>`).join('') : '<p style="text-align:center;color:#9ca3af;font-size:0.8rem;padding:1rem">Sem dados ainda.</p>'}
+    `;
+  } catch(e) {
+    document.getElementById('analytics-body').innerHTML = '<p style="color:#ef4444;font-size:0.85rem">Erro ao carregar análise.</p>';
+    console.error(e);
+  }
 }
