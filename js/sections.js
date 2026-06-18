@@ -158,6 +158,7 @@ async function renderGuestSections(eventData) {
         case 'schedule': if (_yesOrTrue(eventData.show_schedule)) html += buildScheduleSection(eventData); break;
         case 'dresscode': if (_yesOrTrue(eventData.show_dresscode) && eventData.dresscode_text) html += buildDresscodeSection(eventData); break;
         case 'couplemsg': if (_yesOrTrue(eventData.show_couplemsg) && eventData.couplemsg_text) html += buildCoupleMsgSection(eventData); break;
+        case 'final_photo': if (_yesOrTrue(eventData.show_final_photo) && eventData.final_photo_url) html += buildFinalPhotoSection(eventData); break;
         case 'rsvp':     break; // always last, separate element
       }
     } catch(sectionErr) {
@@ -987,7 +988,8 @@ const ALL_SECTION_DEFS = [
   { key: 'manual',    label: 'Manual do Bom Convidado',              icon: 'list-checks' },
   { key: 'schedule',  label: 'Itinerário',                           icon: 'clock' },
   { key: 'dresscode',  label: 'Dress Code',                             icon: 'shirt' },
-  { key: 'couplemsg',  label: 'Mensagem dos Noivos',                   icon: 'message-circle' },
+  { key: 'couplemsg',   label: 'Mensagem dos Noivos',                   icon: 'message-circle' },
+  { key: 'final_photo', label: 'Foto Final dos Noivos',                 icon: 'image' },
 ];
 
 function getDefaultSectionOrder() {
@@ -1219,4 +1221,17 @@ async function openIconPickerModal(category, onSelect) {
       modal.remove();
     }
   };
+}
+
+// ── Foto final dos noivos ──────────────────────────────────────────────────
+function buildFinalPhotoSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
+  return _SD + `<div class="event-section" style="padding:0;overflow:hidden">
+    <div class="reveal" style="width:100%;aspect-ratio:4/3;overflow:hidden;position:relative">
+      <img src="${ev.final_photo_url}" alt="Foto dos Noivos"
+        style="width:100%;height:100%;object-fit:cover;object-position:center"
+        onerror="this.parentElement.parentElement.style.display='none'">
+      <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,0.35) 0%,transparent 55%)"></div>
+      ${(ev.groom_name || ev.bride_name) ? `<p style="position:absolute;bottom:1.25rem;left:0;right:0;text-align:center;color:#fff;font-size:1.05rem;font-weight:700;letter-spacing:0.05em;font-family:var(--event-font,'Playfair Display',serif)">${escapeHTML(ev.groom_name||'')}${ev.groom_name&&ev.bride_name?' & ':''}${escapeHTML(ev.bride_name||'')}</p>` : ''}
+    </div>
+  </div>`;
 }

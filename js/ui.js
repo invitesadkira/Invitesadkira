@@ -866,3 +866,47 @@ function toggleStdReleaseFields(releaseType) {
   if (dateWrap) dateWrap.classList.toggle('hidden', releaseType !== 'by_date');
   if (manualWrap) manualWrap.classList.toggle('hidden', releaseType !== 'manual');
 }
+
+async function handleStdCoverUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 5*1024*1024) { toast('Imagem muito grande. Máx. 5 MB.'); return; }
+  toast('A carregar foto de capa...');
+  try {
+    const url = await uploadImageToStorage(file, 'event-covers');
+    document.getElementById('evt-std-cover-url').value = url;
+    const prev = document.getElementById('std-cover-preview');
+    if (prev) prev.src = url;
+    document.getElementById('std-cover-preview-wrap')?.classList.remove('hidden');
+    toast('Foto de capa do Save the Date carregada!');
+  } catch(e) { toast('Erro ao carregar a foto.'); }
+}
+
+function removeStdCoverPhoto() {
+  document.getElementById('evt-std-cover-url').value = '';
+  document.getElementById('evt-std-cover-photo').value = '';
+  document.getElementById('std-cover-preview-wrap')?.classList.add('hidden');
+  toast('Foto de capa removida.');
+}
+
+async function handleFinalPhotoUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 5*1024*1024) { toast('Imagem muito grande. Máx. 5 MB.'); return; }
+  toast('A carregar foto final...');
+  try {
+    const url = await uploadImageToStorage(file, 'event-covers');
+    document.getElementById('evt-final-photo-url').value = url;
+    const prev = document.getElementById('final-photo-preview');
+    if (prev) prev.src = url;
+    document.getElementById('final-photo-preview-wrap')?.classList.remove('hidden');
+    toast('Foto final dos noivos carregada!');
+  } catch(e) { toast('Erro ao carregar a foto.'); }
+}
+
+function removeFinalPhoto() {
+  document.getElementById('evt-final-photo-url').value = '';
+  document.getElementById('evt-final-photo-input').value = '';
+  document.getElementById('final-photo-preview-wrap')?.classList.add('hidden');
+  toast('Foto final removida.');
+}

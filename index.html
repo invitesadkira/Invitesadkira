@@ -9,7 +9,7 @@
   <script>tailwind.config = { theme: { extend: { colors: { teal: { 500: '#007f9f', 600: '#006b86' } } } } }</script>
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💌</text></svg>">
-  <link rel="stylesheet" href="css/main.css?v=553600">
+  <link rel="stylesheet" href="css/main.css?v=553800">
 </head>
 <body class="h-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
 
@@ -378,8 +378,17 @@
          </div>
          <input id="evt-std-title-size" type="hidden" value="0.78">
          <div class="flex items-center justify-between pt-1">
-          <span class="text-xs font-semibold text-gray-600">Mostrar foto de capa do evento ao fundo</span>
-          <div id="sw-std-cover" class="switch active" onclick="toggleSwitch(this)"></div>
+          <span class="text-xs font-semibold text-gray-600">Foto de capa do Save the Date</span>
+          <div id="sw-std-cover" class="switch active" onclick="toggleSwitch(this, 'std-cover-extra')"></div>
+         </div>
+         <div id="std-cover-extra" class="mt-2 space-y-1">
+          <p class="text-xs text-gray-400">Carrega uma foto específica para o Save the Date. Se não carregar nenhuma, usa a foto de fundo do convite.</p>
+          <input type="file" id="evt-std-cover-photo" accept="image/*" class="input-field text-sm" onchange="handleStdCoverUpload(this)">
+          <input type="hidden" id="evt-std-cover-url">
+          <div id="std-cover-preview-wrap" class="hidden relative mt-1" style="max-width:160px">
+           <img id="std-cover-preview" class="rounded-lg max-h-28 object-cover w-full">
+           <button type="button" onclick="removeStdCoverPhoto()" class="absolute top-1 right-1 bg-white rounded-full w-6 h-6 flex items-center justify-center shadow text-red-500 text-xs font-bold">✕</button>
+          </div>
          </div>
          <label class="text-xs font-semibold text-gray-600">Quando liberar o convite completo?</label>
          <select id="evt-std-release-type" class="input-field text-sm" onchange="toggleStdReleaseFields(this.value)">
@@ -587,6 +596,21 @@ para testemunhar o seu enlace matrimonial</textarea>
         </div>
         <div id="couplemsg-extra" class="pl-4">
          <textarea id="evt-couplemsg-text" class="input-field text-sm" rows="4" placeholder="Ex: Cada um de vocês representa um capítulo especial da nossa história..."></textarea>
+        </div>
+
+        <!-- Foto Final dos Noivos -->
+        <div class="flex items-center justify-between">
+         <span class="text-sm font-semibold text-gray-700">Foto Final dos Noivos</span>
+         <div id="sw-final-photo" class="switch" onclick="toggleSwitch(this, 'final-photo-extra')"></div>
+        </div>
+        <p class="text-xs text-gray-400 -mt-1 mb-1">Aparece no final do convite para que a última coisa que o convidado veja seja uma foto dos noivos.</p>
+        <div id="final-photo-extra" class="hidden pl-4 space-y-2">
+         <input type="file" id="evt-final-photo-input" accept="image/*" class="input-field text-sm" onchange="handleFinalPhotoUpload(this)">
+         <input type="hidden" id="evt-final-photo-url">
+         <div id="final-photo-preview-wrap" class="hidden relative mt-1" style="max-width:200px">
+          <img id="final-photo-preview" class="rounded-lg max-h-32 object-cover w-full">
+          <button type="button" onclick="removeFinalPhoto()" class="absolute top-1 right-1 bg-white rounded-full w-6 h-6 flex items-center justify-center shadow text-red-500 text-xs font-bold">✕</button>
+         </div>
         </div>
 
         <!-- Dress Code -->
@@ -1000,19 +1024,19 @@ para testemunhar o seu enlace matrimonial</textarea>
   </a>
 
   <!-- ===================== SCRIPTS (ordem importa) ===================== -->
-  <script src="js/config.js?v=553600"></script>
-  <script src="js/store.js?v=553600"></script>
-  <script src="js/visuals.js?v=553600"></script>
-  <script src="js/venues.js?v=553600"></script>
-  <script src="js/rsvp.js?v=553600"></script>
-  <script src="js/ui.js?v=553600"></script>
-  <script src="js/auth.js?v=553600"></script>
-  <script src="js/dashboard.js?v=553600"></script>
-  <script src="js/events.js?v=553600"></script>
-  <script src="js/guest.js?v=553600"></script>
-  <script src="js/sections.js?v=553600"></script>
-  <script src="js/admin.js?v=553600"></script>
-  <script src="js/router.js?v=553600"></script>
+  <script src="js/config.js?v=553800"></script>
+  <script src="js/store.js?v=553800"></script>
+  <script src="js/visuals.js?v=553800"></script>
+  <script src="js/venues.js?v=553800"></script>
+  <script src="js/rsvp.js?v=553800"></script>
+  <script src="js/ui.js?v=553800"></script>
+  <script src="js/auth.js?v=553800"></script>
+  <script src="js/dashboard.js?v=553800"></script>
+  <script src="js/events.js?v=553800"></script>
+  <script src="js/guest.js?v=553800"></script>
+  <script src="js/sections.js?v=553800"></script>
+  <script src="js/admin.js?v=553800"></script>
+  <script src="js/router.js?v=553800"></script>
 
 </body>
 </html>

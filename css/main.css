@@ -102,6 +102,14 @@ html, body { height: 100%; margin: 0; width: 100%; overflow-x: hidden; }
 #floating-music-btn.visible { display: flex; }
 #floating-music-btn:hover { transform: scale(1.12); }
 #floating-music-btn svg { color: #fff; }
+/* When re-parented into the Save the Date screen, force it visible regardless of .visible class */
+#std-music-player-slot #floating-music-btn {
+  display: flex !important;
+  position: relative !important;
+  bottom: auto !important; right: auto !important;
+  z-index: 1 !important;
+  transform: none !important;
+}
 .floating-eq { display: flex; align-items: flex-end; gap: 2px; height: 14px; }
 .floating-eq span { width: 3px; border-radius: 2px; background: var(--ev-color); animation: eq-bar 0.8s infinite ease-in-out alternate; }
 .floating-eq span:nth-child(2) { animation-delay: 0.15s; }

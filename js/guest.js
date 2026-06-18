@@ -193,6 +193,7 @@ async function renderGuestView() {
     std_intro_enabled: eventData.std_intro_enabled, std_intro_text: eventData.std_intro_text,
     std_intro_photo_url: eventData.std_intro_photo_url,
     personalized_links_enabled: eventData.personalized_links_enabled,
+    std_cover_url: eventData.std_cover_url,
     show_rsvp_in_full_invite: eventData.show_rsvp_in_full_invite,
     show_guest_name_in_invite: eventData.show_guest_name_in_invite,
     // Visual data that's ALREADY in events table — keep unless visuals has a better value
@@ -271,7 +272,7 @@ async function renderGuestView() {
     } catch(e2) { console.warn('Visual fallback reload failed:', e2); }
   }
 
-  const RSVP_ONLY_FIELDS = new Set(['show_time','time','date','title','confirm_by_date','deadline','allowCompanions','allow_companions','maxCompanions','max_companions','allowKids','allow_kids','maxKids','max_kids','allowGifts','allow_gifts','allowSides','allow_sides','side1_name','side2_name','allowMessages','allow_messages','showGuestMessages','show_guest_messages','id','eventCode','cover_image','rsvp_enabled','save_the_date_enabled','release_type','release_date','is_invite_released','std_title','std_subtitle','std_font_family','std_name_size','std_title_size','std_intro_enabled','std_intro_text','std_intro_photo_url','std_show_cover','personalized_links_enabled','show_rsvp_in_full_invite','show_guest_name_in_invite']);
+  const RSVP_ONLY_FIELDS = new Set(['show_time','time','date','title','confirm_by_date','deadline','allowCompanions','allow_companions','maxCompanions','max_companions','allowKids','allow_kids','maxKids','max_kids','allowGifts','allow_gifts','allowSides','allow_sides','side1_name','side2_name','allowMessages','allow_messages','showGuestMessages','show_guest_messages','id','eventCode','cover_image','rsvp_enabled','save_the_date_enabled','release_type','release_date','is_invite_released','std_title','std_subtitle','std_font_family','std_name_size','std_title_size','std_intro_enabled','std_intro_text','std_intro_photo_url','std_show_cover','personalized_links_enabled','show_rsvp_in_full_invite','show_guest_name_in_invite','std_cover_url']);
 
   // Restore all fields: RSVP fields always from events table; visual fields use
   // whichever source (visuals or events table) has a non-null value
@@ -2182,7 +2183,8 @@ function renderSaveTheDateScreen(ev, decision) {
   const nameSize    = parseFloat(ev.std_name_size) || 2.4;
   const titleSize   = parseFloat(ev.std_title_size) || 0.78;
   const rsvpAllowed = ev.rsvp_enabled !== false;
-  const coverUrl    = ev.bg_url || ev.cover_image || null;
+  // Cover: dedicated STD cover > event bg image > event cover thumbnail
+  const coverUrl    = ev.std_cover_url || ev.bg_url || ev.cover_image || null;
   const showCover   = ev.std_show_cover !== false && !!coverUrl;
 
   const parseDateSafe = (str) => {
@@ -2199,7 +2201,10 @@ function renderSaveTheDateScreen(ev, decision) {
 
   const eventDateParsed = parseDateSafe(ev.date);
   const deadlineParsed  = parseDateSafe(ev.confirm_by_date);
-  const countdownTarget = deadlineParsed || eventDateParsed;
+  // Countdown = ONLY the RSVP deadline. Never count down to the event date
+  // itself (that would confuse with "Contagem até ao Grande Dia" and mislead
+  // guests about when to confirm). If no deadline is set, hide the countdown.
+  const countdownTarget = deadlineParsed || null;
   const eventDateLabel  = eventDateParsed ? eventDateParsed.label : null;
   const deadlineLabel   = deadlineParsed  ? `Confirmar até ${deadlineParsed.label}` : null;
 
@@ -2315,8 +2320,8 @@ function renderSaveTheDateScreen(ev, decision) {
   if (window._stdCountdownInterval) clearInterval(window._stdCountdownInterval);
   const labelEl = document.getElementById('std-countdown-label');
   if (countdownTarget) {
-    const isDeadline = !!deadlineParsed;
-    if (labelEl) labelEl.textContent = isDeadline ? 'Prazo para Confirmar Presença' : 'Contagem até ao Grande Dia';
+    // countdownTarget is ALWAYS the deadline (deadlineParsed) — never the event date
+    if (labelEl) labelEl.textContent = 'Prazo para Confirmar Presença';
     const target = countdownTarget.date;
     const tick = () => {
       const diff = target - new Date();
@@ -2324,7 +2329,7 @@ function renderSaveTheDateScreen(ev, decision) {
       if (diff<=0) {
         clearInterval(window._stdCountdownInterval);
         set('std-days',0);set('std-hours',0);set('std-mins',0);set('std-secs',0);
-        if(labelEl)labelEl.textContent=isDeadline?'Prazo de confirmação encerrado':'Grande Dia chegou!';
+        if(labelEl)labelEl.textContent='Prazo de confirmação encerrado';
         return;
       }
       set('std-days',  Math.floor(diff/86400000));
@@ -2335,6 +2340,7 @@ function renderSaveTheDateScreen(ev, decision) {
     tick();
     window._stdCountdownInterval = setInterval(tick,1000);
   } else {
+    // No deadline set — hide the countdown entirely
     if(labelEl)labelEl.textContent='';
     const wrap=document.getElementById('std-countdown-wrap');
     if(wrap)wrap.style.display='none';
