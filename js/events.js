@@ -404,19 +404,25 @@ function saveEventWithCover(eventId, title, date, time, deadline, coverImageURL,
       };
       // Add decor fields
       _visPayload.decor_side_url = document.getElementById('evt-decor-side-url')?.value || null;
-      _visPayload.show_venues = document.getElementById('sw-venues')?.classList.contains('active') ? 'yes' : 'no';
-      _visPayload.venue_ceremony = document.getElementById('evt-venue-ceremony')?.value?.trim() || null;
-      _visPayload.venue_ceremony_maps = document.getElementById('evt-venue-ceremony-maps')?.value?.trim() || null;
-      _visPayload.venue_civil = document.getElementById('evt-venue-civil')?.value?.trim() || null;
-      _visPayload.venue_civil_maps = document.getElementById('evt-venue-civil-maps')?.value?.trim() || null;
-      _visPayload.venue_reception = document.getElementById('evt-venue-reception')?.value?.trim() || null;
-      _visPayload.venue_reception_maps = document.getElementById('evt-venue-reception-maps')?.value?.trim() || null;
       _visPayload.decor_ornament_url = document.getElementById('evt-decor-ornament-url')?.value || null;
       _visPayload.show_decor   = document.getElementById('sw-decor')?.classList.contains('active') ? 'yes' : 'no';
       _visPayload.show_story   = document.getElementById('sw-story')?.classList.contains('active') ? 'yes' : 'no';
       _visPayload.invert_names = document.getElementById('sw-invert-names')?.classList.contains('active') ? 'yes' : 'no';
       _visPayload.event_type   = document.getElementById('evt-event-type')?.value || 'wedding';
       if (typeof saveEventVisuals !== 'undefined') saveEventVisuals(eventId, _visPayload);
+
+      // Save venue/location fields to the DEDICATED event_venues table
+      // (these do NOT belong in event_visuals — that table has no venue_* columns)
+      if (typeof saveEventVenues !== 'undefined') saveEventVenues(eventId, {
+        show_venues:          document.getElementById('sw-venues')?.classList.contains('active') ? 'yes' : 'no',
+        venue_ceremony:       document.getElementById('evt-venue-ceremony')?.value?.trim() || null,
+        venue_ceremony_maps:  document.getElementById('evt-venue-ceremony-maps')?.value?.trim() || null,
+        venue_civil:          document.getElementById('evt-venue-civil')?.value?.trim() || null,
+        venue_civil_maps:     document.getElementById('evt-venue-civil-maps')?.value?.trim() || null,
+        venue_reception:      document.getElementById('evt-venue-reception')?.value?.trim() || null,
+        venue_reception_maps: document.getElementById('evt-venue-reception-maps')?.value?.trim() || null,
+      });
+
       // Save dates to dedicated table
       if (typeof saveEventDates !== 'undefined') saveEventDates(eventId, {
         event_date: document.getElementById('evt-date')?.value || null,

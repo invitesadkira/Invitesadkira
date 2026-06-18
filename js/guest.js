@@ -144,12 +144,31 @@ async function renderGuestView() {
     console.warn('event_visuals load failed:', e);
   }
 
+  // ── CRITICAL FIX: load venue/location data from the dedicated event_venues table ──
+  // This was previously never loaded for guests — venue_ceremony/venue_civil/venue_reception
+  // etc. live ONLY in event_venues, never in the events table, so without this call
+  // "Locais do Evento" could never appear no matter how it was configured.
+  try {
+    const venues = await loadEventVenues(eventData.id || Store.currentEventId);
+    if (venues && Object.keys(venues).length > 0) {
+      Object.keys(venues).forEach(k => {
+        if (k !== 'event_id' && k !== 'updated_at' && venues[k] !== null && venues[k] !== undefined) {
+          eventData[k] = venues[k];
+        }
+      });
+    }
+  } catch(e) {
+    console.warn('event_venues load failed:', e);
+  }
+
   // ── Fallback: if critical visual fields still null, reload from events table directly ──
+  // NOTE: only fields that actually exist as columns on the `events` table belong here.
+  // couplemsg_text, dresscode_*, parents_size live ONLY in event_visuals (no fallback needed
+  // there since loadEventVisuals already tried). std_* and release_* live on `events` directly.
   const _criticalNulls = ['bible_text','gallery_urls','invite_text','groom_parents','bride_parents',
     'iban_number','story_text','event_color','groom_name','bride_name','music_url','schedule_items',
-    'manual_items','couplemsg_text','show_couplemsg','show_manual','show_schedule','show_story',
-    'dresscode_text','show_dresscode','dresscode_detail','parents_size',
-    'save_the_date_enabled','release_type','release_date','is_invite_released','std_title','std_subtitle'];
+    'manual_items','show_manual','show_schedule','show_story',
+    'save_the_date_enabled','release_type','release_date','is_invite_released','std_title','std_subtitle','std_font_family'];
   const _stillMissing = _criticalNulls.filter(k => !eventData[k]);
   if (_stillMissing.length > 0) {
     try {
@@ -322,14 +341,33 @@ async function renderGuestView() {
   // The full invite above is already fully rendered and functional
   // (RSVP drawer, music, sections). If Save the Date is enabled and the
   // release condition isn't met yet, show the gate screen on top.
-  if (eventData.save_the_date_enabled === true || eventData.save_the_date_enabled === 'true') {
-    const _shouldShowSTD = await _shouldShowSaveTheDate(eventData);
-    if (_shouldShowSTD) {
-      renderSaveTheDateScreen(eventData);
+  try {
+    console.log('🔖 Save the Date — diagnóstico:', {
+      save_the_date_enabled: eventData.save_the_date_enabled,
+      release_type: eventData.release_type,
+      release_date: eventData.release_date,
+      is_invite_released: eventData.is_invite_released,
+      show_couplemsg: eventData.show_couplemsg,
+      couplemsg_text: eventData.couplemsg_text ? '(presente)' : '(vazio)',
+      show_dresscode: eventData.show_dresscode,
+      dresscode_text: eventData.dresscode_text ? '(presente)' : '(vazio)',
+      show_venues: eventData.show_venues,
+      venue_ceremony: eventData.venue_ceremony ? '(presente)' : '(vazio)',
+      venue_civil: eventData.venue_civil ? '(presente)' : '(vazio)',
+      venue_reception: eventData.venue_reception ? '(presente)' : '(vazio)',
+    });
+    if (eventData.save_the_date_enabled === true || eventData.save_the_date_enabled === 'true') {
+      const _shouldShowSTD = await _shouldShowSaveTheDate(eventData);
+      if (_shouldShowSTD) {
+        renderSaveTheDateScreen(eventData);
+      } else {
+        document.getElementById('save-the-date-screen')?.remove();
+      }
     } else {
       document.getElementById('save-the-date-screen')?.remove();
     }
-  } else {
+  } catch(stdErr) {
+    console.error('Erro no Save the Date gate (a continuar com o convite normal):', stdErr);
     document.getElementById('save-the-date-screen')?.remove();
   }
 }

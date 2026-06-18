@@ -5,7 +5,14 @@ const _venuesCache = {};
 
 async function loadEventVenues(eventId) {
   if (!eventId) return {};
-  if (_venuesCache[eventId]) return _venuesCache[eventId];
+  // BUGFIX: an empty object {} is truthy in JS, so the old check
+  // `if (_venuesCache[eventId])` would permanently reuse a stale empty
+  // cache entry even after real venue data was saved later in the same
+  // session (e.g. guest page re-rendered after Save the Date unlocks).
+  // Only skip the fetch if we have a cached entry with actual data.
+  if (_venuesCache[eventId] && Object.keys(_venuesCache[eventId]).length > 1) {
+    return _venuesCache[eventId];
+  }
   try {
     const rows = await supabaseRequest(`event_venues?event_id=eq.${eventId}&select=${VENUES_FIELDS}&limit=1`);
     const v = (rows && rows[0]) ? rows[0] : {};

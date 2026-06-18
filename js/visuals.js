@@ -7,7 +7,12 @@ const _visualsCache = {};
 
 async function loadEventVisuals(eventId) {
   if (!eventId) return {};
-  if (_visualsCache[eventId]) return _visualsCache[eventId];
+  // BUGFIX: an empty object {} is truthy in JS — only reuse the cache
+  // if it actually contains data, otherwise we'd permanently serve a
+  // stale empty result even after real visuals were saved later.
+  if (_visualsCache[eventId] && Object.keys(_visualsCache[eventId]).length > 1) {
+    return _visualsCache[eventId];
+  }
   try {
     const rows = await supabaseRequest(
       `event_visuals?event_id=eq.${eventId}&select=${VISUALS_FIELDS}&limit=1`
@@ -30,16 +35,26 @@ async function saveEventVisuals(eventId, visuals) {
 
   const payload = { event_id: eventId, updated_at: new Date().toISOString(), ...visuals };
 
-  // Try PATCH (update existing row)
+  // Try PATCH (update existing row). With Prefer: return=representation set
+  // globally in supabaseRequest, this now reliably returns [] when zero rows
+  // matched (i.e. no event_visuals row exists yet for this event), or the
+  // actual updated row(s) when it succeeded. Previously an empty-body 204
+  // response was indistinguishable from success, so new events silently
+  // never got their visuals saved — this is the fix for that.
   const patchResult = await supabaseRequest(
     `event_visuals?event_id=eq.${eventId}`,
     'PATCH',
     payload
   );
 
-  // If no row exists, INSERT
-  if (!patchResult || (Array.isArray(patchResult) && patchResult.length === 0)) {
-    await supabaseRequest('event_visuals', 'POST', payload);
+  const patchUpdatedZeroRows = !patchResult || (Array.isArray(patchResult) && patchResult.length === 0);
+
+  if (patchUpdatedZeroRows) {
+    const insertResult = await supabaseRequest('event_visuals', 'POST', payload);
+    if (!insertResult || (Array.isArray(insertResult) && insertResult.length === 0)) {
+      console.error('saveEventVisuals: PATCH matched 0 rows AND POST insert failed for event', eventId);
+      return false;
+    }
   }
   return true;
 }

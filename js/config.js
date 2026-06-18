@@ -9,6 +9,14 @@ async function supabaseRequest(endpoint, method = 'GET', body = null) {
     'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
     'Accept': 'application/json'
   };
+  // CRITICAL: force Supabase/PostgREST to return the affected row(s) in the body.
+  // Without this, PATCH on zero matching rows returns an empty 204 response —
+  // indistinguishable from "successfully updated". This caused silent data loss:
+  // any UPSERT-style save (PATCH-then-INSERT-if-empty) never reached the INSERT
+  // step because the empty response was treated as success.
+  if (method === 'PATCH' || method === 'POST') {
+    headers['Prefer'] = 'return=representation';
+  }
 
   const options = { 
     method, 
