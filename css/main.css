@@ -804,8 +804,11 @@ html, body { height: 100%; margin: 0; width: 100%; overflow-x: hidden; }
 }
 
 /* ── Save the Date: hide the full invite content instantly while the
-   gate decision is being evaluated, so it never flashes on screen ── */
-#screen-guest.std-pending > *:not(#save-the-date-screen):not(#std-loading-veil) {
+   gate decision is being evaluated, so it never flashes on screen.
+   Note: the actual gate overlay (#std-screen-overlay) is appended to
+   document.body, not as a child of #screen-guest, so it's naturally
+   unaffected by this rule regardless of the :not() exclusions below. ── */
+#screen-guest.std-pending > *:not(#std-loading-veil) {
   visibility: hidden !important;
 }
 #std-loading-veil {

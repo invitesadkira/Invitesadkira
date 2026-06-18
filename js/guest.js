@@ -350,9 +350,12 @@ async function renderGuestView() {
   const stdDecision = _evaluateSaveTheDate(eventData);
   if (stdDecision.showSaveTheDate) {
     renderSaveTheDateScreen(eventData, stdDecision);
-    // Reveal now — the gate screen itself is exempted from std-pending's
-    // hide rule via CSS (#save-the-date-screen is excluded), so removing
-    // std-pending here just lets the gate screen (and nothing else) show.
+    // Reveal now. Note: renderSaveTheDateScreen appends its overlay
+    // (#std-screen-overlay) directly to document.body as a position:fixed
+    // element — it lives OUTSIDE #screen-guest entirely, so the std-pending
+    // CSS rule (which only hides children of #screen-guest) never affects
+    // it. Removing std-pending here just un-hides #screen-guest's own
+    // children again, which is harmless since the overlay covers them anyway.
     document.getElementById('screen-guest')?.classList.remove('std-pending');
     document.getElementById('std-loading-veil')?.remove();
     return; // Stop here — do not render the full invite sections
@@ -363,7 +366,6 @@ async function renderGuestView() {
       window._stdRestoreMusicPlayer = null;
     }
     document.getElementById('std-screen-overlay')?.remove();
-    document.getElementById('save-the-date-screen')?.remove();
   }
 
   // ===== RENDER SECTIONS (awaited so venues load properly) =====
@@ -2179,7 +2181,15 @@ function renderSaveTheDateScreen(ev, decision) {
     if (fontDef) fontFaceCSS = `@font-face { font-family: '${nameFont}'; src: url('${fontDef.url}'); font-display: swap; }`;
   }
 
-  // Remove any previous instance before re-rendering
+  // Remove any previous instance before re-rendering. CRITICAL: restore the
+  // music player to its original DOM location first if it was re-parented
+  // into a previous overlay instance — otherwise .remove() below would
+  // destroy the actual #guest-music-player element along with the overlay,
+  // permanently breaking the music player for the rest of the session.
+  if (typeof window._stdRestoreMusicPlayer === 'function') {
+    window._stdRestoreMusicPlayer();
+    window._stdRestoreMusicPlayer = null;
+  }
   document.getElementById('std-screen-overlay')?.remove();
 
   const overlay = document.createElement('div');
@@ -2194,9 +2204,9 @@ function renderSaveTheDateScreen(ev, decision) {
 
     ${introEnabled ? `
     <!-- ── INTRO SCREEN: photo + "Abrir Convite" button (guarantees music can start) ── -->
-    <div id="std-intro-screen" style="position:relative;z-index:3;max-width:420px;width:100%;text-align:center;color:#fff">
-      <div style="width:100%;aspect-ratio:1;border-radius:1.25rem;overflow:hidden;margin-bottom:1.5rem;box-shadow:0 8px 32px rgba(0,0,0,0.35)">
-        <img src="${ev.std_intro_photo_url}" style="width:100%;height:100%;object-fit:cover" alt="">
+    <div id="std-intro-screen" style="position:relative;z-index:3;max-width:420px;width:100%;text-align:center;color:#fff;padding:1rem 0">
+      <div style="width:100%;max-height:min(48vh,380px);aspect-ratio:4/5;border-radius:1.25rem;overflow:hidden;margin-bottom:1.5rem;box-shadow:0 8px 32px rgba(0,0,0,0.35)">
+        <img src="${ev.std_intro_photo_url}" style="width:100%;height:100%;object-fit:cover;object-position:center" alt="">
       </div>
       <p style="font-size:1.05rem;font-weight:600;line-height:1.6;margin-bottom:2rem;opacity:0.95">${escapeHTML(ev.std_intro_text || 'Recebeu este convite porque é importante para nós')}</p>
       <button id="std-open-invite-btn" style="background:#fff;color:${evColor};border:none;border-radius:999px;padding:0.95rem 2.75rem;font-weight:800;font-size:0.98rem;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,0.3)">
@@ -2204,10 +2214,10 @@ function renderSaveTheDateScreen(ev, decision) {
       </button>
     </div>` : ''}
 
-    <div id="std-main-content" style="position:relative;z-index:2;max-width:420px;width:100%;text-align:center;color:#fff;${introEnabled ? 'display:none' : ''}">
+    <div id="std-main-content" style="position:relative;z-index:2;max-width:420px;width:100%;text-align:center;color:#fff;padding:1rem 0;${introEnabled ? 'display:none' : ''}">
       <p style="font-size:${titleSize}rem;letter-spacing:0.25em;text-transform:uppercase;opacity:0.85;margin-bottom:0.5rem;font-weight:700">${escapeHTML(stdTitle)}</p>
       <h1 style="font-size:1.15rem;font-weight:600;margin-bottom:1.5rem;opacity:0.95;font-family:'Quicksand',sans-serif">${escapeHTML(stdSubtitle)}</h1>
-      ${coupleNames ? `<h2 style="font-family:${nameFont ? `'${nameFont}',` : ''}var(--event-font, 'Playfair Display', serif);font-size:${nameSize}rem;margin-bottom:1rem;line-height:1.3;white-space:nowrap;display:flex;align-items:center;justify-content:center;gap:0.3em">${coupleNames}</h2>` : ''}
+      ${coupleNames ? `<h2 style="font-family:${nameFont ? `'${nameFont}',` : ''}var(--event-font, 'Playfair Display', serif);font-size:clamp(1.3rem, 7vw, ${nameSize}rem);margin-bottom:1rem;line-height:1.3;white-space:nowrap;display:flex;align-items:center;justify-content:center;gap:0.3em;padding:0 0.5rem">${coupleNames}</h2>` : ''}
       ${dateLabel ? `<p style="font-size:1.05rem;font-weight:600;margin-bottom:2rem;opacity:0.92">${dateLabel}</p>` : ''}
 
       <div id="std-countdown-grid" style="display:flex;gap:0.75rem;justify-content:center;margin-bottom:0.75rem">
