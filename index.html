@@ -9,7 +9,7 @@
   <script>tailwind.config = { theme: { extend: { colors: { teal: { 500: '#007f9f', 600: '#006b86' } } } } }</script>
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💌</text></svg>">
-  <link rel="stylesheet" href="css/main.css?v=553300">
+  <link rel="stylesheet" href="css/main.css?v=553400">
 </head>
 <body class="h-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
 
@@ -67,7 +67,7 @@
         <div class="landing-badge">Invites-Web</div>
         <h1 class="landing-h1">Fácil como partilhar<br><span style="color:#c9a84c">um link</span></h1>
                 <div class="landing-actions">
-          <button class="landing-btn-primary" onclick="Router.go('register')">Criar Conta Grátis</button>
+          <button class="landing-btn-primary" onclick="Router.go('register')">Criar Conta</button>
           <button class="landing-btn-outline" onclick="Router.go('login')">Entrar</button>
         </div>
         <div class="landing-search">
@@ -327,7 +327,19 @@
          <span class="text-sm font-semibold text-gray-700">Permitir Confirmação de Presença</span>
          <div id="sw-rsvp-enabled" class="switch active" onclick="toggleSwitch(this)"></div>
         </div>
-        <p class="text-xs text-gray-400 -mt-1 mb-1">Se desactivado, o botão "Confirmar Presença" não aparece para os convidados. Se o "Save the Date" estiver activo, este controla a confirmação separadamente — podes manter ambos activos se quiseres permitir confirmar tanto na tela inicial como dentro do convite completo.</p>
+        <p class="text-xs text-gray-400 -mt-1 mb-1">Se desactivado, o botão "Confirmar Presença" não aparece em lado nenhum.</p>
+
+        <div class="flex items-center justify-between">
+         <span class="text-sm font-semibold text-gray-700">Mostrar nome do convidado no convite</span>
+         <div id="sw-guest-name-in-invite" class="switch active" onclick="toggleSwitch(this)"></div>
+        </div>
+        <p class="text-xs text-gray-400 -mt-1 mb-1">Quando activo, após confirmar presença o nome do convidado aparece no texto "Têm a honra de convidar [Nome] para testemunhar...".</p>
+
+        <div class="flex items-center justify-between">
+         <span class="text-sm font-semibold text-gray-700">Mostrar confirmação também no convite completo</span>
+         <div id="sw-rsvp-in-full-invite" class="switch" onclick="toggleSwitch(this)"></div>
+        </div>
+        <p class="text-xs text-gray-400 -mt-1 mb-1">Se o "Save the Date" estiver activo, a confirmação já acontece nessa tela inicial — esta secção fica escondida no convite completo por defeito, para não ser redundante. Activa isto se quiseres permitir confirmar também dentro do convite completo.</p>
 
         <div class="flex items-center justify-between">
          <span class="text-sm font-semibold text-gray-700">Link personalizado e seguro por convidado</span>
@@ -586,7 +598,10 @@ para testemunhar o seu enlace matrimonial</textarea>
          <input id="evt-dresscode-text" class="input-field text-sm" placeholder="Ex: Traje social ou Roupa a rigor">
          <label class="text-xs text-gray-500 mt-1 block">Paleta de cores (códigos HEX, um por linha, máx. 4)</label>
          <div id="evt-dresscode-swatches" style="display:flex;gap:0.5rem;margin-bottom:0.4rem;flex-wrap:wrap"></div>
-         <input id="evt-dresscode-colors" class="input-field text-sm mb-2" placeholder="#FFFFFF&#10;#C9A84C&#10;#2D6A4F" oninput="updateDressCodeSwatches(this.value)">
+         <textarea id="evt-dresscode-colors" class="input-field text-sm mb-2" rows="4" placeholder="#FFFFFF
+#C9A84C
+#2D6A4F
+#1A1A2E" oninput="updateDressCodeSwatches(this.value)"></textarea>
          <label class="text-xs text-gray-500 mt-1 block">Detalhe adicional (opcional)</label>
          <textarea id="evt-dresscode-detail" class="input-field text-sm" rows="2" placeholder="Ex: Pedimos gentilmente que os convidados optem por um traje elegante..."></textarea>
         </div>
@@ -985,19 +1000,19 @@ para testemunhar o seu enlace matrimonial</textarea>
   </a>
 
   <!-- ===================== SCRIPTS (ordem importa) ===================== -->
-  <script src="js/config.js?v=553300"></script>
-  <script src="js/store.js?v=553300"></script>
-  <script src="js/visuals.js?v=553300"></script>
-  <script src="js/venues.js?v=553300"></script>
-  <script src="js/rsvp.js?v=553300"></script>
-  <script src="js/ui.js?v=553300"></script>
-  <script src="js/auth.js?v=553300"></script>
-  <script src="js/dashboard.js?v=553300"></script>
-  <script src="js/events.js?v=553300"></script>
-  <script src="js/guest.js?v=553300"></script>
-  <script src="js/sections.js?v=553300"></script>
-  <script src="js/admin.js?v=553300"></script>
-  <script src="js/router.js?v=553300"></script>
+  <script src="js/config.js?v=553400"></script>
+  <script src="js/store.js?v=553400"></script>
+  <script src="js/visuals.js?v=553400"></script>
+  <script src="js/venues.js?v=553400"></script>
+  <script src="js/rsvp.js?v=553400"></script>
+  <script src="js/ui.js?v=553400"></script>
+  <script src="js/auth.js?v=553400"></script>
+  <script src="js/dashboard.js?v=553400"></script>
+  <script src="js/events.js?v=553400"></script>
+  <script src="js/guest.js?v=553400"></script>
+  <script src="js/sections.js?v=553400"></script>
+  <script src="js/admin.js?v=553400"></script>
+  <script src="js/router.js?v=553400"></script>
 
 </body>
 </html>

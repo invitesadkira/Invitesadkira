@@ -3534,7 +3534,7 @@ async function adminSaveLegalPage(slug) {
 
 // ===================== ADMIN: ANALYTICS PANEL =====================
 async function adminResetAnalytics() {
-  if (!confirm('Isto vai apagar TODO o histórico de acessos (logins, visitas a eventos, visitas comerciais) permanentemente. Continuar?')) return;
+  if (!confirm('Isto vai apagar TODO o histórico de acessos até agora. Novos acessos continuarão a ser registados a partir de zero.\n\nContinuar?')) return;
   try {
     // DELETE with a filter that matches every row (created_at is never null)
     await supabaseRequest('visit_log?created_at=not.is.null', 'DELETE');

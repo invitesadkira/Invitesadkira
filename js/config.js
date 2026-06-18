@@ -95,7 +95,7 @@ async function supabaseRequest(endpoint, method = 'GET', body = null) {
           'venue_ceremony','venue_ceremony_maps','venue_civil','venue_civil_maps',
           'venue_reception','venue_reception_maps',
           'std_name_size','std_title_size','std_intro_enabled','std_intro_text','std_intro_photo_url',
-          'std_show_cover','personalized_links_enabled','bible_text_2','bible_ref_2','bible_size'];
+          'std_show_cover','personalized_links_enabled','bible_text_2','bible_ref_2','bible_size','show_rsvp_in_full_invite','show_guest_name_in_invite','guest_name_size'];
         let safeEndpoint = endpoint;
         OPTIONAL_COLS.forEach(col => {
           safeEndpoint = safeEndpoint.replace(new RegExp(`,${col}(?=[,&]|$)`,'g'), '').replace(new RegExp(`${col},`,'g'),'');
@@ -115,7 +115,7 @@ async function supabaseRequest(endpoint, method = 'GET', body = null) {
           'venue_ceremony','venue_ceremony_maps','venue_civil','venue_civil_maps',
           'venue_reception','venue_reception_maps',
           'std_name_size','std_title_size','std_intro_enabled','std_intro_text','std_intro_photo_url',
-          'std_show_cover','personalized_links_enabled','bible_text_2','bible_ref_2','bible_size'];
+          'std_show_cover','personalized_links_enabled','bible_text_2','bible_ref_2','bible_size','show_rsvp_in_full_invite','show_guest_name_in_invite','guest_name_size'];
         const cleanBody = { ...body };
         let changed = false;
         OPTIONAL_BODY_COLS.forEach(col => { if (col in cleanBody) { delete cleanBody[col]; changed = true; } });

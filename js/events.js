@@ -268,6 +268,8 @@ function saveEventWithCover(eventId, title, date, time, deadline, coverImageURL,
     show_time: document.getElementById('sw-show-time').classList.contains('active') ? 'yes' : 'no',
         rsvp_enabled: document.getElementById('sw-rsvp-enabled')?.classList.contains('active') ?? true,
     personalized_links_enabled: document.getElementById('sw-personalized-links')?.classList.contains('active') || false,
+    show_rsvp_in_full_invite: document.getElementById('sw-rsvp-in-full-invite')?.classList.contains('active') || false,
+    show_guest_name_in_invite: document.getElementById('sw-guest-name-in-invite')?.classList.contains('active') ?? true,
     allow_messages: allowMessages ? 'yes' : 'no',
     show_guest_messages: showGuestMessages ? 'yes' : 'no',
     music_url: musicUrl || null, music_title: musicTitle || null,
@@ -328,6 +330,8 @@ function saveEventWithCover(eventId, title, date, time, deadline, coverImageURL,
         show_time: document.getElementById('sw-show-time').classList.contains('active') ? 'yes' : 'no',
         rsvp_enabled: document.getElementById('sw-rsvp-enabled')?.classList.contains('active') ?? true,
     personalized_links_enabled: document.getElementById('sw-personalized-links')?.classList.contains('active') || false,
+    show_rsvp_in_full_invite: document.getElementById('sw-rsvp-in-full-invite')?.classList.contains('active') || false,
+    show_guest_name_in_invite: document.getElementById('sw-guest-name-in-invite')?.classList.contains('active') ?? true,
         music_url: musicUrl || null,
         music_title: musicTitle || null,
         iban_message: ibanMessage || null,
@@ -638,6 +642,8 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
     show_time: showTimeActive ? 'yes' : 'no',
     rsvp_enabled: document.getElementById('sw-rsvp-enabled')?.classList.contains('active') ?? true,
     personalized_links_enabled: document.getElementById('sw-personalized-links')?.classList.contains('active') || false,
+    show_rsvp_in_full_invite: document.getElementById('sw-rsvp-in-full-invite')?.classList.contains('active') || false,
+    show_guest_name_in_invite: document.getElementById('sw-guest-name-in-invite')?.classList.contains('active') ?? true,
     save_the_date_enabled: document.getElementById('sw-std')?.classList.contains('active') || false,
     release_type: document.getElementById('evt-std-release-type')?.value || 'manual',
     release_date: document.getElementById('evt-std-release-date')?.value ? new Date(document.getElementById('evt-std-release-date').value).toISOString() : null,
@@ -1397,7 +1403,7 @@ async function editEvent() {
   // Fetch fresh data from Supabase (no localStorage)
   try {
     const result = await supabaseRequest(
-      `events?id=eq.${eventId}&select=id,title,date,time,confirm_by_date,cover_image,event_code,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,rsvp_enabled,save_the_date_enabled,release_type,release_date,is_invite_released,std_title,std_subtitle,std_font_family,std_name_size,std_title_size,std_intro_enabled,std_intro_text,std_intro_photo_url,std_show_cover,personalized_links_enabled,allow_messages,show_guest_messages,music_url,music_title,iban_message,iban_number,iban_holder,iban_footer,show_couple,groom_name,bride_name,couple_size,bg_url,bg_overlay,show_bible,bible_text,bible_ref,show_invite,invite_text,show_parents,groom_parents,bride_parents,show_gallery,gallery_urls,show_manual,manual_items,show_schedule,schedule_items,custom_font_family,section_order,story_text,invite_blessing,event_color&limit=1`
+      `events?id=eq.${eventId}&select=id,title,date,time,confirm_by_date,cover_image,event_code,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,rsvp_enabled,save_the_date_enabled,release_type,release_date,is_invite_released,std_title,std_subtitle,std_font_family,std_name_size,std_title_size,std_intro_enabled,std_intro_text,std_intro_photo_url,std_show_cover,personalized_links_enabled,show_rsvp_in_full_invite,show_guest_name_in_invite,allow_messages,show_guest_messages,music_url,music_title,iban_message,iban_number,iban_holder,iban_footer,show_couple,groom_name,bride_name,couple_size,bg_url,bg_overlay,show_bible,bible_text,bible_ref,show_invite,invite_text,show_parents,groom_parents,bride_parents,show_gallery,gallery_urls,show_manual,manual_items,show_schedule,schedule_items,custom_font_family,section_order,story_text,invite_blessing,event_color&limit=1`
     );
     const fresh = (result && result[0]) ? result[0] : evStore;
     // Load visual data from event_visuals table
@@ -1466,6 +1472,8 @@ function _fillEditForm(ev) {
   _setSwitch('sw-show-time',  _yesOrTrue(ev.show_time));
   _setSwitch('sw-rsvp-enabled', ev.rsvp_enabled !== false);
   _setSwitch('sw-personalized-links', ev.personalized_links_enabled === true);
+  _setSwitch('sw-rsvp-in-full-invite', ev.show_rsvp_in_full_invite === true);
+  _setSwitch('sw-guest-name-in-invite', ev.show_guest_name_in_invite !== false);
   _setSwitch('sw-std', ev.save_the_date_enabled === true || ev.save_the_date_enabled === 'yes', 'std-extra');
   { const rt = document.getElementById('evt-std-release-type'); if (rt) rt.value = ev.release_type || 'manual'; }
   { const rd = document.getElementById('evt-std-release-date'); if (rd && ev.release_date) { const d = new Date(ev.release_date); rd.value = d.toISOString().slice(0,16); } }
@@ -1958,7 +1966,7 @@ async function searchEvent() {
     // ✅ PASSO 1: Carregar eventos do Supabase COM JOIN para trazer RSVPS e GIFTS
     console.log('📥 Buscando evento DIRETO do Supabase...');
     
-    const allEvents = await supabaseRequest(`events?select=id,title,date,time,confirm_by_date,cover_image,event_code,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,rsvp_enabled,save_the_date_enabled,release_type,release_date,is_invite_released,std_title,std_subtitle,std_font_family,std_name_size,std_title_size,std_intro_enabled,std_intro_text,std_intro_photo_url,std_show_cover,personalized_links_enabled,allow_messages,show_guest_messages,rsvps(guest_name,attending,side,companions,kids,wants_gift,message,created_at,updated_at),gifts(id,name,category,reserved,reserved_by)`);
+    const allEvents = await supabaseRequest(`events?select=id,title,date,time,confirm_by_date,cover_image,event_code,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,rsvp_enabled,save_the_date_enabled,release_type,release_date,is_invite_released,std_title,std_subtitle,std_font_family,std_name_size,std_title_size,std_intro_enabled,std_intro_text,std_intro_photo_url,std_show_cover,personalized_links_enabled,show_rsvp_in_full_invite,show_guest_name_in_invite,allow_messages,show_guest_messages,rsvps(guest_name,attending,side,companions,kids,wants_gift,message,created_at,updated_at),gifts(id,name,category,reserved,reserved_by)`);
     
     console.log(' Total de eventos no Supabase:', allEvents?.length || 0);
     console.log('🔍 Query de busca (uppercase):', query);
@@ -2407,7 +2415,7 @@ async function checkURLForEvent() {
     
     // ✅ Query otimizada: procurar por event_code OU id, com LIMIT 1
     let eventsData = await supabaseRequest(
-      `events?or=(event_code.eq.${eventCode},id.eq.${eventCode})&select=id,title,date,time,confirm_by_date,cover_image,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,rsvp_enabled,save_the_date_enabled,release_type,release_date,is_invite_released,std_title,std_subtitle,std_font_family,std_name_size,std_title_size,std_intro_enabled,std_intro_text,std_intro_photo_url,std_show_cover,personalized_links_enabled,allow_messages,show_guest_messages,music_url,music_title,iban_message,iban_number,iban_holder,iban_footer,groom_name,bride_name,couple_size,show_couple,bg_url,bg_overlay,bible_text,bible_ref,show_bible,invite_text,show_invite,groom_parents,bride_parents,show_parents,gallery_urls,show_gallery,show_manual,manual_items,show_schedule,schedule_items,custom_font_family,section_order,story_text,invite_blessing,event_color,rsvps(guest_name,attending,side,companions,kids,wants_gift,message,created_at,updated_at),gifts(id,name,category,reserved,reserved_by)&limit=1`
+      `events?or=(event_code.eq.${eventCode},id.eq.${eventCode})&select=id,title,date,time,confirm_by_date,cover_image,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,rsvp_enabled,save_the_date_enabled,release_type,release_date,is_invite_released,std_title,std_subtitle,std_font_family,std_name_size,std_title_size,std_intro_enabled,std_intro_text,std_intro_photo_url,std_show_cover,personalized_links_enabled,show_rsvp_in_full_invite,show_guest_name_in_invite,allow_messages,show_guest_messages,music_url,music_title,iban_message,iban_number,iban_holder,iban_footer,groom_name,bride_name,couple_size,show_couple,bg_url,bg_overlay,bible_text,bible_ref,show_bible,invite_text,show_invite,groom_parents,bride_parents,show_parents,gallery_urls,show_gallery,show_manual,manual_items,show_schedule,schedule_items,custom_font_family,section_order,story_text,invite_blessing,event_color,rsvps(guest_name,attending,side,companions,kids,wants_gift,message,created_at,updated_at),gifts(id,name,category,reserved,reserved_by)&limit=1`
     );
     
     console.log('📥 Resultado da busca:', eventsData?.length === 1 ? 'Encontrado' : 'Não encontrado');
@@ -3549,7 +3557,7 @@ async function openIntakePreview(eventId) {
 
   try {
     const result = await supabaseRequest(
-      `events?id=eq.${eventId}&select=id,title,date,time,confirm_by_date,cover_image,event_code,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,rsvp_enabled,save_the_date_enabled,release_type,release_date,is_invite_released,std_title,std_subtitle,std_font_family,std_name_size,std_title_size,std_intro_enabled,std_intro_text,std_intro_photo_url,std_show_cover,personalized_links_enabled,allow_messages,show_guest_messages,groom_name,bride_name,couple_size,show_couple,bg_url,bg_overlay,show_bible,bible_text,bible_ref,show_invite,invite_text,show_parents,groom_parents,bride_parents,show_gallery,gallery_urls,show_manual,manual_items,show_schedule,schedule_items,custom_font_family,section_order,story_text,event_color,iban_message,iban_number,iban_holder,iban_footer,music_url,music_title,rsvps(guest_name,attending,side,companions,kids,wants_gift,message),gifts(id,name,category,reserved,reserved_by)&limit=1`
+      `events?id=eq.${eventId}&select=id,title,date,time,confirm_by_date,cover_image,event_code,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,rsvp_enabled,save_the_date_enabled,release_type,release_date,is_invite_released,std_title,std_subtitle,std_font_family,std_name_size,std_title_size,std_intro_enabled,std_intro_text,std_intro_photo_url,std_show_cover,personalized_links_enabled,show_rsvp_in_full_invite,show_guest_name_in_invite,allow_messages,show_guest_messages,groom_name,bride_name,couple_size,show_couple,bg_url,bg_overlay,show_bible,bible_text,bible_ref,show_invite,invite_text,show_parents,groom_parents,bride_parents,show_gallery,gallery_urls,show_manual,manual_items,show_schedule,schedule_items,custom_font_family,section_order,story_text,event_color,iban_message,iban_number,iban_holder,iban_footer,music_url,music_title,rsvps(guest_name,attending,side,companions,kids,wants_gift,message),gifts(id,name,category,reserved,reserved_by)&limit=1`
     );
     if (!result || !result[0]) throw new Error('not found');
 

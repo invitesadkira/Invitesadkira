@@ -193,6 +193,8 @@ async function renderGuestView() {
     std_intro_enabled: eventData.std_intro_enabled, std_intro_text: eventData.std_intro_text,
     std_intro_photo_url: eventData.std_intro_photo_url,
     personalized_links_enabled: eventData.personalized_links_enabled,
+    show_rsvp_in_full_invite: eventData.show_rsvp_in_full_invite,
+    show_guest_name_in_invite: eventData.show_guest_name_in_invite,
     // Visual data that's ALREADY in events table — keep unless visuals has a better value
     event_color: eventData.event_color,
     bible_text: eventData.bible_text, bible_ref: eventData.bible_ref,
@@ -269,7 +271,7 @@ async function renderGuestView() {
     } catch(e2) { console.warn('Visual fallback reload failed:', e2); }
   }
 
-  const RSVP_ONLY_FIELDS = new Set(['show_time','time','date','title','confirm_by_date','deadline','allowCompanions','allow_companions','maxCompanions','max_companions','allowKids','allow_kids','maxKids','max_kids','allowGifts','allow_gifts','allowSides','allow_sides','side1_name','side2_name','allowMessages','allow_messages','showGuestMessages','show_guest_messages','id','eventCode','cover_image','rsvp_enabled','save_the_date_enabled','release_type','release_date','is_invite_released','std_title','std_subtitle','std_font_family','std_name_size','std_title_size','std_intro_enabled','std_intro_text','std_intro_photo_url','std_show_cover','personalized_links_enabled']);
+  const RSVP_ONLY_FIELDS = new Set(['show_time','time','date','title','confirm_by_date','deadline','allowCompanions','allow_companions','maxCompanions','max_companions','allowKids','allow_kids','maxKids','max_kids','allowGifts','allow_gifts','allowSides','allow_sides','side1_name','side2_name','allowMessages','allow_messages','showGuestMessages','show_guest_messages','id','eventCode','cover_image','rsvp_enabled','save_the_date_enabled','release_type','release_date','is_invite_released','std_title','std_subtitle','std_font_family','std_name_size','std_title_size','std_intro_enabled','std_intro_text','std_intro_photo_url','std_show_cover','personalized_links_enabled','show_rsvp_in_full_invite','show_guest_name_in_invite']);
 
   // Restore all fields: RSVP fields always from events table; visual fields use
   // whichever source (visuals or events table) has a non-null value
@@ -301,8 +303,19 @@ async function renderGuestView() {
   const _rsvpSec = document.getElementById('rsvp-section');
   if (_rsvpSec) {
     _rsvpSec.style.background = _evCol;
-    // Hide entire RSVP CTA section if organiser disabled it for this event
-    _rsvpSec.style.display = (eventData.rsvp_enabled === false) ? 'none' : '';
+    // Hide entire RSVP CTA section if organiser disabled it for this event.
+    // rsvp_enabled defaults to true in DB; if it's false (boolean or string),
+    // hide the section. null/undefined = default enabled.
+    const rsvpIsDisabled = eventData.rsvp_enabled === false || eventData.rsvp_enabled === 'false';
+    // If Save the Date is active, the in-invite RSVP CTA is redundant by
+    // default (the guest already confirms on the Save the Date screen) —
+    // hide it automatically UNLESS the organiser explicitly turned on
+    // "mostrar confirmação também no convite completo" for this event.
+    const stdActive = eventData.save_the_date_enabled === true || eventData.save_the_date_enabled === 'true';
+    const wantsBothRsvp = eventData.show_rsvp_in_full_invite === true || eventData.show_rsvp_in_full_invite === 'true';
+    const hideDueToStd = stdActive && !wantsBothRsvp;
+    console.log('🔖 RSVP section visibility check:', { rsvp_enabled: eventData.rsvp_enabled, stdActive, wantsBothRsvp, hideDueToStd });
+    _rsvpSec.style.display = (rsvpIsDisabled || hideDueToStd) ? 'none' : '';
   }
   // Also apply to music player icon
   document.querySelectorAll('.music-icon').forEach(el => el.style.background = _evCol);
@@ -2312,17 +2325,28 @@ function renderSaveTheDateScreen(ev, decision) {
       // Case 2: YouTube — the iframe is created with autoplay=1 ahead of
       // time, but browsers usually block it until a real user gesture. This
       // click IS that gesture, so we can reliably command the existing
-      // player to play now via the YouTube postMessage API.
+      // player to play now via the YouTube postMessage API. The player's
+      // internal JS API can take a moment to become ready after the iframe
+      // is created, so we retry the command for a couple of seconds rather
+      // than sending it only once.
       const ytFrame = document.getElementById('yt-music-frame');
-      if (ytFrame && ytFrame.src && ytFrame.contentWindow) {
-        try {
-          ytFrame.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'playVideo', args: [] }), '*');
-          ytFrame.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'unMute', args: [] }), '*');
-          ytFrame.dataset.playing = '1';
-          setMusicPlayingUI(true);
-          const sub = document.getElementById('music-sub-text');
-          if (sub) sub.textContent = 'A tocar';
-        } catch(e) {}
+      if (ytFrame && ytFrame.src) {
+        let attempts = 0;
+        const sendPlayCommand = () => {
+          attempts++;
+          try {
+            if (ytFrame.contentWindow) {
+              ytFrame.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'unMute', args: [] }), '*');
+              ytFrame.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'playVideo', args: [] }), '*');
+            }
+          } catch(e) {}
+          if (attempts < 6) setTimeout(sendPlayCommand, 400);
+        };
+        sendPlayCommand();
+        ytFrame.dataset.playing = '1';
+        setMusicPlayingUI(true);
+        const sub = document.getElementById('music-sub-text');
+        if (sub) sub.textContent = 'A tocar';
       }
     };
   }

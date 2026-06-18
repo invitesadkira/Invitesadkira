@@ -66,12 +66,12 @@ async function renderGuestSections(eventData) {
   if (!container) return;
   if (!eventData) { container.innerHTML = ''; return; }
 
-  // ── Personalize the invite text with the confirmed guest's name ────────
-  // Once we know who this guest is (either via RSVP confirmation, or via a
-  // personalized link — see guest_links), replace the generic placeholder
-  // "Exmo.(a) Sr.(a)" in invite_text with their actual name, so the invite
-  // reads "Têm a honra de convidar [Nome] para testemunhar...".
-  if (eventData.invite_text) {
+  // ── Personalize the invite text with the confirmed guest's name ──────────
+  // Only active when the organiser has enabled "Mostrar nome do convidado no
+  // convite" (show_guest_name_in_invite, default true). Replaces "Exmo.(a)
+  // Sr.(a)" in invite_text with the guest's actual name, on its own line.
+  const guestNameEnabled = eventData.show_guest_name_in_invite !== false;
+  if (guestNameEnabled && eventData.invite_text) {
     const eventId = eventData.id || Store.currentEventId;
     let guestName = null;
     // Priority 1: personalized link lock (most specific — see guest_links)
@@ -82,7 +82,11 @@ async function renderGuestSections(eventData) {
       if (confirmed && confirmed.attending === true && confirmed.name) guestName = confirmed.name;
     }
     if (guestName) {
-      eventData.invite_text = eventData.invite_text.replace(/Exmo\.?\(a\)\s*Sr\.?\(a\)\.?/gi, escapeHTML(guestName));
+      // Replace the placeholder with the name on its own line for visual clarity
+      eventData.invite_text = eventData.invite_text.replace(
+        /Exmo\.?\(a\)\s*Sr\.?\(a\)\.?/gi,
+        `\n${escapeHTML(guestName)}`
+      );
     }
   }
 

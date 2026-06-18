@@ -507,7 +507,7 @@ function startMusicAutoplay(ytId, audioSrc) {
     // autoplay=1: browser pode bloquear se não houver interacção prévia
     // Si bloqueado, o player fica pronto para o utilizador clicar
     ytFrame.allow = 'autoplay; encrypted-media';
-    ytFrame.src = `https://www.youtube.com/embed/${ytId}?enablejsapi=1&autoplay=1&mute=0&rel=0&modestbranding=1`;
+    ytFrame.src = `https://www.youtube.com/embed/${ytId}?enablejsapi=1&autoplay=1&mute=0&rel=0&modestbranding=1&origin=${encodeURIComponent(window.location.origin)}`;
     ytFrame.dataset.playing = '1';
     // Optimista: assumir que está a tocar; se o browser bloquear o iframe não emite erro detectável
     setMusicPlayingUI(true);

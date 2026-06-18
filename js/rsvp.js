@@ -353,8 +353,16 @@ async function rsvpSubmit() {
     }
 
     // ── If Save the Date gate uses 'on_confirmation' release, unlock it now ──
-    if (attending === 'yes' && typeof window._stdCheckUnlockAfterRsvp === 'function') {
-      setTimeout(() => window._stdCheckUnlockAfterRsvp(), 800);
+    // Also close the drawer smoothly in all cases once confirmed — whether
+    // the gate unlocks and shows the full invite, or just updates the button
+    // color, the guest is done confirming and the drawer should close.
+    if (attending === 'yes') {
+      setTimeout(() => {
+        closeRsvpDrawer();
+        if (typeof window._stdCheckUnlockAfterRsvp === 'function') {
+          window._stdCheckUnlockAfterRsvp();
+        }
+      }, 1200); // small delay so the confetti and SUCCESS toast are visible first
     }
 
   } catch(e) {

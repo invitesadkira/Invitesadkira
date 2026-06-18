@@ -509,7 +509,10 @@ html, body { height: 100%; margin: 0; width: 100%; overflow-x: hidden; }
   max-width: 760px; margin: 0 auto;
 }
 @media (max-width: 680px) {
-  .landing-packages { grid-template-columns: 1fr; max-width: 400px; }
+  .landing-packages { grid-template-columns: repeat(2, 1fr); max-width: 480px; gap: 0.75rem; }
+}
+@media (max-width: 360px) {
+  .landing-packages { grid-template-columns: 1fr; max-width: 320px; }
 }
 
 /* ── IBAN gift icon ── */
