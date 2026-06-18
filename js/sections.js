@@ -83,28 +83,36 @@ async function renderGuestSections(eventData) {
   const sections = getSectionOrder(eventData);
 
   sections.forEach(sec => {
-    switch(sec) {
-      case 'bible':    if (eventData.bible_text) html += buildBibleSection(eventData); break;
-      case 'invite':
-        // Only show standalone if bible section is NOT shown (invite merged into bible)
-        if (eventData.invite_text && !eventData.bible_text) html += buildInviteSection(eventData);
-        break;
-      case 'date':     html += buildDateSection(eventData); break;
-      case 'countdown':html += buildCountdownSection(eventData); break;
-      case 'parents':
-        // Only show standalone if bible section is NOT being shown (parents are merged into bible)
-        if ((eventData.groom_parents || eventData.bride_parents) && !eventData.bible_text)
-          html += buildParentsSection(eventData);
-        break;
-      case 'story':    if (eventData.story_text && _yesOrTrue(eventData.show_story)) html += buildStorySection(eventData); break;
-      case 'iban':     if (eventData.iban_number) html += buildIbanSection(eventData); break;
-      case 'gallery':  if (eventData.gallery_urls) html += buildGallerySection(eventData); break;
-      case 'venues':   if (_yesOrTrue(eventData.show_venues) && (eventData.venue_ceremony || eventData.venue_civil || eventData.venue_reception)) html += buildVenueSection(eventData); break;
-      case 'manual':   if (_yesOrTrue(eventData.show_manual)) html += buildManualSection(eventData); break;
-      case 'schedule': if (_yesOrTrue(eventData.show_schedule)) html += buildScheduleSection(eventData); break;
-      case 'dresscode': if (_yesOrTrue(eventData.show_dresscode) && eventData.dresscode_text) html += buildDresscodeSection(eventData); break;
-      case 'couplemsg': if (_yesOrTrue(eventData.show_couplemsg) && eventData.couplemsg_text) html += buildCoupleMsgSection(eventData); break;
-      case 'rsvp':     break; // always last, separate element
+    try {
+      switch(sec) {
+        case 'bible':    if (eventData.bible_text) html += buildBibleSection(eventData); break;
+        case 'invite':
+          // Only show standalone if bible section is NOT shown (invite merged into bible)
+          if (eventData.invite_text && !eventData.bible_text) html += buildInviteSection(eventData);
+          break;
+        case 'date':     html += buildDateSection(eventData); break;
+        case 'countdown':html += buildCountdownSection(eventData); break;
+        case 'parents':
+          // Only show standalone if bible section is NOT being shown (parents are merged into bible)
+          if ((eventData.groom_parents || eventData.bride_parents) && !eventData.bible_text)
+            html += buildParentsSection(eventData);
+          break;
+        case 'story':    if (eventData.story_text && _yesOrTrue(eventData.show_story)) html += buildStorySection(eventData); break;
+        case 'iban':     if (eventData.iban_number) html += buildIbanSection(eventData); break;
+        case 'gallery':  if (eventData.gallery_urls) html += buildGallerySection(eventData); break;
+        case 'venues':   if (_yesOrTrue(eventData.show_venues) && (eventData.venue_ceremony || eventData.venue_civil || eventData.venue_reception)) html += buildVenueSection(eventData); break;
+        case 'manual':   if (_yesOrTrue(eventData.show_manual)) html += buildManualSection(eventData); break;
+        case 'schedule': if (_yesOrTrue(eventData.show_schedule)) html += buildScheduleSection(eventData); break;
+        case 'dresscode': if (_yesOrTrue(eventData.show_dresscode) && eventData.dresscode_text) html += buildDresscodeSection(eventData); break;
+        case 'couplemsg': if (_yesOrTrue(eventData.show_couplemsg) && eventData.couplemsg_text) html += buildCoupleMsgSection(eventData); break;
+        case 'rsvp':     break; // always last, separate element
+      }
+    } catch(sectionErr) {
+      // CRITICAL: never let one broken section take down the entire page.
+      // Previously an error here (e.g. a missing function) silently aborted
+      // the whole forEach, so every section after the broken one in the
+      // user's custom order would vanish with zero visible error.
+      console.error(`Erro ao renderizar secção "${sec}" (a continuar com as restantes):`, sectionErr);
     }
   });
 
@@ -951,6 +959,20 @@ function buildDresscodeSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
           ${cols.map(c => `<div title="${c}" style="width:36px;height:36px;border-radius:50%;background:${c};border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.15)"></div>`).join('')}
         </div>`;
       })()}
+    </div>
+  </div>`;
+}
+
+// Mensagem dos Noivos — a heartfelt note from the couple to their guests
+function buildCoupleMsgSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
+  const evColor = ev.event_color || '#007f9f';
+  return _SD + `<div class="event-section">
+    <div class="section-inner reveal" style="text-align:center">
+      <div style="width:52px;height:52px;border-radius:50%;background:color-mix(in srgb,${evColor} 12%,white);display:flex;align-items:center;justify-content:center;margin:0 auto 0.75rem">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="${evColor}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+      </div>
+      <h3 class="section-title">Mensagem dos Noivos</h3>
+      <p style="font-size:0.95rem;color:#374151;line-height:1.75;max-width:460px;margin:0 auto;white-space:pre-wrap">${escapeHTML(ev.couplemsg_text || '')}</p>
     </div>
   </div>`;
 }

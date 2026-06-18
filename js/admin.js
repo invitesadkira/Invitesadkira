@@ -2386,9 +2386,20 @@ function startPackageOrder(name, price) {
     <div id="${modalId}-calc"></div>
 
     <div style="background:#f0f9fb;border-radius:0.75rem;padding:0.85rem;margin:0.75rem 0">
-      <p style="font-size:0.8rem;font-weight:700;color:#007f9f;margin-bottom:0.5rem">Dados de pagamento (IBAN)</p>
-      <p style="font-size:0.78rem;color:#374151;margin-bottom:0.2rem"><strong>IBAN:</strong> 0040 0000 3066 6927 1014 1</p>
-      <p style="font-size:0.78rem;color:#374151"><strong>Titular:</strong> AdKira — Invites Web-Convites</p>
+      <p style="font-size:0.8rem;font-weight:700;color:#007f9f;margin-bottom:0.5rem">Dados de pagamento</p>
+      <div style="display:flex;align-items:center;gap:0.4rem;margin-bottom:0.3rem">
+        <p style="font-size:0.78rem;color:#374151;flex:1"><strong>Transferência Express:</strong> 959 823 409</p>
+        <button type="button" onclick="copyToClipboard('959823409', this)" style="background:none;border:none;color:#007f9f;cursor:pointer;padding:2px;flex-shrink:0" title="Copiar número">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        </button>
+      </div>
+      <div style="display:flex;align-items:center;gap:0.4rem;margin-bottom:0.3rem">
+        <p style="font-size:0.78rem;color:#374151;flex:1"><strong>IBAN BAI:</strong> 0040 0000 3066 6927 1014 1</p>
+        <button type="button" onclick="copyToClipboard('004000003066692710141', this)" style="background:none;border:none;color:#007f9f;cursor:pointer;padding:2px;flex-shrink:0" title="Copiar IBAN">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        </button>
+      </div>
+      <p style="font-size:0.78rem;color:#374151"><strong>Titular:</strong> Araújo Artur Cataca</p>
     </div>
 
     <div style="border-top:1px solid #e5e7eb;margin:0.75rem 0;padding-top:0.75rem">
@@ -3323,8 +3334,26 @@ async function openOrdersManager() {
 
 async function adminGenerateOrderToken(orderId) {
   const token = 'ADKIRA-' + Math.random().toString(36).substring(2,6).toUpperCase() + '-' + Math.random().toString(36).substring(2,6).toUpperCase();
-  await supabaseRequest('intake_tokens', 'POST', { token, event_id: null, used: false, locked: false, label: 'Encomenda #' + orderId.substring(0,8) });
-  await supabaseRequest(`orders?id=eq.${orderId}`, 'PATCH', { access_token: token, status: 'token_sent', updated_at: new Date().toISOString() });
+
+  // NOTE: intake_tokens.event_id must be NULLABLE for this to work (see SQL fix).
+  // We intentionally do NOT create a placeholder event here, because events.user_id
+  // is NOT NULL and we don't have a real user yet at this stage — the actual event
+  // is created later in handleRegister() once the client's account exists, using
+  // their real account id. This token is purely an access key until then.
+  const tokenResult = await supabaseRequest('intake_tokens', 'POST', {
+    token, event_id: null, used: false, locked: false, label: 'Encomenda #' + orderId.substring(0,8)
+  }).catch(() => null);
+
+  if (!tokenResult || !tokenResult[0]) {
+    toast('Erro ao gerar código. Verifica se a coluna intake_tokens.event_id é nullable (corre o SQL de migração).');
+    console.error('adminGenerateOrderToken: falha ao criar token', tokenResult);
+    return;
+  }
+
+  await supabaseRequest(`orders?id=eq.${orderId}`, 'PATCH', {
+    access_token: token, status: 'token_sent', updated_at: new Date().toISOString()
+  });
+
   toast('Código gerado: ' + token);
   navigator.clipboard.writeText(token).catch(() => {});
   document.getElementById('_orders-modal')?.remove();

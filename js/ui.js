@@ -765,6 +765,24 @@ function clearGuestConfirmationFromStorage(eventId) {
 
 
 // ===================== COUPLE SIZE =====================
+// ── Generic copy-to-clipboard with visual feedback on the trigger button ──
+function copyToClipboard(text, btnEl) {
+  const cleanText = String(text).replace(/\s+/g, '');
+  const doFeedback = () => {
+    if (!btnEl) { toast('Copiado!'); return; }
+    const original = btnEl.innerHTML;
+    btnEl.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+    setTimeout(() => { if (btnEl) btnEl.innerHTML = original; }, 1500);
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(cleanText).then(doFeedback).catch(() => {
+      toast('Não foi possível copiar. Copia manualmente: ' + cleanText);
+    });
+  } else {
+    toast('Não foi possível copiar. Copia manualmente: ' + cleanText);
+  }
+}
+
 function changeCoupleSize(delta) {
   const inp = document.getElementById('evt-couple-size');
   const lbl = document.getElementById('couple-size-label');

@@ -91,7 +91,7 @@ async function supabaseRequest(endpoint, method = 'GET', body = null) {
         // IMPORTANT: event_color is now in Supabase — do NOT strip it
         // Only strip columns that may genuinely not exist yet
         const OPTIONAL_COLS = ['story_text','invite_blessing','decor_ornament_url','decor_side_url',
-          'show_decor','save_the_date','show_countdown','event_message',
+          'show_decor','save_the_date','show_countdown','event_message','show_story',
           'venue_ceremony','venue_ceremony_maps','venue_civil','venue_civil_maps',
           'venue_reception','venue_reception_maps'];
         let safeEndpoint = endpoint;
