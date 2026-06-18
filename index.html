@@ -9,7 +9,7 @@
   <script>tailwind.config = { theme: { extend: { colors: { teal: { 500: '#007f9f', 600: '#006b86' } } } } }</script>
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💌</text></svg>">
-  <link rel="stylesheet" href="css/main.css?v=553400">
+  <link rel="stylesheet" href="css/main.css?v=553500">
 </head>
 <body class="h-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
 
@@ -97,7 +97,7 @@
     <div class="landing-section" id="landing-packages-section" style="background:#fff">
       <h2 class="landing-section-title">Escolhe o teu Pacote</h2>
         <p class="landing-section-sub" style="margin-top:-0.5rem;margin-bottom:1.5rem">
-          Entrega em <strong>48h</strong> · Urgência 24h (taxa adicional de 8.000 Kz)
+          <span id="packages-delivery-text">Entrega em <strong>48h</strong> · Urgência 24h (taxa adicional de 8.000 Kz)</span>
         </p>
       <p class="landing-section-sub">Pagamento único, activação imediata após comprovativo.</p>
       <div class="landing-packages" id="landing-packages-grid">
@@ -739,7 +739,7 @@ para testemunhar o seu enlace matrimonial</textarea>
        </div>
        <div class="flex flex-wrap gap-2 mb-6">
         <button class="btn-outline text-sm" id="btn-intake-link" onclick="showIntakeLink(Store.currentEventId)" style="display:none"><span class="flex items-center gap-1"><i data-lucide="link" class="w-4 h-4"></i> Link Cliente</span></button>
-        <button class="btn-outline text-sm" onclick="viewAsGuest()"> <span class="flex items-center gap-1"><i data-lucide="eye" class="w-4 h-4"></i> Ver como Convidado</span> </button> <button class="btn-outline text-sm" onclick="downloadGuestListCSV()"> <span class="flex items-center gap-1"><i data-lucide="users" class="w-4 h-4"></i> Exportar Lista</span> </button> <button id="btn-manage-intake" class="btn-outline text-sm hidden" onclick="openIntakeManager(Store.currentEventId)"> <span class="flex items-center gap-1"><i data-lucide="link" class="w-4 h-4"></i> Links Cliente</span> </button> <button class="btn-outline text-sm" onclick="downloadPDF()"> <span class="flex items-center gap-1"><i data-lucide="download" class="w-4 h-4"></i> Baixar PDF</span> </button> <button id="btn-download-gifts-pdf" class="btn-outline text-sm hidden" onclick="downloadGiftsPDF()"> <span class="flex items-center gap-1"><i data-lucide="download" class="w-4 h-4"></i> Baixar Presentes PDF</span> </button> <button id="btn-manage-gifts" class="btn-outline text-sm hidden" onclick="manageGifts()"> <span class="flex items-center gap-1"><i data-lucide="gift" class="w-4 h-4"></i> Editar Presentes</span> </button> <button id="btn-upload-gifts" class="btn-outline text-sm hidden" onclick="showUploadGiftsListModal()"> <span class="flex items-center gap-1"><i data-lucide="upload" class="w-4 h-4"></i> Carregar Presentes</span> </button> <button class="btn-outline text-sm" onclick="editEventURL(Store.currentEventId)"> <span class="flex items-center gap-1"><i data-lucide="link" class="w-4 h-4"></i> Trocar Código</span> </button> <button class="btn-outline text-sm" onclick="editEvent()"> <span class="flex items-center gap-1"><i data-lucide="pencil" class="w-4 h-4"></i> Editar</span> </button> <button id="btn-delete-event" class="bg-red-500 hover:bg-red-600 text-white text-sm rounded-lg py-2 px-3 font-semibold transition hidden" onclick="deleteEventModal()"> <span class="flex items-center gap-1"><i data-lucide="trash-2" class="w-4 h-4"></i> Eliminar</span> </button>
+        <button class="btn-outline text-sm" onclick="viewAsGuest()"> <span class="flex items-center gap-1"><i data-lucide="eye" class="w-4 h-4"></i> Ver como Convidado</span> </button> <button class="btn-outline text-sm" onclick="downloadGuestListCSV()"> <span class="flex items-center gap-1"><i data-lucide="users" class="w-4 h-4"></i> Exportar Lista</span> </button> <button id="btn-manage-intake" class="btn-outline text-sm hidden" onclick="openIntakeManager(Store.currentEventId)"> <span class="flex items-center gap-1"><i data-lucide="link" class="w-4 h-4"></i> Links Cliente</span> </button> <button class="btn-outline text-sm" onclick="downloadPDF()"> <span class="flex items-center gap-1"><i data-lucide="download" class="w-4 h-4"></i> Baixar PDF</span> </button> <button id="btn-download-gifts-pdf" class="btn-outline text-sm hidden" onclick="downloadGiftsPDF()"> <span class="flex items-center gap-1"><i data-lucide="download" class="w-4 h-4"></i> Baixar Presentes PDF</span> </button> <button id="btn-manage-gifts" class="btn-outline text-sm hidden" onclick="manageGifts()"> <span class="flex items-center gap-1"><i data-lucide="gift" class="w-4 h-4"></i> Editar Presentes</span> </button> <button id="btn-upload-gifts" class="btn-outline text-sm hidden" onclick="showUploadGiftsListModal()"> <span class="flex items-center gap-1"><i data-lucide="upload" class="w-4 h-4"></i> Carregar Presentes</span> </button> <button class="btn-outline text-sm" onclick="editEventURL(Store.currentEventId)"> <span class="flex items-center gap-1"><i data-lucide="link" class="w-4 h-4"></i> Trocar Código</span> </button> <button class="btn-outline text-sm" onclick="editEventWithLockCheck()"> <span class="flex items-center gap-1"><i data-lucide="pencil" class="w-4 h-4"></i> Editar</span> </button> <button id="btn-delete-event" class="bg-red-500 hover:bg-red-600 text-white text-sm rounded-lg py-2 px-3 font-semibold transition hidden" onclick="deleteEventModal()"> <span class="flex items-center gap-1"><i data-lucide="trash-2" class="w-4 h-4"></i> Eliminar</span> </button>
        </div><!-- Stats -->
        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6" id="detail-stats"></div><!-- Confirmations List -->
        <h3 class="font-bold text-gray-700 mb-3">Confirmações</h3>
@@ -1000,19 +1000,19 @@ para testemunhar o seu enlace matrimonial</textarea>
   </a>
 
   <!-- ===================== SCRIPTS (ordem importa) ===================== -->
-  <script src="js/config.js?v=553400"></script>
-  <script src="js/store.js?v=553400"></script>
-  <script src="js/visuals.js?v=553400"></script>
-  <script src="js/venues.js?v=553400"></script>
-  <script src="js/rsvp.js?v=553400"></script>
-  <script src="js/ui.js?v=553400"></script>
-  <script src="js/auth.js?v=553400"></script>
-  <script src="js/dashboard.js?v=553400"></script>
-  <script src="js/events.js?v=553400"></script>
-  <script src="js/guest.js?v=553400"></script>
-  <script src="js/sections.js?v=553400"></script>
-  <script src="js/admin.js?v=553400"></script>
-  <script src="js/router.js?v=553400"></script>
+  <script src="js/config.js?v=553500"></script>
+  <script src="js/store.js?v=553500"></script>
+  <script src="js/visuals.js?v=553500"></script>
+  <script src="js/venues.js?v=553500"></script>
+  <script src="js/rsvp.js?v=553500"></script>
+  <script src="js/ui.js?v=553500"></script>
+  <script src="js/auth.js?v=553500"></script>
+  <script src="js/dashboard.js?v=553500"></script>
+  <script src="js/events.js?v=553500"></script>
+  <script src="js/guest.js?v=553500"></script>
+  <script src="js/sections.js?v=553500"></script>
+  <script src="js/admin.js?v=553500"></script>
+  <script src="js/router.js?v=553500"></script>
 
 </body>
 </html>

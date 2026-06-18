@@ -453,7 +453,7 @@ html, body { height: 100%; margin: 0; width: 100%; overflow-x: hidden; }
 .lp-card { border-radius: 1.25rem; padding: 1.75rem; background: #fff; border: 1.5px solid #e5e7eb; text-align: center; position: relative; }
 .lp-card.lp-featured { border-color: #007f9f; box-shadow: 0 4px 24px rgba(0,127,159,0.15); }
 .lp-badge { display: inline-block; font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; padding: 3px 10px; border-radius: 999px; margin-bottom: 0.75rem; }
-.lp-price { font-size: 1.6rem; font-weight: 900; color: #1e293b; margin-bottom: 0.5rem; }
+.lp-price { font-size: 1.6rem; font-weight: 900; color: #1e293b; margin-bottom: 0.5rem; word-break: break-word; }
 .lp-desc { color: #374151; font-size: 0.88rem; margin-bottom: 0.25rem; }
 .lp-detail { color: #6b7280; font-size: 0.8rem; margin-bottom: 1.25rem; }
 .lp-btn { background: #007f9f; color: #fff; border: none; border-radius: 999px; padding: 0.7rem 1.75rem; font-weight: 800; cursor: pointer; font-size: 0.9rem; width: 100%; transition: all 0.2s; }
@@ -501,18 +501,34 @@ html, body { height: 100%; margin: 0; width: 100%; overflow-x: hidden; }
   .lf-card p { font-size: 0.72rem; }
 }
 
-/* ── Landing packages: always 3 per row ── */
+/* ── Landing packages ── */
 .landing-packages {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 1rem;
   max-width: 760px; margin: 0 auto;
+  padding: 0 0.5rem;
+  box-sizing: border-box;
 }
 @media (max-width: 680px) {
-  .landing-packages { grid-template-columns: repeat(2, 1fr); max-width: 480px; gap: 0.75rem; }
+  .landing-packages {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.6rem;
+    padding: 0 0.5rem;
+    max-width: 100%;
+  }
+  .lp-card {
+    padding: 1rem 0.75rem;
+  }
+  .lp-price {
+    font-size: 1.2rem;
+  }
+  .lp-detail {
+    font-size: 0.72rem;
+  }
 }
-@media (max-width: 360px) {
-  .landing-packages { grid-template-columns: 1fr; max-width: 320px; }
+@media (max-width: 340px) {
+  .landing-packages { grid-template-columns: 1fr; }
 }
 
 /* ── IBAN gift icon ── */

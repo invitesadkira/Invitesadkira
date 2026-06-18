@@ -2261,49 +2261,59 @@ function renderSaveTheDateScreen(ev, decision) {
       </div>
     </div>` : ''}
 
-    <div id="std-main-content" style="position:relative;z-index:2;max-width:420px;width:100%;text-align:center;color:#1e293b;padding:${showCover ? '1.5rem' : '2rem'} 1.5rem 2.5rem;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;${introEnabled ? 'display:none' : ''}">
+    <div id="std-main-content" style="position:relative;z-index:2;max-width:420px;width:100%;text-align:center;color:#1e293b;padding:${showCover ? '1.5rem' : '2.5rem'} 1.5rem 2.5rem;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;${introEnabled ? 'display:none' : ''}">
       <p style="font-size:${titleSize}rem;letter-spacing:0.25em;text-transform:uppercase;opacity:0.7;margin-bottom:0.6rem;font-weight:700;color:${evColor};font-family:'Quicksand',sans-serif">${escapeHTML(stdTitle)}</p>
-      ${coupleNames ? `<h2 style="font-family:${nameFont ? `'${nameFont}',` : ''}var(--event-font, 'Playfair Display', serif);font-size:clamp(1.3rem, 7vw, ${nameSize}rem);margin-bottom:0.6rem;line-height:1.3;white-space:nowrap;display:flex;align-items:center;justify-content:center;gap:0.3em;padding:0 0.5rem;color:#1e293b">${coupleNames}</h2>` : ''}
-      <h1 style="font-size:1.05rem;font-weight:600;margin-bottom:1.75rem;opacity:0.75;font-family:'Quicksand',sans-serif;color:#374151">${escapeHTML(stdSubtitle)}</h1>
+      ${coupleNames ? `<h2 style="font-family:${nameFont ? `'${nameFont}',` : ''}var(--event-font, 'Playfair Display', serif);font-size:clamp(1.3rem, 7vw, ${nameSize}rem);margin-bottom:0.5rem;line-height:1.3;white-space:nowrap;display:flex;align-items:center;justify-content:center;gap:0.3em;padding:0 0.5rem;color:#1e293b">${coupleNames}</h2>` : ''}
+      <p style="font-size:1.0rem;font-weight:600;margin-bottom:1.5rem;opacity:0.65;font-family:'Quicksand',sans-serif;color:#374151">${escapeHTML(stdSubtitle)}</p>
 
       ${eventDateLabel ? `
-      <div style="margin-bottom:1.5rem">
-        <p style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.12em;opacity:0.55;margin-bottom:0.2rem;font-weight:700">Data do Evento</p>
-        <p style="font-size:1.1rem;font-weight:700;color:${evColor}">${eventDateLabel}</p>
+      <div style="margin-bottom:1.25rem;background:${evColor}11;border-radius:0.75rem;padding:0.6rem 1.5rem;display:inline-block">
+        <p style="font-size:0.65rem;text-transform:uppercase;letter-spacing:0.12em;opacity:0.55;margin-bottom:0.15rem;font-weight:700">Data do Evento</p>
+        <p style="font-size:1.05rem;font-weight:800;color:${evColor}">${eventDateLabel}</p>
       </div>` : ''}
 
-      <div id="std-countdown-wrap" style="margin-bottom:1.75rem;display:none">
-        <p style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.12em;opacity:0.55;margin-bottom:0.5rem;font-weight:700">${ev.confirm_by_date ? 'Prazo para Confirmação de Presença' : 'Contagem até ao Grande Dia'}</p>
-        <div id="std-countdown-grid" style="display:flex;gap:0.6rem;justify-content:center;margin-bottom:0.5rem">
-          <div style="background:${evColor}14;border-radius:0.75rem;padding:0.65rem 0.4rem;min-width:56px"><div id="std-days" style="font-size:1.3rem;font-weight:800;color:${evColor}">--</div><div style="font-size:0.6rem;opacity:0.65;text-transform:uppercase">Dias</div></div>
-          <div style="background:${evColor}14;border-radius:0.75rem;padding:0.65rem 0.4rem;min-width:56px"><div id="std-hours" style="font-size:1.3rem;font-weight:800;color:${evColor}">--</div><div style="font-size:0.6rem;opacity:0.65;text-transform:uppercase">Horas</div></div>
-          <div style="background:${evColor}14;border-radius:0.75rem;padding:0.65rem 0.4rem;min-width:56px"><div id="std-mins" style="font-size:1.3rem;font-weight:800;color:${evColor}">--</div><div style="font-size:0.6rem;opacity:0.65;text-transform:uppercase">Min</div></div>
-          <div style="background:${evColor}14;border-radius:0.75rem;padding:0.65rem 0.4rem;min-width:56px"><div id="std-secs" style="font-size:1.3rem;font-weight:800;color:${evColor}">--</div><div style="font-size:0.6rem;opacity:0.65;text-transform:uppercase">Seg</div></div>
+      <div id="std-countdown-wrap" style="margin-bottom:1.25rem;width:100%">
+        <p id="std-countdown-label" style="font-size:0.65rem;text-transform:uppercase;letter-spacing:0.1em;opacity:0.5;margin-bottom:0.45rem;font-weight:700">A carregar contagem...</p>
+        <div id="std-countdown-grid" style="display:flex;gap:0.5rem;justify-content:center">
+          <div style="background:${evColor}12;border-radius:0.6rem;padding:0.6rem 0.35rem;min-width:52px;flex:1;max-width:72px"><div id="std-days" style="font-size:1.25rem;font-weight:800;color:${evColor}">--</div><div style="font-size:0.58rem;opacity:0.6;text-transform:uppercase;letter-spacing:0.05em">Dias</div></div>
+          <div style="background:${evColor}12;border-radius:0.6rem;padding:0.6rem 0.35rem;min-width:52px;flex:1;max-width:72px"><div id="std-hours" style="font-size:1.25rem;font-weight:800;color:${evColor}">--</div><div style="font-size:0.58rem;opacity:0.6;text-transform:uppercase;letter-spacing:0.05em">Horas</div></div>
+          <div style="background:${evColor}12;border-radius:0.6rem;padding:0.6rem 0.35rem;min-width:52px;flex:1;max-width:72px"><div id="std-mins" style="font-size:1.25rem;font-weight:800;color:${evColor}">--</div><div style="font-size:0.58rem;opacity:0.6;text-transform:uppercase;letter-spacing:0.05em">Min</div></div>
+          <div style="background:${evColor}12;border-radius:0.6rem;padding:0.6rem 0.35rem;min-width:52px;flex:1;max-width:72px"><div id="std-secs" style="font-size:1.25rem;font-weight:800;color:${evColor}">--</div><div style="font-size:0.58rem;opacity:0.6;text-transform:uppercase;letter-spacing:0.05em">Seg</div></div>
         </div>
       </div>
 
-      <p id="std-rsvp-status-text" style="font-size:0.82rem;color:${alreadyConfirmed ? '#16a34a' : '#6b7280'};margin-bottom:1.25rem;font-weight:600">${alreadyConfirmed ? 'Obrigado por confirmar! Já contamos consigo. 🎉' : ''}</p>
+      <p id="std-rsvp-status-text" style="font-size:0.82rem;color:${alreadyConfirmed ? '#16a34a' : 'transparent'};margin-bottom:0.75rem;font-weight:600;min-height:1.2em">${alreadyConfirmed ? 'Obrigado por confirmar! Já contamos consigo. 🎉' : ''}</p>
 
       ${rsvpBtnHtml}
 
-      <div id="std-music-player-slot" style="display:flex;justify-content:center;margin-top:0.5rem"></div>
+      <div id="std-deadline-text" style="font-size:0.75rem;color:#6b7280;margin-top:0.6rem;min-height:1em"></div>
+
+      <div id="std-music-player-slot" style="display:flex;justify-content:center;margin-top:1rem"></div>
     </div>`;
   document.body.appendChild(overlay);
 
-  // ── Re-parent the existing music player into this screen so its button
-  // (play/pause, title) is visible here too, and music keeps working
-  // seamlessly when the gate is later removed. ──
-  const musicPlayerEl = document.getElementById('guest-music-player');
+  // ── Show the floating music circle button inside the Save the Date screen.
+  // We move the ICON BUTTON only (not the full player bar) — the user
+  // explicitly asked for the same small circle that appears on the invite,
+  // not the full expanded player strip.
+  const floatingBtn = document.getElementById('floating-music-btn');
   const musicSlot = document.getElementById('std-music-player-slot');
   let musicOriginalParent = null, musicOriginalNextSibling = null;
-  if (musicPlayerEl && musicSlot) {
-    musicOriginalParent = musicPlayerEl.parentElement;
-    musicOriginalNextSibling = musicPlayerEl.nextSibling;
-    musicSlot.appendChild(musicPlayerEl);
+  if (floatingBtn && musicSlot) {
+    musicOriginalParent = floatingBtn.parentElement;
+    musicOriginalNextSibling = floatingBtn.nextSibling;
+    // Scale up slightly so it's easier to tap on the STD screen
+    floatingBtn.style.transform = 'scale(1.15)';
+    floatingBtn.style.position = 'relative';
+    floatingBtn.style.opacity = '1';
+    floatingBtn.style.pointerEvents = 'all';
+    musicSlot.appendChild(floatingBtn);
   }
   window._stdRestoreMusicPlayer = () => {
-    if (musicPlayerEl && musicOriginalParent) {
-      musicOriginalParent.insertBefore(musicPlayerEl, musicOriginalNextSibling);
+    if (floatingBtn && musicOriginalParent) {
+      floatingBtn.style.transform = '';
+      floatingBtn.style.position = '';
+      musicOriginalParent.insertBefore(floatingBtn, musicOriginalNextSibling);
     }
   };
 
@@ -2361,28 +2371,51 @@ function renderSaveTheDateScreen(ev, decision) {
     };
   }
 
-  // ── Live countdown to the RSVP confirmation deadline. Falls back to the
-  // event date itself if no separate confirm_by_date was set, so the
-  // countdown box is never silently empty/hidden just because the organiser
-  // didn't fill in a deadline — there is always SOME date to count down to. ──
+  // ── Live countdown — always visible. ──
+  // If confirm_by_date is set, count down to the RSVP deadline and show
+  // deadline text below the RSVP button.
+  // If only ev.date is available, count down to the event itself.
   if (window._stdCountdownInterval) clearInterval(window._stdCountdownInterval);
   const countdownTargetStr = ev.confirm_by_date || ev.date;
+  const countdownLabelEl = document.getElementById('std-countdown-label');
+  const deadlineTextEl = document.getElementById('std-deadline-text');
+
   if (countdownTargetStr) {
+    const isDeadline = !!ev.confirm_by_date;
     const target = new Date(String(countdownTargetStr).includes('T') ? countdownTargetStr : countdownTargetStr + 'T23:59:59');
+
+    if (countdownLabelEl) {
+      countdownLabelEl.textContent = isDeadline ? 'Prazo para Confirmar Presença' : 'Contagem até ao Grande Dia';
+    }
+
+    if (isDeadline && deadlineTextEl) {
+      const d = new Date(countdownTargetStr.includes('T') ? countdownTargetStr : countdownTargetStr + 'T00:00:00');
+      const months = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+      if (!isNaN(d.getTime())) {
+        deadlineTextEl.textContent = `Confirmar até ${String(d.getDate()).padStart(2,'0')} de ${months[d.getMonth()]} de ${d.getFullYear()}`;
+      }
+    }
+
     if (!isNaN(target.getTime()) && target > new Date()) {
-      const wrap = document.getElementById('std-countdown-wrap');
-      if (wrap) wrap.style.display = '';
       const tick = () => {
         const diff = target - new Date();
-        if (diff <= 0) { clearInterval(window._stdCountdownInterval); if (wrap) wrap.style.display = 'none'; return; }
-        const d = Math.floor(diff/86400000), h = Math.floor((diff%86400000)/3600000),
+        if (diff <= 0) { clearInterval(window._stdCountdownInterval); return; }
+        const d2 = Math.floor(diff/86400000), h = Math.floor((diff%86400000)/3600000),
               m = Math.floor((diff%3600000)/60000), s = Math.floor((diff%60000)/1000);
         const set = (id,v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
-        set('std-days', d); set('std-hours', h); set('std-mins', m); set('std-secs', s);
+        set('std-days', d2); set('std-hours', h); set('std-mins', m); set('std-secs', s);
       };
       tick();
       window._stdCountdownInterval = setInterval(tick, 1000);
+    } else {
+      // Date already passed — show zeroes
+      const set = (id,v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+      set('std-days', 0); set('std-hours', 0); set('std-mins', 0); set('std-secs', 0);
     }
+  } else {
+    // No date at all — hide the wrap gracefully
+    const wrap = document.getElementById('std-countdown-wrap');
+    if (wrap) wrap.style.display = 'none';
   }
 
   // If gated "on_confirmation": once the guest confirms via the drawer, re-check

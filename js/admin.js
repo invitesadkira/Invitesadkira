@@ -184,6 +184,7 @@ function renderAdminAccountsList(users) {
     html += '<button class="text-xs bg-purple-500 hover:bg-purple-600 text-white rounded-lg py-1.5 px-3 font-semibold transition" onclick="toggleModeratorRole(\'' + u.id + '\')">' + (userRole === 'moderator' ? 'Utilizador' : 'Moderador') + '</button>';
     html += '<button class="text-xs bg-slate-500 hover:bg-slate-600 text-white rounded-lg py-1.5 px-3 font-semibold transition" onclick="changeUserPassword(\'' + u.id + '\')">Senha</button>';
     html += '<button class="text-xs bg-orange-500 hover:bg-orange-600 text-white rounded-lg py-1.5 px-3 font-semibold transition" onclick="changeUserPhone(\'' + u.id + '\')">Username</button>';
+    html += '<button class="text-xs ' + (u.edit_locked ? 'bg-green-600 hover:bg-green-700' : 'bg-yellow-600 hover:bg-yellow-700') + ' text-white rounded-lg py-1.5 px-3 font-semibold transition" onclick="adminToggleEditLock(\'' + u.id + '\',' + !!u.edit_locked + ')">' + (u.edit_locked ? '🔓 Desbloquear Edição' : '🔒 Bloquear Edição') + '</button>';
     
     if (Store.events.some(e => e.userId === u.id)) {
       html += '<button class="text-xs bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg py-1.5 px-3 font-semibold transition" onclick="showUserEventOptions(\'' + u.id + '\')">Eventos</button>';
@@ -358,6 +359,60 @@ async function confirmAdminDeleteUser(userId, modal) {
     renderAdmin();
   }
 }
+async function adminEditDeliveryText() {
+  const rows = await supabaseRequest('site_config?key=eq.packages_delivery_text&select=value&limit=1').catch(() => []);
+  const current = (rows && rows[0] && rows[0].value)
+    ? rows[0].value
+    : 'Entrega em <strong>48h</strong> · Urgência 24h (taxa adicional de 8.000 Kz)';
+
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.innerHTML = `<div class="modal-content bg-white rounded-2xl p-5" style="max-width:480px">
+    <h3 class="text-base font-bold mb-3">Prazo de Entrega (site comercial)</h3>
+    <p class="text-xs text-gray-500 mb-2">Podes usar HTML básico: <code>&lt;strong&gt;48h&lt;/strong&gt;</code></p>
+    <textarea id="_delivery-text-input" class="input-field text-sm" rows="3" style="font-family:monospace">${current}</textarea>
+    <p class="text-xs text-gray-400 mt-1 mb-3">Pré-visualização: <span id="_delivery-preview">${current}</span></p>
+    <script>document.getElementById('_delivery-text-input').oninput = function(){document.getElementById('_delivery-preview').innerHTML=this.value}<\/script>
+    <div class="flex gap-2">
+      <button class="flex-1 btn-main text-sm" onclick="adminSaveDeliveryText()">Guardar</button>
+      <button class="btn-outline text-sm" onclick="this.closest('.modal-overlay').remove()">Cancelar</button>
+    </div>
+  </div>`;
+  document.body.appendChild(modal);
+}
+
+async function adminSaveDeliveryText() {
+  const val = document.getElementById('_delivery-text-input')?.value?.trim();
+  if (!val) { toast('Texto não pode estar vazio.'); return; }
+  const ts = new Date().toISOString();
+  const patch = await supabaseRequest('site_config?key=eq.packages_delivery_text', 'PATCH', { value: val, updated_at: ts });
+  if (!patch || patch.length === 0) {
+    await supabaseRequest('site_config', 'POST', { key: 'packages_delivery_text', value: val });
+  }
+  // Update live on the page
+  const el = document.getElementById('packages-delivery-text');
+  if (el) el.innerHTML = val;
+  toast('Prazo de entrega actualizado!');
+  document.querySelector('.modal-overlay')?. remove();
+}
+
+async function adminToggleEditLock(userId, currentlyLocked) {
+  const newValue = !currentlyLocked;
+  const label = newValue ? 'bloquear edição' : 'desbloquear edição';
+  if (!confirm(`Tens a certeza que queres ${label} para este utilizador?`)) return;
+  try {
+    await supabaseRequest(`accounts?id=eq.${userId}`, 'PATCH', { edit_locked: newValue });
+    toast(newValue ? '🔒 Edição bloqueada!' : '🔓 Edição desbloqueada!');
+    // Refresh user list
+    document.getElementById('admin-users-panel')?.querySelectorAll('button')
+      ?.forEach(b => { if (b.textContent.includes('Utilizadores')) b.click(); });
+    if (typeof renderAdminPanel !== 'undefined') renderAdminPanel();
+  } catch(e) {
+    toast('Erro ao alterar bloqueio. Verifica a consola.');
+    console.error(e);
+  }
+}
+
 function setEventLimit(userId) {
   const user = Store.users.find(u => u.id === userId);
   if (!user) return;

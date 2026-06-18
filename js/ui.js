@@ -314,6 +314,7 @@ function buildAdminQuickGrid() {
     { icon:'bell',         label:'Notificar Todos',  action:"openSendNotificationModal()" },
     { icon:'bar-chart-3',  label:'Análise de Acessos', action:"openAnalyticsPanel()" },
     { icon:'file-text',  label:'Política e Termos', action:"openLegalPagesEditor()" },
+    { icon:'clock',  label:'Prazo de Entrega', action:"adminEditDeliveryText()" },
   ];
   grid.innerHTML = items.map(it => `
     <button class="quick-card" onclick="${it.action}" style="position:relative">

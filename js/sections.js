@@ -68,25 +68,54 @@ async function renderGuestSections(eventData) {
 
   // ── Personalize the invite text with the confirmed guest's name ──────────
   // Only active when the organiser has enabled "Mostrar nome do convidado no
-  // convite" (show_guest_name_in_invite, default true). Replaces "Exmo.(a)
-  // Sr.(a)" in invite_text with the guest's actual name, on its own line.
-  const guestNameEnabled = eventData.show_guest_name_in_invite !== false;
+  // convite" (show_guest_name_in_invite). When the column doesn't exist yet
+  // in the DB it arrives as null/undefined — treat that as DEFAULT FALSE to
+  // avoid unexpected name insertion until the organiser explicitly enables it.
+  // The name appears in bold on its own line; if the guest added a companion,
+  // their name also appears below.
+  const guestNameEnabled = eventData.show_guest_name_in_invite === true;
   if (guestNameEnabled && eventData.invite_text) {
     const eventId = eventData.id || Store.currentEventId;
     let guestName = null;
+    let companionNames = [];
     // Priority 1: personalized link lock (most specific — see guest_links)
     if (Store._lockedGuestName) guestName = Store._lockedGuestName;
     // Priority 2: this browser's own RSVP confirmation for this event
     if (!guestName) {
       const confirmed = rsvpCheckConfirmed(eventId);
-      if (confirmed && confirmed.attending === true && confirmed.name) guestName = confirmed.name;
+      if (confirmed && confirmed.attending === true && confirmed.name) {
+        guestName = confirmed.name;
+        // Companion names are stored in confirmed.companions as JSON array or comma-separated
+        if (confirmed.companions) {
+          try {
+            const parsed = typeof confirmed.companions === 'string'
+              ? JSON.parse(confirmed.companions)
+              : confirmed.companions;
+            if (Array.isArray(parsed)) {
+              companionNames = parsed.filter(n => n && n.toString().trim());
+            } else if (typeof parsed === 'string' && parsed.trim()) {
+              companionNames = parsed.split(',').map(n => n.trim()).filter(Boolean);
+            }
+          } catch(e) {
+            if (typeof confirmed.companions === 'string' && confirmed.companions.trim()) {
+              companionNames = [confirmed.companions.trim()];
+            }
+          }
+        }
+      }
     }
     if (guestName) {
-      // Replace the placeholder with the name on its own line for visual clarity
+      // Build the replacement: guest name (bold via span placeholder)
+      // plus companion names each on their own line
+      const namesBlock = [guestName, ...companionNames]
+        .map(n => `__BOLD__${escapeHTML(n.trim())}__/BOLD__`)
+        .join('\n');
       eventData.invite_text = eventData.invite_text.replace(
         /Exmo\.?\(a\)\s*Sr\.?\(a\)\.?/gi,
-        `\n${escapeHTML(guestName)}`
+        `\n${namesBlock}`
       );
+      // Tag so buildInviteSection/buildBibleSection can render the spans properly
+      eventData._hasGuestNameInvite = true;
     }
   }
 
@@ -292,9 +321,20 @@ function buildBibleSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
       </p>
     </div>` : '';
 
+  const _renderInviteLine = (line) => {
+    if (line.trim() === '') return '<br>';
+    // Replace bold markers (set by guest name substitution) with actual strong tags
+    // The text inside markers was already escapeHTML'd when inserted
+    const rendered = line.replace(/__BOLD__(.*?)__\/BOLD__/g, (_, name) =>
+      `<strong style="font-size:1.1em;letter-spacing:0.01em">${name}</strong>`
+    );
+    // If the line already contains HTML (from our marker replacement), don't escape it again
+    if (rendered !== line) return `<p class="invitation-text">${rendered}</p>`;
+    return `<p class="invitation-text">${escapeHTML(line)}</p>`;
+  };
   const inviteHtml = ev.invite_text ? `
     <div class="reveal" style="margin-top:1.5rem">
-      ${ev.invite_text.split('\n').map(l => l.trim()==='' ? '<br>' : `<p class="invitation-text">${escapeHTML(l)}</p>`).join('')}
+      ${ev.invite_text.split('\n').map(_renderInviteLine).join('')}
     </div>` : '';
 
   return _SD + `<div class="event-section" style="background:#fdfaf6;text-align:center">
@@ -313,9 +353,13 @@ function buildBibleSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
 }
 
 function buildInviteSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
-  const lines = (ev.invite_text || '').split('\n').map(l =>
-    l.trim() === '' ? '<br>' : `<p class="invitation-text">${escapeHTML(l)}</p>`
-  ).join('');
+  const lines = (ev.invite_text || '').split('\n').map(l => {
+    if (l.trim() === '') return '<br>';
+    const rendered = l.replace(/__BOLD__(.*?)__\/BOLD__/g, (_, name) =>
+      `<strong style="font-size:1.1em">${name}</strong>`);
+    if (rendered !== l) return `<p class="invitation-text">${rendered}</p>`;
+    return `<p class="invitation-text">${escapeHTML(l)}</p>`;
+  }).join('');
   return _SD + `<div class="event-section" style="background:#fff"><div class="section-inner reveal">${lines}</div></div>`;
 }
 

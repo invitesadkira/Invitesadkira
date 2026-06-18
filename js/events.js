@@ -928,7 +928,7 @@ function renderEventDetails() {
 
   const ownerUserId = event.userId || event.user_id;
   const isOwner = Store.currentUser && Store.currentUser.id === ownerUserId;
-  const isAdmin = Store.currentUser && Store.currentUser.role === 'admin';
+  const isAdmin = (Store.currentUser && Store.currentUser.role === 'admin') || Store.adminModeActive;
 
   document.getElementById('detail-rsvp-toggle').classList.toggle('hidden', !isOwner);
   
@@ -1295,17 +1295,16 @@ function downloadPDF() {
 
   const JsPDF = window.jspdf && window.jspdf.jsPDF;
   if (!JsPDF) {
+    // Fallback: download as .txt when jsPDF library isn't loaded
     const text = `${ev.title}\nGerado em: ${generatedAt}\n\n${textSections.join('\n\n')}`;
-    const element = document.createElement('pre');
-    element.style.whiteSpace = 'pre-wrap';
-    element.style.fontFamily = 'Arial, sans-serif';
-    element.textContent = text;
-    html2pdf().set({
-      margin: 12,
-      filename: `${ev.title.replace(/\s+/g, '_')}_convidados_${new Date().toISOString().split('T')[0]}.pdf`,
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-    }).from(element).save();
-    toast('PDF gerado.');
+    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${(ev.title || 'Convidados').replace(/\s+/g, '_')}_convidados_${new Date().toISOString().split('T')[0]}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast('Lista exportada como texto (.txt). Para PDF, a biblioteca jsPDF é necessária.');
     return;
   }
 
@@ -1359,13 +1358,31 @@ function downloadPDF() {
 }
 function manageGifts() { Router.go('gifts'); }
 
+// ── Edit with lock check: respects edit_locked flag, but admin impersonating
+// a user always bypasses the lock (they're doing it to help the client).
+function editEventWithLockCheck() {
+  // Admin always allowed — either direct admin login or impersonating as admin
+  const isAdminSession = Store.currentUser?.role === 'admin' || Store.adminModeActive;
+  if (isAdminSession) {
+    editEvent();
+    return;
+  }
+  // Check if this user's account has editing locked by the admin
+  const user = Store.currentUser;
+  if (user && user.edit_locked === true) {
+    toast('A edição está temporariamente bloqueada. Contacta a AdKira para mais informações.', 4000);
+    return;
+  }
+  editEvent();
+}
+
 async function editEvent() {
   const evStore = Store.events.find(e => e.id === Store.currentEventId);
   if (!evStore) return;
 
   const ownerUserId = evStore.userId || evStore.user_id;
   const isOwner = ownerUserId === Store.currentUser.id;
-  const isAdmin = Store.currentUser.role === 'admin';
+  const isAdmin = Store.currentUser.role === 'admin' || Store.adminModeActive;
   if (!isOwner && !isAdmin) {
     toast('Apenas o organizador ou admin pode editar o evento.');
     return;

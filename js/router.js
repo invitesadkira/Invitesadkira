@@ -37,6 +37,13 @@ const Router = {
       if (typeof renderLandingReviews !== 'undefined') renderLandingReviews();
       // Load notices
       if (typeof loadAndShowNotices !== 'undefined') loadAndShowNotices();
+      // Load delivery text (editable by admin)
+      supabaseRequest('site_config?key=eq.packages_delivery_text&select=value&limit=1').then(rows => {
+        if (rows && rows[0] && rows[0].value) {
+          const el = document.getElementById('packages-delivery-text');
+          if (el) el.innerHTML = rows[0].value;
+        }
+      }).catch(() => {});
       // Show FAQ edit button only for admin
       const faqEdit = document.getElementById('faq-edit-btn');
       if (faqEdit) faqEdit.classList.toggle('hidden', !Store.currentUser || Store.currentUser.role !== 'admin');
