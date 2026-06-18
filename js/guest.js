@@ -2173,60 +2173,47 @@ function renderSaveTheDateScreen(ev, decision) {
   const invertNames = _yesOrTrue(ev.invert_names);
   let groom = ev.groom_name || ''; let bride = ev.bride_name || '';
   if (invertNames && groom && bride) { [groom, bride] = [bride, groom]; }
-  const coupleNames = (groom || bride) ? `${escapeHTML(groom)}${groom && bride ? ' &amp; ' : ''}${escapeHTML(bride)}` : '';
+  const coupleNames = (groom || bride)
+    ? `${escapeHTML(groom)}${groom && bride ? ' &amp; ' : ''}${escapeHTML(bride)}` : '';
 
-  const stdTitle    = ev.std_title || 'Save the Date';
+  const stdTitle    = ev.std_title    || 'Save the Date';
   const stdSubtitle = ev.std_subtitle || 'Nosso Casamento';
-  const nameFont     = ev.std_font_family || ev.custom_font_family || null;
-  const nameSize     = parseFloat(ev.std_name_size) || 2.4;
-  const titleSize    = parseFloat(ev.std_title_size) || 0.78;
-  const rsvpAllowed  = ev.rsvp_enabled !== false;
-  const showCover    = ev.std_show_cover !== false && !!ev.bg_url;
+  const nameFont    = ev.std_font_family || ev.custom_font_family || null;
+  const nameSize    = parseFloat(ev.std_name_size) || 2.4;
+  const titleSize   = parseFloat(ev.std_title_size) || 0.78;
+  const rsvpAllowed = ev.rsvp_enabled !== false;
+  const coverUrl    = ev.bg_url || ev.cover_image || null;
+  const showCover   = ev.std_show_cover !== false && !!coverUrl;
 
-  console.log('🔖 Save the Date — diagnóstico de capa/foto:', {
-    std_show_cover: ev.std_show_cover, bg_url: ev.bg_url ? '(presente)' : '(vazio)',
-    showCover, std_intro_enabled: ev.std_intro_enabled, std_intro_photo_url: ev.std_intro_photo_url ? '(presente)' : '(vazio)',
-    confirm_by_date: ev.confirm_by_date, date: ev.date,
-  });
-
-  const fmtDate = (dateStr) => {
-    if (!dateStr) return null;
-    const d = new Date(String(dateStr).split('T')[0] + 'T00:00:00');
+  const parseDateSafe = (str) => {
+    if (!str) return null;
+    const s = String(str).trim();
+    let d;
+    const pt = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+    if (pt) d = new Date(`${pt[3]}-${pt[2].padStart(2,'0')}-${pt[1].padStart(2,'0')}T23:59:59`);
+    else d = new Date(s.includes('T') ? s : s + 'T23:59:59');
     if (isNaN(d.getTime())) return null;
     const months = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-    return `${String(d.getDate()).padStart(2,'0')} de ${months[d.getMonth()]} de ${d.getFullYear()}`;
+    return { date: d, label: `${String(d.getDate()).padStart(2,'0')} de ${months[d.getMonth()]} de ${d.getFullYear()}` };
   };
-  const eventDateLabel = fmtDate(ev.date);
 
-  // Apply custom font face for the couple names, if one was chosen
+  const eventDateParsed = parseDateSafe(ev.date);
+  const deadlineParsed  = parseDateSafe(ev.confirm_by_date);
+  const countdownTarget = deadlineParsed || eventDateParsed;
+  const eventDateLabel  = eventDateParsed ? eventDateParsed.label : null;
+  const deadlineLabel   = deadlineParsed  ? `Confirmar até ${deadlineParsed.label}` : null;
+
   let fontFaceCSS = '';
   if (nameFont) {
-    const fontDef = (Store.availableFonts || []).find(f => f.name === nameFont);
-    if (fontDef) fontFaceCSS = `@font-face { font-family: '${nameFont}'; src: url('${fontDef.url}'); font-display: swap; }`;
+    const fd = (Store.availableFonts||[]).find(f=>f.name===nameFont);
+    if (fd) fontFaceCSS = `@font-face{font-family:'${nameFont}';src:url('${fd.url}');font-display:swap}`;
   }
 
-  // Restore music player to its original DOM location first if it was
-  // re-parented into a previous overlay instance — otherwise the .remove()
-  // below would destroy the actual #guest-music-player element along with
-  // the old overlay, permanently breaking music for the rest of the session.
   if (typeof window._stdRestoreMusicPlayer === 'function') {
-    window._stdRestoreMusicPlayer();
-    window._stdRestoreMusicPlayer = null;
+    window._stdRestoreMusicPlayer(); window._stdRestoreMusicPlayer = null;
   }
   document.getElementById('std-screen-overlay')?.remove();
 
-  const overlay = document.createElement('div');
-  overlay.id = 'std-screen-overlay';
-  // Background: white like the rest of the invite, with the event's chosen
-  // colour used for accents/details — matching the full invite's palette,
-  // not a fixed dark gradient. The cover photo (if enabled) sits behind a
-  // soft scrim at the top, never covering the whole screen by default.
-  overlay.style.cssText = `position:fixed;inset:0;z-index:9000;overflow-y:auto;background:#fdfaf6;display:flex;flex-direction:column;align-items:center;${showCover ? '' : 'justify-content:center;'}padding:0`;
-
-  const introEnabled = (ev.std_intro_enabled === true || ev.std_intro_enabled === 'true') && ev.std_intro_photo_url;
-
-  // Check if THIS guest has already confirmed attendance (drives the
-  // "Confirmar Presença" button's colour/icon/text — green + check once done)
   const eventIdForRsvp = ev.id || Store.currentEventId;
   const alreadyConfirmed = (() => {
     const c = rsvpCheckConfirmed(eventIdForRsvp);
@@ -2234,224 +2221,140 @@ function renderSaveTheDateScreen(ev, decision) {
   })();
 
   const rsvpBtnHtml = rsvpAllowed ? `
-      <button id="std-rsvp-btn" style="background:${alreadyConfirmed ? '#16a34a' : evColor};color:#fff;border:none;border-radius:999px;padding:0.9rem 2.2rem;font-weight:800;font-size:0.95rem;cursor:pointer;box-shadow:0 4px 16px ${alreadyConfirmed ? '#16a34a' : evColor}55;margin-bottom:1rem;display:inline-flex;align-items:center;gap:0.5rem;font-family:'Quicksand',sans-serif">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${alreadyConfirmed ? '<path d="M20 6 9 17l-5-5"/>' : '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>'}</svg>
-        <span id="std-rsvp-btn-label">${alreadyConfirmed ? 'Presença Confirmada' : 'Confirmar Presença'}</span>
-      </button>` : '';
+    <button id="std-rsvp-btn" style="background:${alreadyConfirmed?'#16a34a':evColor};color:#fff;border:none;border-radius:999px;padding:0.9rem 2.4rem;font-weight:800;font-size:0.95rem;cursor:pointer;box-shadow:0 4px 16px ${alreadyConfirmed?'#16a34a':evColor}55;display:inline-flex;align-items:center;gap:0.5rem;font-family:'Quicksand',sans-serif">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${alreadyConfirmed?'<path d="M20 6 9 17l-5-5"/>':'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>'}</svg>
+      <span id="std-rsvp-btn-label">${alreadyConfirmed?'Presença Confirmada':'Confirmar Presença'}</span>
+    </button>` : '';
+
+  const introEnabled = (ev.std_intro_enabled === true || ev.std_intro_enabled === 'true') && ev.std_intro_photo_url;
+
+  const overlay = document.createElement('div');
+  overlay.id = 'std-screen-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:9000;overflow-y:auto;background:#fdfaf6;display:flex;flex-direction:column;align-items:center';
 
   overlay.innerHTML = `
     <style>${fontFaceCSS}</style>
-
-    ${showCover ? `
-    <div style="position:relative;width:100%;height:38vh;min-height:220px;flex-shrink:0;overflow:hidden">
-      <img src="${ev.bg_url}" style="width:100%;height:100%;object-fit:cover" alt="">
-      <div style="position:absolute;inset:0;background:linear-gradient(to bottom, rgba(0,0,0,0.15), rgba(253,250,246,1))"></div>
-    </div>` : ''}
-
     ${introEnabled ? `
-    <!-- ── INTRO SCREEN: full-screen photo + "Abrir Convite" button (guarantees music can start) ── -->
     <div id="std-intro-screen" style="position:fixed;inset:0;z-index:10;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;color:#fff;padding:2rem">
-      <div style="position:absolute;inset:0;background:${ev.std_intro_photo_url ? `url('${ev.std_intro_photo_url}') center/cover no-repeat` : evColor}"></div>
-      <div style="position:absolute;inset:0;background:rgba(0,0,0,0.45)"></div>
-      <div style="position:relative;z-index:1;max-width:380px">
-        <p style="font-size:1.1rem;font-weight:600;line-height:1.6;margin-bottom:2rem;opacity:0.95">${escapeHTML(ev.std_intro_text || 'Recebeu este convite porque é importante para nós')}</p>
-        <button id="std-open-invite-btn" style="background:#fff;color:${evColor};border:none;border-radius:999px;padding:0.95rem 2.75rem;font-weight:800;font-size:0.98rem;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,0.3);font-family:'Quicksand',sans-serif">
-          Abrir Convite
-        </button>
+      <div style="position:absolute;inset:0;background:${ev.std_intro_photo_url?`url('${ev.std_intro_photo_url}') center/cover no-repeat`:evColor}"></div>
+      <div style="position:absolute;inset:0;background:rgba(0,0,0,0.48)"></div>
+      <div style="position:relative;z-index:1;max-width:360px">
+        <p style="font-size:1.1rem;font-weight:600;line-height:1.6;margin-bottom:2rem;opacity:0.95">${escapeHTML(ev.std_intro_text||'Recebeu este convite porque é importante para nós')}</p>
+        <button id="std-open-invite-btn" style="background:#fff;color:${evColor};border:none;border-radius:999px;padding:0.95rem 2.75rem;font-weight:800;font-size:0.98rem;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,0.3);font-family:'Quicksand',sans-serif">Abrir Convite</button>
       </div>
     </div>` : ''}
-
-    <div id="std-main-content" style="position:relative;z-index:2;max-width:420px;width:100%;text-align:center;color:#1e293b;padding:${showCover ? '1.5rem' : '2.5rem'} 1.5rem 2.5rem;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;${introEnabled ? 'display:none' : ''}">
-      <p style="font-size:${titleSize}rem;letter-spacing:0.25em;text-transform:uppercase;opacity:0.7;margin-bottom:0.6rem;font-weight:700;color:${evColor};font-family:'Quicksand',sans-serif">${escapeHTML(stdTitle)}</p>
-      ${coupleNames ? `<h2 style="font-family:${nameFont ? `'${nameFont}',` : ''}var(--event-font, 'Playfair Display', serif);font-size:clamp(1.3rem, 7vw, ${nameSize}rem);margin-bottom:0.5rem;line-height:1.3;white-space:nowrap;display:flex;align-items:center;justify-content:center;gap:0.3em;padding:0 0.5rem;color:#1e293b">${coupleNames}</h2>` : ''}
-      <p style="font-size:1.0rem;font-weight:600;margin-bottom:1.5rem;opacity:0.65;font-family:'Quicksand',sans-serif;color:#374151">${escapeHTML(stdSubtitle)}</p>
-
+    ${showCover ? `
+    <div style="position:relative;width:100%;height:42vh;min-height:240px;flex-shrink:0;overflow:hidden">
+      <img src="${coverUrl}" style="width:100%;height:100%;object-fit:cover;object-position:center top" alt="">
+      <div style="position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,0.08) 0%,rgba(253,250,246,0.97) 90%)"></div>
+    </div>` : `<div style="height:2.5rem;flex-shrink:0"></div>`}
+    <div id="std-main-content" style="position:relative;z-index:2;max-width:440px;width:100%;text-align:center;color:#1e293b;padding:1rem 1.5rem 2.5rem;flex:1;display:flex;flex-direction:column;align-items:center;${introEnabled?'display:none':''}">
+      <p style="font-size:${titleSize}rem;letter-spacing:0.25em;text-transform:uppercase;font-weight:800;color:${evColor};font-family:'Quicksand',sans-serif;margin-bottom:0.5rem">${escapeHTML(stdTitle)}</p>
+      ${coupleNames ? `<h2 style="font-family:${nameFont?`'${nameFont}',`:''}var(--event-font,'Playfair Display',serif);font-size:clamp(1.4rem,7vw,${nameSize}rem);line-height:1.2;margin-bottom:0.3rem;color:#1e293b;padding:0 0.5rem">${coupleNames}</h2>` : ''}
+      <p style="font-size:0.9rem;font-weight:500;color:#6b7280;font-family:'Quicksand',sans-serif;margin-bottom:1.25rem">${escapeHTML(stdSubtitle)}</p>
       ${eventDateLabel ? `
-      <div style="margin-bottom:1.25rem;background:${evColor}11;border-radius:0.75rem;padding:0.6rem 1.5rem;display:inline-block">
-        <p style="font-size:0.65rem;text-transform:uppercase;letter-spacing:0.12em;opacity:0.55;margin-bottom:0.15rem;font-weight:700">Data do Evento</p>
-        <p style="font-size:1.05rem;font-weight:800;color:${evColor}">${eventDateLabel}</p>
+      <div style="background:${evColor}13;border-radius:0.75rem;padding:0.45rem 1.5rem;margin-bottom:1.1rem;display:inline-block">
+        <p style="font-size:0.6rem;text-transform:uppercase;letter-spacing:0.1em;color:${evColor};opacity:0.65;font-weight:700;margin-bottom:0.1rem">Data do Evento</p>
+        <p style="font-size:0.95rem;font-weight:800;color:${evColor}">${eventDateLabel}</p>
       </div>` : ''}
-
-      <div id="std-countdown-wrap" style="margin-bottom:1.25rem;width:100%">
-        <p id="std-countdown-label" style="font-size:0.65rem;text-transform:uppercase;letter-spacing:0.1em;opacity:0.5;margin-bottom:0.45rem;font-weight:700">A carregar contagem...</p>
-        <div id="std-countdown-grid" style="display:flex;gap:0.5rem;justify-content:center">
-          <div style="background:${evColor}12;border-radius:0.6rem;padding:0.6rem 0.35rem;min-width:52px;flex:1;max-width:72px"><div id="std-days" style="font-size:1.25rem;font-weight:800;color:${evColor}">--</div><div style="font-size:0.58rem;opacity:0.6;text-transform:uppercase;letter-spacing:0.05em">Dias</div></div>
-          <div style="background:${evColor}12;border-radius:0.6rem;padding:0.6rem 0.35rem;min-width:52px;flex:1;max-width:72px"><div id="std-hours" style="font-size:1.25rem;font-weight:800;color:${evColor}">--</div><div style="font-size:0.58rem;opacity:0.6;text-transform:uppercase;letter-spacing:0.05em">Horas</div></div>
-          <div style="background:${evColor}12;border-radius:0.6rem;padding:0.6rem 0.35rem;min-width:52px;flex:1;max-width:72px"><div id="std-mins" style="font-size:1.25rem;font-weight:800;color:${evColor}">--</div><div style="font-size:0.58rem;opacity:0.6;text-transform:uppercase;letter-spacing:0.05em">Min</div></div>
-          <div style="background:${evColor}12;border-radius:0.6rem;padding:0.6rem 0.35rem;min-width:52px;flex:1;max-width:72px"><div id="std-secs" style="font-size:1.25rem;font-weight:800;color:${evColor}">--</div><div style="font-size:0.58rem;opacity:0.6;text-transform:uppercase;letter-spacing:0.05em">Seg</div></div>
+      <div id="std-countdown-wrap" style="width:100%;margin-bottom:1.1rem">
+        <p id="std-countdown-label" style="font-size:0.6rem;text-transform:uppercase;letter-spacing:0.1em;opacity:0.5;margin-bottom:0.4rem;font-weight:700">A calcular...</p>
+        <div style="display:flex;gap:0.4rem;justify-content:center">
+          <div style="background:${evColor}12;border-radius:0.6rem;padding:0.5rem 0.2rem;flex:1;max-width:66px"><div id="std-days" style="font-size:1.15rem;font-weight:900;color:${evColor}">--</div><div style="font-size:0.55rem;opacity:0.55;text-transform:uppercase">Dias</div></div>
+          <div style="background:${evColor}12;border-radius:0.6rem;padding:0.5rem 0.2rem;flex:1;max-width:66px"><div id="std-hours" style="font-size:1.15rem;font-weight:900;color:${evColor}">--</div><div style="font-size:0.55rem;opacity:0.55;text-transform:uppercase">Horas</div></div>
+          <div style="background:${evColor}12;border-radius:0.6rem;padding:0.5rem 0.2rem;flex:1;max-width:66px"><div id="std-mins" style="font-size:1.15rem;font-weight:900;color:${evColor}">--</div><div style="font-size:0.55rem;opacity:0.55;text-transform:uppercase">Min</div></div>
+          <div style="background:${evColor}12;border-radius:0.6rem;padding:0.5rem 0.2rem;flex:1;max-width:66px"><div id="std-secs" style="font-size:1.15rem;font-weight:900;color:${evColor}">--</div><div style="font-size:0.55rem;opacity:0.55;text-transform:uppercase">Seg</div></div>
         </div>
       </div>
-
-      <p id="std-rsvp-status-text" style="font-size:0.82rem;color:${alreadyConfirmed ? '#16a34a' : 'transparent'};margin-bottom:0.75rem;font-weight:600;min-height:1.2em">${alreadyConfirmed ? 'Obrigado por confirmar! Já contamos consigo. 🎉' : ''}</p>
-
+      <p id="std-rsvp-status-text" style="font-size:0.82rem;color:#16a34a;margin-bottom:0.7rem;font-weight:600;min-height:1.1em">${alreadyConfirmed?'Obrigado por confirmar! Já contamos consigo. 🎉':''}</p>
       ${rsvpBtnHtml}
-
-      <div id="std-deadline-text" style="font-size:0.75rem;color:#6b7280;margin-top:0.6rem;min-height:1em"></div>
-
+      ${deadlineLabel ? `<p style="font-size:0.73rem;color:#9ca3af;margin-top:0.5rem;font-weight:500">${deadlineLabel}</p>` : ''}
       <div id="std-music-player-slot" style="display:flex;justify-content:center;margin-top:1rem"></div>
     </div>`;
+
   document.body.appendChild(overlay);
 
-  // ── Show the floating music circle button inside the Save the Date screen.
-  // We move the ICON BUTTON only (not the full player bar) — the user
-  // explicitly asked for the same small circle that appears on the invite,
-  // not the full expanded player strip.
   const floatingBtn = document.getElementById('floating-music-btn');
   const musicSlot = document.getElementById('std-music-player-slot');
-  let musicOriginalParent = null, musicOriginalNextSibling = null;
+  let musicOriginalParent=null, musicOriginalNextSibling=null;
   if (floatingBtn && musicSlot) {
     musicOriginalParent = floatingBtn.parentElement;
     musicOriginalNextSibling = floatingBtn.nextSibling;
-    // Scale up slightly so it's easier to tap on the STD screen
-    floatingBtn.style.transform = 'scale(1.15)';
-    floatingBtn.style.position = 'relative';
-    floatingBtn.style.opacity = '1';
-    floatingBtn.style.pointerEvents = 'all';
+    floatingBtn.style.position='relative';
+    floatingBtn.style.opacity='1';
+    floatingBtn.style.pointerEvents='all';
     musicSlot.appendChild(floatingBtn);
   }
   window._stdRestoreMusicPlayer = () => {
     if (floatingBtn && musicOriginalParent) {
-      floatingBtn.style.transform = '';
-      floatingBtn.style.position = '';
+      floatingBtn.style.position='';
+      floatingBtn.style.opacity='';
+      floatingBtn.style.pointerEvents='';
       musicOriginalParent.insertBefore(floatingBtn, musicOriginalNextSibling);
     }
   };
 
-  // ── Intro screen: "Abrir Convite" button reveals the main Save the Date
-  // content AND is the user-gesture moment that guarantees music can start
-  // (browsers block autoplay but always allow play() inside a click handler).
   if (introEnabled) {
     document.getElementById('std-open-invite-btn').onclick = () => {
-      document.getElementById('std-intro-screen').style.display = 'none';
-      document.getElementById('std-main-content').style.display = '';
-
-      // Case 1: direct audio file (mp3/etc via <audio> tag)
+      document.getElementById('std-intro-screen').style.display='none';
+      document.getElementById('std-main-content').style.display='';
       const audio = document.getElementById('guest-audio');
-      if (audio && audio.src) {
-        audio.muted = false;
-        audio.play().then(() => setMusicPlayingUI(true)).catch(() => {});
-      }
-
-      // Case 2: YouTube — the iframe is created with autoplay=1 ahead of
-      // time, but browsers usually block it until a real user gesture. This
-      // click IS that gesture, so we can reliably command the existing
-      // player to play now via the YouTube postMessage API. The player's
-      // internal JS API can take a moment to become ready after the iframe
-      // is created, so we retry the command for a couple of seconds rather
-      // than sending it only once.
+      if (audio && audio.src) { audio.muted=false; audio.play().then(()=>setMusicPlayingUI(true)).catch(()=>{}); }
       const ytFrame = document.getElementById('yt-music-frame');
       if (ytFrame && ytFrame.src) {
-        let attempts = 0;
-        const sendPlayCommand = () => {
-          attempts++;
-          try {
-            if (ytFrame.contentWindow) {
-              ytFrame.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'unMute', args: [] }), '*');
-              ytFrame.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'playVideo', args: [] }), '*');
-            }
-          } catch(e) {}
-          if (attempts < 6) setTimeout(sendPlayCommand, 400);
-        };
-        sendPlayCommand();
-        ytFrame.dataset.playing = '1';
-        setMusicPlayingUI(true);
-        const sub = document.getElementById('music-sub-text');
-        if (sub) sub.textContent = 'A tocar';
+        let att=0;
+        const cmd=()=>{att++;try{if(ytFrame.contentWindow){ytFrame.contentWindow.postMessage(JSON.stringify({event:'command',func:'unMute',args:[]}),'*');ytFrame.contentWindow.postMessage(JSON.stringify({event:'command',func:'playVideo',args:[]}),'*');ytFrame.dataset.playing='1';setMusicPlayingUI(true);}}catch(e){}if(att<4)setTimeout(cmd,600);};
+        setTimeout(cmd,300);
       }
     };
   }
 
-  // Wire RSVP button — opens the same drawer/flow as the full invite would.
-  // If already confirmed, tapping again just re-opens the drawer so they
-  // can update their response (e.g. add a companion) rather than doing nothing.
   const rsvpBtn = document.getElementById('std-rsvp-btn');
-  if (rsvpBtn) {
-    rsvpBtn.onclick = () => {
-      if (typeof openRsvpDrawer === 'function') openRsvpDrawer();
-    };
-  }
+  if (rsvpBtn) rsvpBtn.onclick = () => { if (typeof openRsvpDrawer==='function') openRsvpDrawer(); };
 
-  // ── Live countdown — always visible. ──
-  // If confirm_by_date is set, count down to the RSVP deadline and show
-  // deadline text below the RSVP button.
-  // If only ev.date is available, count down to the event itself.
   if (window._stdCountdownInterval) clearInterval(window._stdCountdownInterval);
-  const countdownTargetStr = ev.confirm_by_date || ev.date;
-  const countdownLabelEl = document.getElementById('std-countdown-label');
-  const deadlineTextEl = document.getElementById('std-deadline-text');
-
-  if (countdownTargetStr) {
-    const isDeadline = !!ev.confirm_by_date;
-    const target = new Date(String(countdownTargetStr).includes('T') ? countdownTargetStr : countdownTargetStr + 'T23:59:59');
-
-    if (countdownLabelEl) {
-      countdownLabelEl.textContent = isDeadline ? 'Prazo para Confirmar Presença' : 'Contagem até ao Grande Dia';
-    }
-
-    if (isDeadline && deadlineTextEl) {
-      const d = new Date(countdownTargetStr.includes('T') ? countdownTargetStr : countdownTargetStr + 'T00:00:00');
-      const months = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-      if (!isNaN(d.getTime())) {
-        deadlineTextEl.textContent = `Confirmar até ${String(d.getDate()).padStart(2,'0')} de ${months[d.getMonth()]} de ${d.getFullYear()}`;
+  const labelEl = document.getElementById('std-countdown-label');
+  if (countdownTarget) {
+    const isDeadline = !!deadlineParsed;
+    if (labelEl) labelEl.textContent = isDeadline ? 'Prazo para Confirmar Presença' : 'Contagem até ao Grande Dia';
+    const target = countdownTarget.date;
+    const tick = () => {
+      const diff = target - new Date();
+      const set = (id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v;};
+      if (diff<=0) {
+        clearInterval(window._stdCountdownInterval);
+        set('std-days',0);set('std-hours',0);set('std-mins',0);set('std-secs',0);
+        if(labelEl)labelEl.textContent=isDeadline?'Prazo de confirmação encerrado':'Grande Dia chegou!';
+        return;
       }
-    }
-
-    if (!isNaN(target.getTime()) && target > new Date()) {
-      const tick = () => {
-        const diff = target - new Date();
-        if (diff <= 0) { clearInterval(window._stdCountdownInterval); return; }
-        const d2 = Math.floor(diff/86400000), h = Math.floor((diff%86400000)/3600000),
-              m = Math.floor((diff%3600000)/60000), s = Math.floor((diff%60000)/1000);
-        const set = (id,v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
-        set('std-days', d2); set('std-hours', h); set('std-mins', m); set('std-secs', s);
-      };
-      tick();
-      window._stdCountdownInterval = setInterval(tick, 1000);
-    } else {
-      // Date already passed — show zeroes
-      const set = (id,v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
-      set('std-days', 0); set('std-hours', 0); set('std-mins', 0); set('std-secs', 0);
-    }
+      set('std-days',  Math.floor(diff/86400000));
+      set('std-hours', Math.floor((diff%86400000)/3600000));
+      set('std-mins',  Math.floor((diff%3600000)/60000));
+      set('std-secs',  Math.floor((diff%60000)/1000));
+    };
+    tick();
+    window._stdCountdownInterval = setInterval(tick,1000);
   } else {
-    // No date at all — hide the wrap gracefully
-    const wrap = document.getElementById('std-countdown-wrap');
-    if (wrap) wrap.style.display = 'none';
+    if(labelEl)labelEl.textContent='';
+    const wrap=document.getElementById('std-countdown-wrap');
+    if(wrap)wrap.style.display='none';
   }
 
-  // If gated "on_confirmation": once the guest confirms via the drawer, re-check
-  // and remove this screen automatically without a full page reload, revealing
-  // the full invite — this is the "abrir convite automaticamente" requirement.
   window._stdCheckUnlockAfterRsvp = () => {
     const confirmed = rsvpCheckConfirmed(eventIdForRsvp);
-    const isConfirmedYes = confirmed && confirmed.attending === true;
-
-    if (decision.reason === 'on_confirmation' && isConfirmedYes) {
-      if (window._stdCountdownInterval) clearInterval(window._stdCountdownInterval);
-      if (typeof window._stdRestoreMusicPlayer === 'function') {
-        window._stdRestoreMusicPlayer();
-        window._stdRestoreMusicPlayer = null;
-      }
+    const yes = confirmed && confirmed.attending===true;
+    if (decision.reason==='on_confirmation' && yes) {
+      if(window._stdCountdownInterval)clearInterval(window._stdCountdownInterval);
+      if(typeof window._stdRestoreMusicPlayer==='function'){window._stdRestoreMusicPlayer();window._stdRestoreMusicPlayer=null;}
       overlay.remove();
-      renderGuestView(); // Re-render to show the full invite now
+      renderGuestView();
       return;
     }
-
-    // Not unlocking the gate (manual/by_date release, or this guest hasn't
-    // confirmed yet) — just update the button to reflect the new state:
-    // green checkmark + "Presença Confirmada" + thank-you text, in place.
-    if (isConfirmedYes) {
-      const btn = document.getElementById('std-rsvp-btn');
-      const label = document.getElementById('std-rsvp-btn-label');
-      const statusText = document.getElementById('std-rsvp-status-text');
-      if (btn) {
-        btn.style.background = '#16a34a';
-        btn.style.boxShadow = '0 4px 16px #16a34a55';
-        btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span id="std-rsvp-btn-label">Presença Confirmada</span>`;
-      }
-      if (statusText) {
-        statusText.textContent = 'Obrigado por confirmar! Já contamos consigo. 🎉';
-        statusText.style.color = '#16a34a';
-      }
+    if (yes) {
+      const btn=document.getElementById('std-rsvp-btn');
+      if(btn){btn.style.background='#16a34a';btn.style.boxShadow='0 4px 16px #16a34a55';btn.innerHTML='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span>Presença Confirmada</span>';}
+      const st=document.getElementById('std-rsvp-status-text');
+      if(st){st.textContent='Obrigado por confirmar! Já contamos consigo. 🎉';st.style.color='#16a34a';}
     }
   };
 }
