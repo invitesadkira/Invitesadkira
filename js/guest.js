@@ -2201,12 +2201,27 @@ function renderSaveTheDateScreen(ev, decision) {
 
   const eventDateParsed = parseDateSafe(ev.date);
   const deadlineParsed  = parseDateSafe(ev.confirm_by_date);
-  // Countdown = ONLY the RSVP deadline. Never count down to the event date
-  // itself (that would confuse with "Contagem até ao Grande Dia" and mislead
-  // guests about when to confirm). If no deadline is set, hide the countdown.
-  const countdownTarget = deadlineParsed || null;
+
+  // If we have a separate RSVP deadline AND it differs from the event date, use it.
+  // If the deadline IS the event date (or not set), still show a countdown but to the
+  // event date, with a different label. Always show something useful.
+  const deadlineIsEventDate = deadlineParsed && eventDateParsed &&
+    Math.abs(deadlineParsed.date - eventDateParsed.date) < 86400000; // within 1 day
+  const hasRealDeadline = deadlineParsed && !deadlineIsEventDate;
+
+  const countdownTarget = deadlineParsed || eventDateParsed; // always show countdown
   const eventDateLabel  = eventDateParsed ? eventDateParsed.label : null;
-  const deadlineLabel   = deadlineParsed  ? `Confirmar até ${deadlineParsed.label}` : null;
+  const deadlineLabel   = hasRealDeadline ? `Confirmar até ${deadlineParsed.label}` : null;
+
+  // Diagnostic: log what data actually arrived so debugging is easy
+  console.log('🔖 Save the Date — dados:', {
+    std_cover_url: ev.std_cover_url ? '✓' : '✗ — SQL não corrido?',
+    bg_url: ev.bg_url ? '✓' : '✗',
+    confirm_by_date: ev.confirm_by_date || '✗ null',
+    date: ev.date,
+    hasRealDeadline,
+    countdownTo: countdownTarget?.label || 'nada',
+  });
 
   let fontFaceCSS = '';
   if (nameFont) {
@@ -2273,7 +2288,7 @@ function renderSaveTheDateScreen(ev, decision) {
       </div>
       <p id="std-rsvp-status-text" style="font-size:0.82rem;color:#16a34a;margin-bottom:0.7rem;font-weight:600;min-height:1.1em">${alreadyConfirmed?'Obrigado por confirmar! Já contamos consigo. 🎉':''}</p>
       ${rsvpBtnHtml}
-      ${deadlineLabel ? `<p style="font-size:0.73rem;color:#9ca3af;margin-top:0.5rem;font-weight:500">${deadlineLabel}</p>` : ''}
+      ${hasRealDeadline ? `<p style="font-size:0.73rem;color:#9ca3af;margin-top:0.5rem;font-weight:500">Confirmar até ${deadlineParsed.label}</p>` : ''}
       <div id="std-music-player-slot" style="display:flex;justify-content:center;margin-top:1rem"></div>
     </div>`;
 
@@ -2320,8 +2335,10 @@ function renderSaveTheDateScreen(ev, decision) {
   if (window._stdCountdownInterval) clearInterval(window._stdCountdownInterval);
   const labelEl = document.getElementById('std-countdown-label');
   if (countdownTarget) {
-    // countdownTarget is ALWAYS the deadline (deadlineParsed) — never the event date
-    if (labelEl) labelEl.textContent = 'Prazo para Confirmar Presença';
+    // Label depends on whether we're counting to the RSVP deadline or the event itself
+    const countdownLabel = hasRealDeadline ? 'Prazo para Confirmar Presença' : 'Contagem até ao Grande Dia';
+    const expiredLabel   = hasRealDeadline ? 'Prazo de confirmação encerrado' : 'O Grande Dia chegou!';
+    if (labelEl) labelEl.textContent = countdownLabel;
     const target = countdownTarget.date;
     const tick = () => {
       const diff = target - new Date();
@@ -2329,7 +2346,7 @@ function renderSaveTheDateScreen(ev, decision) {
       if (diff<=0) {
         clearInterval(window._stdCountdownInterval);
         set('std-days',0);set('std-hours',0);set('std-mins',0);set('std-secs',0);
-        if(labelEl)labelEl.textContent='Prazo de confirmação encerrado';
+        if(labelEl)labelEl.textContent = expiredLabel;
         return;
       }
       set('std-days',  Math.floor(diff/86400000));
@@ -2340,7 +2357,7 @@ function renderSaveTheDateScreen(ev, decision) {
     tick();
     window._stdCountdownInterval = setInterval(tick,1000);
   } else {
-    // No deadline set — hide the countdown entirely
+    // No date at all — hide the countdown
     if(labelEl)labelEl.textContent='';
     const wrap=document.getElementById('std-countdown-wrap');
     if(wrap)wrap.style.display='none';
