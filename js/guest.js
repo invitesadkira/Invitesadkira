@@ -2170,6 +2170,12 @@ function renderSaveTheDateScreen(ev, decision) {
   const rsvpAllowed  = ev.rsvp_enabled !== false;
   const showCover    = ev.std_show_cover !== false && !!ev.bg_url;
 
+  console.log('🔖 Save the Date — diagnóstico de capa/foto:', {
+    std_show_cover: ev.std_show_cover, bg_url: ev.bg_url ? '(presente)' : '(vazio)',
+    showCover, std_intro_enabled: ev.std_intro_enabled, std_intro_photo_url: ev.std_intro_photo_url ? '(presente)' : '(vazio)',
+    confirm_by_date: ev.confirm_by_date, date: ev.date,
+  });
+
   const fmtDate = (dateStr) => {
     if (!dateStr) return null;
     const d = new Date(String(dateStr).split('T')[0] + 'T00:00:00');
@@ -2254,7 +2260,7 @@ function renderSaveTheDateScreen(ev, decision) {
       </div>` : ''}
 
       <div id="std-countdown-wrap" style="margin-bottom:1.75rem;display:none">
-        <p style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.12em;opacity:0.55;margin-bottom:0.5rem;font-weight:700">Prazo para Confirmação de Presença</p>
+        <p style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.12em;opacity:0.55;margin-bottom:0.5rem;font-weight:700">${ev.confirm_by_date ? 'Prazo para Confirmação de Presença' : 'Contagem até ao Grande Dia'}</p>
         <div id="std-countdown-grid" style="display:flex;gap:0.6rem;justify-content:center;margin-bottom:0.5rem">
           <div style="background:${evColor}14;border-radius:0.75rem;padding:0.65rem 0.4rem;min-width:56px"><div id="std-days" style="font-size:1.3rem;font-weight:800;color:${evColor}">--</div><div style="font-size:0.6rem;opacity:0.65;text-transform:uppercase">Dias</div></div>
           <div style="background:${evColor}14;border-radius:0.75rem;padding:0.65rem 0.4rem;min-width:56px"><div id="std-hours" style="font-size:1.3rem;font-weight:800;color:${evColor}">--</div><div style="font-size:0.6rem;opacity:0.65;text-transform:uppercase">Horas</div></div>
@@ -2295,10 +2301,28 @@ function renderSaveTheDateScreen(ev, decision) {
     document.getElementById('std-open-invite-btn').onclick = () => {
       document.getElementById('std-intro-screen').style.display = 'none';
       document.getElementById('std-main-content').style.display = '';
+
+      // Case 1: direct audio file (mp3/etc via <audio> tag)
       const audio = document.getElementById('guest-audio');
       if (audio && audio.src) {
         audio.muted = false;
         audio.play().then(() => setMusicPlayingUI(true)).catch(() => {});
+      }
+
+      // Case 2: YouTube — the iframe is created with autoplay=1 ahead of
+      // time, but browsers usually block it until a real user gesture. This
+      // click IS that gesture, so we can reliably command the existing
+      // player to play now via the YouTube postMessage API.
+      const ytFrame = document.getElementById('yt-music-frame');
+      if (ytFrame && ytFrame.src && ytFrame.contentWindow) {
+        try {
+          ytFrame.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'playVideo', args: [] }), '*');
+          ytFrame.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'unMute', args: [] }), '*');
+          ytFrame.dataset.playing = '1';
+          setMusicPlayingUI(true);
+          const sub = document.getElementById('music-sub-text');
+          if (sub) sub.textContent = 'A tocar';
+        } catch(e) {}
       }
     };
   }
@@ -2313,12 +2337,14 @@ function renderSaveTheDateScreen(ev, decision) {
     };
   }
 
-  // ── Two separate countdowns, clearly labeled: the event date itself
-  // (shown as a static label above) and a LIVE countdown specifically to
-  // the RSVP confirmation deadline (confirm_by_date) — never conflated. ──
+  // ── Live countdown to the RSVP confirmation deadline. Falls back to the
+  // event date itself if no separate confirm_by_date was set, so the
+  // countdown box is never silently empty/hidden just because the organiser
+  // didn't fill in a deadline — there is always SOME date to count down to. ──
   if (window._stdCountdownInterval) clearInterval(window._stdCountdownInterval);
-  if (ev.confirm_by_date) {
-    const target = new Date(String(ev.confirm_by_date).includes('T') ? ev.confirm_by_date : ev.confirm_by_date + 'T23:59:59');
+  const countdownTargetStr = ev.confirm_by_date || ev.date;
+  if (countdownTargetStr) {
+    const target = new Date(String(countdownTargetStr).includes('T') ? countdownTargetStr : countdownTargetStr + 'T23:59:59');
     if (!isNaN(target.getTime()) && target > new Date()) {
       const wrap = document.getElementById('std-countdown-wrap');
       if (wrap) wrap.style.display = '';

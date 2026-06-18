@@ -93,7 +93,9 @@ async function supabaseRequest(endpoint, method = 'GET', body = null) {
         const OPTIONAL_COLS = ['story_text','invite_blessing','decor_ornament_url','decor_side_url',
           'show_decor','save_the_date','show_countdown','event_message','show_story',
           'venue_ceremony','venue_ceremony_maps','venue_civil','venue_civil_maps',
-          'venue_reception','venue_reception_maps'];
+          'venue_reception','venue_reception_maps',
+          'std_name_size','std_title_size','std_intro_enabled','std_intro_text','std_intro_photo_url',
+          'std_show_cover','personalized_links_enabled','bible_text_2','bible_ref_2','bible_size'];
         let safeEndpoint = endpoint;
         OPTIONAL_COLS.forEach(col => {
           safeEndpoint = safeEndpoint.replace(new RegExp(`,${col}(?=[,&]|$)`,'g'), '').replace(new RegExp(`${col},`,'g'),'');
@@ -111,7 +113,9 @@ async function supabaseRequest(endpoint, method = 'GET', body = null) {
         const OPTIONAL_BODY_COLS = ['story_text','invite_blessing','decor_ornament_url','decor_side_url',
           'show_decor','save_the_date','show_countdown','event_message',
           'venue_ceremony','venue_ceremony_maps','venue_civil','venue_civil_maps',
-          'venue_reception','venue_reception_maps'];
+          'venue_reception','venue_reception_maps',
+          'std_name_size','std_title_size','std_intro_enabled','std_intro_text','std_intro_photo_url',
+          'std_show_cover','personalized_links_enabled','bible_text_2','bible_ref_2','bible_size'];
         const cleanBody = { ...body };
         let changed = false;
         OPTIONAL_BODY_COLS.forEach(col => { if (col in cleanBody) { delete cleanBody[col]; changed = true; } });
