@@ -313,6 +313,7 @@ function buildAdminQuickGrid() {
     { icon:'shopping-bag', label:'Encomendas',       action:"openOrdersManager()" },
     { icon:'bell',         label:'Notificar Todos',  action:"openSendNotificationModal()" },
     { icon:'bar-chart-3',  label:'Análise de Acessos', action:"openAnalyticsPanel()" },
+    { icon:'file-text',  label:'Política e Termos', action:"openLegalPagesEditor()" },
   ];
   grid.innerHTML = items.map(it => `
     <button class="quick-card" onclick="${it.action}" style="position:relative">
@@ -815,17 +816,26 @@ async function handleStdIntroPhotoUpload(input) {
     toast('Seleciona um ficheiro PNG ou JPG.'); return;
   }
   if (file.size > 4 * 1024 * 1024) { toast('Imagem muito grande. Máx. 4 MB.'); return; }
+  const prevWrap = document.getElementById('std-intro-photo-preview-wrap');
   const prev = document.getElementById('std-intro-photo-preview');
-  if (prev) { prev.classList.add('hidden'); }
+  if (prevWrap) prevWrap.classList.add('hidden');
   toast('A carregar foto...');
   try {
     const url = await uploadImageToStorage(file, 'event-covers');
     document.getElementById('evt-std-intro-photo-url').value = url;
-    if (prev) { prev.src = url; prev.classList.remove('hidden'); }
+    if (prev) prev.src = url;
+    if (prevWrap) prevWrap.classList.remove('hidden');
     toast('Foto de abertura carregada!');
   } catch(e) {
     toast('Erro ao carregar a foto.');
   }
+}
+
+function removeStdIntroPhoto() {
+  document.getElementById('evt-std-intro-photo-url').value = '';
+  document.getElementById('evt-std-intro-photo').value = '';
+  document.getElementById('std-intro-photo-preview-wrap')?.classList.add('hidden');
+  toast('Foto de abertura removida.');
 }
 
 // ── Limit text input to max N words ──

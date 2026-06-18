@@ -152,6 +152,18 @@ async function renderGuestView() {
     }
   }
 
+  // ── Load date/time from dedicated table BEFORE snapshotting _keepFields ──
+  // (must run first: _keepFields below captures these values to protect them
+  // from being overwritten by the visuals merge later, so it needs the
+  // freshest data, not whatever checkURLForEvent's initial fetch had)
+  try {
+    const dates = await loadEventDates(eventData.id || Store.currentEventId);
+    if (dates.event_date) eventData.date      = dates.event_date;
+    if (dates.event_time) eventData.time      = dates.event_time;
+    if (dates.show_time)  eventData.show_time = dates.show_time;
+    if (dates.confirm_by_date) eventData.confirm_by_date = dates.confirm_by_date;
+  } catch(e) { console.warn('loadEventDates failed:', e); }
+
   // ── Load visual settings from event_visuals table ──
   // Save ALL critical fields that must NEVER be overwritten by the visuals table
   const _keepFields = {
@@ -256,16 +268,8 @@ async function renderGuestView() {
       }
     } catch(e2) { console.warn('Visual fallback reload failed:', e2); }
   }
-  // ── Also load date/time from dedicated table ──
-  try {
-    const dates = await loadEventDates(eventData.id || Store.currentEventId);
-    if (dates.event_date) eventData.date      = dates.event_date;
-    if (dates.event_time) eventData.time      = dates.event_time;
-    if (dates.show_time)  eventData.show_time = dates.show_time;
-    if (dates.confirm_by_date) eventData.confirm_by_date = dates.confirm_by_date;
-  } catch(e) { console.warn('loadEventDates failed:', e); }
 
-  const RSVP_ONLY_FIELDS = new Set(['show_time','time','date','title','confirm_by_date','deadline','allowCompanions','allow_companions','maxCompanions','max_companions','allowKids','allow_kids','maxKids','max_kids','allowGifts','allow_gifts','allowSides','allow_sides','side1_name','side2_name','allowMessages','allow_messages','showGuestMessages','show_guest_messages','id','eventCode','cover_image','rsvp_enabled','save_the_date_enabled','release_type','release_date','is_invite_released','std_title','std_subtitle','std_font_family','std_name_size','std_title_size','std_intro_enabled','std_intro_text','std_intro_photo_url','personalized_links_enabled']);
+  const RSVP_ONLY_FIELDS = new Set(['show_time','time','date','title','confirm_by_date','deadline','allowCompanions','allow_companions','maxCompanions','max_companions','allowKids','allow_kids','maxKids','max_kids','allowGifts','allow_gifts','allowSides','allow_sides','side1_name','side2_name','allowMessages','allow_messages','showGuestMessages','show_guest_messages','id','eventCode','cover_image','rsvp_enabled','save_the_date_enabled','release_type','release_date','is_invite_released','std_title','std_subtitle','std_font_family','std_name_size','std_title_size','std_intro_enabled','std_intro_text','std_intro_photo_url','std_show_cover','personalized_links_enabled']);
 
   // Restore all fields: RSVP fields always from events table; visual fields use
   // whichever source (visuals or events table) has a non-null value
@@ -2164,15 +2168,16 @@ function renderSaveTheDateScreen(ev, decision) {
   const nameSize     = parseFloat(ev.std_name_size) || 2.4;
   const titleSize    = parseFloat(ev.std_title_size) || 0.78;
   const rsvpAllowed  = ev.rsvp_enabled !== false;
+  const showCover    = ev.std_show_cover !== false && !!ev.bg_url;
 
-  let dateLabel = '';
-  if (ev.date) {
-    const d = new Date(String(ev.date).split('T')[0] + 'T00:00:00');
-    if (!isNaN(d.getTime())) {
-      const months = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-      dateLabel = `${String(d.getDate()).padStart(2,'0')} de ${months[d.getMonth()]} de ${d.getFullYear()}`;
-    }
-  }
+  const fmtDate = (dateStr) => {
+    if (!dateStr) return null;
+    const d = new Date(String(dateStr).split('T')[0] + 'T00:00:00');
+    if (isNaN(d.getTime())) return null;
+    const months = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+    return `${String(d.getDate()).padStart(2,'0')} de ${months[d.getMonth()]} de ${d.getFullYear()}`;
+  };
+  const eventDateLabel = fmtDate(ev.date);
 
   // Apply custom font face for the couple names, if one was chosen
   let fontFaceCSS = '';
@@ -2181,11 +2186,10 @@ function renderSaveTheDateScreen(ev, decision) {
     if (fontDef) fontFaceCSS = `@font-face { font-family: '${nameFont}'; src: url('${fontDef.url}'); font-display: swap; }`;
   }
 
-  // Remove any previous instance before re-rendering. CRITICAL: restore the
-  // music player to its original DOM location first if it was re-parented
-  // into a previous overlay instance — otherwise .remove() below would
-  // destroy the actual #guest-music-player element along with the overlay,
-  // permanently breaking the music player for the rest of the session.
+  // Restore music player to its original DOM location first if it was
+  // re-parented into a previous overlay instance — otherwise the .remove()
+  // below would destroy the actual #guest-music-player element along with
+  // the old overlay, permanently breaking music for the rest of the session.
   if (typeof window._stdRestoreMusicPlayer === 'function') {
     window._stdRestoreMusicPlayer();
     window._stdRestoreMusicPlayer = null;
@@ -2194,45 +2198,76 @@ function renderSaveTheDateScreen(ev, decision) {
 
   const overlay = document.createElement('div');
   overlay.id = 'std-screen-overlay';
-  overlay.style.cssText = `position:fixed;inset:0;z-index:9000;overflow-y:auto;background:${ev.bg_url ? `url('${ev.bg_url}') center/cover no-repeat` : `linear-gradient(160deg, ${evColor}, #0d2a35)`};display:flex;align-items:center;justify-content:center;padding:1.5rem`;
+  // Background: white like the rest of the invite, with the event's chosen
+  // colour used for accents/details — matching the full invite's palette,
+  // not a fixed dark gradient. The cover photo (if enabled) sits behind a
+  // soft scrim at the top, never covering the whole screen by default.
+  overlay.style.cssText = `position:fixed;inset:0;z-index:9000;overflow-y:auto;background:#fdfaf6;display:flex;flex-direction:column;align-items:center;${showCover ? '' : 'justify-content:center;'}padding:0`;
 
   const introEnabled = (ev.std_intro_enabled === true || ev.std_intro_enabled === 'true') && ev.std_intro_photo_url;
 
+  // Check if THIS guest has already confirmed attendance (drives the
+  // "Confirmar Presença" button's colour/icon/text — green + check once done)
+  const eventIdForRsvp = ev.id || Store.currentEventId;
+  const alreadyConfirmed = (() => {
+    const c = rsvpCheckConfirmed(eventIdForRsvp);
+    return c && c.attending === true;
+  })();
+
+  const rsvpBtnHtml = rsvpAllowed ? `
+      <button id="std-rsvp-btn" style="background:${alreadyConfirmed ? '#16a34a' : evColor};color:#fff;border:none;border-radius:999px;padding:0.9rem 2.2rem;font-weight:800;font-size:0.95rem;cursor:pointer;box-shadow:0 4px 16px ${alreadyConfirmed ? '#16a34a' : evColor}55;margin-bottom:1rem;display:inline-flex;align-items:center;gap:0.5rem;font-family:'Quicksand',sans-serif">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${alreadyConfirmed ? '<path d="M20 6 9 17l-5-5"/>' : '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>'}</svg>
+        <span id="std-rsvp-btn-label">${alreadyConfirmed ? 'Presença Confirmada' : 'Confirmar Presença'}</span>
+      </button>` : '';
+
   overlay.innerHTML = `
     <style>${fontFaceCSS}</style>
-    <div style="position:absolute;inset:0;background:rgba(0,0,0,0.45)"></div>
 
-    ${introEnabled ? `
-    <!-- ── INTRO SCREEN: photo + "Abrir Convite" button (guarantees music can start) ── -->
-    <div id="std-intro-screen" style="position:relative;z-index:3;max-width:420px;width:100%;text-align:center;color:#fff;padding:1rem 0">
-      <div style="width:100%;max-height:min(48vh,380px);aspect-ratio:4/5;border-radius:1.25rem;overflow:hidden;margin-bottom:1.5rem;box-shadow:0 8px 32px rgba(0,0,0,0.35)">
-        <img src="${ev.std_intro_photo_url}" style="width:100%;height:100%;object-fit:cover;object-position:center" alt="">
-      </div>
-      <p style="font-size:1.05rem;font-weight:600;line-height:1.6;margin-bottom:2rem;opacity:0.95">${escapeHTML(ev.std_intro_text || 'Recebeu este convite porque é importante para nós')}</p>
-      <button id="std-open-invite-btn" style="background:#fff;color:${evColor};border:none;border-radius:999px;padding:0.95rem 2.75rem;font-weight:800;font-size:0.98rem;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,0.3)">
-        Abrir Convite
-      </button>
+    ${showCover ? `
+    <div style="position:relative;width:100%;height:38vh;min-height:220px;flex-shrink:0;overflow:hidden">
+      <img src="${ev.bg_url}" style="width:100%;height:100%;object-fit:cover" alt="">
+      <div style="position:absolute;inset:0;background:linear-gradient(to bottom, rgba(0,0,0,0.15), rgba(253,250,246,1))"></div>
     </div>` : ''}
 
-    <div id="std-main-content" style="position:relative;z-index:2;max-width:420px;width:100%;text-align:center;color:#fff;padding:1rem 0;${introEnabled ? 'display:none' : ''}">
-      <p style="font-size:${titleSize}rem;letter-spacing:0.25em;text-transform:uppercase;opacity:0.85;margin-bottom:0.5rem;font-weight:700">${escapeHTML(stdTitle)}</p>
-      <h1 style="font-size:1.15rem;font-weight:600;margin-bottom:1.5rem;opacity:0.95;font-family:'Quicksand',sans-serif">${escapeHTML(stdSubtitle)}</h1>
-      ${coupleNames ? `<h2 style="font-family:${nameFont ? `'${nameFont}',` : ''}var(--event-font, 'Playfair Display', serif);font-size:clamp(1.3rem, 7vw, ${nameSize}rem);margin-bottom:1rem;line-height:1.3;white-space:nowrap;display:flex;align-items:center;justify-content:center;gap:0.3em;padding:0 0.5rem">${coupleNames}</h2>` : ''}
-      ${dateLabel ? `<p style="font-size:1.05rem;font-weight:600;margin-bottom:2rem;opacity:0.92">${dateLabel}</p>` : ''}
-
-      <div id="std-countdown-grid" style="display:flex;gap:0.75rem;justify-content:center;margin-bottom:0.75rem">
-        <div style="background:rgba(255,255,255,0.12);border-radius:0.75rem;padding:0.75rem 0.5rem;min-width:60px"><div id="std-days" style="font-size:1.5rem;font-weight:800">--</div><div style="font-size:0.65rem;opacity:0.75;text-transform:uppercase">Dias</div></div>
-        <div style="background:rgba(255,255,255,0.12);border-radius:0.75rem;padding:0.75rem 0.5rem;min-width:60px"><div id="std-hours" style="font-size:1.5rem;font-weight:800">--</div><div style="font-size:0.65rem;opacity:0.75;text-transform:uppercase">Horas</div></div>
-        <div style="background:rgba(255,255,255,0.12);border-radius:0.75rem;padding:0.75rem 0.5rem;min-width:60px"><div id="std-mins" style="font-size:1.5rem;font-weight:800">--</div><div style="font-size:0.65rem;opacity:0.75;text-transform:uppercase">Min</div></div>
-        <div style="background:rgba(255,255,255,0.12);border-radius:0.75rem;padding:0.75rem 0.5rem;min-width:60px"><div id="std-secs" style="font-size:1.5rem;font-weight:800">--</div><div style="font-size:0.65rem;opacity:0.75;text-transform:uppercase">Seg</div></div>
+    ${introEnabled ? `
+    <!-- ── INTRO SCREEN: full-screen photo + "Abrir Convite" button (guarantees music can start) ── -->
+    <div id="std-intro-screen" style="position:fixed;inset:0;z-index:10;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;color:#fff;padding:2rem">
+      <div style="position:absolute;inset:0;background:${ev.std_intro_photo_url ? `url('${ev.std_intro_photo_url}') center/cover no-repeat` : evColor}"></div>
+      <div style="position:absolute;inset:0;background:rgba(0,0,0,0.45)"></div>
+      <div style="position:relative;z-index:1;max-width:380px">
+        <p style="font-size:1.1rem;font-weight:600;line-height:1.6;margin-bottom:2rem;opacity:0.95">${escapeHTML(ev.std_intro_text || 'Recebeu este convite porque é importante para nós')}</p>
+        <button id="std-open-invite-btn" style="background:#fff;color:${evColor};border:none;border-radius:999px;padding:0.95rem 2.75rem;font-weight:800;font-size:0.98rem;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,0.3);font-family:'Quicksand',sans-serif">
+          Abrir Convite
+        </button>
       </div>
-      <p style="font-size:0.78rem;color:#fff;opacity:0.9;margin-bottom:1.75rem;font-weight:600">até à data limite de confirmação</p>
+    </div>` : ''}
 
-      ${rsvpAllowed ? `<button id="std-rsvp-btn" style="background:#fff;color:${evColor};border:none;border-radius:999px;padding:0.9rem 2.5rem;font-weight:800;font-size:0.95rem;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,0.25);margin-bottom:1rem">
-        Confirmar Presença
-      </button>` : ''}
+    <div id="std-main-content" style="position:relative;z-index:2;max-width:420px;width:100%;text-align:center;color:#1e293b;padding:${showCover ? '1.5rem' : '2rem'} 1.5rem 2.5rem;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;${introEnabled ? 'display:none' : ''}">
+      <p style="font-size:${titleSize}rem;letter-spacing:0.25em;text-transform:uppercase;opacity:0.7;margin-bottom:0.6rem;font-weight:700;color:${evColor};font-family:'Quicksand',sans-serif">${escapeHTML(stdTitle)}</p>
+      ${coupleNames ? `<h2 style="font-family:${nameFont ? `'${nameFont}',` : ''}var(--event-font, 'Playfair Display', serif);font-size:clamp(1.3rem, 7vw, ${nameSize}rem);margin-bottom:0.6rem;line-height:1.3;white-space:nowrap;display:flex;align-items:center;justify-content:center;gap:0.3em;padding:0 0.5rem;color:#1e293b">${coupleNames}</h2>` : ''}
+      <h1 style="font-size:1.05rem;font-weight:600;margin-bottom:1.75rem;opacity:0.75;font-family:'Quicksand',sans-serif;color:#374151">${escapeHTML(stdSubtitle)}</h1>
 
-      <div id="std-music-player-slot" style="display:flex;justify-content:center"></div>
+      ${eventDateLabel ? `
+      <div style="margin-bottom:1.5rem">
+        <p style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.12em;opacity:0.55;margin-bottom:0.2rem;font-weight:700">Data do Evento</p>
+        <p style="font-size:1.1rem;font-weight:700;color:${evColor}">${eventDateLabel}</p>
+      </div>` : ''}
+
+      <div id="std-countdown-wrap" style="margin-bottom:1.75rem;display:none">
+        <p style="font-size:0.68rem;text-transform:uppercase;letter-spacing:0.12em;opacity:0.55;margin-bottom:0.5rem;font-weight:700">Prazo para Confirmação de Presença</p>
+        <div id="std-countdown-grid" style="display:flex;gap:0.6rem;justify-content:center;margin-bottom:0.5rem">
+          <div style="background:${evColor}14;border-radius:0.75rem;padding:0.65rem 0.4rem;min-width:56px"><div id="std-days" style="font-size:1.3rem;font-weight:800;color:${evColor}">--</div><div style="font-size:0.6rem;opacity:0.65;text-transform:uppercase">Dias</div></div>
+          <div style="background:${evColor}14;border-radius:0.75rem;padding:0.65rem 0.4rem;min-width:56px"><div id="std-hours" style="font-size:1.3rem;font-weight:800;color:${evColor}">--</div><div style="font-size:0.6rem;opacity:0.65;text-transform:uppercase">Horas</div></div>
+          <div style="background:${evColor}14;border-radius:0.75rem;padding:0.65rem 0.4rem;min-width:56px"><div id="std-mins" style="font-size:1.3rem;font-weight:800;color:${evColor}">--</div><div style="font-size:0.6rem;opacity:0.65;text-transform:uppercase">Min</div></div>
+          <div style="background:${evColor}14;border-radius:0.75rem;padding:0.65rem 0.4rem;min-width:56px"><div id="std-secs" style="font-size:1.3rem;font-weight:800;color:${evColor}">--</div><div style="font-size:0.6rem;opacity:0.65;text-transform:uppercase">Seg</div></div>
+        </div>
+      </div>
+
+      <p id="std-rsvp-status-text" style="font-size:0.82rem;color:${alreadyConfirmed ? '#16a34a' : '#6b7280'};margin-bottom:1.25rem;font-weight:600">${alreadyConfirmed ? 'Obrigado por confirmar! Já contamos consigo. 🎉' : ''}</p>
+
+      ${rsvpBtnHtml}
+
+      <div id="std-music-player-slot" style="display:flex;justify-content:center;margin-top:0.5rem"></div>
     </div>`;
   document.body.appendChild(overlay);
 
@@ -2268,7 +2303,9 @@ function renderSaveTheDateScreen(ev, decision) {
     };
   }
 
-  // Wire RSVP button — opens the same drawer/flow as the full invite would
+  // Wire RSVP button — opens the same drawer/flow as the full invite would.
+  // If already confirmed, tapping again just re-opens the drawer so they
+  // can update their response (e.g. add a companion) rather than doing nothing.
   const rsvpBtn = document.getElementById('std-rsvp-btn');
   if (rsvpBtn) {
     rsvpBtn.onclick = () => {
@@ -2276,15 +2313,18 @@ function renderSaveTheDateScreen(ev, decision) {
     };
   }
 
-  // Countdown to confirm_by_date (RSVP deadline), falling back to event date
-  const targetStr = ev.confirm_by_date || ev.date;
-  if (targetStr) {
-    const target = new Date(String(targetStr).includes('T') ? targetStr : targetStr + 'T23:59:59');
-    if (!isNaN(target.getTime())) {
-      if (window._stdCountdownInterval) clearInterval(window._stdCountdownInterval);
+  // ── Two separate countdowns, clearly labeled: the event date itself
+  // (shown as a static label above) and a LIVE countdown specifically to
+  // the RSVP confirmation deadline (confirm_by_date) — never conflated. ──
+  if (window._stdCountdownInterval) clearInterval(window._stdCountdownInterval);
+  if (ev.confirm_by_date) {
+    const target = new Date(String(ev.confirm_by_date).includes('T') ? ev.confirm_by_date : ev.confirm_by_date + 'T23:59:59');
+    if (!isNaN(target.getTime()) && target > new Date()) {
+      const wrap = document.getElementById('std-countdown-wrap');
+      if (wrap) wrap.style.display = '';
       const tick = () => {
         const diff = target - new Date();
-        if (diff <= 0) { clearInterval(window._stdCountdownInterval); return; }
+        if (diff <= 0) { clearInterval(window._stdCountdownInterval); if (wrap) wrap.style.display = 'none'; return; }
         const d = Math.floor(diff/86400000), h = Math.floor((diff%86400000)/3600000),
               m = Math.floor((diff%3600000)/60000), s = Math.floor((diff%60000)/1000);
         const set = (id,v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
@@ -2296,15 +2336,39 @@ function renderSaveTheDateScreen(ev, decision) {
   }
 
   // If gated "on_confirmation": once the guest confirms via the drawer, re-check
-  // and remove this screen automatically without a full page reload.
+  // and remove this screen automatically without a full page reload, revealing
+  // the full invite — this is the "abrir convite automaticamente" requirement.
   window._stdCheckUnlockAfterRsvp = () => {
-    if (decision.reason !== 'on_confirmation') return;
-    const confirmed = rsvpCheckConfirmed(ev.id || Store.currentEventId);
-    if (confirmed && confirmed.attending === true) {
+    const confirmed = rsvpCheckConfirmed(eventIdForRsvp);
+    const isConfirmedYes = confirmed && confirmed.attending === true;
+
+    if (decision.reason === 'on_confirmation' && isConfirmedYes) {
       if (window._stdCountdownInterval) clearInterval(window._stdCountdownInterval);
-      if (typeof window._stdRestoreMusicPlayer === 'function') window._stdRestoreMusicPlayer();
+      if (typeof window._stdRestoreMusicPlayer === 'function') {
+        window._stdRestoreMusicPlayer();
+        window._stdRestoreMusicPlayer = null;
+      }
       overlay.remove();
       renderGuestView(); // Re-render to show the full invite now
+      return;
+    }
+
+    // Not unlocking the gate (manual/by_date release, or this guest hasn't
+    // confirmed yet) — just update the button to reflect the new state:
+    // green checkmark + "Presença Confirmada" + thank-you text, in place.
+    if (isConfirmedYes) {
+      const btn = document.getElementById('std-rsvp-btn');
+      const label = document.getElementById('std-rsvp-btn-label');
+      const statusText = document.getElementById('std-rsvp-status-text');
+      if (btn) {
+        btn.style.background = '#16a34a';
+        btn.style.boxShadow = '0 4px 16px #16a34a55';
+        btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span id="std-rsvp-btn-label">Presença Confirmada</span>`;
+      }
+      if (statusText) {
+        statusText.textContent = 'Obrigado por confirmar! Já contamos consigo. 🎉';
+        statusText.style.color = '#16a34a';
+      }
     }
   };
 }

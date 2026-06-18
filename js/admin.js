@@ -2210,67 +2210,106 @@ async function deleteFontFromStorage(name, url, btn) {
   toast(`Fonte "${name}" eliminada.`);
 }
 // ===================== LEGAL MODALS =====================
-function showPrivacyModal() {
+async function showPrivacyModal() {
   if (document.getElementById('_privacy-modal')) return;
   const m = document.createElement('div');
   m.id = '_privacy-modal';
   m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:99999;display:flex;align-items:center;justify-content:center;padding:1rem';
   m.innerHTML = `<div style="background:#fff;border-radius:1.25rem;padding:1.75rem;max-width:540px;width:100%;max-height:85vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,0.25)">
     <h3 style="font-size:1.1rem;font-weight:800;color:#1e293b;margin-bottom:1rem">Política de Privacidade</h3>
-    <div style="font-size:0.875rem;color:#4b5563;line-height:1.7;display:flex;flex-direction:column;gap:0.75rem">
-      <p>A <strong>Invites Web-Convites</strong> (marca da AdKira) compromete-se a proteger a privacidade de todos os utilizadores e convidados desta plataforma.</p>
-      <p><strong>Dados recolhidos:</strong> Nome e telefone (para conta); nome e resposta de confirmação (para convidados); imagens, música e informações do evento.</p>
-      <p><strong>Finalidade:</strong> Uso exclusivo para gestão e exibição do convite digital. Nunca vendidos ou partilhados com terceiros.</p>
-      <p><strong>Retenção:</strong> Dados do evento disponíveis até 1 semana após o evento. Dados de conta permanecem enquanto a conta estiver activa.</p>
-      <p><strong>Segurança:</strong> Palavras-passe em hash SHA-256. Comunicações via HTTPS.</p>
-      <p><strong>Menores:</strong> Plataforma não dirigida a menores de 18 anos.</p>
-      <p><strong>Cookies:</strong> Apenas localStorage para sessão. Sem cookies de rastreamento.</p>
-      <p><strong>Propaganda:</strong> Após confirmação de presença, pode surgir mensagem promocional dos nossos serviços.</p>
-      <p><strong>Direitos:</strong> Solicite eliminação em invitesadkira@gmail.com.</p>
-      <p><strong>Contacto:</strong> AdKira · Viana, Luanda Sul · invitesadkira@gmail.com · WhatsApp 959 823 409</p>
-    </div>
+    <div id="_privacy-content" style="font-size:0.875rem;color:#4b5563;line-height:1.7;white-space:pre-wrap">A carregar...</div>
     <button id="_close-privacy-btn" style="margin-top:1.25rem;width:100%;background:#007f9f;color:#fff;border:none;border-radius:999px;padding:0.8rem;font-weight:700;font-size:0.95rem;cursor:pointer;font-family:inherit">Fechar</button>
   </div>`;
   m.onclick = (e) => { if (e.target === m) m.remove(); };
   document.body.appendChild(m);
   document.getElementById('_close-privacy-btn').onclick = () => m.remove();
+
+  try {
+    const rows = await supabaseRequest(`legal_pages?slug=eq.privacy&select=content&limit=1`).catch(() => []);
+    const content = (rows && rows[0] && rows[0].content) ? rows[0].content : _LEGACY_PRIVACY_TEXT;
+    const el = document.getElementById('_privacy-content');
+    if (el) el.textContent = content;
+  } catch(e) {
+    const el = document.getElementById('_privacy-content');
+    if (el) el.textContent = _LEGACY_PRIVACY_TEXT;
+  }
 }
 
-function showTermsModal() {
+const _LEGACY_PRIVACY_TEXT = `A Invites Web-Convites (marca da AdKira) compromete-se a proteger a privacidade de todos os utilizadores e convidados desta plataforma.
+
+Dados recolhidos: Nome e telefone (para conta); nome e resposta de confirmação (para convidados); imagens, música e informações do evento.
+
+Finalidade: Uso exclusivo para gestão e exibição do convite digital. Nunca vendidos ou partilhados com terceiros.
+
+Retenção: Dados do evento disponíveis até 1 semana após o evento. Dados de conta permanecem enquanto a conta estiver activa.
+
+Segurança: Palavras-passe em hash SHA-256. Comunicações via HTTPS.
+
+Menores: Plataforma não dirigida a menores de 18 anos.
+
+Cookies: Apenas localStorage para sessão. Sem cookies de rastreamento.
+
+Propaganda: Após confirmação de presença, pode surgir mensagem promocional dos nossos serviços.
+
+Direitos: Solicite eliminação em invitesadkira@gmail.com.
+
+Contacto: AdKira · Viana, Luanda Sul · invitesadkira@gmail.com · WhatsApp 959 823 409`;
+
+async function showTermsModal() {
   if (document.getElementById('_terms-modal')) return;
   const m = document.createElement('div');
   m.id = '_terms-modal';
   m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:99999;display:flex;align-items:center;justify-content:center;padding:1rem';
   m.innerHTML = `<div style="background:#fff;border-radius:1.25rem;padding:1.75rem;max-width:540px;width:100%;max-height:85vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,0.25)">
     <h3 style="font-size:1.1rem;font-weight:800;color:#1e293b;margin-bottom:1rem">Termos de Uso</h3>
-    <div style="font-size:0.875rem;color:#4b5563;line-height:1.7;display:flex;flex-direction:column;gap:0.75rem">
-      <p>Ao utilizar os serviços da <strong>Invites Web-Convites</strong> (marca da AdKira), concorda com os seguintes termos e condições. Leia-os com atenção.</p>
-      <p><strong>1. O nosso compromisso consigo</strong><br>
-      A Invites Web-Convites compromete-se a fornecer uma plataforma estável, segura e funcional para a criação de convites digitais. Trabalhamos activamente para garantir que o seu convite esteja disponível durante todo o período do evento. Em caso de falha técnica que comprometa o acesso ao seu convite, contactamos activamente o organizador e envidamos todos os esforços para repor o serviço no menor tempo possível.</p>
-      <p><strong>2. O que oferecemos</strong><br>
-      Um convite digital personalizado com página do convidado, sistema de confirmação de presença, galeria de fotos, música, locais do evento e muito mais. O convite fica activo desde a activação até 7 dias após a data do evento. Apoio por WhatsApp durante todo o processo.</p>
-      <p><strong>3. Disponibilidade do serviço</strong><br>
-      Utilizamos infraestrutura de nível profissional (Supabase). Em caso de manutenção programada, avisamos com antecedência. Falhas imprevistas são tratadas com prioridade. Para eventos muito importantes, recomendamos confirmar o funcionamento do link com 48h de antecedência.</p>
-      <p><strong>4. O vosso conteúdo</strong><br>
-      Todo o conteúdo (fotos, textos, músicas) que carrega é da sua responsabilidade. Deve garantir que possui os direitos de uso. Não publicamos nem partilhamos o vosso conteúdo com terceiros.</p>
-      <p><strong>5. Preços e pagamentos</strong><br>
-      O pagamento é único por evento, sem mensalidades. Após confirmação do comprovativo, o evento é activado. Não efectuamos reembolsos após a activação do convite, salvo em caso de falha técnica grave da nossa parte.</p>
-      <p><strong>6. Dados e privacidade</strong><br>
-      Guardamos apenas os dados necessários para o funcionamento do convite. Não vendemos dados a terceiros. Os dados dos convidados (nome e confirmação de presença) são visíveis apenas para o organizador do evento.</p>
-      <p><strong>7. Mensagem promocional</strong><br>
-      Após a confirmação de presença de um convidado, é apresentada uma breve mensagem promovendo os nossos serviços. Esta prática é transparente e faz parte do nosso modelo de negócio.</p>
-      <p><strong>8. Rescisão</strong><br>
-      Reservamos o direito de suspender contas que violem estes termos. Em caso de suspensão por nossa iniciativa sem justificação válida, reembolsamos o valor pago.</p>
-      <p><strong>9. Contacto e suporte</strong><br>
-      Para qualquer questão, reclamação ou pedido, contacte-nos. Respondemos em menos de 24h em dias úteis.</p>
-      <p><em>AdKira · Viana, Luanda Sul, Angola · invitesadkira@gmail.com · WhatsApp 959 823 409 · Segunda a Sexta 08h–17h</em></p>
-    </div>
+    <div id="_terms-content" style="font-size:0.875rem;color:#4b5563;line-height:1.7;white-space:pre-wrap">A carregar...</div>
     <button id="_close-terms-btn" style="margin-top:1.25rem;width:100%;background:#007f9f;color:#fff;border:none;border-radius:999px;padding:0.8rem;font-weight:700;font-size:0.95rem;cursor:pointer;font-family:inherit">Fechar</button>
   </div>`;
   m.onclick = (e) => { if (e.target === m) m.remove(); };
   document.body.appendChild(m);
   document.getElementById('_close-terms-btn').onclick = () => m.remove();
+
+  try {
+    const rows = await supabaseRequest(`legal_pages?slug=eq.terms&select=content&limit=1`).catch(() => []);
+    const content = (rows && rows[0] && rows[0].content) ? rows[0].content : _LEGACY_TERMS_TEXT;
+    const el = document.getElementById('_terms-content');
+    if (el) el.textContent = content;
+  } catch(e) {
+    const el = document.getElementById('_terms-content');
+    if (el) el.textContent = _LEGACY_TERMS_TEXT;
+  }
 }
+
+const _LEGACY_TERMS_TEXT = `Ao utilizar os serviços da Invites Web-Convites (marca da AdKira), concorda com os seguintes termos e condições. Leia-os com atenção.
+
+1. O nosso compromisso consigo
+A Invites Web-Convites compromete-se a fornecer uma plataforma estável, segura e funcional para a criação de convites digitais. Trabalhamos activamente para garantir que o seu convite esteja disponível durante todo o período do evento. Em caso de falha técnica que comprometa o acesso ao seu convite, contactamos activamente o organizador e envidamos todos os esforços para repor o serviço no menor tempo possível.
+
+2. O que oferecemos
+Um convite digital personalizado com página do convidado, sistema de confirmação de presença, galeria de fotos, música, locais do evento e muito mais. O convite fica activo desde a activação até 7 dias após a data do evento. Apoio por WhatsApp durante todo o processo.
+
+3. Disponibilidade do serviço
+Utilizamos infraestrutura de nível profissional (Supabase). Em caso de manutenção programada, avisamos com antecedência. Falhas imprevistas são tratadas com prioridade. Para eventos muito importantes, recomendamos confirmar o funcionamento do link com 48h de antecedência.
+
+4. O vosso conteúdo
+Todo o conteúdo (fotos, textos, músicas) que carrega é da sua responsabilidade. Deve garantir que possui os direitos de uso. Não publicamos nem partilhamos o vosso conteúdo com terceiros.
+
+5. Preços e pagamentos
+O pagamento é único por evento, sem mensalidades. Após confirmação do comprovativo, o evento é activado. Não efectuamos reembolsos após a activação do convite, salvo em caso de falha técnica grave da nossa parte.
+
+6. Dados e privacidade
+Guardamos apenas os dados necessários para o funcionamento do convite. Não vendemos dados a terceiros. Os dados dos convidados (nome e confirmação de presença) são visíveis apenas para o organizador do evento.
+
+7. Mensagem promocional
+Após a confirmação de presença de um convidado, é apresentada uma breve mensagem promovendo os nossos serviços. Esta prática é transparente e faz parte do nosso modelo de negócio.
+
+8. Rescisão
+Reservamos o direito de suspender contas que violem estes termos. Em caso de suspensão por nossa iniciativa sem justificação válida, reembolsamos o valor pago.
+
+9. Contacto e suporte
+Para qualquer questão, reclamação ou pedido, contacte-nos. Respondemos em menos de 24h em dias úteis.
+
+AdKira · Viana, Luanda Sul, Angola · invitesadkira@gmail.com · WhatsApp 959 823 409 · Segunda a Sexta 08h–17h`;
 
 // ===================== FAQ EDITOR =====================
 async function loadFAQ() {
@@ -3442,7 +3481,72 @@ async function adminDeleteReview(id) {
   if (typeof renderLandingReviews === 'function') renderLandingReviews();
 }
 
+// ===================== ADMIN: LEGAL PAGES EDITOR =====================
+async function openLegalPagesEditor() {
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.id = '_legal-editor-modal';
+  modal.innerHTML = `<div class="modal-content bg-white rounded-2xl p-5" style="max-width:600px;max-height:88vh;overflow-y:auto">
+    <h3 class="text-base font-bold mb-3">Política de Privacidade e Termos de Uso</h3>
+    <div id="legal-editor-body" style="text-align:center;padding:2rem 0;color:#9ca3af;font-size:0.85rem">A carregar...</div>
+    <button class="btn-outline w-full mt-3 text-sm" onclick="this.closest('.modal-overlay').remove()">Fechar</button>
+  </div>`;
+  document.body.appendChild(modal);
+
+  try {
+    const rows = await supabaseRequest('legal_pages?select=slug,title,content').catch(() => []);
+    const privacy = (rows || []).find(r => r.slug === 'privacy');
+    const terms = (rows || []).find(r => r.slug === 'terms');
+
+    document.getElementById('legal-editor-body').innerHTML = `
+      <div class="mb-4">
+        <label class="text-sm font-semibold text-gray-700 block mb-1">Política de Privacidade</label>
+        <textarea id="legal-privacy-text" class="input-field text-sm" rows="10" style="font-family:inherit">${escapeHTML(privacy?.content || _LEGACY_PRIVACY_TEXT)}</textarea>
+        <button class="btn-main text-sm mt-2" onclick="adminSaveLegalPage('privacy')">Guardar Política de Privacidade</button>
+      </div>
+      <div>
+        <label class="text-sm font-semibold text-gray-700 block mb-1">Termos de Uso</label>
+        <textarea id="legal-terms-text" class="input-field text-sm" rows="14" style="font-family:inherit">${escapeHTML(terms?.content || _LEGACY_TERMS_TEXT)}</textarea>
+        <button class="btn-main text-sm mt-2" onclick="adminSaveLegalPage('terms')">Guardar Termos de Uso</button>
+      </div>
+    `;
+  } catch(e) {
+    document.getElementById('legal-editor-body').innerHTML = '<p style="color:#ef4444;font-size:0.85rem">Erro ao carregar.</p>';
+    console.error(e);
+  }
+}
+
+async function adminSaveLegalPage(slug) {
+  const textareaId = slug === 'privacy' ? 'legal-privacy-text' : 'legal-terms-text';
+  const content = document.getElementById(textareaId)?.value || '';
+  const title = slug === 'privacy' ? 'Política de Privacidade' : 'Termos de Uso';
+  try {
+    const patchResult = await supabaseRequest(`legal_pages?slug=eq.${slug}`, 'PATCH', { content, title, updated_at: new Date().toISOString() });
+    if (!patchResult || patchResult.length === 0) {
+      await supabaseRequest('legal_pages', 'POST', { slug, content, title });
+    }
+    toast(title + ' guardado(a)!');
+  } catch(e) {
+    toast('Erro ao guardar. Verifica a consola.');
+    console.error(e);
+  }
+}
+
 // ===================== ADMIN: ANALYTICS PANEL =====================
+async function adminResetAnalytics() {
+  if (!confirm('Isto vai apagar TODO o histórico de acessos (logins, visitas a eventos, visitas comerciais) permanentemente. Continuar?')) return;
+  try {
+    // DELETE with a filter that matches every row (created_at is never null)
+    await supabaseRequest('visit_log?created_at=not.is.null', 'DELETE');
+    toast('Contagens resetadas para zero!');
+    document.getElementById('_analytics-modal')?.remove();
+    openAnalyticsPanel();
+  } catch(e) {
+    toast('Erro ao resetar. Verifica a consola.');
+    console.error(e);
+  }
+}
+
 async function openAnalyticsPanel() {
   const modal = document.createElement('div');
   modal.className = 'modal-overlay';
@@ -3450,7 +3554,10 @@ async function openAnalyticsPanel() {
   modal.innerHTML = `<div class="modal-content bg-white rounded-2xl p-5" style="max-width:560px;max-height:85vh;overflow-y:auto">
     <h3 class="text-base font-bold mb-3">Análise de Acessos</h3>
     <div id="analytics-body" style="text-align:center;padding:2rem 0;color:#9ca3af;font-size:0.85rem">A calcular...</div>
-    <button class="btn-outline w-full mt-3 text-sm" onclick="this.closest('.modal-overlay').remove()">Fechar</button>
+    <div class="flex gap-2 mt-3">
+      <button class="flex-1 btn-outline text-sm" onclick="this.closest('.modal-overlay').remove()">Fechar</button>
+      <button class="text-xs text-red-500 font-semibold px-3" onclick="adminResetAnalytics()">Resetar para zero</button>
+    </div>
   </div>`;
   document.body.appendChild(modal);
 

@@ -623,6 +623,11 @@ function openManualEditor() {
   const modal = document.createElement('div');
   modal.className = 'modal-overlay';
   modal.id = 'manual-editor-modal';
+  // CRITICAL: this modal can be opened from inside the intake form, which
+  // itself sits at z-index:9999. .modal-overlay's default z-index:50 would
+  // render this completely behind the intake form — invisible, looking
+  // exactly like "nothing happens" when the button is clicked.
+  modal.style.zIndex = '10500';
 
   function renderItems() {
     return items.map((it, i) => `
@@ -745,6 +750,7 @@ function openScheduleEditor(clientMode) {
   const modal = document.createElement('div');
   modal.className = 'modal-overlay';
   modal.id = 'schedule-editor-modal';
+  modal.style.zIndex = '10500';
 
   function renderRows() {
     if (clientMode) {

@@ -5,23 +5,29 @@
 // NO localStorage — source of truth is always Supabase
 // =====================================================================
 
-// ── RSVP Persistence: sessionStorage (cleared on tab close, persists on refresh) ──
+// ── RSVP Persistence: localStorage (survives closing the tab/browser) ──
+// Previously sessionStorage, which is wiped the moment the tab/browser is
+// closed — this caused the guest's confirmed name to vanish from the invite
+// text, and the Save the Date "on_confirmation" gate to reappear, on any
+// revisit after closing rather than just refreshing. localStorage persists
+// across sessions, matching the actual requirement: once confirmed, this
+// device should always recognise the guest until they explicitly change it.
 function rsvpCheckConfirmed(eventId) {
   if (!eventId) return null;
   try {
-    const saved = sessionStorage.getItem('rsvp_confirmed_' + eventId);
+    const saved = localStorage.getItem('rsvp_confirmed_' + eventId);
     return saved ? JSON.parse(saved) : null;
   } catch(e) { return null; }
 }
 
 function rsvpSetConfirmed(eventId, data) {
-  try { sessionStorage.setItem('rsvp_confirmed_' + eventId, JSON.stringify(data)); } catch(e) {}
+  try { localStorage.setItem('rsvp_confirmed_' + eventId, JSON.stringify(data)); } catch(e) {}
   if (!Store._rsvp) Store._rsvp = {};
   Store._rsvp[eventId] = data;
 }
 
 function rsvpClearConfirmed(eventId) {
-  try { sessionStorage.removeItem('rsvp_confirmed_' + eventId); } catch(e) {}
+  try { localStorage.removeItem('rsvp_confirmed_' + eventId); } catch(e) {}
   if (!Store._rsvp) Store._rsvp = {};
   Store._rsvp[eventId] = null;
 }
