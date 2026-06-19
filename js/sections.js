@@ -233,6 +233,8 @@ async function renderGuestSections(eventData) {
   initScrollReveal();
   // Init floating music button
   initFloatingMusicBtn();
+  // Init any 3D gallery carousels (must run after their HTML is in the DOM)
+  initGalleryCarousels();
 }
 
 function getSectionOrder(ev) {
@@ -592,6 +594,12 @@ function buildGallerySection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
     const galId = 'gal3d_' + Math.random().toString(36).substring(2, 8);
     const slides = urls.map((u, i) => `<div class="g3d-slide" data-idx="${i}" style="background-image:url('${u}')"></div>`).join('');
     const dots = urls.map((_, i) => `<span class="g3d-dot" data-idx="${i}" style="background:${i===0?evColor:'#d1d5db'}"></span>`).join('');
+    // NOTE: <script> tags inserted via innerHTML never execute in browsers —
+    // so the carousel's behaviour must be initialised by a real JS function
+    // called AFTER the HTML lands in the DOM (see initGalleryCarousels(),
+    // called from renderGuestSections right after sections are inserted).
+    if (!window._pendingCarousels) window._pendingCarousels = [];
+    window._pendingCarousels.push({ id: galId, color: evColor });
     return _SD + `<div class="event-section" style="background:#fdfaf6;overflow:hidden">
       <div class="section-inner">
         <h3 class="section-title reveal" style="text-align:center">Nossos Momentos</h3>
@@ -600,35 +608,6 @@ function buildGallerySection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
         </div>
         <div class="g3d-dots">${dots}</div>
       </div>
-      <script>(function(){
-        var wrap = document.getElementById('${galId}');
-        if (!wrap) return;
-        var slides = wrap.querySelectorAll('.g3d-slide');
-        var dotsWrap = wrap.parentElement.querySelector('.g3d-dots');
-        var dots = dotsWrap ? dotsWrap.querySelectorAll('.g3d-dot') : [];
-        var idx = 0;
-        function render() {
-          slides.forEach(function(s, i) {
-            var offset = i - idx;
-            s.style.transform = 'translateX(' + (offset * 78) + '%) scale(' + (offset===0?1:0.78) + ')';
-            s.style.zIndex = offset===0 ? 3 : 1;
-            s.style.opacity = Math.abs(offset) > 1 ? 0 : (offset===0 ? 1 : 0.55);
-            s.style.filter = offset===0 ? 'none' : 'blur(1px)';
-          });
-          dots.forEach(function(d, i) { d.style.background = i===idx ? '${evColor}' : '#d1d5db'; });
-        }
-        render();
-        var startX = null;
-        wrap.addEventListener('touchstart', function(e){ startX = e.touches[0].clientX; }, {passive:true});
-        wrap.addEventListener('touchend', function(e){
-          if (startX === null) return;
-          var dx = e.changedTouches[0].clientX - startX;
-          if (dx > 40 && idx > 0) idx--;
-          else if (dx < -40 && idx < slides.length-1) idx++;
-          startX = null; render();
-        }, {passive:true});
-        dots.forEach(function(d, i) { d.onclick = function(){ idx = i; render(); }; });
-      })();</script>
     </div>`;
   }
 
@@ -1355,4 +1334,41 @@ function buildEventFaqSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
       </div>
     </div>
   </div>`;
+}
+
+// ── Initialise any pending 3D gallery carousels after their HTML has been
+// inserted into the DOM. Must run as a real function call (not an inline
+// <script> tag, which never executes when injected via innerHTML). ──
+function initGalleryCarousels() {
+  if (!window._pendingCarousels || !window._pendingCarousels.length) return;
+  window._pendingCarousels.forEach(({ id, color }) => {
+    const wrap = document.getElementById(id);
+    if (!wrap) return;
+    const slides = wrap.querySelectorAll('.g3d-slide');
+    const dotsWrap = wrap.parentElement.querySelector('.g3d-dots');
+    const dots = dotsWrap ? dotsWrap.querySelectorAll('.g3d-dot') : [];
+    let idx = 0;
+    function render() {
+      slides.forEach((s, i) => {
+        const offset = i - idx;
+        s.style.transform = `translateX(${offset * 78}%) scale(${offset === 0 ? 1 : 0.78})`;
+        s.style.zIndex = offset === 0 ? 3 : 1;
+        s.style.opacity = Math.abs(offset) > 1 ? 0 : (offset === 0 ? 1 : 0.55);
+        s.style.filter = offset === 0 ? 'none' : 'blur(1px)';
+      });
+      dots.forEach((d, i) => { d.style.background = i === idx ? color : '#d1d5db'; });
+    }
+    render();
+    let startX = null;
+    wrap.addEventListener('touchstart', (e) => { startX = e.touches[0].clientX; }, { passive: true });
+    wrap.addEventListener('touchend', (e) => {
+      if (startX === null) return;
+      const dx = e.changedTouches[0].clientX - startX;
+      if (dx > 40 && idx > 0) idx--;
+      else if (dx < -40 && idx < slides.length - 1) idx++;
+      startX = null; render();
+    }, { passive: true });
+    dots.forEach((d, i) => { d.onclick = () => { idx = i; render(); }; });
+  });
+  window._pendingCarousels = [];
 }

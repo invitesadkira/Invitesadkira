@@ -99,6 +99,8 @@ async function supabaseRequest(endpoint, method = 'GET', body = null) {
           'std_show_cover','std_cover_url',
           'personalized_links_enabled','show_rsvp_in_full_invite','show_guest_name_in_invite',
           'bible_text_2','bible_ref_2','bible_size','guest_name_size','edit_locked',
+          'show_event_faq','event_faq_items','schedule_style','gallery_style',
+          'venue_ceremony_image','venue_civil_image','venue_reception_image',
         ];
         let safeEndpoint = endpoint;
         OPTIONAL_COLS.forEach(col => {
@@ -133,6 +135,9 @@ async function supabaseRequest(endpoint, method = 'GET', body = null) {
           'bible_text_2','bible_ref_2','bible_size',
           // Other new columns
           'guest_name_size','edit_locked',
+          // FAQ, venue images, visual styles (require SQL migration)
+          'show_event_faq','event_faq_items','schedule_style','gallery_style',
+          'venue_ceremony_image','venue_civil_image','venue_reception_image',
         ];
         const cleanBody = { ...body };
         let changed = false;

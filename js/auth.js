@@ -156,14 +156,22 @@ async function handleLogin(e) {
 
   // ✅ Login bem-sucedido
   console.log('✅ Login bem-sucedido para:', phone);
-  
+
+  // CRITICAL: always reset admin impersonation state on a fresh login.
+  // Prevents a leftover Store.adminModeActive=true (from a previous admin
+  // session that didn't click "Voltar ao Admin" before logging out) from
+  // incorrectly showing impersonation-only UI to this regular user.
+  Store.adminModeActive = false;
+  Store.adminOriginalUser = null;
+
   const userRole = user.role || 'user';
   Store.currentUser = {
     id: user.id,
     phone: user.phone,
     role: userRole,
     status: user.status,
-    eventLimit: user.event_limit
+    eventLimit: user.event_limit,
+    edit_locked: user.edit_locked === true,
   };
 
   // Mostrar topbar com hambúrguer
@@ -342,6 +350,14 @@ async function handleLogin(e) {
 
 function handleLogout() {
   Store.currentUser = null;
+  // CRITICAL: reset admin impersonation state in memory. Without this, if
+  // an admin impersonated a user and then logged out without clicking
+  // "Voltar ao Admin" first, Store.adminModeActive stays true — and if a
+  // different person logs in normally afterward in the same browser tab
+  // (no hard refresh), they would incorrectly see admin-impersonation UI
+  // like "Voltar ao Admin" even though they're a regular user.
+  Store.adminModeActive = false;
+  Store.adminOriginalUser = null;
   hideTopbar();
   localStorage.removeItem('authToken');
   localStorage.removeItem('userId');
