@@ -272,7 +272,7 @@ async function renderGuestView() {
     } catch(e2) { console.warn('Visual fallback reload failed:', e2); }
   }
 
-  const RSVP_ONLY_FIELDS = new Set(['show_time','time','date','title','confirm_by_date','deadline','allowCompanions','allow_companions','maxCompanions','max_companions','allowKids','allow_kids','maxKids','max_kids','allowGifts','allow_gifts','allowSides','allow_sides','side1_name','side2_name','allowMessages','allow_messages','showGuestMessages','show_guest_messages','id','eventCode','cover_image','rsvp_enabled','save_the_date_enabled','release_type','release_date','is_invite_released','std_title','std_subtitle','std_font_family','std_name_size','std_title_size','std_intro_enabled','std_intro_text','std_intro_photo_url','std_show_cover','personalized_links_enabled','show_rsvp_in_full_invite','show_guest_name_in_invite','std_cover_url']);
+  const RSVP_ONLY_FIELDS = new Set(['show_time','time','date','title','confirm_by_date','deadline','allowCompanions','allow_companions','maxCompanions','max_companions','allowKids','allow_kids','maxKids','max_kids','allowGifts','allow_gifts','allowSides','allow_sides','side1_name','side2_name','allowMessages','allow_messages','showGuestMessages','show_guest_messages','id','eventCode','cover_image','rsvp_enabled','save_the_date_enabled','release_type','release_date','is_invite_released','std_title','std_subtitle','std_font_family','std_name_size','std_title_size','std_intro_enabled','std_intro_text','std_intro_photo_url','std_show_cover','personalized_links_enabled','show_rsvp_in_full_invite','show_guest_name_in_invite','std_cover_url','userId','user_id']);
 
   // Restore all fields: RSVP fields always from events table; visual fields use
   // whichever source (visuals or events table) has a non-null value
@@ -2128,15 +2128,16 @@ function shareGuestEvent() {
 // Decide if the minimalist "Save the Date" screen should show instead of
 // the full invite, based on save_the_date_enabled + release_type rules.
 function _evaluateSaveTheDate(ev) {
-  console.log('🚪 STD Gate check:', {
+  const diag = {
     save_the_date_enabled: ev.save_the_date_enabled,
-    typeof_value: typeof ev.save_the_date_enabled,
+    type: typeof ev.save_the_date_enabled,
     release_type: ev.release_type,
     is_invite_released: ev.is_invite_released,
-  });
+    release_date: ev.release_date,
+  };
   // Feature off entirely → always show full invite (current behaviour)
   if (!ev.save_the_date_enabled || ev.save_the_date_enabled === false || ev.save_the_date_enabled === 'no') {
-    console.log('🚪 STD Gate: OFF — save_the_date_enabled is falsy/no');
+    console.log('🚪 STD Gate: OFF (save_the_date_enabled is falsy) →', diag);
     return { showSaveTheDate: false };
   }
 
@@ -2145,8 +2146,10 @@ function _evaluateSaveTheDate(ev) {
   // Condition C: Manual — admin/organiser controls is_invite_released directly
   if (releaseType === 'manual') {
     if (ev.is_invite_released === true || ev.is_invite_released === 'yes') {
+      console.log('🚪 STD Gate: OFF — manual release, is_invite_released=true →', diag);
       return { showSaveTheDate: false };
     }
+    console.log('🚪 STD Gate: ON — manual release, not yet released →', diag);
     return { showSaveTheDate: true, reason: 'manual' };
   }
 

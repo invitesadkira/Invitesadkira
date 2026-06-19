@@ -310,17 +310,22 @@ function buildBibleSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
       </div>
     </div>` : '';
 
-  // Couple names — with font/size from event settings (same as hero)
+  // Couple names shown inside the "Têm a honra de convidar" blessing block.
+  // These use their OWN independent size (blessing_couple_size), separate
+  // from the hero's couple_size — two visually distinct places that the
+  // organiser should be able to size differently. Falls back to the hero
+  // size only if the dedicated field was never explicitly set (keeps old
+  // events looking the same as before this fix).
   const invertNames = _yesOrTrue(ev.invert_names);
   let groomName = ev.groom_name || '';
   let brideName = ev.bride_name || '';
   if (invertNames) { [groomName, brideName] = [brideName, groomName]; }
-  const coupleSize = parseFloat(ev.couple_size || 2.4);
-  const coupleFontSize = `${Math.max(1, coupleSize * 0.55)}rem`;
+  const blessingCoupleSize = parseFloat(ev.blessing_couple_size || ev.couple_size || 2.4);
+  const blessingCoupleFontSize = `${Math.max(1, blessingCoupleSize * 0.55)}rem`;
   const coupleFontFamily = ev.custom_font_family ? `'${ev.custom_font_family}', serif` : 'inherit';
   const coupleNamesHtml = (groomName || brideName) ? `
     <div class="reveal" style="margin-top:1.25rem;text-align:center">
-      <p style="font-size:${coupleFontSize};font-weight:700;color:${ev.event_color||'#007f9f'};letter-spacing:0.01em;font-family:${coupleFontFamily}">
+      <p style="font-size:${blessingCoupleFontSize};font-weight:700;color:${ev.event_color||'#007f9f'};letter-spacing:0.01em;font-family:${coupleFontFamily}">
         ${escapeHTML(groomName)}${groomName && brideName ? ` <span style="font-weight:300;opacity:0.65">&amp;</span> ` : ''}${escapeHTML(brideName)}
       </p>
     </div>` : '';
@@ -391,8 +396,35 @@ function buildDateSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
   // Check show_time — accept both 'yes' string, boolean true, and showTime boolean
   const showTime = (_yesOrTrue(ev.show_time) || ev.showTime === true) && _timeStr;
   const timeLabel = showTime ? `Às ${_timeStr}` : '';
-  // Heart SVG inline
   const heart = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.27 2 8.5 2 5.41 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.41 22 8.5c0 3.77-3.4 6.86-8.55 11.53L12 21.35z"/></svg>`;
+  const dateStyle = ev.date_style || 'classic';
+
+  // ── Style: MINIMAL — just text, no boxes ──
+  if (dateStyle === 'minimal') {
+    return _SD + `<div class="event-section" style="background:#fff;padding:1.5rem 1rem;text-align:center">
+      <div class="reveal">
+        <p style="font-size:0.7rem;letter-spacing:0.15em;text-transform:uppercase;color:${eventColor};font-weight:700;margin-bottom:0.4rem">${days[d.getDay()]}</p>
+        <p style="font-size:1.6rem;font-weight:800;color:#1e293b">${String(d.getDate()).padStart(2,'0')} de ${months[d.getMonth()]} de ${d.getFullYear()}</p>
+        ${showTime ? `<p style="font-size:0.95rem;color:#6b7280;margin-top:0.3rem">${timeLabel}</p>` : ''}
+      </div>
+    </div>`;
+  }
+
+  // ── Style: CARD — centered card with shadow ──
+  if (dateStyle === 'card') {
+    return _SD + `<div class="event-section" style="background:#fff;padding:1.5rem 1rem">
+      <div class="section-inner" style="display:flex;justify-content:center">
+        <div class="reveal scale-in" style="background:${eventColor}0d;border:1.5px solid ${eventColor}33;border-radius:1.25rem;padding:1.75rem 2.5rem;text-align:center">
+          <p style="font-size:0.68rem;letter-spacing:0.15em;text-transform:uppercase;color:${eventColor};font-weight:700;margin-bottom:0.5rem">${heart} ${days[d.getDay()]} ${heart}</p>
+          <p style="font-size:2.4rem;font-weight:900;color:${eventColor};line-height:1">${String(d.getDate()).padStart(2,'0')}</p>
+          <p style="font-size:1.1rem;font-weight:700;color:#1e293b;margin-top:0.2rem">${months[d.getMonth()]} ${d.getFullYear()}</p>
+          ${showTime ? `<p style="font-size:0.85rem;color:#6b7280;margin-top:0.5rem">${timeLabel}</p>` : ''}
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // ── Style: CLASSIC (default) — month on the side + big day number ──
   return _SD + `<div class="event-section" style="background:#fff;padding:1.25rem 1rem">
     <div class="section-inner">
       <div class="date-display reveal scale-in" style="--ev-color:${eventColor}">
@@ -460,6 +492,37 @@ function startCountdownInterval(dateStr, timeStr) {
 function buildStorySection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
   if (!ev.story_text) return '';
   const evColor = ev.event_color || '#007f9f';
+  const storyStyle = ev.story_style || 'centered';
+
+  // ── Style: PHOTO-SIDE — story text next to a photo ──
+  if (storyStyle === 'photo-side' && ev.story_photo_url) {
+    return _SD + `<div class="event-section story-section">
+      <div class="section-inner">
+        <h2 class="section-title reveal" style="text-align:center;margin-bottom:1.5rem">Nossa História</h2>
+        <div class="reveal" style="display:flex;gap:1.5rem;align-items:center;flex-wrap:wrap;max-width:560px;margin:0 auto">
+          <div style="flex:1 1 220px;min-width:200px;border-radius:1rem;overflow:hidden;aspect-ratio:4/5">
+            <img src="${ev.story_photo_url}" style="width:100%;height:100%;object-fit:cover" alt="">
+          </div>
+          <div style="flex:1 1 220px;min-width:200px">
+            <p style="font-size:0.88rem;color:#4b5563;line-height:1.75;white-space:pre-line">${escapeHTML(ev.story_text)}</p>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // ── Style: QUOTE — large quotation mark, centered italic text ──
+  if (storyStyle === 'quote') {
+    return _SD + `<div class="event-section story-section" style="background:${evColor}08">
+      <div class="section-inner" style="text-align:center;max-width:520px;margin:0 auto">
+        <div class="reveal">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="${evColor}" style="opacity:0.35;margin-bottom:0.5rem"><path d="M9.983 3v7.391c0 5.704-3.731 9.57-8.983 10.609l-.995-2.151c2.432-.917 3.995-3.638 3.995-5.849h-4v-10h9.983zm14.017 0v7.391c0 5.704-3.748 9.57-9 10.609l-.996-2.151c2.433-.917 3.996-3.638 3.996-5.849h-3.983v-10h9.983z"/></svg>
+          <h2 class="section-title" style="margin-bottom:1rem">Nossa História</h2>
+          <p style="font-size:1rem;color:#374151;line-height:1.85;font-style:italic;white-space:pre-line">${escapeHTML(ev.story_text)}</p>
+        </div>
+      </div>
+    </div>`;
+  }
 
   // Parse story text: chapters separated by double newline
   // Each chapter: first line = date/title, rest = body text
@@ -637,6 +700,37 @@ function buildManualSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
     items = Store.eventManualItems;
   }
   const evColor = ev.event_color || '#007f9f';
+  const style = ev.manual_style || 'cards';
+
+  // ── Style: LIST — vertical list with small icons, no card backgrounds ──
+  if (style === 'list') {
+    const rows = items.map(it => `
+      <div class="reveal" style="display:flex;align-items:flex-start;gap:0.85rem;padding:0.75rem 0;border-bottom:1px solid #e5e7eb;max-width:480px;margin:0 auto">
+        <div style="flex-shrink:0;width:34px;height:34px;border-radius:50%;background:color-mix(in srgb,${evColor} 14%,white);display:flex;align-items:center;justify-content:center">
+          ${it.icon && it.icon.startsWith('http') ? `<img src="${it.icon}" style="width:16px;height:16px;object-fit:contain">` : `<i data-lucide="${it.icon}" style="width:15px;height:15px;color:${evColor}"></i>`}
+        </div>
+        <p style="font-size:0.85rem;color:#374151;line-height:1.5;padding-top:0.3rem">${it.text.replace(/\n/g, '<br>')}</p>
+      </div>`).join('');
+    return _SD + `<div class="event-section" style="background:#f8fafc"><div class="section-inner">
+      <h3 class="section-title reveal" style="color:${evColor}">Manual do Bom Convidado</h3>
+      <div>${rows}</div>
+    </div></div>`;
+  }
+
+  // ── Style: NUMBERED — numbered list, sequential reading order ──
+  if (style === 'numbered') {
+    const rows = items.map((it, i) => `
+      <div class="reveal" style="display:flex;align-items:flex-start;gap:0.85rem;margin-bottom:1rem;max-width:480px;margin-left:auto;margin-right:auto">
+        <div style="flex-shrink:0;width:30px;height:30px;border-radius:50%;background:${evColor};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.85rem">${i+1}</div>
+        <p style="font-size:0.85rem;color:#374151;line-height:1.5;padding-top:0.35rem">${it.text.replace(/\n/g, '<br>')}</p>
+      </div>`).join('');
+    return _SD + `<div class="event-section" style="background:#f8fafc"><div class="section-inner">
+      <h3 class="section-title reveal" style="color:${evColor}">Manual do Bom Convidado</h3>
+      <div>${rows}</div>
+    </div></div>`;
+  }
+
+  // ── Style: CARDS (default) — grid of icon cards ──
   const cards = items.map(it => `<div class="manual-item">
     <div class="mi-icon" style="background:color-mix(in srgb,${evColor} 15%,white)">${it.icon && it.icon.startsWith('http') ? `<img src="${it.icon}" style="width:20px;height:20px;object-fit:contain">` : `<i data-lucide="${it.icon}" style="color:${evColor}"></i>`}</div>
     <p class="mi-text">${it.text.replace(/\n/g, '<br>')}</p>
@@ -659,6 +753,38 @@ function buildScheduleSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
   }
   const evColor = ev.event_color || '#007f9f';
   const style = ev.schedule_style || 'timeline';
+
+  // ── Style: ZIGZAG — alternating left/right around a central vertical line ──
+  if (style === 'zigzag') {
+    const rows = items.map((it, i) => {
+      const isLeft = i % 2 === 0;
+      const timeLabel  = `<div style="font-size:0.72rem;font-weight:800;color:${evColor};text-transform:uppercase;letter-spacing:0.05em;margin-bottom:2px">${it.time}</div>`;
+      const textLabel  = `<div><div style="font-weight:700;color:#1e293b;font-size:0.88rem">${escapeHTML(it.label)}</div>${it.sub?`<div style="font-size:0.72rem;color:#6b7280;margin-top:1px">${escapeHTML(it.sub)}</div>`:''}</div>`;
+      const node = `<div style="flex-shrink:0;width:44px;height:44px;border-radius:50%;background:${evColor};display:flex;align-items:center;justify-content:center;position:relative;z-index:2;box-shadow:0 2px 8px rgba(0,0,0,0.15)">${it.icon && it.icon.startsWith('http') ? `<img src="${it.icon}" style="width:20px;height:20px;object-fit:contain;filter:brightness(0) invert(1)">` : `<i data-lucide="${it.icon}" style="width:18px;height:18px;color:#fff"></i>`}</div>`;
+      if (isLeft) {
+        return `<div class="reveal" style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;margin-bottom:1.5rem;max-width:500px;margin-left:auto;margin-right:auto">
+          <div style="text-align:right;padding-right:0.75rem">${timeLabel}${textLabel}</div>
+          ${node}
+          <div></div>
+        </div>`;
+      } else {
+        return `<div class="reveal" style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;margin-bottom:1.5rem;max-width:500px;margin-left:auto;margin-right:auto">
+          <div></div>
+          ${node}
+          <div style="text-align:left;padding-left:0.75rem">${timeLabel}${textLabel}</div>
+        </div>`;
+      }
+    }).join('');
+    return _SD + `<div class="event-section">
+      <div class="section-inner" style="text-align:center">
+        <h3 class="section-title reveal">Itinerário</h3>
+        <div style="position:relative;max-width:500px;margin:0 auto">
+          <div style="position:absolute;left:50%;top:8px;bottom:8px;width:2px;background:linear-gradient(to bottom,transparent,${evColor} 5%,${evColor} 95%,transparent);transform:translateX(-50%);z-index:1"></div>
+          ${rows}
+        </div>
+      </div>
+    </div>`;
+  }
 
   // ── Style: COMPACT — simple list, no icons, minimal spacing ──
   if (style === 'compact') {
@@ -712,9 +838,9 @@ function buildScheduleSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
     </div>`).join('');
 
   return _SD + `<div class="event-section">
-    <div class="section-inner" style="text-align:center">
-      <h3 class="section-title reveal">Itinerário</h3>
-      <div style="position:relative;max-width:480px;margin:0 auto">
+    <div class="section-inner">
+      <h3 class="section-title reveal" style="text-align:center">Itinerário</h3>
+      <div style="position:relative;max-width:480px;margin:0 auto;text-align:left">
         <div style="position:absolute;left:76px;top:14px;bottom:14px;width:2px;background:linear-gradient(to bottom,transparent,${evColor}55 5%,${evColor}55 95%,transparent)"></div>
         ${rows}
       </div>
@@ -1368,6 +1494,19 @@ function initGalleryCarousels() {
       else if (dx < -40 && idx < slides.length - 1) idx++;
       startX = null; render();
     }, { passive: true });
+    // Clicking the centered slide opens the lightbox (full view);
+    // clicking a side-peek slide navigates the carousel to it instead.
+    slides.forEach((s, i) => {
+      s.style.cursor = 'pointer';
+      s.addEventListener('click', () => {
+        if (i === idx) {
+          const url = s.style.backgroundImage.slice(5, -2); // strip url("...")
+          if (typeof openLightbox === 'function') openLightbox(url);
+        } else {
+          idx = i; render();
+        }
+      });
+    });
     dots.forEach((d, i) => { d.onclick = () => { idx = i; render(); }; });
   });
   window._pendingCarousels = [];

@@ -343,6 +343,25 @@ async function rsvpSubmit() {
     const isUpdate = !!(existing && existing[0]);
     toast(isUpdate ? 'Resposta actualizada!' : 'Presença confirmada!');
 
+    // ── Notify the event owner that a guest responded ──────────────────
+    // Fire-and-forget: never blocks the guest's confirmation flow even if
+    // this fails (e.g. notifications table missing, no owner found, etc.)
+    if (!isUpdate) {
+      const ownerId = ev.userId || ev.user_id;
+      if (ownerId) {
+        const companionsText = companions.length ? ` + ${companions.length} acompanhante(s)` : '';
+        const notifBody = attending === 'yes'
+          ? `${name}${companionsText} confirmou presença no evento "${ev.title || 'o seu evento'}".`
+          : `${name} respondeu que não poderá comparecer ao evento "${ev.title || 'o seu evento'}".`;
+        supabaseRequest('notifications', 'POST', {
+          user_id: ownerId,
+          title: attending === 'yes' ? '🎉 Nova confirmação de presença' : 'Resposta de convidado',
+          body: notifBody,
+          read: false,
+        }).catch(e => console.warn('Falha ao enviar notificação ao organizador:', e));
+      }
+    }
+
     _rsvpRender('SUCCESS');
 
     // ── Confetti on confirm, warm message on decline ──

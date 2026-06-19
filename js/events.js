@@ -771,6 +771,11 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
           event_faq_items: (Store.eventFaqItems && Store.eventFaqItems.length) ? JSON.stringify(Store.eventFaqItems) : null,
           schedule_style: document.getElementById('evt-schedule-style')?.value || 'timeline',
           gallery_style: document.getElementById('evt-gallery-style')?.value || 'grid',
+          blessing_couple_size: document.getElementById('evt-blessing-couple-size')?.value || null,
+          date_style: document.getElementById('evt-date-style')?.value || 'classic',
+          manual_style: document.getElementById('evt-manual-style')?.value || 'cards',
+          story_style: document.getElementById('evt-story-style')?.value || 'centered',
+          story_photo_url: document.getElementById('evt-story-photo-url')?.value || null,
           parents_size: document.getElementById('evt-parents-size')?.value || '0.88',
           dresscode_text:   document.getElementById('evt-dresscode-text')?.value?.trim() || null,
           dresscode_colors: document.getElementById('evt-dresscode-colors')?.value?.trim() || null,
@@ -1637,6 +1642,14 @@ function _fillEditForm(ev) {
   renderEventFaqList();
   { const ssEl = document.getElementById('evt-schedule-style'); if (ssEl) ssEl.value = ev.schedule_style || 'timeline'; }
   { const gsEl = document.getElementById('evt-gallery-style'); if (gsEl) gsEl.value = ev.gallery_style || 'grid'; }
+  { const bcsInp = document.getElementById('evt-blessing-couple-size'); const bcsLbl = document.getElementById('blessing-couple-size-label');
+    const bcsVal = ev.blessing_couple_size || ev.couple_size || '2.4'; if (bcsInp) bcsInp.value = bcsVal; if (bcsLbl) bcsLbl.textContent = bcsVal + 'rem'; }
+  { const dsEl = document.getElementById('evt-date-style'); if (dsEl) dsEl.value = ev.date_style || 'classic'; }
+  { const msEl = document.getElementById('evt-manual-style'); if (msEl) msEl.value = ev.manual_style || 'cards'; }
+  { const stEl = document.getElementById('evt-story-style'); if (stEl) { stEl.value = ev.story_style || 'centered';
+      document.getElementById('story-photo-wrap')?.classList.toggle('hidden', stEl.value !== 'photo-side'); } }
+  { const spUrl=document.getElementById('evt-story-photo-url'); const spPrev=document.getElementById('story-photo-preview'); const spWrap=document.getElementById('story-photo-preview-wrap');
+    if(ev.story_photo_url){if(spUrl)spUrl.value=ev.story_photo_url;if(spPrev)spPrev.src=ev.story_photo_url;spWrap?.classList.remove('hidden');} }
   { const psInp = document.getElementById('evt-parents-size'); const psLbl = document.getElementById('parents-size-label'); const psVal = ev.parents_size || '0.88'; if (psInp) psInp.value = psVal; if (psLbl) psLbl.textContent = psVal + 'rem'; }
   const _svDC = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
   _svDC('evt-dresscode-text',   ev.dresscode_text);
@@ -2465,7 +2478,7 @@ async function checkURLForEvent() {
     
     // ✅ Query otimizada: procurar por event_code OU id, com LIMIT 1
     let eventsData = await supabaseRequest(
-      `events?or=(event_code.eq.${eventCode},id.eq.${eventCode})&select=id,title,date,time,confirm_by_date,cover_image,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,rsvp_enabled,save_the_date_enabled,release_type,release_date,is_invite_released,std_title,std_subtitle,std_font_family,std_name_size,std_title_size,std_intro_enabled,std_intro_text,std_intro_photo_url,std_show_cover,std_cover_url,personalized_links_enabled,show_rsvp_in_full_invite,show_guest_name_in_invite,allow_messages,show_guest_messages,music_url,music_title,iban_message,iban_number,iban_holder,iban_footer,groom_name,bride_name,couple_size,show_couple,bg_url,bg_overlay,bible_text,bible_ref,show_bible,invite_text,show_invite,groom_parents,bride_parents,show_parents,gallery_urls,show_gallery,show_manual,manual_items,show_schedule,schedule_items,custom_font_family,section_order,story_text,invite_blessing,event_color,rsvps(guest_name,attending,side,companions,kids,wants_gift,message,created_at,updated_at),gifts(id,name,category,reserved,reserved_by)&limit=1`
+      `events?or=(event_code.eq.${eventCode},id.eq.${eventCode})&select=id,user_id,title,date,time,confirm_by_date,cover_image,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,rsvp_enabled,save_the_date_enabled,release_type,release_date,is_invite_released,std_title,std_subtitle,std_font_family,std_name_size,std_title_size,std_intro_enabled,std_intro_text,std_intro_photo_url,std_show_cover,std_cover_url,personalized_links_enabled,show_rsvp_in_full_invite,show_guest_name_in_invite,allow_messages,show_guest_messages,music_url,music_title,iban_message,iban_number,iban_holder,iban_footer,groom_name,bride_name,couple_size,show_couple,bg_url,bg_overlay,bible_text,bible_ref,show_bible,invite_text,show_invite,groom_parents,bride_parents,show_parents,gallery_urls,show_gallery,show_manual,manual_items,show_schedule,schedule_items,custom_font_family,section_order,story_text,invite_blessing,event_color,rsvps(guest_name,attending,side,companions,kids,wants_gift,message,created_at,updated_at),gifts(id,name,category,reserved,reserved_by)&limit=1`
     );
     
     console.log('📥 Resultado da busca:', eventsData?.length === 1 ? 'Encontrado' : 'Não encontrado');
@@ -2496,6 +2509,8 @@ async function checkURLForEvent() {
       
       const normalizedEvent = {
         id: eventData.id,
+        userId: eventData.user_id,
+        user_id: eventData.user_id,
         title: eventData.title,
         date: eventData.date,
         time: eventData.time,

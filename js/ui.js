@@ -811,6 +811,16 @@ function changeCoupleSize(delta) {
   if (lbl) lbl.textContent = v + 'rem';
 }
 
+function changeBlessingCoupleSize(delta) {
+  const inp = document.getElementById('evt-blessing-couple-size');
+  const lbl = document.getElementById('blessing-couple-size-label');
+  if (!inp) return;
+  let v = parseFloat(inp.value) || 2.4;
+  v = Math.max(1.0, Math.min(16.0, parseFloat((v + delta * 0.2).toFixed(1))));
+  inp.value = v;
+  if (lbl) lbl.textContent = v + 'rem';
+}
+
 function changeParentsSize(delta) {
   const inp = document.getElementById('evt-parents-size');
   const lbl = document.getElementById('parents-size-label');
@@ -972,4 +982,26 @@ function removeVenueImage(venueKey) {
   document.getElementById(`evt-venue-${venueKey}-image-input`).value = '';
   document.getElementById(`venue-${venueKey}-image-wrap`)?.classList.add('hidden');
   toast('Foto do local removida.');
+}
+
+async function handleStoryPhotoUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 5*1024*1024) { toast('Imagem muito grande. Máx. 5 MB.'); return; }
+  toast('A carregar foto...');
+  try {
+    const url = await uploadImageToStorage(file, 'event-covers');
+    document.getElementById('evt-story-photo-url').value = url;
+    const prev = document.getElementById('story-photo-preview');
+    if (prev) prev.src = url;
+    document.getElementById('story-photo-preview-wrap')?.classList.remove('hidden');
+    toast('Foto carregada!');
+  } catch(e) { toast('Erro ao carregar a foto.'); }
+}
+
+function removeStoryPhoto() {
+  document.getElementById('evt-story-photo-url').value = '';
+  document.getElementById('evt-story-photo-input').value = '';
+  document.getElementById('story-photo-preview-wrap')?.classList.add('hidden');
+  toast('Foto removida.');
 }
