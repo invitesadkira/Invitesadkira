@@ -1760,19 +1760,19 @@ function _fillEditForm(ev) {
         // ✅ CRÍTICO: Ler valores AQUI dentro do formulário
         const finalSide1Name = document.getElementById('evt-side1-name').value.trim() || 'Grupo 1';
         const finalSide2Name = document.getElementById('evt-side2-name').value.trim() || 'Grupo 2';
-        saveEventWithUpdatedCover(ev.id, title, date, time, deadlineWithTime, coverImageURL, allowComp, maxComp, allowGifts, allowKids, maxKids, allowSides, finalSide1Name, finalSide2Name, submitBtn, originalText);
+        saveEventWithUpdatedCover(ev.id, title, date, time, deadlineWithTime, coverImageURL, allowComp, maxComp, allowGifts, allowKids, maxKids, allowSides, finalSide1Name, finalSide2Name, document.getElementById('sw-show-time')?.classList.contains('active'), submitBtn, originalText);
       }).catch(error => {
         console.error('❌ ERRO upload imagem:', error);
         toast('Erro ao fazer upload da imagem. Guardando sem capa...');
         submitBtn.textContent = 'Guardando...';
         // ✅ CRÍTICO: Passar side1NameVal e side2NameVal AQUI
-        saveEventWithUpdatedCover(ev.id, title, date, time, deadlineWithTime, null, allowComp, maxComp, allowGifts, allowKids, maxKids, allowSides, side1NameVal, side2NameVal, submitBtn, originalText);
+        saveEventWithUpdatedCover(ev.id, title, date, time, deadlineWithTime, null, allowComp, maxComp, allowGifts, allowKids, maxKids, allowSides, side1NameVal, side2NameVal, document.getElementById('sw-show-time')?.classList.contains('active'), submitBtn, originalText);
       });
     } else {
       // Usar imagem existente ou nenhuma
       const coverImageURL = coverImgEdit.src && coverImgEdit.src.startsWith('http') ? coverImgEdit.src : ev.cover_image;
       // ✅ CRÍTICO: Passar side1NameVal e side2NameVal AQUI
-      saveEventWithUpdatedCover(ev.id, title, date, time, deadlineWithTime, coverImageURL, allowComp, maxComp, allowGifts, allowKids, maxKids, allowSides, side1NameVal, side2NameVal, submitBtn, originalText);
+      saveEventWithUpdatedCover(ev.id, title, date, time, deadlineWithTime, coverImageURL, allowComp, maxComp, allowGifts, allowKids, maxKids, allowSides, side1NameVal, side2NameVal, document.getElementById('sw-show-time')?.classList.contains('active'), submitBtn, originalText);
     }
   };
   

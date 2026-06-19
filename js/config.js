@@ -50,9 +50,14 @@ async function supabaseRequest(endpoint, method = 'GET', body = null) {
 
       // ── PGRST204: unknown column ──────────────────────────────────────────
       if (response.status === 400 &&
-          (text.includes('PGRST204') || text.includes('does not exist in the schema cache'))) {
+          (text.includes('PGRST204') || text.includes('does not exist in the schema cache') || text.includes('schema cache'))) {
 
-        const colMatch = text.match(/'([^']+)' column of '[^']+' in the schema cache/);
+        // Try multiple known PostgREST error message shapes, in order of likelihood
+        const colMatch =
+          text.match(/'([^']+)' column of '[^']+' in the schema cache/) ||
+          text.match(/"([^"]+)" column of "[^"]+" in the schema cache/) ||
+          text.match(/Could not find the '([^']+)' column/) ||
+          text.match(/column "([^"]+)" does not exist/i);
         if (colMatch) {
           const badCol = colMatch[1];
           console.warn(`Coluna desconhecida: "${badCol}". A tentar sem ela...`);
@@ -123,6 +128,20 @@ async function supabaseRequest(endpoint, method = 'GET', body = null) {
 
       // ── For POST/PATCH: strip unknown columns from body and retry ──
       if (response.status === 400 && (method === 'POST' || method === 'PATCH') && body) {
+        // CRITICAL: these are the columns that GATE the Save the Date feature.
+        // They must NEVER be silently dropped by the bulk fallback below — if
+        // they get removed just because some OTHER unrelated column (e.g. a
+        // brand new std_scratch_* field) is missing, save_the_date_enabled
+        // would never persist even though it exists fine in the DB. The
+        // precise single-column handler above (colMatch) already strips
+        // exactly the one column PostgREST complained about, recursively,
+        // one at a time — that path alone is enough for well-formed errors.
+        // This bulk list is only a last-resort catch-all for edge cases, so
+        // it must exclude anything load-bearing for core functionality.
+        const NEVER_STRIP = new Set([
+          'save_the_date_enabled', 'release_type', 'release_date', 'is_invite_released',
+          'rsvp_enabled', 'title', 'date', 'time', 'confirm_by_date',
+        ]);
         // These columns may not yet exist in older DB deployments.
         // If the PATCH fails with 400, strip them all and retry so that
         // the core fields (title, date, confirm_by_date, etc.) always save.
@@ -132,8 +151,8 @@ async function supabaseRequest(endpoint, method = 'GET', body = null) {
           'show_decor','save_the_date','show_countdown','event_message',
           'venue_ceremony','venue_ceremony_maps','venue_civil','venue_civil_maps',
           'venue_reception','venue_reception_maps',
-          // Save the Date feature (requires SQL migration)
-          'save_the_date_enabled','release_type','release_date','is_invite_released',
+          // Save the Date feature (requires SQL migration) — only the
+          // sub-fields, NEVER the gate fields themselves (see NEVER_STRIP)
           'std_title','std_subtitle','std_font_family',
           'std_name_size','std_title_size','std_intro_enabled','std_intro_text','std_intro_photo_url',
           'std_show_cover','std_cover_url',
@@ -148,14 +167,14 @@ async function supabaseRequest(endpoint, method = 'GET', body = null) {
           'venue_ceremony_image','venue_civil_image','venue_reception_image','blessing_couple_size',
           'date_style','manual_style','story_style','story_photo_url',
           'std_scratch_enabled','std_scratch_mode','std_scratch_photo_url','std_scratch_text',
-        ];
+        ].filter(col => !NEVER_STRIP.has(col));
         const cleanBody = { ...body };
         let changed = false;
         OPTIONAL_BODY_COLS.forEach(col => { if (col in cleanBody) { delete cleanBody[col]; changed = true; } });
         if (changed) {
           console.warn('⚠️ A tentar PATCH/POST sem colunas opcionais. Endpoint:', endpoint);
           console.warn('⚠️ Body original:', body);
-          console.warn('⚠️ Body limpo:', cleanBody);
+          console.warn('⚠️ Body limpo (preservando sempre os campos do Save the Date):', cleanBody);
           console.warn('⚠️ Texto do erro original do Supabase:', text);
           return supabaseRequest(endpoint, method, cleanBody);
         } else {
