@@ -2495,6 +2495,12 @@ async function checkURLForEvent() {
     if (eventsData && eventsData.length > 0) {
       console.log('✅ Evento encontrado no Supabase!');
       const eventData = eventsData[0];
+      console.log('🔖 STD — valores brutos recebidos da query principal:', {
+        save_the_date_enabled: eventData.save_the_date_enabled,
+        release_type: eventData.release_type,
+        is_invite_released: eventData.is_invite_released,
+        std_scratch_enabled: eventData.std_scratch_enabled,
+      });
       
       const maxComp = eventData.max_companions !== null && eventData.max_companions !== undefined 
         ? parseInt(eventData.max_companions) 

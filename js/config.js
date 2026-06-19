@@ -94,12 +94,22 @@ async function supabaseRequest(endpoint, method = 'GET', body = null) {
 
       // ── Last resort for GET: strip ONLY truly optional columns (NOT event_color) ──
       if (response.status === 400 && method === 'GET' && endpoint.includes('select=')) {
+        // CRITICAL: these columns gate the entire Save the Date feature.
+        // They must NEVER be silently dropped from select= just because
+        // some OTHER unrelated column happens to be missing — if they get
+        // stripped, eventData.save_the_date_enabled arrives as undefined,
+        // the gate always evaluates to "off", and the guest sees the full
+        // invite instead of Save the Date even though the organiser
+        // genuinely activated it. This was a real, confirmed bug.
+        const NEVER_STRIP = new Set([
+          'save_the_date_enabled', 'release_type', 'release_date', 'is_invite_released',
+          'rsvp_enabled', 'title', 'date', 'time', 'confirm_by_date', 'id', 'user_id',
+        ]);
         const OPTIONAL_COLS = [
           'story_text','invite_blessing','decor_ornament_url','decor_side_url',
           'show_decor','save_the_date','show_countdown','event_message','show_story',
           'venue_ceremony','venue_ceremony_maps','venue_civil','venue_civil_maps',
           'venue_reception','venue_reception_maps',
-          'save_the_date_enabled','release_type','release_date','is_invite_released',
           'std_title','std_subtitle','std_font_family',
           'std_name_size','std_title_size','std_intro_enabled','std_intro_text','std_intro_photo_url',
           'std_show_cover','std_cover_url',
@@ -109,14 +119,14 @@ async function supabaseRequest(endpoint, method = 'GET', body = null) {
           'venue_ceremony_image','venue_civil_image','venue_reception_image','blessing_couple_size',
           'date_style','manual_style','story_style','story_photo_url',
           'std_scratch_enabled','std_scratch_mode','std_scratch_photo_url','std_scratch_text',
-        ];
+        ].filter(col => !NEVER_STRIP.has(col));
         let safeEndpoint = endpoint;
         OPTIONAL_COLS.forEach(col => {
           safeEndpoint = safeEndpoint.replace(new RegExp(`,${col}(?=[,&]|$)`,'g'), '').replace(new RegExp(`${col},`,'g'),'');
         });
         safeEndpoint = safeEndpoint.replace(/,+/g,',').replace(/select=,/g,'select=').replace(/,(?=&|$)/g,'');
         if (safeEndpoint !== endpoint) {
-          console.warn('⚠️ A tentar sem colunas opcionais. Endpoint original:', endpoint);
+          console.warn('⚠️ A tentar sem colunas opcionais (preservando sempre os campos do Save the Date). Endpoint original:', endpoint);
           console.warn('⚠️ Endpoint limpo:', safeEndpoint);
           console.warn('⚠️ Texto do erro original do Supabase:', text);
           return supabaseRequest(safeEndpoint, method, body);
