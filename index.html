@@ -9,7 +9,7 @@
   <script>tailwind.config = { theme: { extend: { colors: { teal: { 500: '#007f9f', 600: '#006b86' } } } } }</script>
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💌</text></svg>">
-  <link rel="stylesheet" href="css/main.css?v=553900">
+  <link rel="stylesheet" href="css/main.css?v=554000">
 </head>
 <body class="h-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
 
@@ -587,6 +587,12 @@ para testemunhar o seu enlace matrimonial</textarea>
          <textarea id="evt-gallery-urls" class="input-field text-sm" rows="4" placeholder="https://exemplo.com/foto1.jpg&#10;https://exemplo.com/foto2.jpg"></textarea>
          <button type="button" class="mt-2 text-xs text-teal-600 font-semibold" onclick="addGalleryImage()">+ Carregar imagem</button>
          <input id="gallery-file-input" type="file" accept="image/*" multiple class="hidden" onchange="handleGalleryUpload(this)">
+         <label class="text-xs font-semibold text-gray-600 block mt-3 mb-1">Estilo visual</label>
+         <select id="evt-gallery-style" class="input-field text-sm">
+          <option value="grid">Grelha (mosaico clássico)</option>
+          <option value="carousel">Carrossel 3D (cartões em perspectiva)</option>
+          <option value="masonry">Mosaico irregular</option>
+         </select>
         </div>
 
         <!-- Mensagem dos Noivos -->
@@ -611,6 +617,17 @@ para testemunhar o seu enlace matrimonial</textarea>
           <img id="final-photo-preview" class="rounded-lg max-h-32 object-cover w-full">
           <button type="button" onclick="removeFinalPhoto()" class="absolute top-1 right-1 bg-white rounded-full w-6 h-6 flex items-center justify-center shadow text-red-500 text-xs font-bold">✕</button>
          </div>
+        </div>
+
+        <!-- Perguntas Frequentes -->
+        <div class="flex items-center justify-between">
+         <span class="text-sm font-semibold text-gray-700">Perguntas Frequentes</span>
+         <div id="sw-event-faq" class="switch" onclick="toggleSwitch(this, 'event-faq-extra')"></div>
+        </div>
+        <p class="text-xs text-gray-400 -mt-1 mb-1">Ex: "Posso enviar alguém no meu lugar?", "Posso levar criança?"</p>
+        <div id="event-faq-extra" class="hidden pl-4 space-y-2">
+         <div id="event-faq-list" class="space-y-2"></div>
+         <button type="button" onclick="addEventFaqItem()" class="text-xs text-teal-600 font-semibold">+ Adicionar pergunta</button>
         </div>
 
         <!-- Dress Code -->
@@ -646,6 +663,12 @@ para testemunhar o seu enlace matrimonial</textarea>
         <div id="schedule-extra" class="pl-4">
          <p class="text-xs text-gray-500 mb-2">Os momentos por omissão são partilhados. Pode personalizar para este evento.</p>
          <button type="button" class="mt-1 text-xs text-teal-600 font-semibold" onclick="openScheduleEditor()">Editar momentos</button>
+         <label class="text-xs font-semibold text-gray-600 block mt-3 mb-1">Estilo visual</label>
+         <select id="evt-schedule-style" class="input-field text-sm">
+          <option value="timeline">Linha do tempo vertical (com pontos)</option>
+          <option value="cards">Cartões separados</option>
+          <option value="compact">Lista compacta</option>
+         </select>
         </div>
         <!-- LOCAIS DO EVENTO -->
         <div class="flex items-center justify-between">
@@ -662,18 +685,36 @@ para testemunhar o seu enlace matrimonial</textarea>
           <label class="text-xs font-semibold text-gray-600 block mb-1">Cerimónia Religiosa</label>
           <input id="evt-venue-ceremony" class="input-field text-sm mb-1" placeholder="Nome do local">
           <input id="evt-venue-ceremony-date" class="input-field text-sm mb-1" type="date" placeholder="Data (se diferente)">
-          <input id="evt-venue-ceremony-maps" class="input-field text-sm" placeholder="Link Google Maps (opcional)">
+          <input id="evt-venue-ceremony-maps" class="input-field text-sm mb-1" placeholder="Link Google Maps (opcional)">
+          <input type="file" id="evt-venue-ceremony-image-input" accept="image/*" class="input-field text-sm" onchange="handleVenueImageUpload(this,'ceremony')">
+          <input type="hidden" id="evt-venue-ceremony-image">
+          <div id="venue-ceremony-image-wrap" class="hidden relative mt-1" style="max-width:160px">
+           <img id="venue-ceremony-image-preview" class="rounded-lg max-h-24 object-cover w-full">
+           <button type="button" onclick="removeVenueImage('ceremony')" class="absolute top-1 right-1 bg-white rounded-full w-5 h-5 flex items-center justify-center shadow text-red-500 text-xs font-bold">✕</button>
+          </div>
          </div>
          <div>
           <label class="text-xs font-semibold text-gray-600 block mb-1">Cerimónia Civil</label>
           <input id="evt-venue-civil" class="input-field text-sm mb-1" placeholder="Nome do local">
           <input id="evt-venue-civil-date" class="input-field text-sm mb-1" type="date" placeholder="Data (se diferente)">
-          <input id="evt-venue-civil-maps" class="input-field text-sm" placeholder="Link Google Maps (opcional)">
+          <input id="evt-venue-civil-maps" class="input-field text-sm mb-1" placeholder="Link Google Maps (opcional)">
+          <input type="file" id="evt-venue-civil-image-input" accept="image/*" class="input-field text-sm" onchange="handleVenueImageUpload(this,'civil')">
+          <input type="hidden" id="evt-venue-civil-image">
+          <div id="venue-civil-image-wrap" class="hidden relative mt-1" style="max-width:160px">
+           <img id="venue-civil-image-preview" class="rounded-lg max-h-24 object-cover w-full">
+           <button type="button" onclick="removeVenueImage('civil')" class="absolute top-1 right-1 bg-white rounded-full w-5 h-5 flex items-center justify-center shadow text-red-500 text-xs font-bold">✕</button>
+          </div>
          </div>
          <div>
           <label class="text-xs font-semibold text-gray-600 block mb-1">Copo d'Água / Recepção</label>
           <input id="evt-venue-reception" class="input-field text-sm mb-1" placeholder="Nome do local">
-          <input id="evt-venue-reception-maps" class="input-field text-sm" placeholder="Link Google Maps (opcional)">
+          <input id="evt-venue-reception-maps" class="input-field text-sm mb-1" placeholder="Link Google Maps (opcional)">
+          <input type="file" id="evt-venue-reception-image-input" accept="image/*" class="input-field text-sm" onchange="handleVenueImageUpload(this,'reception')">
+          <input type="hidden" id="evt-venue-reception-image">
+          <div id="venue-reception-image-wrap" class="hidden relative mt-1" style="max-width:160px">
+           <img id="venue-reception-image-preview" class="rounded-lg max-h-24 object-cover w-full">
+           <button type="button" onclick="removeVenueImage('reception')" class="absolute top-1 right-1 bg-white rounded-full w-5 h-5 flex items-center justify-center shadow text-red-500 text-xs font-bold">✕</button>
+          </div>
          </div>
         </div>
 
@@ -1024,19 +1065,19 @@ para testemunhar o seu enlace matrimonial</textarea>
   </a>
 
   <!-- ===================== SCRIPTS (ordem importa) ===================== -->
-  <script src="js/config.js?v=553900"></script>
-  <script src="js/store.js?v=553900"></script>
-  <script src="js/visuals.js?v=553900"></script>
-  <script src="js/venues.js?v=553900"></script>
-  <script src="js/rsvp.js?v=553900"></script>
-  <script src="js/ui.js?v=553900"></script>
-  <script src="js/auth.js?v=553900"></script>
-  <script src="js/dashboard.js?v=553900"></script>
-  <script src="js/events.js?v=553900"></script>
-  <script src="js/guest.js?v=553900"></script>
-  <script src="js/sections.js?v=553900"></script>
-  <script src="js/admin.js?v=553900"></script>
-  <script src="js/router.js?v=553900"></script>
+  <script src="js/config.js?v=554000"></script>
+  <script src="js/store.js?v=554000"></script>
+  <script src="js/visuals.js?v=554000"></script>
+  <script src="js/venues.js?v=554000"></script>
+  <script src="js/rsvp.js?v=554000"></script>
+  <script src="js/ui.js?v=554000"></script>
+  <script src="js/auth.js?v=554000"></script>
+  <script src="js/dashboard.js?v=554000"></script>
+  <script src="js/events.js?v=554000"></script>
+  <script src="js/guest.js?v=554000"></script>
+  <script src="js/sections.js?v=554000"></script>
+  <script src="js/admin.js?v=554000"></script>
+  <script src="js/router.js?v=554000"></script>
 
 </body>
 </html>

@@ -426,10 +426,13 @@ function saveEventWithCover(eventId, title, date, time, deadline, coverImageURL,
         show_venues:          document.getElementById('sw-venues')?.classList.contains('active') ? 'yes' : 'no',
         venue_ceremony:       document.getElementById('evt-venue-ceremony')?.value?.trim() || null,
         venue_ceremony_maps:  document.getElementById('evt-venue-ceremony-maps')?.value?.trim() || null,
+        venue_ceremony_image: document.getElementById('evt-venue-ceremony-image')?.value || null,
         venue_civil:          document.getElementById('evt-venue-civil')?.value?.trim() || null,
         venue_civil_maps:     document.getElementById('evt-venue-civil-maps')?.value?.trim() || null,
+        venue_civil_image:    document.getElementById('evt-venue-civil-image')?.value || null,
         venue_reception:      document.getElementById('evt-venue-reception')?.value?.trim() || null,
         venue_reception_maps: document.getElementById('evt-venue-reception-maps')?.value?.trim() || null,
+        venue_reception_image: document.getElementById('evt-venue-reception-image')?.value || null,
       });
 
       // Save dates to dedicated table
@@ -764,6 +767,10 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
           couplemsg_text: document.getElementById('evt-couplemsg-text')?.value?.trim() || null,
           show_final_photo: document.getElementById('sw-final-photo')?.classList.contains('active') ? 'yes' : 'no',
           final_photo_url: document.getElementById('evt-final-photo-url')?.value || null,
+          show_event_faq: document.getElementById('sw-event-faq')?.classList.contains('active') ? 'yes' : 'no',
+          event_faq_items: (Store.eventFaqItems && Store.eventFaqItems.length) ? JSON.stringify(Store.eventFaqItems) : null,
+          schedule_style: document.getElementById('evt-schedule-style')?.value || 'timeline',
+          gallery_style: document.getElementById('evt-gallery-style')?.value || 'grid',
           parents_size: document.getElementById('evt-parents-size')?.value || '0.88',
           dresscode_text:   document.getElementById('evt-dresscode-text')?.value?.trim() || null,
           dresscode_colors: document.getElementById('evt-dresscode-colors')?.value?.trim() || null,
@@ -780,11 +787,14 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
           venue_ceremony:       document.getElementById('evt-venue-ceremony')?.value?.trim() || null,
           venue_ceremony_maps:  document.getElementById('evt-venue-ceremony-maps')?.value?.trim() || null,
           venue_ceremony_date:  document.getElementById('evt-venue-ceremony-date')?.value?.trim() || null,
+          venue_ceremony_image: document.getElementById('evt-venue-ceremony-image')?.value || null,
           venue_civil:          document.getElementById('evt-venue-civil')?.value?.trim() || null,
           venue_civil_maps:     document.getElementById('evt-venue-civil-maps')?.value?.trim() || null,
           venue_civil_date:     document.getElementById('evt-venue-civil-date')?.value?.trim() || null,
+          venue_civil_image:    document.getElementById('evt-venue-civil-image')?.value || null,
           venue_reception:      document.getElementById('evt-venue-reception')?.value?.trim() || null,
           venue_reception_maps: document.getElementById('evt-venue-reception-maps')?.value?.trim() || null,
+          venue_reception_image: document.getElementById('evt-venue-reception-image')?.value || null,
           venues_title: document.getElementById('evt-venues-title')?.value?.trim() || null,
         });
         // Save dates to dedicated table
@@ -1622,6 +1632,11 @@ function _fillEditForm(ev) {
   _setSwitch('sw-final-photo', _yesOrTrue(ev.show_final_photo), 'final-photo-extra');
   { const fpUrl=document.getElementById('evt-final-photo-url'); const fpPrev=document.getElementById('final-photo-preview'); const fpWrap=document.getElementById('final-photo-preview-wrap');
     if(ev.final_photo_url){if(fpUrl)fpUrl.value=ev.final_photo_url;if(fpPrev)fpPrev.src=ev.final_photo_url;fpWrap?.classList.remove('hidden');} }
+  _setSwitch('sw-event-faq', _yesOrTrue(ev.show_event_faq), 'event-faq-extra');
+  try { Store.eventFaqItems = ev.event_faq_items ? JSON.parse(ev.event_faq_items) : []; } catch(e) { Store.eventFaqItems = []; }
+  renderEventFaqList();
+  { const ssEl = document.getElementById('evt-schedule-style'); if (ssEl) ssEl.value = ev.schedule_style || 'timeline'; }
+  { const gsEl = document.getElementById('evt-gallery-style'); if (gsEl) gsEl.value = ev.gallery_style || 'grid'; }
   { const psInp = document.getElementById('evt-parents-size'); const psLbl = document.getElementById('parents-size-label'); const psVal = ev.parents_size || '0.88'; if (psInp) psInp.value = psVal; if (psLbl) psLbl.textContent = psVal + 'rem'; }
   const _svDC = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
   _svDC('evt-dresscode-text',   ev.dresscode_text);
@@ -1647,6 +1662,16 @@ function _fillEditForm(ev) {
   _sv('evt-venue-reception',      ev.venue_reception);
   _sv('evt-venues-title',          ev.venues_title);
   _sv('evt-venue-reception-maps', ev.venue_reception_maps);
+  { const _vImg = (key, url) => {
+      if (!url) return;
+      const inp = document.getElementById(`evt-venue-${key}-image`); if (inp) inp.value = url;
+      const prev = document.getElementById(`venue-${key}-image-preview`); if (prev) prev.src = url;
+      document.getElementById(`venue-${key}-image-wrap`)?.classList.remove('hidden');
+    };
+    _vImg('ceremony', ev.venue_ceremony_image);
+    _vImg('civil', ev.venue_civil_image);
+    _vImg('reception', ev.venue_reception_image);
+  }
 
   lucide.createIcons();
   
@@ -3669,3 +3694,33 @@ async function openIntakePreview(eventId) {
 
 
 
+
+// ===================== EVENT FAQ EDITOR =====================
+function renderEventFaqList() {
+  const container = document.getElementById('event-faq-list');
+  if (!container) return;
+  const items = Store.eventFaqItems || [];
+  container.innerHTML = items.map((item, i) => `
+    <div style="background:#f8fafc;border-radius:0.6rem;padding:0.6rem;border:1px solid #e5e7eb">
+      <input class="input-field text-sm mb-1" placeholder="Pergunta" value="${escapeHTML(item.q || '')}" onchange="updateEventFaqItem(${i},'q',this.value)">
+      <textarea class="input-field text-sm" rows="2" placeholder="Resposta" onchange="updateEventFaqItem(${i},'a',this.value)">${escapeHTML(item.a || '')}</textarea>
+      <button type="button" onclick="removeEventFaqItem(${i})" class="text-xs text-red-500 font-semibold mt-1">Remover</button>
+    </div>`).join('') || '<p class="text-xs text-gray-400">Nenhuma pergunta ainda.</p>';
+}
+
+function addEventFaqItem() {
+  if (!Store.eventFaqItems) Store.eventFaqItems = [];
+  Store.eventFaqItems.push({ q: '', a: '' });
+  renderEventFaqList();
+}
+
+function updateEventFaqItem(idx, field, value) {
+  if (!Store.eventFaqItems || !Store.eventFaqItems[idx]) return;
+  Store.eventFaqItems[idx][field] = value;
+}
+
+function removeEventFaqItem(idx) {
+  if (!Store.eventFaqItems) return;
+  Store.eventFaqItems.splice(idx, 1);
+  renderEventFaqList();
+}

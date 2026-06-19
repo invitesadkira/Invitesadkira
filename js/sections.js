@@ -159,6 +159,7 @@ async function renderGuestSections(eventData) {
         case 'dresscode': if (_yesOrTrue(eventData.show_dresscode) && eventData.dresscode_text) html += buildDresscodeSection(eventData); break;
         case 'couplemsg': if (_yesOrTrue(eventData.show_couplemsg) && eventData.couplemsg_text) html += buildCoupleMsgSection(eventData); break;
         case 'final_photo': if (_yesOrTrue(eventData.show_final_photo) && eventData.final_photo_url) html += buildFinalPhotoSection(eventData); break;
+        case 'event_faq': if (_yesOrTrue(eventData.show_event_faq) && eventData.event_faq_items) html += buildEventFaqSection(eventData); break;
         case 'rsvp':     break; // always last, separate element
       }
     } catch(sectionErr) {
@@ -581,6 +582,66 @@ function buildIbanSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
 function buildGallerySection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
   const urls = (ev.gallery_urls || '').split('\n').map(u => u.trim()).filter(Boolean);
   if (!urls.length) return '';
+  const style = ev.gallery_style || 'grid';
+  const evColor = ev.event_color || '#007f9f';
+
+  // ── Style: CAROUSEL — 3D perspective cards, one centered + side peeks ──
+  // Matches "Nossos Momentos" layout: side images partially visible, blurred
+  // background fill, center card sharp with dot indicators below.
+  if (style === 'carousel') {
+    const galId = 'gal3d_' + Math.random().toString(36).substring(2, 8);
+    const slides = urls.map((u, i) => `<div class="g3d-slide" data-idx="${i}" style="background-image:url('${u}')"></div>`).join('');
+    const dots = urls.map((_, i) => `<span class="g3d-dot" data-idx="${i}" style="background:${i===0?evColor:'#d1d5db'}"></span>`).join('');
+    return _SD + `<div class="event-section" style="background:#fdfaf6;overflow:hidden">
+      <div class="section-inner">
+        <h3 class="section-title reveal" style="text-align:center">Nossos Momentos</h3>
+        <div id="${galId}" class="g3d-wrap reveal">
+          <div class="g3d-track">${slides}</div>
+        </div>
+        <div class="g3d-dots">${dots}</div>
+      </div>
+      <script>(function(){
+        var wrap = document.getElementById('${galId}');
+        if (!wrap) return;
+        var slides = wrap.querySelectorAll('.g3d-slide');
+        var dotsWrap = wrap.parentElement.querySelector('.g3d-dots');
+        var dots = dotsWrap ? dotsWrap.querySelectorAll('.g3d-dot') : [];
+        var idx = 0;
+        function render() {
+          slides.forEach(function(s, i) {
+            var offset = i - idx;
+            s.style.transform = 'translateX(' + (offset * 78) + '%) scale(' + (offset===0?1:0.78) + ')';
+            s.style.zIndex = offset===0 ? 3 : 1;
+            s.style.opacity = Math.abs(offset) > 1 ? 0 : (offset===0 ? 1 : 0.55);
+            s.style.filter = offset===0 ? 'none' : 'blur(1px)';
+          });
+          dots.forEach(function(d, i) { d.style.background = i===idx ? '${evColor}' : '#d1d5db'; });
+        }
+        render();
+        var startX = null;
+        wrap.addEventListener('touchstart', function(e){ startX = e.touches[0].clientX; }, {passive:true});
+        wrap.addEventListener('touchend', function(e){
+          if (startX === null) return;
+          var dx = e.changedTouches[0].clientX - startX;
+          if (dx > 40 && idx > 0) idx--;
+          else if (dx < -40 && idx < slides.length-1) idx++;
+          startX = null; render();
+        }, {passive:true});
+        dots.forEach(function(d, i) { d.onclick = function(){ idx = i; render(); }; });
+      })();</script>
+    </div>`;
+  }
+
+  // ── Style: MASONRY — irregular mosaic, varying heights ──
+  if (style === 'masonry') {
+    const items = urls.map((u, i) => `<div class="gmasonry-item" style="background-image:url('${u}')" onclick="openLightbox('${u}')"></div>`).join('');
+    return _SD + `<div class="event-section" style="background:#f8fafc"><div class="section-inner">
+      <h3 class="section-title reveal">Galeria</h3>
+      <div class="gmasonry-grid reveal-stagger">${items}</div>
+    </div></div>`;
+  }
+
+  // ── Style: GRID (default) — classic uniform mosaic ──
   const items = urls.map(u => `<div class="gallery-item"><img src="${u}" data-url="${u}" alt="" loading="lazy" decoding="async" style="width:100%;height:100%;object-fit:cover" onerror="this.closest('.gallery-item').style.display='none'"></div>`).join('');
   return _SD + `<div class="event-section" style="background:#f8fafc"><div class="section-inner">
     <h3 class="section-title reveal">Galeria</h3>
@@ -618,31 +679,64 @@ function buildScheduleSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
     items = Store.eventScheduleItems;
   }
   const evColor = ev.event_color || '#007f9f';
-  const rows = items.map((it, i) => {
-    const isLeft = i % 2 === 0;
-    const timeLabel  = `<div style="font-size:0.72rem;font-weight:800;color:${evColor};text-transform:uppercase;letter-spacing:0.05em;margin-bottom:2px">${it.time}</div>`;
-    const textLabel  = `<div><div style="font-weight:700;color:#1e293b;font-size:0.88rem">${escapeHTML(it.label)}</div>${it.sub?`<div style="font-size:0.72rem;color:#6b7280;margin-top:1px">${escapeHTML(it.sub)}</div>`:''}</div>`;
-    const node = `<div style="flex-shrink:0;width:44px;height:44px;border-radius:50%;background:${evColor};display:flex;align-items:center;justify-content:center;position:relative;z-index:2;box-shadow:0 2px 8px rgba(0,0,0,0.15)">${it.icon && it.icon.startsWith('http') ? `<img src="${it.icon}" style="width:20px;height:20px;object-fit:contain;filter:brightness(0) invert(1)">` : `<i data-lucide="${it.icon}" style="width:18px;height:18px;color:#fff"></i>`}</div>`;
-    if (isLeft) {
-      return `<div class="reveal" style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;margin-bottom:1.5rem;max-width:500px;margin-left:auto;margin-right:auto">
-        <div style="text-align:right;padding-right:0.75rem">${timeLabel}${textLabel}</div>
-        ${node}
-        <div></div>
-      </div>`;
-    } else {
-      return `<div class="reveal" style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;margin-bottom:1.5rem;max-width:500px;margin-left:auto;margin-right:auto">
-        <div></div>
-        ${node}
-        <div style="text-align:left;padding-left:0.75rem">${timeLabel}${textLabel}</div>
-      </div>`;
-    }
-  }).join('');
+  const style = ev.schedule_style || 'timeline';
+
+  // ── Style: COMPACT — simple list, no icons, minimal spacing ──
+  if (style === 'compact') {
+    const rows = items.map(it => `
+      <div class="reveal" style="display:flex;align-items:baseline;gap:0.85rem;padding:0.6rem 0;border-bottom:1px solid #f1f5f9">
+        <span style="font-size:0.82rem;font-weight:800;color:${evColor};min-width:52px">${it.time}</span>
+        <div><span style="font-weight:700;color:#1e293b;font-size:0.85rem">${escapeHTML(it.label)}</span>${it.sub?` <span style="font-size:0.75rem;color:#9ca3af">— ${escapeHTML(it.sub)}</span>`:''}</div>
+      </div>`).join('');
+    return _SD + `<div class="event-section">
+      <div class="section-inner" style="max-width:480px;margin:0 auto">
+        <h3 class="section-title reveal" style="text-align:center">Itinerário</h3>
+        <div>${rows}</div>
+      </div>
+    </div>`;
+  }
+
+  // ── Style: CARDS — each moment its own card, vertical stack ──
+  if (style === 'cards') {
+    const rows = items.map(it => `
+      <div class="reveal" style="background:#fff;border-radius:0.85rem;padding:1rem 1.1rem;margin-bottom:0.75rem;border:1.5px solid color-mix(in srgb,${evColor} 18%,#e5e7eb);display:flex;align-items:center;gap:0.85rem;max-width:480px;margin-left:auto;margin-right:auto">
+        <div style="flex-shrink:0;width:48px;height:48px;border-radius:0.65rem;background:color-mix(in srgb,${evColor} 12%,white);display:flex;align-items:center;justify-content:center">
+          ${it.icon && it.icon.startsWith('http') ? `<img src="${it.icon}" style="width:22px;height:22px;object-fit:contain">` : `<i data-lucide="${it.icon}" style="width:20px;height:20px;color:${evColor}"></i>`}
+        </div>
+        <div>
+          <div style="font-size:0.7rem;font-weight:800;color:${evColor};text-transform:uppercase;letter-spacing:0.05em">${it.time}</div>
+          <div style="font-weight:700;color:#1e293b;font-size:0.92rem">${escapeHTML(it.label)}</div>
+          ${it.sub?`<div style="font-size:0.75rem;color:#6b7280">${escapeHTML(it.sub)}</div>`:''}
+        </div>
+      </div>`).join('');
+    return _SD + `<div class="event-section">
+      <div class="section-inner">
+        <h3 class="section-title reveal" style="text-align:center">Itinerário</h3>
+        <div style="margin-top:1rem">${rows}</div>
+      </div>
+    </div>`;
+  }
+
+  // ── Style: TIMELINE (default) — vertical line on the left, dot + time/label to the right ──
+  const rows = items.map(it => `
+    <div class="reveal" style="display:flex;gap:1rem;margin-bottom:1.5rem;max-width:480px;margin-left:auto;margin-right:auto;position:relative">
+      <div style="flex-shrink:0;width:70px;text-align:right">
+        <span style="font-size:1.05rem;font-weight:800;color:#1e293b">${it.time}</span>
+      </div>
+      <div style="flex-shrink:0;position:relative;display:flex;flex-direction:column;align-items:center">
+        <div style="width:12px;height:12px;border-radius:50%;background:${evColor};margin-top:6px;flex-shrink:0;box-shadow:0 0 0 4px color-mix(in srgb,${evColor} 15%,white)"></div>
+      </div>
+      <div style="flex:1;padding-bottom:0.25rem">
+        <div style="font-weight:800;color:#1e293b;font-size:0.85rem;text-transform:uppercase;letter-spacing:0.03em">${escapeHTML(it.label)}</div>
+        ${it.sub?`<div style="font-size:0.82rem;color:#9ca3af;margin-top:1px">${escapeHTML(it.sub)}</div>`:''}
+      </div>
+    </div>`).join('');
 
   return _SD + `<div class="event-section">
     <div class="section-inner" style="text-align:center">
       <h3 class="section-title reveal">Itinerário</h3>
-      <div style="position:relative;max-width:500px;margin:0 auto">
-        <div style="position:absolute;left:50%;top:8px;bottom:8px;width:2px;background:linear-gradient(to bottom,transparent,${evColor} 5%,${evColor} 95%,transparent);transform:translateX(-50%);z-index:1"></div>
+      <div style="position:relative;max-width:480px;margin:0 auto">
+        <div style="position:absolute;left:76px;top:14px;bottom:14px;width:2px;background:linear-gradient(to bottom,transparent,${evColor}55 5%,${evColor}55 95%,transparent)"></div>
         ${rows}
       </div>
     </div>
@@ -990,6 +1084,7 @@ const ALL_SECTION_DEFS = [
   { key: 'dresscode',  label: 'Dress Code',                             icon: 'shirt' },
   { key: 'couplemsg',   label: 'Mensagem dos Noivos',                   icon: 'message-circle' },
   { key: 'final_photo', label: 'Foto Final dos Noivos',                 icon: 'image' },
+  { key: 'event_faq',   label: 'Perguntas Frequentes',                  icon: 'help-circle' },
 ];
 
 function getDefaultSectionOrder() {
@@ -1088,21 +1183,24 @@ function resetSectionOrder() {
 function buildVenueSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
   const evColor = ev.event_color || '#007f9f';
   const venues = [];
-  if (ev.venue_ceremony) venues.push({ icon: 'church',      title: 'Cerimónia Religiosa', name: ev.venue_ceremony, maps: ev.venue_ceremony_maps });
-  if (ev.venue_civil)    venues.push({ icon: 'file-text',   title: 'Cerimónia Civil',     name: ev.venue_civil,    maps: ev.venue_civil_maps });
-  if (ev.venue_reception)venues.push({ icon: 'glass-water', title: "Copo d'Água",          name: ev.venue_reception,maps: ev.venue_reception_maps });
+  if (ev.venue_ceremony) venues.push({ icon: 'church',      title: 'Cerimónia Religiosa', name: ev.venue_ceremony, maps: ev.venue_ceremony_maps, image: ev.venue_ceremony_image });
+  if (ev.venue_civil)    venues.push({ icon: 'file-text',   title: 'Cerimónia Civil',     name: ev.venue_civil,    maps: ev.venue_civil_maps,    image: ev.venue_civil_image });
+  if (ev.venue_reception)venues.push({ icon: 'glass-water', title: "Copo d'Água",          name: ev.venue_reception,maps: ev.venue_reception_maps, image: ev.venue_reception_image });
   if (!venues.length) return '';
 
   const cards = venues.map(v => `
-    <div style="background:#fff;border-radius:1rem;padding:1.25rem 1rem;border:1.5px solid color-mix(in srgb,${evColor} 20%,#e5e7eb);text-align:center;flex:1;min-width:180px">
-      <div style="width:44px;height:44px;border-radius:50%;background:color-mix(in srgb,${evColor} 12%,white);display:flex;align-items:center;justify-content:center;margin:0 auto 0.6rem">
-        <i data-lucide="${v.icon}" style="width:20px;height:20px;color:${evColor}"></i>
+    <div style="background:#fff;border-radius:1rem;overflow:hidden;border:1.5px solid color-mix(in srgb,${evColor} 20%,#e5e7eb);text-align:center;flex:1;min-width:180px">
+      ${v.image ? `<div style="width:100%;height:120px;overflow:hidden"><img src="${v.image}" style="width:100%;height:100%;object-fit:cover" alt="${escapeHTML(v.title)}"></div>` : ''}
+      <div style="padding:1.25rem 1rem">
+        ${!v.image ? `<div style="width:44px;height:44px;border-radius:50%;background:color-mix(in srgb,${evColor} 12%,white);display:flex;align-items:center;justify-content:center;margin:0 auto 0.6rem">
+          <i data-lucide="${v.icon}" style="width:20px;height:20px;color:${evColor}"></i>
+        </div>` : ''}
+        <div style="font-size:0.7rem;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;color:${evColor};margin-bottom:0.25rem">${escapeHTML(v.title)}</div>
+        <div style="font-weight:700;color:#1e293b;font-size:0.9rem;margin-bottom:0.5rem">${escapeHTML(v.name)}</div>
+        ${v.maps ? `<a href="${v.maps}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:0.35rem;background:${evColor};color:#fff;font-size:0.72rem;font-weight:700;padding:0.35rem 0.85rem;border-radius:999px;text-decoration:none">
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          Ver no Mapa</a>` : ''}
       </div>
-      <div style="font-size:0.7rem;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;color:${evColor};margin-bottom:0.25rem">${escapeHTML(v.title)}</div>
-      <div style="font-weight:700;color:#1e293b;font-size:0.9rem;margin-bottom:0.5rem">${escapeHTML(v.name)}</div>
-      ${v.maps ? `<a href="${v.maps}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:0.35rem;background:${evColor};color:#fff;font-size:0.72rem;font-weight:700;padding:0.35rem 0.85rem;border-radius:999px;text-decoration:none">
-        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-        Ver no Mapa</a>` : ''}
     </div>`).join('');
 
   return _SD + `<div class="event-section">
@@ -1232,6 +1330,29 @@ function buildFinalPhotoSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
         onerror="this.parentElement.parentElement.style.display='none'">
       <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,0.35) 0%,transparent 55%)"></div>
       ${(ev.groom_name || ev.bride_name) ? `<p style="position:absolute;bottom:1.25rem;left:0;right:0;text-align:center;color:#fff;font-size:1.05rem;font-weight:700;letter-spacing:0.05em;font-family:var(--event-font,'Playfair Display',serif)">${escapeHTML(ev.groom_name||'')}${ev.groom_name&&ev.bride_name?' & ':''}${escapeHTML(ev.bride_name||'')}</p>` : ''}
+    </div>
+  </div>`;
+}
+
+// ── Perguntas Frequentes (FAQ por evento) ──────────────────────────────────
+function buildEventFaqSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
+  let items = [];
+  try { items = JSON.parse(ev.event_faq_items || '[]'); } catch(e) { items = []; }
+  items = items.filter(it => it && (it.q || it.a));
+  if (!items.length) return '';
+  return _SD + `<div class="event-section" style="background:#fdfaf6">
+    <div class="section-inner reveal">
+      <p style="text-align:center;font-size:0.7rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--ev-color);font-weight:700;margin-bottom:1.5rem">Perguntas Frequentes</p>
+      <div style="display:flex;flex-direction:column;gap:0.75rem;max-width:480px;margin:0 auto">
+        ${items.map((it, i) => `
+        <div style="background:#fff;border-radius:0.75rem;border:1px solid #e5e7eb;overflow:hidden">
+          <button type="button" onclick="this.parentElement.querySelector('.faq-answer').classList.toggle('hidden');this.querySelector('.faq-chevron').style.transform=this.parentElement.querySelector('.faq-answer').classList.contains('hidden')?'rotate(0deg)':'rotate(180deg)'" style="width:100%;text-align:left;padding:0.85rem 1rem;background:none;border:none;display:flex;justify-content:space-between;align-items:center;cursor:pointer;font-family:inherit">
+            <span style="font-size:0.88rem;font-weight:700;color:#1e293b">${escapeHTML(it.q || '')}</span>
+            <svg class="faq-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--ev-color)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-left:0.5rem;transition:transform 0.2s"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div class="faq-answer hidden" style="padding:0 1rem 0.85rem;font-size:0.82rem;color:#6b7280;line-height:1.6">${escapeHTML(it.a || '')}</div>
+        </div>`).join('')}
+      </div>
     </div>
   </div>`;
 }

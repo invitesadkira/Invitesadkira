@@ -465,6 +465,23 @@ function setMusicPlayingUI(playing) {
   if (icon) { icon.setAttribute('data-lucide', playing ? 'pause' : 'play'); lucide.createIcons(); }
   if (eq)   eq.classList.toggle('paused', !playing);
   if (sub)  sub.textContent = playing ? 'A tocar' : 'Clique para tocar';
+
+  // Also sync the floating circular button (used standalone in the Save the
+  // Date screen, where the full player bar above doesn't exist)
+  const floatBtn = document.getElementById('floating-music-btn');
+  if (floatBtn) {
+    const PLAY_ICON  = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="white"><polygon points="5 3 19 12 5 21 5 3"/></svg>';
+    const PAUSE_ICON = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="white"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>';
+    const existingIcon = floatBtn.querySelector('svg');
+    if (existingIcon) existingIcon.remove();
+    const iconEl = document.createElement('div');
+    iconEl.innerHTML = playing ? PAUSE_ICON : PLAY_ICON;
+    const ring = floatBtn.querySelector('.fmb-ring');
+    if (ring) floatBtn.insertBefore(iconEl.firstChild, ring);
+    else floatBtn.appendChild(iconEl.firstChild);
+    floatBtn.classList.toggle('paused', !playing);
+    floatBtn.setAttribute('title', playing ? 'Pausar música' : 'Tocar música');
+  }
 }
 
 function toggleMusicPlayer() {
@@ -512,8 +529,30 @@ function startMusicAutoplay(ytId, audioSrc) {
     ytFrame.dataset.playing = '1';
     // Optimista: assumir que está a tocar; se o browser bloquear o iframe não emite erro detectável
     setMusicPlayingUI(true);
-    // YT iframe autoplay is often blocked — after 2s show "tap to play" state
-    // so the user knows to interact with the player
+    // YT iframe autoplay is often blocked on mobile — set up a gesture-based
+    // unlock retry, same approach as the direct-audio path below. We can't
+    // detect blocking directly (cross-origin iframe), so we proactively
+    // re-send the play command on the first real user gesture regardless.
+    let _ytUnlocked = false;
+    const tryYtPlay = () => {
+      if (_ytUnlocked) return;
+      _ytUnlocked = true;
+      try {
+        if (ytFrame.contentWindow) {
+          ytFrame.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'unMute', args: [] }), '*');
+          ytFrame.contentWindow.postMessage(JSON.stringify({ event: 'command', func: 'playVideo', args: [] }), '*');
+        }
+      } catch(e) {}
+      _removeYtListeners();
+    };
+    function _removeYtListeners() {
+      document.removeEventListener('touchstart', tryYtPlay);
+      document.removeEventListener('pointerdown', tryYtPlay);
+      document.removeEventListener('click', tryYtPlay);
+    }
+    document.addEventListener('touchstart', tryYtPlay, { passive: true });
+    document.addEventListener('pointerdown', tryYtPlay, { passive: true });
+    document.addEventListener('click', tryYtPlay);
     setTimeout(() => {
       // If user hasn't interacted, assume blocked and show play prompt
       if (sub && sub.textContent !== '') sub.textContent = 'Toca para ouvir';
@@ -564,32 +603,34 @@ function _startAudioFullyManual(audio, sub) {
       const floatBtn = document.getElementById('floating-music-btn');
       if (floatBtn) floatBtn.classList.add('visible');
 
-      // One-time: try to play on any user interaction
-      // Note: long-press-to-scroll on mobile fires touchstart but the browser
-      // may not count it as a "user gesture" for audio until touchend/click/scroll
+      // ── Mobile autoplay unlock ──
+      // iOS Safari and most mobile browsers only honor audio.play() when
+      // called synchronously inside a genuine user-gesture event handler.
+      // 'scroll' events — even ones caused by a touch swipe — are NOT
+      // trusted gestures on iOS, so relying on them silently fails. The
+      // most reliable triggers are touchstart, pointerdown, and click,
+      // all called synchronously the instant the event fires.
       let _played = false;
       const tryPlay = () => {
         if (_played) return;
+        _played = true; // mark immediately to avoid double-firing across multiple listeners
         audio.play().then(() => {
-          _played = true;
           setMusicPlayingUI(true);
           const fb = document.getElementById('floating-music-btn');
           if (fb) fb.classList.remove('visible');
           _removeAllTryPlayListeners();
-        }).catch(() => {});
+        }).catch(() => {
+          _played = false; // allow retry on the next gesture if this one didn't work
+        });
       };
       function _removeAllTryPlayListeners() {
         document.removeEventListener('touchstart', tryPlay);
-        document.removeEventListener('touchend', tryPlay);
+        document.removeEventListener('pointerdown', tryPlay);
         document.removeEventListener('click', tryPlay);
-        document.removeEventListener('scroll', tryPlay);
-        window.removeEventListener('scroll', tryPlay);
       }
       document.addEventListener('touchstart', tryPlay, { passive: true });
-      document.addEventListener('touchend', tryPlay, { passive: true });
+      document.addEventListener('pointerdown', tryPlay, { passive: true });
       document.addEventListener('click', tryPlay);
-      document.addEventListener('scroll', tryPlay, { passive: true, once: true });
-      window.addEventListener('scroll', tryPlay, { passive: true, once: true });
     });
   }
 }
@@ -909,4 +950,26 @@ function removeFinalPhoto() {
   document.getElementById('evt-final-photo-input').value = '';
   document.getElementById('final-photo-preview-wrap')?.classList.add('hidden');
   toast('Foto final removida.');
+}
+
+async function handleVenueImageUpload(input, venueKey) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 4*1024*1024) { toast('Imagem muito grande. Máx. 4 MB.'); return; }
+  toast('A carregar foto do local...');
+  try {
+    const url = await uploadImageToStorage(file, 'event-covers');
+    document.getElementById(`evt-venue-${venueKey}-image`).value = url;
+    const prev = document.getElementById(`venue-${venueKey}-image-preview`);
+    if (prev) prev.src = url;
+    document.getElementById(`venue-${venueKey}-image-wrap`)?.classList.remove('hidden');
+    toast('Foto do local carregada!');
+  } catch(e) { toast('Erro ao carregar a foto.'); }
+}
+
+function removeVenueImage(venueKey) {
+  document.getElementById(`evt-venue-${venueKey}-image`).value = '';
+  document.getElementById(`evt-venue-${venueKey}-image-input`).value = '';
+  document.getElementById(`venue-${venueKey}-image-wrap`)?.classList.add('hidden');
+  toast('Foto do local removida.');
 }

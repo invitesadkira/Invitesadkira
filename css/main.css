@@ -109,6 +109,11 @@ html, body { height: 100%; margin: 0; width: 100%; overflow-x: hidden; }
   bottom: auto !important; right: auto !important;
   z-index: 1 !important;
   transform: none !important;
+  width: 56px !important; height: 56px !important;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3) !important;
+}
+#std-music-player-slot #floating-music-btn svg {
+  width: 22px !important; height: 22px !important;
 }
 .floating-eq { display: flex; align-items: flex-end; gap: 2px; height: 14px; }
 .floating-eq span { width: 3px; border-radius: 2px; background: var(--ev-color); animation: eq-bar 0.8s infinite ease-in-out alternate; }
@@ -847,3 +852,30 @@ html, body { height: 100%; margin: 0; width: 100%; overflow-x: hidden; }
   border-radius: 50%; animation: stdSpin 0.8s linear infinite;
 }
 @keyframes stdSpin { to { transform: rotate(360deg); } }
+
+/* ── Gallery: 3D Carousel style ── */
+.g3d-wrap { position: relative; width: 100%; height: 320px; overflow: hidden; }
+.g3d-track { position: relative; width: 100%; height: 100%; }
+.g3d-slide {
+  position: absolute; top: 0; left: 50%; width: 70%; height: 100%;
+  margin-left: -35%; border-radius: 1.25rem; background-size: cover; background-position: center;
+  box-shadow: 0 12px 32px rgba(0,0,0,0.18);
+  transition: transform 0.4s ease, opacity 0.4s ease, filter 0.4s ease;
+}
+.g3d-dots { display: flex; justify-content: center; gap: 0.4rem; margin-top: 1rem; }
+.g3d-dot { width: 7px; height: 7px; border-radius: 50%; transition: background 0.2s; cursor: pointer; }
+
+/* ── Gallery: Masonry style ── */
+.gmasonry-grid {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.6rem;
+  grid-auto-rows: 90px;
+}
+.gmasonry-item {
+  background-size: cover; background-position: center; border-radius: 0.75rem;
+  cursor: pointer; grid-row-end: span 2;
+}
+.gmasonry-item:nth-child(3n+1) { grid-row-end: span 3; }
+.gmasonry-item:nth-child(4n+2) { grid-row-end: span 1; }
+@media (min-width: 640px) {
+  .gmasonry-grid { grid-template-columns: repeat(3, 1fr); }
+}

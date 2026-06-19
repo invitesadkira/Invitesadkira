@@ -2128,8 +2128,15 @@ function shareGuestEvent() {
 // Decide if the minimalist "Save the Date" screen should show instead of
 // the full invite, based on save_the_date_enabled + release_type rules.
 function _evaluateSaveTheDate(ev) {
+  console.log('🚪 STD Gate check:', {
+    save_the_date_enabled: ev.save_the_date_enabled,
+    typeof_value: typeof ev.save_the_date_enabled,
+    release_type: ev.release_type,
+    is_invite_released: ev.is_invite_released,
+  });
   // Feature off entirely → always show full invite (current behaviour)
   if (!ev.save_the_date_enabled || ev.save_the_date_enabled === false || ev.save_the_date_enabled === 'no') {
+    console.log('🚪 STD Gate: OFF — save_the_date_enabled is falsy/no');
     return { showSaveTheDate: false };
   }
 
