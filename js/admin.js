@@ -3706,15 +3706,20 @@ async function renderLandingDemos() {
   const grid = document.getElementById('landing-demo-grid');
   if (!grid) return;
   try {
-    const rows = await supabaseRequest('site_config?key=eq.demo_events&select=value&limit=1').catch(() => []);
+    const rows = await supabaseRequest('site_config?key=in.(demo_events,demo_events_enabled)&select=key,value').catch(() => []);
+    const demosRow = (rows || []).find(r => r.key === 'demo_events');
+    const enabledRow = (rows || []).find(r => r.key === 'demo_events_enabled');
+    const isEnabled = enabledRow ? enabledRow.value === 'true' : true; // default ON if never configured
+
     let demos = [];
-    if (rows && rows[0] && rows[0].value) {
-      try { demos = JSON.parse(rows[0].value); } catch(e) {}
+    if (demosRow && demosRow.value) {
+      try { demos = JSON.parse(demosRow.value); } catch(e) {}
     }
-    if (!demos.length) {
+    if (!isEnabled || !demos.length) {
       grid.closest('.landing-section').style.display = 'none';
       return;
     }
+    grid.closest('.landing-section').style.display = '';
     grid.innerHTML = demos.slice(0, 3).map(d => `
       <div class="ld-card">
         <div class="ld-frame-wrap">
@@ -3736,10 +3741,14 @@ async function renderLandingDemos() {
 
 // ===================== ADMIN: EDITAR EVENTOS DE DEMONSTRAÇÃO =====================
 async function adminEditDemoEvents() {
-  const rows = await supabaseRequest('site_config?key=eq.demo_events&select=value&limit=1').catch(() => []);
+  const rows = await supabaseRequest('site_config?key=in.(demo_events,demo_events_enabled)&select=key,value').catch(() => []);
+  const demosRow = (rows || []).find(r => r.key === 'demo_events');
+  const enabledRow = (rows || []).find(r => r.key === 'demo_events_enabled');
+  const isEnabled = enabledRow ? enabledRow.value === 'true' : true;
+
   let demos = [];
-  if (rows && rows[0] && rows[0].value) {
-    try { demos = JSON.parse(rows[0].value); } catch(e) {}
+  if (demosRow && demosRow.value) {
+    try { demos = JSON.parse(demosRow.value); } catch(e) {}
   }
   while (demos.length < 3) demos.push({ code: '', label: '' });
 
@@ -3747,7 +3756,11 @@ async function adminEditDemoEvents() {
   modal.className = 'modal-overlay';
   modal.innerHTML = `<div class="modal-content bg-white rounded-2xl p-5" style="max-width:480px">
     <h3 class="text-base font-bold mb-1">Eventos de Demonstração</h3>
-    <p class="text-xs text-gray-500 mb-3">Usa o código de eventos reais já criados (idealmente eventos de teste/demo, não de clientes). Aparecem na secção "Demo ao vivo" do site comercial. Qualquer visitante pode abrir e explorar estes exemplos livremente, sem precisar de criar conta ou fazer login.</p>
+    <div class="flex items-center justify-between mb-3 pb-3" style="border-bottom:1px solid #e5e7eb">
+      <span class="text-sm font-semibold text-gray-700">Mostrar secção "Demo ao vivo" no site comercial</span>
+      <div id="sw-demo-enabled" class="switch ${isEnabled ? 'active' : ''}" onclick="toggleSwitch(this)"></div>
+    </div>
+    <p class="text-xs text-gray-500 mb-3">Usa o código de eventos reais já criados (idealmente eventos de teste/demo, não de clientes). Qualquer visitante pode abrir e explorar estes exemplos livremente, sem precisar de criar conta ou fazer login.</p>
     <div id="demo-events-fields" class="space-y-3">
       ${demos.slice(0,3).map((d,i) => `
         <div style="border:1px solid #e5e7eb;border-radius:0.6rem;padding:0.6rem">
@@ -3769,13 +3782,21 @@ async function adminSaveDemoEvents() {
     code: document.getElementById(`demo-code-${i}`)?.value?.trim() || '',
     label: document.getElementById(`demo-label-${i}`)?.value?.trim() || '',
   })).filter(d => d.code);
+  const isEnabled = document.getElementById('sw-demo-enabled')?.classList.contains('active') || false;
 
   const ts = new Date().toISOString();
   const val = JSON.stringify(demos);
-  const patch = await supabaseRequest('site_config?key=eq.demo_events', 'PATCH', { value: val, updated_at: ts });
-  if (!patch || patch.length === 0) {
+
+  const patch1 = await supabaseRequest('site_config?key=eq.demo_events', 'PATCH', { value: val, updated_at: ts });
+  if (!patch1 || patch1.length === 0) {
     await supabaseRequest('site_config', 'POST', { key: 'demo_events', value: val });
   }
+
+  const patch2 = await supabaseRequest('site_config?key=eq.demo_events_enabled', 'PATCH', { value: String(isEnabled), updated_at: ts });
+  if (!patch2 || patch2.length === 0) {
+    await supabaseRequest('site_config', 'POST', { key: 'demo_events_enabled', value: String(isEnabled) });
+  }
+
   toast('Eventos de demonstração actualizados!');
   document.querySelector('.modal-overlay')?.remove();
   if (typeof renderLandingDemos === 'function') renderLandingDemos();
