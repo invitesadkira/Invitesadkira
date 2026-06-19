@@ -2195,8 +2195,10 @@ function renderSaveTheDateScreen(ev, decision) {
   const nameSize    = parseFloat(ev.std_name_size) || 2.4;
   const titleSize   = parseFloat(ev.std_title_size) || 0.78;
   const rsvpAllowed = ev.rsvp_enabled !== false;
-  // Cover: dedicated STD cover > event bg image > event cover thumbnail
-  const coverUrl    = ev.std_cover_url || ev.bg_url || ev.cover_image || null;
+  // Cover photo: ONLY the dedicated Save the Date cover. Never falls back to
+  // the invite's own background photo — the organiser must upload one
+  // specifically for this screen if they want a cover here at all.
+  const coverUrl    = ev.std_cover_url || null;
   const showCover   = ev.std_show_cover !== false && !!coverUrl;
 
   const parseDateSafe = (str) => {
@@ -2314,7 +2316,7 @@ function renderSaveTheDateScreen(ev, decision) {
     </div>` : `<div style="height:2.5rem;flex-shrink:0"></div>`}
     <div id="std-main-content" style="position:relative;z-index:2;max-width:440px;width:100%;text-align:center;color:#1e293b;padding:1rem 1.5rem 2.5rem;flex:1;display:flex;flex-direction:column;align-items:center;${introEnabled?'display:none':''}">
       <p style="font-size:${titleSize}rem;letter-spacing:0.25em;text-transform:uppercase;font-weight:800;color:${evColor};font-family:'Quicksand',sans-serif;margin-bottom:0.5rem">${escapeHTML(stdTitle)}</p>
-      ${coupleNames ? `<h2 style="font-family:${nameFont?`'${nameFont}',`:''}var(--event-font,'Playfair Display',serif);font-size:clamp(1.4rem,7vw,${nameSize}rem);line-height:1.2;margin-bottom:0.3rem;color:#1e293b;padding:0 0.5rem">${coupleNames}</h2>` : ''}
+      ${coupleNames ? `<h2 style="font-family:${nameFont?`'${nameFont}',`:''}var(--event-font,'Playfair Display',serif);font-size:clamp(1.4rem,7vw,${nameSize}rem);line-height:1.2;margin-bottom:0.3rem;color:${evColor};padding:0 0.5rem">${coupleNames}</h2>` : ''}
       <p style="font-size:0.9rem;font-weight:500;color:#6b7280;font-family:'Quicksand',sans-serif;margin-bottom:1.25rem">${escapeHTML(stdSubtitle)}</p>
       ${eventDateLabel ? `
       <div style="background:${evColor}13;border-radius:0.75rem;padding:0.45rem 1.5rem;margin-bottom:1.1rem;display:inline-block">
@@ -2332,7 +2334,7 @@ function renderSaveTheDateScreen(ev, decision) {
       </div>
       <p id="std-rsvp-status-text" style="font-size:0.82rem;color:#16a34a;margin-bottom:0.7rem;font-weight:600;min-height:1.1em">${alreadyConfirmed?'Obrigado por confirmar! Já contamos consigo. 🎉':''}</p>
       ${rsvpBtnHtml}
-      ${hasRealDeadline ? `<p style="font-size:0.73rem;color:#9ca3af;margin-top:0.5rem;font-weight:500">Confirmar até ${deadlineParsed.label}</p>` : ''}
+      ${countdownTarget ? `<p style="font-size:0.73rem;color:#9ca3af;margin-top:0.5rem;font-weight:500">Confirmar até ${countdownTarget.label}</p>` : ''}
       <div id="std-music-player-slot" style="display:flex;justify-content:center;margin-top:1rem"></div>
     </div>`;
 

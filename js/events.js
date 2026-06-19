@@ -1,5 +1,5 @@
 // ===================== CREATE EVENT =====================
-function handleCreateEvent(e) {
+async function handleCreateEvent(e) {
   e.preventDefault();
   
   // 🔒 Prevenir submissão dupla
@@ -14,17 +14,31 @@ function handleCreateEvent(e) {
   const originalText = submitBtn.textContent;
   submitBtn.textContent = 'Criando evento...';
   
-  // Verificar limite de eventos
+  // Verificar limite de eventos — consulta DIRETA à base de dados, nunca o
+  // cache em memória (Store.events), que pode estar desatualizado ou vazio
+  // no momento da criação (ex: just-logged-in), permitindo bypass do limite.
   if (Store.currentUser.role === 'user') {
     const userEventLimit = Store.currentUser.eventLimit;
-    const userEventCount = Store.events.filter(ev => ev.user_id === Store.currentUser.id).length;
-    
-    if (userEventLimit !== null && userEventCount >= userEventLimit) {
-      toast(`Limite atingido: máximo ${userEventLimit} evento(s) permitido(s).`);
-      submitBtn.disabled = false;
-      submitBtn.style.opacity = '1';
-      submitBtn.textContent = originalText;
-      return;
+    if (userEventLimit !== null && userEventLimit !== undefined) {
+      try {
+        const countRows = await supabaseRequest(`events?user_id=eq.${Store.currentUser.id}&select=id`);
+        const userEventCount = Array.isArray(countRows) ? countRows.length : 0;
+        if (userEventCount >= userEventLimit) {
+          toast(`Limite atingido: máximo ${userEventLimit} evento(s) permitido(s).`);
+          submitBtn.disabled = false;
+          submitBtn.style.opacity = '1';
+          submitBtn.textContent = originalText;
+          return;
+        }
+      } catch(err) {
+        console.error('Erro ao verificar limite de eventos:', err);
+        // On error, fail safe: block creation rather than risk bypassing the limit
+        toast('Não foi possível verificar o limite de eventos. Tente novamente.');
+        submitBtn.disabled = false;
+        submitBtn.style.opacity = '1';
+        submitBtn.textContent = originalText;
+        return;
+      }
     }
   }
   
