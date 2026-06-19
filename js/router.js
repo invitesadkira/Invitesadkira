@@ -35,6 +35,8 @@ const Router = {
       if (typeof loadLandingStats !== 'undefined') loadLandingStats();
       // Load reviews
       if (typeof renderLandingReviews !== 'undefined') renderLandingReviews();
+      // Load live demo events
+      if (typeof renderLandingDemos !== 'undefined') renderLandingDemos();
       // Load notices
       if (typeof loadAndShowNotices !== 'undefined') loadAndShowNotices();
       // Load delivery text (editable by admin)

@@ -3677,3 +3677,106 @@ async function openAnalyticsPanel() {
     console.error(e);
   }
 }
+
+// ===================== LANDING: MODELOS VISUAIS (preview modal) =====================
+const LANDING_MODEL_INFO = {
+  classico:  { name: 'Clássico',  desc: 'Dourado e branco, tipografia elegante e atemporal. Ideal para casamentos tradicionais e cerimónias religiosas.' },
+  moderno:   { name: 'Moderno',   desc: 'Fundo escuro, tipografia geométrica e visual minimalista. Para quem procura algo contemporâneo e sofisticado.' },
+  romantico: { name: 'Romântico', desc: 'Tons suaves, florais e letras manuscritas. Transmite delicadeza e um clima intimista.' },
+  tropical:  { name: 'Tropical',  desc: 'Verde natureza e elementos orgânicos. Perfeito para eventos ao ar livre, quintas e jardins.' },
+};
+
+function previewLandingModel(key) {
+  const info = LANDING_MODEL_INFO[key];
+  if (!info) return;
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.innerHTML = `<div class="modal-content bg-white rounded-2xl p-6 text-center" style="max-width:380px">
+    <h3 class="text-lg font-bold mb-2">${info.name}</h3>
+    <p class="text-sm text-gray-500 mb-5">${info.desc}</p>
+    <p class="text-xs text-gray-400 mb-4">Este é só um ponto de partida — depois de criar a conta podes mudar cores, fotos, textos e secções livremente.</p>
+    <button class="btn-main w-full mb-2" onclick="this.closest('.modal-overlay').remove();Router.go('register')">Criar conta e começar</button>
+    <button class="btn-outline w-full text-sm" onclick="this.closest('.modal-overlay').remove()">Fechar</button>
+  </div>`;
+  document.body.appendChild(modal);
+}
+
+// ===================== LANDING: DEMO AO VIVO =====================
+async function renderLandingDemos() {
+  const grid = document.getElementById('landing-demo-grid');
+  if (!grid) return;
+  try {
+    const rows = await supabaseRequest('site_config?key=eq.demo_events&select=value&limit=1').catch(() => []);
+    let demos = [];
+    if (rows && rows[0] && rows[0].value) {
+      try { demos = JSON.parse(rows[0].value); } catch(e) {}
+    }
+    if (!demos.length) {
+      grid.closest('.landing-section').style.display = 'none';
+      return;
+    }
+    grid.innerHTML = demos.slice(0, 3).map(d => `
+      <div class="ld-card">
+        <div class="ld-frame-wrap">
+          <iframe src="${window.location.origin}${window.location.pathname}?event=${encodeURIComponent(d.code)}" loading="lazy"></iframe>
+          <div class="ld-overlay">
+            <a href="${window.location.origin}${window.location.pathname}?event=${encodeURIComponent(d.code)}" target="_blank" rel="noopener">
+              Abrir convite
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7"/><path d="M7 7h10v10"/></svg>
+            </a>
+          </div>
+        </div>
+        <div class="ld-label">${escapeHTML(d.label || 'Ver exemplo')}</div>
+      </div>`).join('');
+  } catch(e) {
+    console.warn('Falha ao carregar demos:', e);
+    grid.closest('.landing-section').style.display = 'none';
+  }
+}
+
+// ===================== ADMIN: EDITAR EVENTOS DE DEMONSTRAÇÃO =====================
+async function adminEditDemoEvents() {
+  const rows = await supabaseRequest('site_config?key=eq.demo_events&select=value&limit=1').catch(() => []);
+  let demos = [];
+  if (rows && rows[0] && rows[0].value) {
+    try { demos = JSON.parse(rows[0].value); } catch(e) {}
+  }
+  while (demos.length < 3) demos.push({ code: '', label: '' });
+
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.innerHTML = `<div class="modal-content bg-white rounded-2xl p-5" style="max-width:480px">
+    <h3 class="text-base font-bold mb-1">Eventos de Demonstração</h3>
+    <p class="text-xs text-gray-500 mb-3">Usa o código de eventos reais já criados (idealmente eventos de teste/demo, não de clientes). Aparecem na secção "Demo ao vivo" do site comercial.</p>
+    <div id="demo-events-fields" class="space-y-3">
+      ${demos.slice(0,3).map((d,i) => `
+        <div style="border:1px solid #e5e7eb;border-radius:0.6rem;padding:0.6rem">
+          <label class="text-xs font-semibold text-gray-600 block mb-1">Demo ${i+1}</label>
+          <input id="demo-code-${i}" class="input-field text-sm mb-1" placeholder="Código do evento (ex: ABC123)" value="${escapeHTML(d.code||'')}">
+          <input id="demo-label-${i}" class="input-field text-sm" placeholder="Legenda (ex: Casamento Clássico)" value="${escapeHTML(d.label||'')}">
+        </div>`).join('')}
+    </div>
+    <div class="flex gap-2 mt-4">
+      <button class="flex-1 btn-main text-sm" onclick="adminSaveDemoEvents()">Guardar</button>
+      <button class="btn-outline text-sm" onclick="this.closest('.modal-overlay').remove()">Cancelar</button>
+    </div>
+  </div>`;
+  document.body.appendChild(modal);
+}
+
+async function adminSaveDemoEvents() {
+  const demos = [0,1,2].map(i => ({
+    code: document.getElementById(`demo-code-${i}`)?.value?.trim() || '',
+    label: document.getElementById(`demo-label-${i}`)?.value?.trim() || '',
+  })).filter(d => d.code);
+
+  const ts = new Date().toISOString();
+  const val = JSON.stringify(demos);
+  const patch = await supabaseRequest('site_config?key=eq.demo_events', 'PATCH', { value: val, updated_at: ts });
+  if (!patch || patch.length === 0) {
+    await supabaseRequest('site_config', 'POST', { key: 'demo_events', value: val });
+  }
+  toast('Eventos de demonstração actualizados!');
+  document.querySelector('.modal-overlay')?.remove();
+  if (typeof renderLandingDemos === 'function') renderLandingDemos();
+}

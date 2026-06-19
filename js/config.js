@@ -46,6 +46,7 @@ async function supabaseRequest(endpoint, method = 'GET', body = null) {
     
     if (!response.ok) {
       const text = await response.text();
+      console.error(`❌ Supabase ${response.status} em ${method} ${endpoint}:`, text);
 
       // ── PGRST204: unknown column ──────────────────────────────────────────
       if (response.status === 400 &&
@@ -109,8 +110,13 @@ async function supabaseRequest(endpoint, method = 'GET', body = null) {
         });
         safeEndpoint = safeEndpoint.replace(/,+/g,',').replace(/select=,/g,'select=').replace(/,(?=&|$)/g,'');
         if (safeEndpoint !== endpoint) {
-          console.warn('A tentar sem colunas opcionais...');
+          console.warn('⚠️ A tentar sem colunas opcionais. Endpoint original:', endpoint);
+          console.warn('⚠️ Endpoint limpo:', safeEndpoint);
+          console.warn('⚠️ Texto do erro original do Supabase:', text);
           return supabaseRequest(safeEndpoint, method, body);
+        } else {
+          console.error('❌ Nenhuma coluna opcional conhecida corresponde a este erro 400. Endpoint:', endpoint);
+          console.error('❌ Texto completo do erro:', text);
         }
       }
 
@@ -145,8 +151,15 @@ async function supabaseRequest(endpoint, method = 'GET', body = null) {
         let changed = false;
         OPTIONAL_BODY_COLS.forEach(col => { if (col in cleanBody) { delete cleanBody[col]; changed = true; } });
         if (changed) {
-          console.warn('A tentar sem colunas opcionais...');
+          console.warn('⚠️ A tentar PATCH/POST sem colunas opcionais. Endpoint:', endpoint);
+          console.warn('⚠️ Body original:', body);
+          console.warn('⚠️ Body limpo:', cleanBody);
+          console.warn('⚠️ Texto do erro original do Supabase:', text);
           return supabaseRequest(endpoint, method, cleanBody);
+        } else {
+          console.error('❌ Nenhuma coluna opcional do body corresponde a este erro 400. Endpoint:', endpoint);
+          console.error('❌ Body enviado:', body);
+          console.error('❌ Texto completo do erro:', text);
         }
       }
 

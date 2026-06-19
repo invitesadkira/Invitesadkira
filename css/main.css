@@ -879,3 +879,64 @@ html, body { height: 100%; margin: 0; width: 100%; overflow-x: hidden; }
 @media (min-width: 640px) {
   .gmasonry-grid { grid-template-columns: repeat(3, 1fr); }
 }
+
+/* ── Landing: Modelos Visuais ── */
+.landing-models-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.25rem; max-width: 980px; margin: 0 auto;
+}
+.lm-card {
+  background: #fff; border-radius: 1.1rem; overflow: hidden; cursor: pointer;
+  border: 1.5px solid #e5e7eb; transition: transform 0.2s, box-shadow 0.2s;
+}
+.lm-card:hover { transform: translateY(-4px); box-shadow: 0 12px 28px rgba(0,0,0,0.1); }
+.lm-thumb {
+  aspect-ratio: 4/5; display: flex; align-items: center; justify-content: center;
+  padding: 1.5rem;
+}
+.lm-thumb-inner { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; text-align: center; }
+.lm-thumb-tag { font-size: 0.62rem; letter-spacing: 0.25em; font-weight: 800; text-transform: uppercase; }
+.lm-thumb-names { font-size: 1.3rem; font-weight: 700; color: #1e293b; }
+.lm-thumb-line { width: 32px; height: 2px; border-radius: 1px; background: #c9a84c; margin-top: 0.25rem; }
+.lm-info { padding: 1rem; }
+.lm-badge { display: inline-block; font-size: 0.68rem; font-weight: 800; padding: 0.2rem 0.65rem; border-radius: 999px; margin-bottom: 0.45rem; text-transform: uppercase; letter-spacing: 0.04em; }
+.lm-desc { font-size: 0.82rem; color: #6b7280; line-height: 1.5; margin: 0; }
+
+/* ── Landing: Como Funciona ── */
+.landing-steps {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem; max-width: 980px; margin: 0 auto;
+}
+.ls-step { text-align: center; padding: 1rem; }
+.ls-num { font-size: 2rem; font-weight: 900; color: #007f9f33; margin-bottom: 0.5rem; line-height: 1; }
+.ls-step h3 { font-size: 1rem; font-weight: 800; color: #1e293b; margin-bottom: 0.4rem; }
+.ls-step p { font-size: 0.85rem; color: #6b7280; line-height: 1.55; margin: 0; }
+
+/* ── Landing: Demo ao Vivo ── */
+.landing-demo-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.5rem; max-width: 700px; margin: 0 auto;
+}
+.ld-card {
+  border-radius: 1.1rem; overflow: hidden; border: 1.5px solid #e5e7eb;
+  background: #fff;
+}
+.ld-frame-wrap {
+  position: relative; width: 100%; aspect-ratio: 9/16; background: #0f172a; overflow: hidden;
+}
+.ld-frame-wrap iframe { width: 100%; height: 100%; border: none; pointer-events: none; }
+.ld-overlay {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.15);
+}
+.ld-overlay a {
+  background: #fff; color: #1e293b; font-weight: 700; font-size: 0.85rem;
+  padding: 0.6rem 1.3rem; border-radius: 999px; text-decoration: none;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.25); display: inline-flex; align-items: center; gap: 0.4rem;
+}
+.ld-label { padding: 0.85rem 1rem; font-size: 0.85rem; font-weight: 700; color: #1e293b; text-align: center; }
+
+@media (max-width: 640px) {
+  .landing-models-grid { grid-template-columns: repeat(2, 1fr); gap: 0.85rem; }
+  .lm-thumb-names { font-size: 1.05rem; }
+}
