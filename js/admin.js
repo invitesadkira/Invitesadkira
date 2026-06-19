@@ -3747,7 +3747,7 @@ async function adminEditDemoEvents() {
   modal.className = 'modal-overlay';
   modal.innerHTML = `<div class="modal-content bg-white rounded-2xl p-5" style="max-width:480px">
     <h3 class="text-base font-bold mb-1">Eventos de Demonstração</h3>
-    <p class="text-xs text-gray-500 mb-3">Usa o código de eventos reais já criados (idealmente eventos de teste/demo, não de clientes). Aparecem na secção "Demo ao vivo" do site comercial.</p>
+    <p class="text-xs text-gray-500 mb-3">Usa o código de eventos reais já criados (idealmente eventos de teste/demo, não de clientes). Aparecem na secção "Demo ao vivo" do site comercial. Qualquer visitante pode abrir e explorar estes exemplos livremente, sem precisar de criar conta ou fazer login.</p>
     <div id="demo-events-fields" class="space-y-3">
       ${demos.slice(0,3).map((d,i) => `
         <div style="border:1px solid #e5e7eb;border-radius:0.6rem;padding:0.6rem">
