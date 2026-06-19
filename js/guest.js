@@ -194,6 +194,8 @@ async function renderGuestView() {
     std_intro_photo_url: eventData.std_intro_photo_url,
     personalized_links_enabled: eventData.personalized_links_enabled,
     std_cover_url: eventData.std_cover_url,
+    std_scratch_enabled: eventData.std_scratch_enabled, std_scratch_mode: eventData.std_scratch_mode,
+    std_scratch_photo_url: eventData.std_scratch_photo_url, std_scratch_text: eventData.std_scratch_text,
     show_rsvp_in_full_invite: eventData.show_rsvp_in_full_invite,
     show_guest_name_in_invite: eventData.show_guest_name_in_invite,
     // Visual data that's ALREADY in events table — keep unless visuals has a better value
@@ -272,7 +274,7 @@ async function renderGuestView() {
     } catch(e2) { console.warn('Visual fallback reload failed:', e2); }
   }
 
-  const RSVP_ONLY_FIELDS = new Set(['show_time','time','date','title','confirm_by_date','deadline','allowCompanions','allow_companions','maxCompanions','max_companions','allowKids','allow_kids','maxKids','max_kids','allowGifts','allow_gifts','allowSides','allow_sides','side1_name','side2_name','allowMessages','allow_messages','showGuestMessages','show_guest_messages','id','eventCode','cover_image','rsvp_enabled','save_the_date_enabled','release_type','release_date','is_invite_released','std_title','std_subtitle','std_font_family','std_name_size','std_title_size','std_intro_enabled','std_intro_text','std_intro_photo_url','std_show_cover','personalized_links_enabled','show_rsvp_in_full_invite','show_guest_name_in_invite','std_cover_url','userId','user_id']);
+  const RSVP_ONLY_FIELDS = new Set(['show_time','time','date','title','confirm_by_date','deadline','allowCompanions','allow_companions','maxCompanions','max_companions','allowKids','allow_kids','maxKids','max_kids','allowGifts','allow_gifts','allowSides','allow_sides','side1_name','side2_name','allowMessages','allow_messages','showGuestMessages','show_guest_messages','id','eventCode','cover_image','rsvp_enabled','save_the_date_enabled','release_type','release_date','is_invite_released','std_title','std_subtitle','std_font_family','std_name_size','std_title_size','std_intro_enabled','std_intro_text','std_intro_photo_url','std_show_cover','personalized_links_enabled','show_rsvp_in_full_invite','show_guest_name_in_invite','std_cover_url','userId','user_id','std_scratch_enabled','std_scratch_mode','std_scratch_photo_url','std_scratch_text']);
 
   // Restore all fields: RSVP fields always from events table; visual fields use
   // whichever source (visuals or events table) has a non-null value
@@ -2257,13 +2259,45 @@ function renderSaveTheDateScreen(ev, decision) {
     </button>` : '';
 
   const introEnabled = (ev.std_intro_enabled === true || ev.std_intro_enabled === 'true') && ev.std_intro_photo_url;
+  const scratchEnabled = (ev.std_scratch_enabled === true || ev.std_scratch_enabled === 'true');
+  const scratchMode = ev.std_scratch_mode || 'photo';
+  const scratchText = ev.std_scratch_text || 'Raspa para desvendar';
 
   const overlay = document.createElement('div');
   overlay.id = 'std-screen-overlay';
   overlay.style.cssText = 'position:fixed;inset:0;z-index:9000;overflow-y:auto;background:#fdfaf6;display:flex;flex-direction:column;align-items:center';
 
+  // ── Scratch-to-reveal layer: sits ABOVE everything (including the intro
+  // photo screen, if both are enabled) and only goes away once the guest
+  // has scratched off enough of the canvas. Two modes:
+  //  - 'photo': scratch off a couple photo to reveal the Save the Date below
+  //  - 'heart': scratch a glittery heart shape to reveal the event date inside it
+  const scratchHtml = scratchEnabled ? `
+    <div id="std-scratch-screen" style="position:fixed;inset:0;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#1a1a2e;overflow:hidden">
+      <p style="position:absolute;top:8%;left:0;right:0;text-align:center;color:#fff;font-size:1.05rem;font-weight:700;letter-spacing:0.05em;z-index:2;font-family:'Quicksand',sans-serif;text-shadow:0 2px 8px rgba(0,0,0,0.4)">${escapeHTML(scratchText)}</p>
+      <div id="scratch-canvas-wrap" style="position:relative;width:min(320px,82vw);height:${scratchMode === 'heart' ? 'min(320px,82vw)' : 'min(400px,90vw)'};border-radius:${scratchMode === 'heart' ? '0' : '1.25rem'};overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,0.4)">
+        ${scratchMode === 'heart' ? `
+          <svg viewBox="0 0 100 100" style="position:absolute;inset:0;width:100%;height:100%;z-index:1">
+            <defs>
+              <clipPath id="std-heart-clip"><path d="M50 88 C20 65, 5 45, 5 28 C5 12, 18 2, 32 2 C42 2, 48 8, 50 15 C52 8, 58 2, 68 2 C82 2, 95 12, 95 28 C95 45, 80 65, 50 88 Z"/></clipPath>
+            </defs>
+            <path d="M50 88 C20 65, 5 45, 5 28 C5 12, 18 2, 32 2 C42 2, 48 8, 50 15 C52 8, 58 2, 68 2 C82 2, 95 12, 95 28 C95 45, 80 65, 50 88 Z" fill="${evColor}"></path>
+          </svg>
+          <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;z-index:1;clip-path:url(#std-heart-clip)">
+            <p style="font-size:0.6rem;letter-spacing:0.15em;text-transform:uppercase;color:#fff;opacity:0.85;font-weight:700;margin-bottom:0.3rem">Guarda a data</p>
+            <p style="font-size:1.6rem;font-weight:900;color:#fff;line-height:1.1;text-align:center;padding:0 1rem">${eventDateLabel || ''}</p>
+          </div>
+        ` : `
+          <img src="${ev.std_scratch_photo_url || coverUrl || ''}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0" alt="">
+        `}
+        <canvas id="std-scratch-canvas" style="position:absolute;inset:0;width:100%;height:100%;z-index:5;touch-action:none;cursor:grab"></canvas>
+      </div>
+      <p id="scratch-progress-hint" style="margin-top:1.25rem;color:rgba(255,255,255,0.6);font-size:0.78rem;font-family:'Quicksand',sans-serif">Continua a raspar...</p>
+    </div>` : '';
+
   overlay.innerHTML = `
     <style>${fontFaceCSS}</style>
+    ${scratchHtml}
     ${introEnabled ? `
     <div id="std-intro-screen" style="position:fixed;inset:0;z-index:10;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;color:#fff;padding:2rem">
       <div style="position:absolute;inset:0;background:${ev.std_intro_photo_url?`url('${ev.std_intro_photo_url}') center/cover no-repeat`:evColor}"></div>
@@ -2303,6 +2337,142 @@ function renderSaveTheDateScreen(ev, decision) {
     </div>`;
 
   document.body.appendChild(overlay);
+
+  // ── Initialise the scratch-to-reveal canvas ──
+  // Draws an opaque "scratch layer" (brushed metallic look for the photo
+  // mode, glittery sparkle look for the heart mode) over the content below,
+  // then erases pixels under the user's finger/mouse using
+  // 'destination-out' compositing — the classic scratch-card technique.
+  // Once enough of the canvas is erased, the whole scratch screen fades
+  // away, revealing the Save the Date content underneath.
+  if (scratchEnabled) {
+    const canvas = document.getElementById('std-scratch-canvas');
+    const wrap = document.getElementById('scratch-canvas-wrap');
+    const hint = document.getElementById('scratch-progress-hint');
+    if (canvas && wrap) {
+      const ctx = canvas.getContext('2d');
+      const dpr = window.devicePixelRatio || 1;
+
+      const resizeCanvas = () => {
+        const rect = wrap.getBoundingClientRect();
+        canvas.width = rect.width * dpr;
+        canvas.height = rect.height * dpr;
+        canvas.style.width = rect.width + 'px';
+        canvas.style.height = rect.height + 'px';
+        ctx.scale(dpr, dpr);
+        drawScratchLayer(ctx, rect.width, rect.height);
+      };
+
+      function drawScratchLayer(ctx, w, h) {
+        if (scratchMode === 'heart') {
+          // Glittery sparkle fill using the event color as base
+          const grad = ctx.createLinearGradient(0, 0, w, h);
+          grad.addColorStop(0, evColor);
+          grad.addColorStop(0.5, '#ffffff');
+          grad.addColorStop(1, evColor);
+          ctx.fillStyle = grad;
+          ctx.fillRect(0, 0, w, h);
+          // Sprinkle small bright dots to simulate glitter/sparkle texture
+          for (let i = 0; i < 140; i++) {
+            ctx.beginPath();
+            const x = Math.random() * w, y = Math.random() * h;
+            const r = Math.random() * 1.6 + 0.4;
+            ctx.fillStyle = Math.random() > 0.5 ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.4)';
+            ctx.arc(x, y, r, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        } else {
+          // Brushed metallic "scratch card" look for the photo mode
+          const grad = ctx.createLinearGradient(0, 0, w, h);
+          grad.addColorStop(0, '#c0c0c8');
+          grad.addColorStop(0.5, '#e8e8ee');
+          grad.addColorStop(1, '#a8a8b2');
+          ctx.fillStyle = grad;
+          ctx.fillRect(0, 0, w, h);
+          ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+          ctx.lineWidth = 1;
+          for (let i = 0; i < w + h; i += 5) {
+            ctx.beginPath();
+            ctx.moveTo(i, 0); ctx.lineTo(0, i);
+            ctx.stroke();
+          }
+        }
+      }
+
+      resizeCanvas();
+      window.addEventListener('resize', resizeCanvas);
+
+      ctx.globalCompositeOperation = 'destination-out';
+      let isDrawing = false;
+      let lastX = 0, lastY = 0;
+      let scratchedCheckCount = 0;
+
+      const getPos = (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        return { x: clientX - rect.left, y: clientY - rect.top };
+      };
+
+      const scratchAt = (x, y) => {
+        ctx.beginPath();
+        ctx.arc(x, y, 22, 0, Math.PI * 2);
+        ctx.fill();
+      };
+
+      const checkScratchProgress = () => {
+        scratchedCheckCount++;
+        if (scratchedCheckCount % 8 !== 0) return; // throttle: only check every 8th stroke for performance
+        try {
+          const rect = wrap.getBoundingClientRect();
+          const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          let transparent = 0;
+          const total = imgData.data.length / 4;
+          for (let i = 3; i < imgData.data.length; i += 4 * 37) { // sample every 37th pixel for speed
+            if (imgData.data[i] < 40) transparent++;
+          }
+          const sampledTotal = Math.ceil(total / 37);
+          const pct = transparent / sampledTotal;
+          if (hint) hint.textContent = pct < 0.5 ? 'Continua a raspar...' : 'Quase lá...';
+          if (pct > 0.55) {
+            const scratchScreen = document.getElementById('std-scratch-screen');
+            if (scratchScreen) {
+              scratchScreen.style.transition = 'opacity 0.5s ease';
+              scratchScreen.style.opacity = '0';
+              setTimeout(() => scratchScreen.remove(), 500);
+            }
+            window.removeEventListener('resize', resizeCanvas);
+          }
+        } catch(e) { /* getImageData can fail on some browsers for tainted canvases; ignore */ }
+      };
+
+      const startDraw = (e) => { isDrawing = true; const p = getPos(e); lastX = p.x; lastY = p.y; scratchAt(p.x, p.y); };
+      const moveDraw = (e) => {
+        if (!isDrawing) return;
+        e.preventDefault();
+        const p = getPos(e);
+        // Interpolate between last point and current to avoid gaps on fast swipes
+        const dist = Math.hypot(p.x - lastX, p.y - lastY);
+        const steps = Math.max(1, Math.floor(dist / 8));
+        for (let i = 0; i <= steps; i++) {
+          const ix = lastX + (p.x - lastX) * (i / steps);
+          const iy = lastY + (p.y - lastY) * (i / steps);
+          scratchAt(ix, iy);
+        }
+        lastX = p.x; lastY = p.y;
+        checkScratchProgress();
+      };
+      const endDraw = () => { isDrawing = false; };
+
+      canvas.addEventListener('mousedown', startDraw);
+      canvas.addEventListener('mousemove', moveDraw);
+      canvas.addEventListener('mouseup', endDraw);
+      canvas.addEventListener('mouseleave', endDraw);
+      canvas.addEventListener('touchstart', startDraw, { passive: true });
+      canvas.addEventListener('touchmove', moveDraw, { passive: false });
+      canvas.addEventListener('touchend', endDraw, { passive: true });
+    }
+  }
 
   const floatingBtn = document.getElementById('floating-music-btn');
   const musicSlot = document.getElementById('std-music-player-slot');

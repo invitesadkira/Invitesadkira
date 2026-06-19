@@ -103,6 +103,7 @@ async function supabaseRequest(endpoint, method = 'GET', body = null) {
           'show_event_faq','event_faq_items','schedule_style','gallery_style',
           'venue_ceremony_image','venue_civil_image','venue_reception_image','blessing_couple_size',
           'date_style','manual_style','story_style','story_photo_url',
+          'std_scratch_enabled','std_scratch_mode','std_scratch_photo_url','std_scratch_text',
         ];
         let safeEndpoint = endpoint;
         OPTIONAL_COLS.forEach(col => {
@@ -146,6 +147,7 @@ async function supabaseRequest(endpoint, method = 'GET', body = null) {
           'show_event_faq','event_faq_items','schedule_style','gallery_style',
           'venue_ceremony_image','venue_civil_image','venue_reception_image','blessing_couple_size',
           'date_style','manual_style','story_style','story_photo_url',
+          'std_scratch_enabled','std_scratch_mode','std_scratch_photo_url','std_scratch_text',
         ];
         const cleanBody = { ...body };
         let changed = false;

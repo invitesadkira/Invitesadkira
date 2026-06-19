@@ -1006,3 +1006,30 @@ function removeStoryPhoto() {
   document.getElementById('story-photo-preview-wrap')?.classList.add('hidden');
   toast('Foto removida.');
 }
+
+function toggleScratchModeFields(mode) {
+  document.getElementById('scratch-photo-fields')?.classList.toggle('hidden', mode !== 'photo');
+  document.getElementById('scratch-heart-fields')?.classList.toggle('hidden', mode !== 'heart');
+}
+
+async function handleScratchPhotoUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 5*1024*1024) { toast('Imagem muito grande. Máx. 5 MB.'); return; }
+  toast('A carregar foto...');
+  try {
+    const url = await uploadImageToStorage(file, 'event-covers');
+    document.getElementById('evt-scratch-photo-url').value = url;
+    const prev = document.getElementById('scratch-photo-preview');
+    if (prev) prev.src = url;
+    document.getElementById('scratch-photo-preview-wrap')?.classList.remove('hidden');
+    toast('Foto carregada!');
+  } catch(e) { toast('Erro ao carregar a foto.'); }
+}
+
+function removeScratchPhoto() {
+  document.getElementById('evt-scratch-photo-url').value = '';
+  document.getElementById('evt-scratch-photo').value = '';
+  document.getElementById('scratch-photo-preview-wrap')?.classList.add('hidden');
+  toast('Foto removida.');
+}
