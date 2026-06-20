@@ -1033,3 +1033,31 @@ function removeScratchPhoto() {
   document.getElementById('scratch-photo-preview-wrap')?.classList.add('hidden');
   toast('Foto removida.');
 }
+
+// ── Save the Date: campos "espelho" de data/prazo ──────────────────────────
+// Estes campos dentro da secção do Save the Date são sincronizados com os
+// campos principais do formulário (evt-date / evt-deadline), nas duas
+// direções, para que o organizador possa configurar a data directamente
+// nesta secção sem precisar de procurar noutro lado do formulário.
+function syncStdDateMirror(which, value) {
+  if (which === 'date') {
+    const main = document.getElementById('evt-date');
+    if (main) main.value = value;
+    if (typeof validateDeadlineDate === 'function') validateDeadlineDate();
+  } else if (which === 'deadline') {
+    const main = document.getElementById('evt-deadline');
+    if (main) main.value = value;
+    if (typeof validateDeadlineDate === 'function') validateDeadlineDate();
+  }
+}
+
+// Chamado sempre que os campos principais (evt-date/evt-deadline) mudam,
+// para manter os espelhos da secção Save the Date sincronizados também.
+function syncStdMirrorsFromMain() {
+  const mainDate = document.getElementById('evt-date')?.value;
+  const mainDeadline = document.getElementById('evt-deadline')?.value;
+  const mirrorDate = document.getElementById('evt-std-date-mirror');
+  const mirrorDeadline = document.getElementById('evt-std-deadline-mirror');
+  if (mirrorDate && mainDate) mirrorDate.value = mainDate;
+  if (mirrorDeadline && mainDeadline) mirrorDeadline.value = mainDeadline;
+}

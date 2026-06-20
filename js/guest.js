@@ -256,7 +256,6 @@ async function renderGuestView() {
   // there since loadEventVisuals already tried). std_* and release_* live on `events` directly.
   const _criticalNulls = ['bible_text','gallery_urls','invite_text','groom_parents','bride_parents',
     'iban_number','story_text','event_color','groom_name','bride_name','music_url','schedule_items',
-    'manual_items','show_manual','show_schedule','show_story',
     'save_the_date_enabled','release_type','release_date','is_invite_released','std_title','std_subtitle','std_font_family',
     'std_name_size','std_title_size','std_intro_enabled','std_intro_text','std_intro_photo_url'];
   const _stillMissing = _criticalNulls.filter(k => !eventData[k]);
@@ -2517,9 +2516,11 @@ function renderSaveTheDateScreen(ev, decision) {
   if (window._stdCountdownInterval) clearInterval(window._stdCountdownInterval);
   const labelEl = document.getElementById('std-countdown-label');
   if (countdownTarget) {
-    // Label depends on whether we're counting to the RSVP deadline or the event itself
-    const countdownLabel = hasRealDeadline ? 'Prazo para Confirmar Presença' : 'Contagem até ao Grande Dia';
-    const expiredLabel   = hasRealDeadline ? 'Prazo de confirmação encerrado' : 'O Grande Dia chegou!';
+    // This screen's countdown is always about the RSVP confirmation deadline —
+    // never "Grande Dia"/event-day language, even when no separate deadline
+    // was set and the countdown falls back to the event date itself.
+    const countdownLabel = 'Prazo para Confirmar Presença';
+    const expiredLabel   = 'Prazo de confirmação encerrado';
     if (labelEl) labelEl.textContent = countdownLabel;
     const target = countdownTarget.date;
     const tick = () => {
