@@ -2348,8 +2348,8 @@ function renderSaveTheDateScreen(ev, decision) {
       </div>
     </div>` : ''}
     ${showCover ? `
-    <div id="std-cover-wrap" style="position:relative;width:100%;max-width:480px;margin:0 auto;overflow:hidden;background:#e2e8f0;border-radius:0 0 1.5rem 1.5rem">
-      <img id="std-cover-img" src="${coverUrl}" loading="eager" style="width:100%;height:auto;max-height:60vh;object-fit:contain;display:block;margin:0 auto;opacity:1"
+    <div id="std-cover-wrap" style="position:relative;width:100%;height:38vh;min-height:220px;max-height:420px;overflow:hidden;background:#e2e8f0;display:flex;align-items:center;justify-content:center">
+      <img id="std-cover-img" src="${coverUrl}" loading="eager" style="max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain;display:block;opacity:1"
         onerror="console.error('❌ Falha ao carregar a foto de capa do Save the Date. URL tentado:', this.src); this.closest('#std-cover-wrap').style.background='${evColor}1a';this.style.display='none';"
         onload="console.log('✅ Foto de capa do Save the Date carregada com sucesso:', this.src);">
     </div>` : `<div style="height:2.5rem;flex-shrink:0"></div>`}
@@ -2372,15 +2372,17 @@ function renderSaveTheDateScreen(ev, decision) {
       ${countdownTarget ? `<p style="font-size:0.73rem;color:#9ca3af;margin-top:0.5rem;font-weight:500">Confirmar até ${countdownTarget.label}</p>` : ''}
       ${(ev.std_show_iban === true && ev.iban_number) ? `
       <div style="background:#fff;border-radius:0.85rem;padding:1rem 1.1rem;margin-top:1.5rem;max-width:320px;width:100%;border:1.5px solid color-mix(in srgb,${evColor} 22%,transparent);text-align:center">
-        <p style="font-size:0.88rem;font-weight:800;color:${evColor};margin-bottom:0.6rem">Gostaria de nos presentear?</p>
-        <div style="background:#f8fafc;border-radius:0.6rem;padding:0.5rem 0.7rem;margin-bottom:0.5rem">
+        ${ev.iban_message ? ev.iban_message.split('\n').map(l => `<p style="font-size:0.82rem;font-weight:700;color:${evColor};margin-bottom:0.4rem;line-height:1.4">${escapeHTML(l)}</p>`).join('') : `<p style="font-size:0.88rem;font-weight:800;color:${evColor};margin-bottom:0.6rem">Gostaria de nos presentear?</p>`}
+        <div style="background:#f8fafc;border-radius:0.6rem;padding:0.5rem 0.7rem;margin-bottom:0.5rem;margin-top:0.4rem">
           <p style="font-size:0.62rem;color:#94a3b8;margin-bottom:0.15rem">IBAN</p>
           <p style="font-size:0.78rem;font-weight:700;color:#374151;word-break:break-all">${escapeHTML(ev.iban_number)}</p>
         </div>
+        ${ev.iban_holder ? `<p style="font-size:0.7rem;color:#9ca3af;margin-bottom:0.5rem">Titular: ${escapeHTML(ev.iban_holder)}</p>` : ''}
         <button onclick="copyIban('${escapeHTML(ev.iban_number)}')" style="background:${evColor}14;color:${evColor};border:none;border-radius:999px;padding:0.45rem 1rem;font-size:0.75rem;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:0.35rem">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
           Copiar IBAN
         </button>
+        ${ev.iban_footer ? `<p style="font-size:0.65rem;color:#9ca3af;margin-top:0.6rem;font-style:italic">${escapeHTML(ev.iban_footer)}</p>` : ''}
       </div>` : ''}
     </div>`;
 
