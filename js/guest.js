@@ -88,6 +88,27 @@ async function renderGuestView() {
     eventData = ev;
   }
 
+  // ── Sincronizar o estado local de confirmação com a base de dados real ──
+  // Se o organizador eliminou a confirmação deste convidado no painel admin,
+  // o localStorage deste browser ainda diria "confirmado" — isso bloquearia
+  // o Save the Date para sempre, mesmo sem confirmação real na BD. Aqui
+  // comparamos contra a lista real de confirmações (já incluída na resposta
+  // da query principal, sem custo extra de rede) e limpamos o localStorage
+  // se a confirmação já não existir, permitindo ao convidado ver o Save the
+  // Date novamente e confirmar presença de novo.
+  if (eventData.id && typeof rsvpCheckConfirmed === 'function') {
+    const localConfirmation = rsvpCheckConfirmed(eventData.id);
+    if (localConfirmation && localConfirmation.attending === true && localConfirmation.name) {
+      const stillExistsInDb = (eventData.confirmations || []).some(
+        c => c.name && c.name.toLowerCase() === localConfirmation.name.toLowerCase() && c.attending === true
+      );
+      if (!stillExistsInDb) {
+        console.log('🔄 Confirmação local não encontrada na base de dados (foi eliminada pelo organizador) — a repor o Save the Date.');
+        rsvpClearConfirmed(eventData.id);
+      }
+    }
+  }
+
   // ── Analytics: log this guest visit once per event id load ──
   // (deliberately fire-and-forget, never blocks rendering)
   if (eventData.id && Store._lastTrackedGuestEventId !== eventData.id) {
@@ -184,6 +205,7 @@ async function renderGuestView() {
     // identity
     id: eventData.id, eventCode: eventData.eventCode, cover_image: eventData.cover_image,
     rsvp_enabled: eventData.rsvp_enabled,
+    allow_edit_rsvp: eventData.allow_edit_rsvp,
     save_the_date_enabled: eventData.save_the_date_enabled,
     release_type: eventData.release_type, release_date: eventData.release_date,
     is_invite_released: eventData.is_invite_released,
@@ -275,7 +297,7 @@ async function renderGuestView() {
     } catch(e2) { console.warn('Visual fallback reload failed:', e2); }
   }
 
-  const RSVP_ONLY_FIELDS = new Set(['show_time','time','date','title','confirm_by_date','deadline','allowCompanions','allow_companions','maxCompanions','max_companions','allowKids','allow_kids','maxKids','max_kids','allowGifts','allow_gifts','allowSides','allow_sides','side1_name','side2_name','allowMessages','allow_messages','showGuestMessages','show_guest_messages','id','eventCode','cover_image','rsvp_enabled','save_the_date_enabled','release_type','release_date','is_invite_released','std_title','std_subtitle','std_font_family','std_name_size','std_title_size','std_intro_enabled','std_intro_text','std_intro_photo_url','std_show_cover','personalized_links_enabled','show_rsvp_in_full_invite','show_guest_name_in_invite','std_cover_url','userId','user_id','std_scratch_enabled','std_scratch_mode','std_scratch_photo_url','std_scratch_text','std_date_style','std_show_iban']);
+  const RSVP_ONLY_FIELDS = new Set(['show_time','time','date','title','confirm_by_date','deadline','allowCompanions','allow_companions','maxCompanions','max_companions','allowKids','allow_kids','maxKids','max_kids','allowGifts','allow_gifts','allowSides','allow_sides','side1_name','side2_name','allowMessages','allow_messages','showGuestMessages','show_guest_messages','id','eventCode','cover_image','rsvp_enabled','save_the_date_enabled','release_type','release_date','is_invite_released','std_title','std_subtitle','std_font_family','std_name_size','std_title_size','std_intro_enabled','std_intro_text','std_intro_photo_url','std_show_cover','personalized_links_enabled','show_rsvp_in_full_invite','show_guest_name_in_invite','std_cover_url','userId','user_id','std_scratch_enabled','std_scratch_mode','std_scratch_photo_url','std_scratch_text','std_date_style','std_show_iban','allow_edit_rsvp']);
 
   // Restore all fields: RSVP fields always from events table; visual fields use
   // whichever source (visuals or events table) has a non-null value

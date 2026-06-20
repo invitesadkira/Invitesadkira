@@ -71,6 +71,8 @@ function _rsvpRender(state) {
 
 // ── Success screen ─────────────────────────────────────────────────────
 function _rsvpRenderSuccess(panel, evColor) {
+  const ev = Store.guestEventData || {};
+  const allowEdit = ev.allow_edit_rsvp !== false;
   panel.innerHTML = `
     <div style="display:flex;flex-direction:column;align-items:center;padding:2.5rem 1.5rem 2rem;text-align:center">
       <!-- Close button top-right -->
@@ -87,9 +89,9 @@ function _rsvpRenderSuccess(panel, evColor) {
       <p style="font-size:0.88rem;color:#6b7280;margin-bottom:1.75rem;max-width:280px">A sua resposta foi registada com sucesso.</p>
 
       <!-- Action buttons -->
-      <button onclick="rsvpEdit()" style="background:${evColor};color:#fff;border:none;border-radius:999px;padding:0.75rem 2rem;font-weight:700;font-size:0.92rem;cursor:pointer;font-family:inherit;width:100%;max-width:280px;margin-bottom:0.75rem">
+      ${allowEdit ? `<button onclick="rsvpEdit()" style="background:${evColor};color:#fff;border:none;border-radius:999px;padding:0.75rem 2rem;font-weight:700;font-size:0.92rem;cursor:pointer;font-family:inherit;width:100%;max-width:280px;margin-bottom:0.75rem">
         Editar Resposta
-      </button>
+      </button>` : ''}
 
       <button onclick="rsvpOpenFelicitacoes()" style="background:transparent;color:${evColor};border:1.5px solid ${evColor};border-radius:999px;padding:0.65rem 2rem;font-weight:700;font-size:0.88rem;cursor:pointer;font-family:inherit;width:100%;max-width:280px;margin-bottom:0.75rem">
         Ver Felicitações
