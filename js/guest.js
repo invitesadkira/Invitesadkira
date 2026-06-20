@@ -396,16 +396,23 @@ async function renderGuestView() {
   const stdDecision = _evaluateSaveTheDate(eventData);
   if (stdDecision.showSaveTheDate) {
     renderSaveTheDateScreen(eventData, stdDecision);
-    // Reveal now. Note: renderSaveTheDateScreen appends its overlay
-    // (#std-screen-overlay) directly to document.body as a position:fixed
-    // element — it lives OUTSIDE #screen-guest entirely, so the std-pending
-    // CSS rule (which only hides children of #screen-guest) never affects
-    // it. Removing std-pending here just un-hides #screen-guest's own
-    // children again, which is harmless since the overlay covers them anyway.
-    document.getElementById('screen-guest')?.classList.remove('std-pending');
+    // CRITICAL: keep 'std-pending' active while Save the Date is showing.
+    // It hides #screen-guest's children via visibility:hidden — including
+    // the floating music button and full music player, which otherwise
+    // could flash into view during scroll (their fixed positioning combined
+    // with viewport scroll quirks could briefly reveal them despite a lower
+    // z-index than the overlay). We only remove the loading veil here, never
+    // std-pending — the overlay covers everything visually, and std-pending
+    // adds a second layer of certainty that nothing else can flash through.
     document.getElementById('std-loading-veil')?.remove();
+    // Lock page scroll while the Save the Date overlay is open — its own
+    // #std-screen-overlay already scrolls internally (overflow-y:auto), so
+    // the underlying page never needs to scroll at the same time.
+    document.body.style.overflow = 'hidden';
     return; // Stop here — do not render the full invite sections
   } else {
+    // Restore normal page scroll now that Save the Date is not gating this visit
+    document.body.style.overflow = '';
     // Ensure the Save the Date overlay (if any) is removed so the full invite shows
     if (typeof window._stdRestoreMusicPlayer === 'function') {
       window._stdRestoreMusicPlayer();
@@ -2282,25 +2289,26 @@ function _buildIntroScreenHtml(ev, evColor, screenId) {
   const photoUrl = _pickIntroPhotoForDevice(ev);
   if (!photoUrl) return '';
   return `
-    <div id="${screenId}" style="position:fixed;inset:0;z-index:9500;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;color:#fff;padding:2rem">
+    <div id="${screenId}" class="std-intro-open-btn" style="position:fixed;inset:0;z-index:9500;cursor:pointer;background:#0f172a">
       <div style="position:absolute;inset:0;background:url('${photoUrl}') center/cover no-repeat"></div>
-      <div style="position:absolute;inset:0;background:rgba(0,0,0,0.48)"></div>
-      <div style="position:relative;z-index:1;max-width:360px">
-        <p style="font-size:1.1rem;font-weight:600;line-height:1.6;margin-bottom:2rem;opacity:0.95">${escapeHTML(ev.std_intro_text||'Recebeu este convite porque é importante para nós')}</p>
-        <button class="std-intro-open-btn" style="background:#fff;color:${evColor};border:none;border-radius:999px;padding:0.95rem 2.75rem;font-weight:800;font-size:0.98rem;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,0.3);font-family:'Quicksand',sans-serif">Abrir Convite</button>
-      </div>
+      <div style="position:absolute;inset:0;background:rgba(0,0,0,0.18)"></div>
     </div>`;
 }
 
-// Liga o botão "Abrir Convite" de uma tela de abertura: desbloqueia o áudio
+// Liga o clique em qualquer ponto da tela de abertura: desbloqueia o áudio
 // (HTML5 e YouTube) e remove a própria tela, revelando o conteúdo por trás.
+// Não há texto nem botão — a foto inteira é o convite a clicar.
 function _wireIntroScreenButton(screenId, onOpen) {
   const screen = document.getElementById(screenId);
   if (!screen) return;
-  const btn = screen.querySelector('.std-intro-open-btn');
-  if (!btn) return;
-  btn.onclick = () => {
-    screen.remove();
+  screen.onclick = () => {
+    // Fade out suavemente em vez de remover de imediato — isto disfarça
+    // qualquer instante em que o conteúdo por trás ainda esteja a desenhar
+    // (imagem de capa a carregar, etc.), evitando um "salto" visual brusco.
+    screen.style.transition = 'opacity 0.35s ease';
+    screen.style.opacity = '0';
+    setTimeout(() => screen.remove(), 350);
+
     const audio = document.getElementById('guest-audio');
     if (audio && audio.src) { audio.muted = false; audio.play().then(() => setMusicPlayingUI(true)).catch(() => {}); }
     const ytFrame = document.getElementById('yt-music-frame');
