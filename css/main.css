@@ -957,3 +957,31 @@ html, body { height: 100%; margin: 0; width: 100%; overflow-x: hidden; }
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.035); }
 }
+
+/* ── Save the Date: animação de entrada escalonada dos elementos ── */
+@keyframes stdFadeInUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.std-anim {
+  opacity: 0;
+  animation: stdFadeInUp 0.6s cubic-bezier(.4,0,.2,1) forwards;
+}
+.std-anim-1 { animation-delay: 0.05s; }
+.std-anim-2 { animation-delay: 0.15s; }
+.std-anim-3 { animation-delay: 0.25s; }
+.std-anim-4 { animation-delay: 0.35s; }
+.std-anim-5 { animation-delay: 0.45s; }
+.std-anim-6 { animation-delay: 0.55s; }
+.std-anim-7 { animation-delay: 0.65s; }
+
+/* A foto de capa entra com um fade simples (sem deslocamento, já que ocupa
+   o topo do ecrã e um movimento vertical ficaria estranho ali) */
+@keyframes stdCoverFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.std-cover-anim {
+  opacity: 0;
+  animation: stdCoverFadeIn 0.7s ease forwards;
+}

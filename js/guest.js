@@ -2457,7 +2457,7 @@ function renderSaveTheDateScreen(ev, decision) {
     <style>${fontFaceCSS}</style>
     ${introEnabled ? _buildIntroScreenHtml(ev, evColor, 'std-intro-screen') : ''}
     ${showCover ? `
-    <div id="std-cover-wrap" style="position:relative;width:100%;height:42vh;max-height:380px;overflow:hidden;background:#1a1a2e;flex-shrink:0">
+    <div id="std-cover-wrap" class="std-cover-anim" style="position:relative;width:100%;height:42vh;max-height:380px;overflow:hidden;background:#1a1a2e;flex-shrink:0">
       <img id="std-cover-img" src="${coverUrl}" loading="eager" style="width:100%;height:100%;object-fit:cover;object-position:center;display:block"
         onerror="console.error('❌ Falha ao carregar a foto de capa do Save the Date. URL tentado:', this.src); this.style.display='none';"
         onload="console.log('✅ Foto de capa do Save the Date carregada com sucesso:', this.src);">
@@ -2467,11 +2467,11 @@ function renderSaveTheDateScreen(ev, decision) {
       </div>
     </div>` : `<div style="height:2.5rem;flex-shrink:0"></div>`}
     <div id="std-main-content" style="position:relative;z-index:2;max-width:440px;width:100%;text-align:center;color:#1e293b;padding:1rem 1.5rem 2.5rem;flex:1;display:flex;flex-direction:column;align-items:center">
-      ${!showCover ? `<p style="font-size:${titleSize}rem;letter-spacing:0.25em;text-transform:uppercase;font-weight:800;color:${evColor};font-family:'Quicksand',sans-serif;margin-bottom:0.5rem">${escapeHTML(stdTitle)}</p>` : ''}
-      ${coupleNames ? `<h2 style="font-family:${nameFont?`'${nameFont}',`:''}var(--event-font,'Playfair Display',serif);font-size:clamp(1.4rem,7vw,${nameSize}rem);line-height:1.2;margin-bottom:0.3rem;color:${evColor};padding:0 0.5rem">${coupleNames}</h2>` : ''}
-      <p style="font-size:0.9rem;font-weight:500;color:#6b7280;font-family:'Quicksand',sans-serif;margin-bottom:1.25rem">${escapeHTML(stdSubtitle)}</p>
-      ${_buildStdDateBlock(eventDateLabel, evColor, ev.std_date_style)}
-      <div id="std-countdown-wrap" style="width:100%;margin-bottom:1.1rem">
+      ${!showCover ? `<p class="std-anim std-anim-1" style="font-size:${titleSize}rem;letter-spacing:0.25em;text-transform:uppercase;font-weight:800;color:${evColor};font-family:'Quicksand',sans-serif;margin-bottom:0.5rem">${escapeHTML(stdTitle)}</p>` : ''}
+      ${coupleNames ? `<h2 class="std-anim std-anim-2" style="font-family:${nameFont?`'${nameFont}',`:''}var(--event-font,'Playfair Display',serif);font-size:clamp(1.4rem,7vw,${nameSize}rem);line-height:1.2;margin-bottom:0.3rem;color:${evColor};padding:0 0.5rem">${coupleNames}</h2>` : ''}
+      <p class="std-anim std-anim-3" style="font-size:0.9rem;font-weight:500;color:#6b7280;font-family:'Quicksand',sans-serif;margin-bottom:1.25rem">${escapeHTML(stdSubtitle)}</p>
+      <div class="std-anim std-anim-4">${_buildStdDateBlock(eventDateLabel, evColor, ev.std_date_style)}</div>
+      <div id="std-countdown-wrap" class="std-anim std-anim-5" style="width:100%;margin-bottom:1.1rem">
         <p id="std-countdown-label" style="font-size:0.6rem;text-transform:uppercase;letter-spacing:0.1em;opacity:0.5;margin-bottom:0.4rem;font-weight:700">A calcular...</p>
         <div style="display:flex;gap:0.4rem;justify-content:center">
           <div style="background:${evColor}12;border-radius:0.6rem;padding:0.5rem 0.2rem;flex:1;max-width:66px"><div id="std-days" style="font-size:1.15rem;font-weight:900;color:${evColor}">--</div><div style="font-size:0.55rem;opacity:0.55;text-transform:uppercase">Dias</div></div>
@@ -2480,11 +2480,11 @@ function renderSaveTheDateScreen(ev, decision) {
           <div style="background:${evColor}12;border-radius:0.6rem;padding:0.5rem 0.2rem;flex:1;max-width:66px"><div id="std-secs" style="font-size:1.15rem;font-weight:900;color:${evColor}">--</div><div style="font-size:0.55rem;opacity:0.55;text-transform:uppercase">Seg</div></div>
         </div>
       </div>
-      <p id="std-rsvp-status-text" style="font-size:0.82rem;color:#16a34a;margin-bottom:0.7rem;font-weight:600;min-height:1.1em">${alreadyConfirmed?'Obrigado por confirmar! Já contamos consigo. 🎉':''}</p>
-      ${rsvpBtnHtml}
-      ${countdownTarget ? `<p style="font-size:0.73rem;color:#9ca3af;margin-top:0.5rem;font-weight:500">Confirmar até ${countdownTarget.label}</p>` : ''}
+      <p id="std-rsvp-status-text" class="std-anim std-anim-6" style="font-size:0.82rem;color:#16a34a;margin-bottom:0.7rem;font-weight:600;min-height:1.1em">${alreadyConfirmed?'Obrigado por confirmar! Já contamos consigo. 🎉':''}</p>
+      <div class="std-anim std-anim-6">${rsvpBtnHtml}</div>
+      ${countdownTarget ? `<p class="std-anim std-anim-7" style="font-size:0.73rem;color:#9ca3af;margin-top:0.5rem;font-weight:500">Confirmar até ${countdownTarget.label}</p>` : ''}
       ${(ev.std_show_iban === true && ev.iban_number) ? `
-      <div style="background:#fff;border-radius:0.85rem;padding:1rem 1.1rem;margin-top:1.5rem;max-width:320px;width:100%;border:1.5px solid color-mix(in srgb,${evColor} 22%,transparent);text-align:center">
+      <div class="std-anim std-anim-7" style="background:#fff;border-radius:0.85rem;padding:1rem 1.1rem;margin-top:1.5rem;max-width:320px;width:100%;border:1.5px solid color-mix(in srgb,${evColor} 22%,transparent);text-align:center">
         ${ev.iban_message ? ev.iban_message.split('\n').map(l => `<p style="font-size:0.82rem;font-weight:700;color:#1e293b;margin-bottom:0.4rem;line-height:1.4">${escapeHTML(l)}</p>`).join('') : `<p style="font-size:0.88rem;font-weight:800;color:${evColor};margin-bottom:0.6rem">Gostaria de nos presentear?</p>`}
         <div style="background:#f8fafc;border-radius:0.6rem;padding:0.5rem 0.7rem;margin-bottom:0.5rem;margin-top:0.4rem">
           <p style="font-size:0.62rem;color:#94a3b8;margin-bottom:0.15rem">IBAN</p>
@@ -2551,12 +2551,9 @@ function renderSaveTheDateScreen(ev, decision) {
     if (decision.reason==='on_confirmation' && yes) {
       if(window._stdCountdownInterval)clearInterval(window._stdCountdownInterval);
       if(typeof window._stdRestoreMusicPlayer==='function'){window._stdRestoreMusicPlayer();window._stdRestoreMusicPlayer=null;}
-      // Animação de saída suave — em vez de desaparecer instantaneamente
-      // (que parecia abrupto/"morto"), a tela desliza ligeiramente para
-      // cima ao mesmo tempo que se esvanece, dando a sensação de transição
-      // viva para o convite completo por trás.
-      overlay.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
-      overlay.style.transform = 'translateY(-24px)';
+      // Fade out puro — a tela esvanece-se completamente, dando espaço
+      // ao convite completo por trás, sem qualquer deslocamento.
+      overlay.style.transition = 'opacity 0.5s ease';
       overlay.style.opacity = '0';
       setTimeout(() => {
         overlay.remove();
