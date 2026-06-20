@@ -119,7 +119,7 @@ async function supabaseRequest(endpoint, method = 'GET', body = null) {
           'show_event_faq','event_faq_items','schedule_style','gallery_style',
           'venue_ceremony_image','venue_civil_image','venue_reception_image','blessing_couple_size',
           'date_style','manual_style','story_style','story_photo_url',
-          'std_scratch_enabled','std_scratch_mode','std_scratch_photo_url','std_scratch_text','std_date_style','is_example_event','std_show_iban','allow_edit_rsvp',
+          'std_scratch_enabled','std_scratch_mode','std_scratch_photo_url','std_scratch_text','std_date_style','is_example_event','std_show_iban','allow_edit_rsvp','std_intro_photo_mobile_url','std_intro_photo_desktop_url','std_intro_on_invite',
         ].filter(col => !NEVER_STRIP.has(col));
         let safeEndpoint = endpoint;
         OPTIONAL_COLS.forEach(col => {
@@ -178,7 +178,7 @@ async function supabaseRequest(endpoint, method = 'GET', body = null) {
           'show_event_faq','event_faq_items','schedule_style','gallery_style',
           'venue_ceremony_image','venue_civil_image','venue_reception_image','blessing_couple_size',
           'date_style','manual_style','story_style','story_photo_url',
-          'std_scratch_enabled','std_scratch_mode','std_scratch_photo_url','std_scratch_text','std_date_style','is_example_event','std_show_iban','allow_edit_rsvp',
+          'std_scratch_enabled','std_scratch_mode','std_scratch_photo_url','std_scratch_text','std_date_style','is_example_event','std_show_iban','allow_edit_rsvp','std_intro_photo_mobile_url','std_intro_photo_desktop_url','std_intro_on_invite',
         ].filter(col => !NEVER_STRIP.has(col));
         const cleanBody = { ...body };
         let changed = false;

@@ -9,7 +9,7 @@
   <script>tailwind.config = { theme: { extend: { colors: { teal: { 500: '#007f9f', 600: '#006b86' } } } } }</script>
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💌</text></svg>">
-  <link rel="stylesheet" href="css/main.css?v=556800">
+  <link rel="stylesheet" href="css/main.css?v=556900">
 </head>
 <body class="h-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
 
@@ -498,16 +498,33 @@
           <span class="text-xs font-semibold text-gray-700">Tela de abertura com foto</span>
           <div id="sw-std-intro" class="switch" onclick="toggleSwitch(this, 'std-intro-extra')"></div>
          </div>
-         <p class="text-xs text-gray-400 mt-0.5">Funciona com ou sem o Save the Date activo. Os browsers bloqueiam música automática — esta opção mostra uma foto a ocupar o ecrã todo com um botão "Abrir Convite"; ao clicar, a música começa a tocar garantidamente.</p>
+         <p class="text-xs text-gray-400 mt-0.5">Os browsers bloqueiam música automática — esta opção mostra uma foto a ocupar o ecrã todo com um botão "Abrir Convite"; ao clicar, a música começa a tocar garantidamente.</p>
          <div id="std-intro-extra" class="hidden mt-2 space-y-2">
-          <label class="text-xs font-semibold text-gray-600">Foto de abertura (PNG/JPG)</label>
-          <input type="file" id="evt-std-intro-photo" accept="image/png,image/jpeg" class="input-field text-sm" onchange="handleStdIntroPhotoUpload(this)">
-          <input type="hidden" id="evt-std-intro-photo-url">
-          <div id="std-intro-photo-preview-wrap" class="hidden relative mt-1" style="max-width:160px">
-           <img id="std-intro-photo-preview" class="rounded-lg max-h-32 object-cover w-full">
-           <button type="button" onclick="removeStdIntroPhoto()" class="absolute top-1 right-1 bg-white rounded-full w-6 h-6 flex items-center justify-center shadow text-red-500 text-xs font-bold">✕</button>
+
+          <div class="flex items-center justify-between pt-1">
+           <span class="text-xs font-semibold text-gray-600">Mostrar também antes do convite completo</span>
+           <div id="sw-std-intro-on-invite" class="switch active" onclick="toggleSwitch(this)"></div>
           </div>
-          <label class="text-xs font-semibold text-gray-600">Texto sobre a foto</label>
+          <p class="text-xs text-gray-400 -mt-1">Se tiveres Save the Date activo, esta tela aparece primeiro no Save the Date e depois novamente quando o convite completo for liberado. Se desactivares isto, só aparece uma vez.</p>
+
+          <label class="text-xs font-semibold text-gray-600 block mt-2">Foto para telemóvel (recomendado: 1080×1920px, vertical)</label>
+          <input type="file" id="evt-std-intro-photo-mobile" accept="image/png,image/jpeg" class="input-field text-sm" onchange="handleStdIntroPhotoUpload(this, 'mobile')">
+          <input type="hidden" id="evt-std-intro-photo-mobile-url">
+          <div id="std-intro-photo-mobile-preview-wrap" class="hidden relative mt-1" style="max-width:120px">
+           <img id="std-intro-photo-mobile-preview" class="rounded-lg max-h-40 object-cover w-full">
+           <button type="button" onclick="removeStdIntroPhoto('mobile')" class="absolute top-1 right-1 bg-white rounded-full w-6 h-6 flex items-center justify-center shadow text-red-500 text-xs font-bold">✕</button>
+          </div>
+
+          <label class="text-xs font-semibold text-gray-600 block mt-2">Foto para computador (recomendado: 1920×1080px, horizontal)</label>
+          <input type="file" id="evt-std-intro-photo-desktop" accept="image/png,image/jpeg" class="input-field text-sm" onchange="handleStdIntroPhotoUpload(this, 'desktop')">
+          <input type="hidden" id="evt-std-intro-photo-desktop-url">
+          <div id="std-intro-photo-desktop-preview-wrap" class="hidden relative mt-1" style="max-width:200px">
+           <img id="std-intro-photo-desktop-preview" class="rounded-lg max-h-24 object-cover w-full">
+           <button type="button" onclick="removeStdIntroPhoto('desktop')" class="absolute top-1 right-1 bg-white rounded-full w-6 h-6 flex items-center justify-center shadow text-red-500 text-xs font-bold">✕</button>
+          </div>
+          <p class="text-xs text-gray-400">Se carregares só uma das duas, essa é usada em todos os dispositivos.</p>
+
+          <label class="text-xs font-semibold text-gray-600 block mt-2">Texto sobre a foto</label>
           <textarea id="evt-std-intro-text" class="input-field text-sm" rows="2" placeholder="Recebeu este convite porque é importante para nós">Recebeu este convite porque é importante para nós</textarea>
          </div>
         </div>
@@ -1182,19 +1199,19 @@ para testemunhar o seu enlace matrimonial</textarea>
   </a>
 
   <!-- ===================== SCRIPTS (ordem importa) ===================== -->
-  <script src="js/config.js?v=556800"></script>
-  <script src="js/store.js?v=556800"></script>
-  <script src="js/visuals.js?v=556800"></script>
-  <script src="js/venues.js?v=556800"></script>
-  <script src="js/rsvp.js?v=556800"></script>
-  <script src="js/ui.js?v=556800"></script>
-  <script src="js/auth.js?v=556800"></script>
-  <script src="js/dashboard.js?v=556800"></script>
-  <script src="js/events.js?v=556800"></script>
-  <script src="js/guest.js?v=556800"></script>
-  <script src="js/sections.js?v=556800"></script>
-  <script src="js/admin.js?v=556800"></script>
-  <script src="js/router.js?v=556800"></script>
+  <script src="js/config.js?v=556900"></script>
+  <script src="js/store.js?v=556900"></script>
+  <script src="js/visuals.js?v=556900"></script>
+  <script src="js/venues.js?v=556900"></script>
+  <script src="js/rsvp.js?v=556900"></script>
+  <script src="js/ui.js?v=556900"></script>
+  <script src="js/auth.js?v=556900"></script>
+  <script src="js/dashboard.js?v=556900"></script>
+  <script src="js/events.js?v=556900"></script>
+  <script src="js/guest.js?v=556900"></script>
+  <script src="js/sections.js?v=556900"></script>
+  <script src="js/admin.js?v=556900"></script>
+  <script src="js/router.js?v=556900"></script>
 
 </body>
 </html>

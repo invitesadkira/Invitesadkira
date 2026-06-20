@@ -866,7 +866,7 @@ function changeStdTitleSize(delta) {
   if (lbl) lbl.textContent = v + 'rem';
 }
 
-async function handleStdIntroPhotoUpload(input) {
+async function handleStdIntroPhotoUpload(input, variant) {
   const file = input.files[0];
   if (!file) return;
   if (!file.type.includes('png') && !file.type.includes('jpeg') && !file.type.includes('jpg')) {
@@ -874,15 +874,16 @@ async function handleStdIntroPhotoUpload(input) {
   }
   if (file.size > 4 * 1024 * 1024) { toast('Imagem muito grande. Máx. 4 MB.'); return; }
   const eventId = Store.currentEventId || Store._intakeEventId;
-  const proceed = await _confirmIfDuplicatePhoto(file, eventId, 'Foto de abertura');
+  const label = variant === 'desktop' ? 'Foto de abertura (computador)' : 'Foto de abertura (telemóvel)';
+  const proceed = await _confirmIfDuplicatePhoto(file, eventId, label);
   if (!proceed) { input.value = ''; return; }
-  const prevWrap = document.getElementById('std-intro-photo-preview-wrap');
-  const prev = document.getElementById('std-intro-photo-preview');
+  const prevWrap = document.getElementById(`std-intro-photo-${variant}-preview-wrap`);
+  const prev = document.getElementById(`std-intro-photo-${variant}-preview`);
   if (prevWrap) prevWrap.classList.add('hidden');
   toast('A carregar foto...');
   try {
     const url = await uploadImageToStorage(file, 'event-covers');
-    document.getElementById('evt-std-intro-photo-url').value = url;
+    document.getElementById(`evt-std-intro-photo-${variant}-url`).value = url;
     if (prev) prev.src = url;
     if (prevWrap) prevWrap.classList.remove('hidden');
     toast('Foto de abertura carregada!');
@@ -891,10 +892,10 @@ async function handleStdIntroPhotoUpload(input) {
   }
 }
 
-function removeStdIntroPhoto() {
-  document.getElementById('evt-std-intro-photo-url').value = '';
-  document.getElementById('evt-std-intro-photo').value = '';
-  document.getElementById('std-intro-photo-preview-wrap')?.classList.add('hidden');
+function removeStdIntroPhoto(variant) {
+  document.getElementById(`evt-std-intro-photo-${variant}-url`).value = '';
+  document.getElementById(`evt-std-intro-photo-${variant}`).value = '';
+  document.getElementById(`std-intro-photo-${variant}-preview-wrap`)?.classList.add('hidden');
   toast('Foto de abertura removida.');
 }
 

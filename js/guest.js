@@ -214,6 +214,9 @@ async function renderGuestView() {
     std_name_size: eventData.std_name_size, std_title_size: eventData.std_title_size,
     std_intro_enabled: eventData.std_intro_enabled, std_intro_text: eventData.std_intro_text,
     std_intro_photo_url: eventData.std_intro_photo_url,
+    std_intro_photo_mobile_url: eventData.std_intro_photo_mobile_url,
+    std_intro_photo_desktop_url: eventData.std_intro_photo_desktop_url,
+    std_intro_on_invite: eventData.std_intro_on_invite,
     personalized_links_enabled: eventData.personalized_links_enabled,
     std_cover_url: eventData.std_cover_url,
     std_scratch_enabled: eventData.std_scratch_enabled, std_scratch_mode: eventData.std_scratch_mode,
@@ -297,7 +300,7 @@ async function renderGuestView() {
     } catch(e2) { console.warn('Visual fallback reload failed:', e2); }
   }
 
-  const RSVP_ONLY_FIELDS = new Set(['show_time','time','date','title','confirm_by_date','deadline','allowCompanions','allow_companions','maxCompanions','max_companions','allowKids','allow_kids','maxKids','max_kids','allowGifts','allow_gifts','allowSides','allow_sides','side1_name','side2_name','allowMessages','allow_messages','showGuestMessages','show_guest_messages','id','eventCode','cover_image','rsvp_enabled','save_the_date_enabled','release_type','release_date','is_invite_released','std_title','std_subtitle','std_font_family','std_name_size','std_title_size','std_intro_enabled','std_intro_text','std_intro_photo_url','std_show_cover','personalized_links_enabled','show_rsvp_in_full_invite','show_guest_name_in_invite','std_cover_url','userId','user_id','std_scratch_enabled','std_scratch_mode','std_scratch_photo_url','std_scratch_text','std_date_style','std_show_iban','allow_edit_rsvp']);
+  const RSVP_ONLY_FIELDS = new Set(['show_time','time','date','title','confirm_by_date','deadline','allowCompanions','allow_companions','maxCompanions','max_companions','allowKids','allow_kids','maxKids','max_kids','allowGifts','allow_gifts','allowSides','allow_sides','side1_name','side2_name','allowMessages','allow_messages','showGuestMessages','show_guest_messages','id','eventCode','cover_image','rsvp_enabled','save_the_date_enabled','release_type','release_date','is_invite_released','std_title','std_subtitle','std_font_family','std_name_size','std_title_size','std_intro_enabled','std_intro_text','std_intro_photo_url','std_show_cover','personalized_links_enabled','show_rsvp_in_full_invite','show_guest_name_in_invite','std_cover_url','userId','user_id','std_scratch_enabled','std_scratch_mode','std_scratch_photo_url','std_scratch_text','std_date_style','std_show_iban','allow_edit_rsvp','std_intro_photo_mobile_url','std_intro_photo_desktop_url','std_intro_on_invite']);
 
   // Restore all fields: RSVP fields always from events table; visual fields use
   // whichever source (visuals or events table) has a non-null value
@@ -409,6 +412,26 @@ async function renderGuestView() {
       window._stdRestoreMusicPlayer = null;
     }
     document.getElementById('std-screen-overlay')?.remove();
+  }
+
+  // ── Tela de abertura com foto, também no convite completo ──────────────
+  // Mostra-se quando: (a) não há Save the Date activo, ou (b) há Save the
+  // Date mas o organizador activou "Mostrar também antes do convite
+  // completo" (std_intro_on_invite). Nunca aparece duas vezes na mesma
+  // visita — Store._introShownThisVisit garante isso mesmo que
+  // renderGuestView seja chamada de novo (ex: depois de confirmar presença).
+  const introEnabledForInvite = (eventData.std_intro_enabled === true || eventData.std_intro_enabled === 'true')
+    && !!_pickIntroPhotoForDevice(eventData)
+    && (!eventData.save_the_date_enabled || eventData.std_intro_on_invite !== false)
+    && !Store._introShownThisVisit;
+
+  if (introEnabledForInvite) {
+    Store._introShownThisVisit = true;
+    const introOverlay = document.createElement('div');
+    introOverlay.id = 'invite-intro-overlay';
+    introOverlay.innerHTML = _buildIntroScreenHtml(eventData, eventData.event_color || '#007f9f', 'invite-intro-screen');
+    document.body.appendChild(introOverlay);
+    _wireIntroScreenButton('invite-intro-screen');
   }
 
   // ===== RENDER SECTIONS (awaited so venues load properly) =====
@@ -2243,6 +2266,64 @@ function _evaluateSaveTheDate(ev) {
 }
 
 // ── Bloco de data do evento dentro do Save the Date — estilo configurável ──
+// ── Tela de abertura com foto — reutilizável no Save the Date E no convite ──
+// Detecta se o ecrã é de telemóvel ou computador (via largura da janela) e
+// escolhe a foto certa entre as duas que o organizador carregou. Se só uma
+// foi carregada, usa essa em qualquer dispositivo.
+function _pickIntroPhotoForDevice(ev) {
+  const isMobile = window.innerWidth < 768;
+  if (isMobile) {
+    return ev.std_intro_photo_mobile_url || ev.std_intro_photo_desktop_url || ev.std_intro_photo_url || null;
+  }
+  return ev.std_intro_photo_desktop_url || ev.std_intro_photo_mobile_url || ev.std_intro_photo_url || null;
+}
+
+function _buildIntroScreenHtml(ev, evColor, screenId) {
+  const photoUrl = _pickIntroPhotoForDevice(ev);
+  if (!photoUrl) return '';
+  return `
+    <div id="${screenId}" style="position:fixed;inset:0;z-index:9500;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;color:#fff;padding:2rem">
+      <div style="position:absolute;inset:0;background:url('${photoUrl}') center/cover no-repeat"></div>
+      <div style="position:absolute;inset:0;background:rgba(0,0,0,0.48)"></div>
+      <div style="position:relative;z-index:1;max-width:360px">
+        <p style="font-size:1.1rem;font-weight:600;line-height:1.6;margin-bottom:2rem;opacity:0.95">${escapeHTML(ev.std_intro_text||'Recebeu este convite porque é importante para nós')}</p>
+        <button class="std-intro-open-btn" style="background:#fff;color:${evColor};border:none;border-radius:999px;padding:0.95rem 2.75rem;font-weight:800;font-size:0.98rem;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,0.3);font-family:'Quicksand',sans-serif">Abrir Convite</button>
+      </div>
+    </div>`;
+}
+
+// Liga o botão "Abrir Convite" de uma tela de abertura: desbloqueia o áudio
+// (HTML5 e YouTube) e remove a própria tela, revelando o conteúdo por trás.
+function _wireIntroScreenButton(screenId, onOpen) {
+  const screen = document.getElementById(screenId);
+  if (!screen) return;
+  const btn = screen.querySelector('.std-intro-open-btn');
+  if (!btn) return;
+  btn.onclick = () => {
+    screen.remove();
+    const audio = document.getElementById('guest-audio');
+    if (audio && audio.src) { audio.muted = false; audio.play().then(() => setMusicPlayingUI(true)).catch(() => {}); }
+    const ytFrame = document.getElementById('yt-music-frame');
+    if (ytFrame && ytFrame.src) {
+      let att = 0;
+      const cmd = () => {
+        att++;
+        try {
+          if (ytFrame.contentWindow) {
+            ytFrame.contentWindow.postMessage(JSON.stringify({event:'command',func:'unMute',args:[]}), '*');
+            ytFrame.contentWindow.postMessage(JSON.stringify({event:'command',func:'playVideo',args:[]}), '*');
+            ytFrame.dataset.playing = '1';
+            setMusicPlayingUI(true);
+          }
+        } catch(e) {}
+        if (att < 4) setTimeout(cmd, 600);
+      };
+      setTimeout(cmd, 300);
+    }
+    if (typeof onOpen === 'function') onOpen();
+  };
+}
+
 function _buildStdDateBlock(eventDateLabel, evColor, style) {
   if (!eventDateLabel) return '';
   style = style || 'card';
@@ -2358,7 +2439,7 @@ function renderSaveTheDateScreen(ev, decision) {
       <span id="std-rsvp-btn-label">${alreadyConfirmed?'Presença Confirmada':'Confirmar Presença'}</span>
     </button>` : '';
 
-  const introEnabled = (ev.std_intro_enabled === true || ev.std_intro_enabled === 'true') && ev.std_intro_photo_url;
+  const introEnabled = (ev.std_intro_enabled === true || ev.std_intro_enabled === 'true') && !!_pickIntroPhotoForDevice(ev);
 
   const overlay = document.createElement('div');
   overlay.id = 'std-screen-overlay';
@@ -2366,15 +2447,7 @@ function renderSaveTheDateScreen(ev, decision) {
 
   overlay.innerHTML = `
     <style>${fontFaceCSS}</style>
-    ${introEnabled ? `
-    <div id="std-intro-screen" style="position:fixed;inset:0;z-index:10;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;color:#fff;padding:2rem">
-      <div style="position:absolute;inset:0;background:${ev.std_intro_photo_url?`url('${ev.std_intro_photo_url}') center/cover no-repeat`:evColor}"></div>
-      <div style="position:absolute;inset:0;background:rgba(0,0,0,0.48)"></div>
-      <div style="position:relative;z-index:1;max-width:360px">
-        <p style="font-size:1.1rem;font-weight:600;line-height:1.6;margin-bottom:2rem;opacity:0.95">${escapeHTML(ev.std_intro_text||'Recebeu este convite porque é importante para nós')}</p>
-        <button id="std-open-invite-btn" style="background:#fff;color:${evColor};border:none;border-radius:999px;padding:0.95rem 2.75rem;font-weight:800;font-size:0.98rem;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,0.3);font-family:'Quicksand',sans-serif">Abrir Convite</button>
-      </div>
-    </div>` : ''}
+    ${introEnabled ? _buildIntroScreenHtml(ev, evColor, 'std-intro-screen') : ''}
     ${showCover ? `
     <div id="std-cover-wrap" style="position:relative;width:100%;height:42vh;max-height:380px;overflow:hidden;background:#1a1a2e;flex-shrink:0">
       <img id="std-cover-img" src="${coverUrl}" loading="eager" style="width:100%;height:100%;object-fit:cover;object-position:center;display:block"
@@ -2385,7 +2458,7 @@ function renderSaveTheDateScreen(ev, decision) {
         <p style="font-size:${titleSize}rem;letter-spacing:0.3em;text-transform:uppercase;font-weight:800;color:#fff;font-family:'Quicksand',sans-serif;text-shadow:0 2px 12px rgba(0,0,0,0.5);margin:0">${escapeHTML(stdTitle)}</p>
       </div>
     </div>` : `<div style="height:2.5rem;flex-shrink:0"></div>`}
-    <div id="std-main-content" style="position:relative;z-index:2;max-width:440px;width:100%;text-align:center;color:#1e293b;padding:1rem 1.5rem 2.5rem;flex:1;display:flex;flex-direction:column;align-items:center;${introEnabled?'display:none':''}">
+    <div id="std-main-content" style="position:relative;z-index:2;max-width:440px;width:100%;text-align:center;color:#1e293b;padding:1rem 1.5rem 2.5rem;flex:1;display:flex;flex-direction:column;align-items:center">
       ${!showCover ? `<p style="font-size:${titleSize}rem;letter-spacing:0.25em;text-transform:uppercase;font-weight:800;color:${evColor};font-family:'Quicksand',sans-serif;margin-bottom:0.5rem">${escapeHTML(stdTitle)}</p>` : ''}
       ${coupleNames ? `<h2 style="font-family:${nameFont?`'${nameFont}',`:''}var(--event-font,'Playfair Display',serif);font-size:clamp(1.4rem,7vw,${nameSize}rem);line-height:1.2;margin-bottom:0.3rem;color:${evColor};padding:0 0.5rem">${coupleNames}</h2>` : ''}
       <p style="font-size:0.9rem;font-weight:500;color:#6b7280;font-family:'Quicksand',sans-serif;margin-bottom:1.25rem">${escapeHTML(stdSubtitle)}</p>
@@ -2425,18 +2498,7 @@ function renderSaveTheDateScreen(ev, decision) {
   window._stdRestoreMusicPlayer = null;
 
   if (introEnabled) {
-    document.getElementById('std-open-invite-btn').onclick = () => {
-      document.getElementById('std-intro-screen').style.display='none';
-      document.getElementById('std-main-content').style.display='';
-      const audio = document.getElementById('guest-audio');
-      if (audio && audio.src) { audio.muted=false; audio.play().then(()=>setMusicPlayingUI(true)).catch(()=>{}); }
-      const ytFrame = document.getElementById('yt-music-frame');
-      if (ytFrame && ytFrame.src) {
-        let att=0;
-        const cmd=()=>{att++;try{if(ytFrame.contentWindow){ytFrame.contentWindow.postMessage(JSON.stringify({event:'command',func:'unMute',args:[]}),'*');ytFrame.contentWindow.postMessage(JSON.stringify({event:'command',func:'playVideo',args:[]}),'*');ytFrame.dataset.playing='1';setMusicPlayingUI(true);}}catch(e){}if(att<4)setTimeout(cmd,600);};
-        setTimeout(cmd,300);
-      }
-    };
+    _wireIntroScreenButton('std-intro-screen');
   }
 
   const rsvpBtn = document.getElementById('std-rsvp-btn');
