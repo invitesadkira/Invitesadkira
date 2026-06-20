@@ -3887,18 +3887,6 @@ async function openStdEditor() {
       <p class="text-xs text-gray-400 mt-1">Foto independente — não usa a foto de fundo do convite.</p>
     </div>
 
-    <div class="flex items-center justify-between mb-2">
-      <span class="text-xs font-semibold text-gray-600">Efeito "Raspadinha"</span>
-      <div id="std2-sw-scratch" class="switch ${d.std_scratch_enabled === true ? 'active' : ''}" onclick="toggleSwitch(this,'std2-scratch-extra')"></div>
-    </div>
-    <div id="std2-scratch-extra" class="${d.std_scratch_enabled === true ? '' : 'hidden'} mb-3 space-y-2">
-      <select id="std2-scratch-mode" class="input-field text-sm">
-        <option value="photo" ${d.std_scratch_mode==='photo'||!d.std_scratch_mode?'selected':''}>Raspar foto do casal</option>
-        <option value="heart" ${d.std_scratch_mode==='heart'?'selected':''}>Raspar coração com a data</option>
-      </select>
-      <input id="std2-scratch-text" class="input-field text-sm" value="${escapeHTML(d.std_scratch_text || 'Raspa para desvendar')}">
-    </div>
-
     <label class="text-xs font-semibold text-gray-600 block mb-1">Quando liberar o convite completo?</label>
     <select id="std2-release-type" class="input-field text-sm mb-3" onchange="document.getElementById('std2-release-date-wrap').classList.toggle('hidden', this.value!=='by_date')">
       <option value="manual" ${d.release_type==='manual'||!d.release_type?'selected':''}>Manualmente</option>
@@ -3932,6 +3920,9 @@ async function handleStd2CoverUpload(input) {
   const file = input.files[0];
   if (!file) return;
   if (file.size > 5*1024*1024) { toast('Imagem muito grande. Máx. 5 MB.'); return; }
+  const eventId = Store.currentEventId;
+  const proceed = await _confirmIfDuplicatePhoto(file, eventId, 'Foto de capa do Save the Date');
+  if (!proceed) { input.value = ''; return; }
   toast('A carregar foto...');
   try {
     const url = await uploadImageToStorage(file, 'event-covers');
@@ -3960,9 +3951,6 @@ async function saveStdEditor() {
     std_date_style: document.getElementById('std2-date-style')?.value || 'card',
     std_show_cover: document.getElementById('std2-sw-cover')?.classList.contains('active') || false,
     std_cover_url: document.getElementById('std2-cover-url')?.value?.trim() || null,
-    std_scratch_enabled: document.getElementById('std2-sw-scratch')?.classList.contains('active') || false,
-    std_scratch_mode: document.getElementById('std2-scratch-mode')?.value || 'photo',
-    std_scratch_text: document.getElementById('std2-scratch-text')?.value?.trim() || 'Raspa para desvendar',
     release_type: document.getElementById('std2-release-type')?.value || 'manual',
     release_date: releaseDateVal ? new Date(releaseDateVal).toISOString() : null,
     is_invite_released: document.getElementById('std2-sw-released')?.classList.contains('active') || false,
@@ -4071,4 +4059,22 @@ async function _autoRenewExampleEventDates(ev, forceNow) {
   } catch(e) {
     console.warn('Falha ao renovar datas do evento exemplar:', e);
   }
+}
+
+async function handleStd2ScratchPhotoUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 5*1024*1024) { toast('Imagem muito grande. Máx. 5 MB.'); return; }
+  const eventId = Store.currentEventId;
+  const proceed = await _confirmIfDuplicatePhoto(file, eventId, 'Foto a raspar (Save the Date)');
+  if (!proceed) { input.value = ''; return; }
+  toast('A carregar foto...');
+  try {
+    const url = await uploadImageToStorage(file, 'event-covers');
+    document.getElementById('std2-scratch-photo-url').value = url;
+    const prev = document.getElementById('std2-scratch-photo-preview');
+    if (prev) prev.src = url;
+    document.getElementById('std2-scratch-photo-preview-wrap')?.classList.remove('hidden');
+    toast('Foto carregada!');
+  } catch(e) { toast('Erro ao carregar a foto.'); }
 }

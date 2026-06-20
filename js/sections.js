@@ -128,6 +128,8 @@ async function renderGuestSections(eventData) {
   console.log('invite_text:', eventData.invite_text ? '✓' : '✗');
   console.log('event_color:', eventData.event_color);
   console.log('section_order:', eventData.section_order ? JSON.parse(eventData.section_order) : 'default');
+  console.log('show_manual:', eventData.show_manual, '| manual_items:', eventData.manual_items ? '✓ '+String(eventData.manual_items).substring(0,80) : '✗ null/vazio');
+  console.log('show_schedule:', eventData.show_schedule, '| schedule_items:', eventData.schedule_items ? '✓' : '✗ null/vazio');
   console.groupEnd();
 
   applyGuestBackground(eventData);

@@ -1955,6 +1955,44 @@ async function handleBgUpload(input) {
   }
 }
 
+// ── Detecção de fotos duplicadas ────────────────────────────────────────────
+// Calcula um hash SHA-256 real do conteúdo do ficheiro (não apenas do nome ou
+// tamanho), usando a Web Crypto API nativa do browser — isto identifica com
+// 100% de certeza se é EXACTAMENTE a mesma imagem, mesmo que tenha sido
+// renomeada ou re-seleccionada do disco. O registo de hashes já usados é
+// guardado por evento, para nunca comparar fotos de eventos diferentes entre si.
+async function _hashFile(file) {
+  const buffer = await file.arrayBuffer();
+  const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+  return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// Verifica se este ficheiro já foi carregado antes para este evento. Se sim,
+// pergunta ao utilizador se quer substituir mesmo assim. Devolve `true` se
+// deve continuar com o upload, `false` se o utilizador cancelou.
+async function _confirmIfDuplicatePhoto(file, eventId, fieldLabel) {
+  if (!eventId) return true; // sem evento identificado, não há registo para comparar
+  try {
+    const hash = await _hashFile(file);
+    if (!Store._photoHashRegistry) Store._photoHashRegistry = {};
+    if (!Store._photoHashRegistry[eventId]) Store._photoHashRegistry[eventId] = {};
+    const registry = Store._photoHashRegistry[eventId];
+
+    if (registry[hash]) {
+      const previousLabel = registry[hash];
+      const proceed = confirm(
+        `Esta foto já foi carregada antes para "${previousLabel}" neste evento.\n\nGostarias de usá-la também aqui (${fieldLabel}), ou preferes escolher uma foto diferente?\n\nOK = usar mesmo assim\nCancelar = escolher outra foto`
+      );
+      if (!proceed) return false;
+    }
+    registry[hash] = fieldLabel;
+  } catch(e) {
+    console.warn('Falha ao verificar duplicado (hash):', e);
+    // Em caso de erro a calcular o hash, não bloquear o upload — apenas seguir sem a verificação
+  }
+  return true;
+}
+
 async function uploadImageToStorage(file, bucket) {
   const ext = file.name.split('.').pop().toLowerCase();
   const fileName = `img_${Date.now()}_${Math.random().toString(36).slice(2,8)}.${ext}`;
@@ -2293,51 +2331,19 @@ function renderSaveTheDateScreen(ev, decision) {
   })();
 
   const rsvpBtnHtml = rsvpAllowed ? `
-    <button id="std-rsvp-btn" style="background:${alreadyConfirmed?'#16a34a':evColor};color:#fff;border:none;border-radius:999px;padding:0.9rem 2.4rem;font-weight:800;font-size:0.95rem;cursor:pointer;box-shadow:0 4px 16px ${alreadyConfirmed?'#16a34a':evColor}55;display:inline-flex;align-items:center;gap:0.5rem;font-family:'Quicksand',sans-serif">
+    <button id="std-rsvp-btn" class="std-rsvp-btn-anim" style="background:${alreadyConfirmed?'#16a34a':evColor};color:#fff;border:none;border-radius:999px;padding:0.9rem 2.4rem;font-weight:800;font-size:0.95rem;cursor:pointer;box-shadow:0 4px 16px ${alreadyConfirmed?'#16a34a':evColor}55;display:inline-flex;align-items:center;gap:0.5rem;font-family:'Quicksand',sans-serif">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${alreadyConfirmed?'<path d="M20 6 9 17l-5-5"/>':'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>'}</svg>
       <span id="std-rsvp-btn-label">${alreadyConfirmed?'Presença Confirmada':'Confirmar Presença'}</span>
     </button>` : '';
 
   const introEnabled = (ev.std_intro_enabled === true || ev.std_intro_enabled === 'true') && ev.std_intro_photo_url;
-  const scratchEnabled = (ev.std_scratch_enabled === true || ev.std_scratch_enabled === 'true');
-  const scratchMode = ev.std_scratch_mode || 'photo';
-  const scratchText = ev.std_scratch_text || 'Raspa para desvendar';
 
   const overlay = document.createElement('div');
   overlay.id = 'std-screen-overlay';
   overlay.style.cssText = 'position:fixed;inset:0;z-index:9000;overflow-y:auto;background:#fdfaf6;display:flex;flex-direction:column;align-items:center';
 
-  // ── Scratch-to-reveal layer: sits ABOVE everything (including the intro
-  // photo screen, if both are enabled) and only goes away once the guest
-  // has scratched off enough of the canvas. Two modes:
-  //  - 'photo': scratch off a couple photo to reveal the Save the Date below
-  //  - 'heart': scratch a glittery heart shape to reveal the event date inside it
-  const scratchHtml = scratchEnabled ? `
-    <div id="std-scratch-screen" style="position:fixed;inset:0;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#1a1a2e;overflow:hidden">
-      <p style="position:absolute;top:8%;left:0;right:0;text-align:center;color:#fff;font-size:1.05rem;font-weight:700;letter-spacing:0.05em;z-index:2;font-family:'Quicksand',sans-serif;text-shadow:0 2px 8px rgba(0,0,0,0.4)">${escapeHTML(scratchText)}</p>
-      <div id="scratch-canvas-wrap" style="position:relative;width:min(320px,82vw);height:${scratchMode === 'heart' ? 'min(320px,82vw)' : 'min(400px,90vw)'};border-radius:${scratchMode === 'heart' ? '0' : '1.25rem'};overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,0.4)">
-        ${scratchMode === 'heart' ? `
-          <svg viewBox="0 0 100 100" style="position:absolute;inset:0;width:100%;height:100%;z-index:1">
-            <defs>
-              <clipPath id="std-heart-clip"><path d="M50 88 C20 65, 5 45, 5 28 C5 12, 18 2, 32 2 C42 2, 48 8, 50 15 C52 8, 58 2, 68 2 C82 2, 95 12, 95 28 C95 45, 80 65, 50 88 Z"/></clipPath>
-            </defs>
-            <path d="M50 88 C20 65, 5 45, 5 28 C5 12, 18 2, 32 2 C42 2, 48 8, 50 15 C52 8, 58 2, 68 2 C82 2, 95 12, 95 28 C95 45, 80 65, 50 88 Z" fill="${evColor}"></path>
-          </svg>
-          <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;z-index:1;clip-path:url(#std-heart-clip)">
-            <p style="font-size:0.6rem;letter-spacing:0.15em;text-transform:uppercase;color:#fff;opacity:0.85;font-weight:700;margin-bottom:0.3rem">Guarda a data</p>
-            <p style="font-size:1.6rem;font-weight:900;color:#fff;line-height:1.1;text-align:center;padding:0 1rem">${eventDateLabel || ''}</p>
-          </div>
-        ` : `
-          <img src="${ev.std_scratch_photo_url || coverUrl || ''}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0" alt="">
-        `}
-        <canvas id="std-scratch-canvas" style="position:absolute;inset:0;width:100%;height:100%;z-index:5;touch-action:none;cursor:grab"></canvas>
-      </div>
-      <p id="scratch-progress-hint" style="margin-top:1.25rem;color:rgba(255,255,255,0.6);font-size:0.78rem;font-family:'Quicksand',sans-serif">Continua a raspar...</p>
-    </div>` : '';
-
   overlay.innerHTML = `
     <style>${fontFaceCSS}</style>
-    ${scratchHtml}
     ${introEnabled ? `
     <div id="std-intro-screen" style="position:fixed;inset:0;z-index:10;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;color:#fff;padding:2rem">
       <div style="position:absolute;inset:0;background:${ev.std_intro_photo_url?`url('${ev.std_intro_photo_url}') center/cover no-repeat`:evColor}"></div>
@@ -2348,13 +2354,17 @@ function renderSaveTheDateScreen(ev, decision) {
       </div>
     </div>` : ''}
     ${showCover ? `
-    <div id="std-cover-wrap" style="position:relative;width:100%;height:38vh;min-height:220px;max-height:420px;overflow:hidden;background:#e2e8f0;display:flex;align-items:center;justify-content:center">
-      <img id="std-cover-img" src="${coverUrl}" loading="eager" style="max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain;display:block;opacity:1"
-        onerror="console.error('❌ Falha ao carregar a foto de capa do Save the Date. URL tentado:', this.src); this.closest('#std-cover-wrap').style.background='${evColor}1a';this.style.display='none';"
+    <div id="std-cover-wrap" style="position:relative;width:100%;height:42vh;max-height:380px;overflow:hidden;background:#1a1a2e;flex-shrink:0">
+      <img id="std-cover-img" src="${coverUrl}" loading="eager" style="width:100%;height:100%;object-fit:cover;object-position:center;display:block"
+        onerror="console.error('❌ Falha ao carregar a foto de capa do Save the Date. URL tentado:', this.src); this.style.display='none';"
         onload="console.log('✅ Foto de capa do Save the Date carregada com sucesso:', this.src);">
+      <div style="position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,0.15) 0%,rgba(0,0,0,0.35) 100%)"></div>
+      <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:0 1rem">
+        <p style="font-size:${titleSize}rem;letter-spacing:0.3em;text-transform:uppercase;font-weight:800;color:#fff;font-family:'Quicksand',sans-serif;text-shadow:0 2px 12px rgba(0,0,0,0.5);margin:0">${escapeHTML(stdTitle)}</p>
+      </div>
     </div>` : `<div style="height:2.5rem;flex-shrink:0"></div>`}
     <div id="std-main-content" style="position:relative;z-index:2;max-width:440px;width:100%;text-align:center;color:#1e293b;padding:1rem 1.5rem 2.5rem;flex:1;display:flex;flex-direction:column;align-items:center;${introEnabled?'display:none':''}">
-      <p style="font-size:${titleSize}rem;letter-spacing:0.25em;text-transform:uppercase;font-weight:800;color:${evColor};font-family:'Quicksand',sans-serif;margin-bottom:0.5rem">${escapeHTML(stdTitle)}</p>
+      ${!showCover ? `<p style="font-size:${titleSize}rem;letter-spacing:0.25em;text-transform:uppercase;font-weight:800;color:${evColor};font-family:'Quicksand',sans-serif;margin-bottom:0.5rem">${escapeHTML(stdTitle)}</p>` : ''}
       ${coupleNames ? `<h2 style="font-family:${nameFont?`'${nameFont}',`:''}var(--event-font,'Playfair Display',serif);font-size:clamp(1.4rem,7vw,${nameSize}rem);line-height:1.2;margin-bottom:0.3rem;color:${evColor};padding:0 0.5rem">${coupleNames}</h2>` : ''}
       <p style="font-size:0.9rem;font-weight:500;color:#6b7280;font-family:'Quicksand',sans-serif;margin-bottom:1.25rem">${escapeHTML(stdSubtitle)}</p>
       ${_buildStdDateBlock(eventDateLabel, evColor, ev.std_date_style)}
@@ -2372,7 +2382,7 @@ function renderSaveTheDateScreen(ev, decision) {
       ${countdownTarget ? `<p style="font-size:0.73rem;color:#9ca3af;margin-top:0.5rem;font-weight:500">Confirmar até ${countdownTarget.label}</p>` : ''}
       ${(ev.std_show_iban === true && ev.iban_number) ? `
       <div style="background:#fff;border-radius:0.85rem;padding:1rem 1.1rem;margin-top:1.5rem;max-width:320px;width:100%;border:1.5px solid color-mix(in srgb,${evColor} 22%,transparent);text-align:center">
-        ${ev.iban_message ? ev.iban_message.split('\n').map(l => `<p style="font-size:0.82rem;font-weight:700;color:${evColor};margin-bottom:0.4rem;line-height:1.4">${escapeHTML(l)}</p>`).join('') : `<p style="font-size:0.88rem;font-weight:800;color:${evColor};margin-bottom:0.6rem">Gostaria de nos presentear?</p>`}
+        ${ev.iban_message ? ev.iban_message.split('\n').map(l => `<p style="font-size:0.82rem;font-weight:700;color:#1e293b;margin-bottom:0.4rem;line-height:1.4">${escapeHTML(l)}</p>`).join('') : `<p style="font-size:0.88rem;font-weight:800;color:${evColor};margin-bottom:0.6rem">Gostaria de nos presentear?</p>`}
         <div style="background:#f8fafc;border-radius:0.6rem;padding:0.5rem 0.7rem;margin-bottom:0.5rem;margin-top:0.4rem">
           <p style="font-size:0.62rem;color:#94a3b8;margin-bottom:0.15rem">IBAN</p>
           <p style="font-size:0.78rem;font-weight:700;color:#374151;word-break:break-all">${escapeHTML(ev.iban_number)}</p>
@@ -2387,142 +2397,6 @@ function renderSaveTheDateScreen(ev, decision) {
     </div>`;
 
   document.body.appendChild(overlay);
-
-  // ── Initialise the scratch-to-reveal canvas ──
-  // Draws an opaque "scratch layer" (brushed metallic look for the photo
-  // mode, glittery sparkle look for the heart mode) over the content below,
-  // then erases pixels under the user's finger/mouse using
-  // 'destination-out' compositing — the classic scratch-card technique.
-  // Once enough of the canvas is erased, the whole scratch screen fades
-  // away, revealing the Save the Date content underneath.
-  if (scratchEnabled) {
-    const canvas = document.getElementById('std-scratch-canvas');
-    const wrap = document.getElementById('scratch-canvas-wrap');
-    const hint = document.getElementById('scratch-progress-hint');
-    if (canvas && wrap) {
-      const ctx = canvas.getContext('2d');
-      const dpr = window.devicePixelRatio || 1;
-
-      const resizeCanvas = () => {
-        const rect = wrap.getBoundingClientRect();
-        canvas.width = rect.width * dpr;
-        canvas.height = rect.height * dpr;
-        canvas.style.width = rect.width + 'px';
-        canvas.style.height = rect.height + 'px';
-        ctx.scale(dpr, dpr);
-        drawScratchLayer(ctx, rect.width, rect.height);
-      };
-
-      function drawScratchLayer(ctx, w, h) {
-        if (scratchMode === 'heart') {
-          // Glittery sparkle fill using the event color as base
-          const grad = ctx.createLinearGradient(0, 0, w, h);
-          grad.addColorStop(0, evColor);
-          grad.addColorStop(0.5, '#ffffff');
-          grad.addColorStop(1, evColor);
-          ctx.fillStyle = grad;
-          ctx.fillRect(0, 0, w, h);
-          // Sprinkle small bright dots to simulate glitter/sparkle texture
-          for (let i = 0; i < 140; i++) {
-            ctx.beginPath();
-            const x = Math.random() * w, y = Math.random() * h;
-            const r = Math.random() * 1.6 + 0.4;
-            ctx.fillStyle = Math.random() > 0.5 ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.4)';
-            ctx.arc(x, y, r, 0, Math.PI * 2);
-            ctx.fill();
-          }
-        } else {
-          // Brushed metallic "scratch card" look for the photo mode
-          const grad = ctx.createLinearGradient(0, 0, w, h);
-          grad.addColorStop(0, '#c0c0c8');
-          grad.addColorStop(0.5, '#e8e8ee');
-          grad.addColorStop(1, '#a8a8b2');
-          ctx.fillStyle = grad;
-          ctx.fillRect(0, 0, w, h);
-          ctx.strokeStyle = 'rgba(255,255,255,0.25)';
-          ctx.lineWidth = 1;
-          for (let i = 0; i < w + h; i += 5) {
-            ctx.beginPath();
-            ctx.moveTo(i, 0); ctx.lineTo(0, i);
-            ctx.stroke();
-          }
-        }
-      }
-
-      resizeCanvas();
-      window.addEventListener('resize', resizeCanvas);
-
-      ctx.globalCompositeOperation = 'destination-out';
-      let isDrawing = false;
-      let lastX = 0, lastY = 0;
-      let scratchedCheckCount = 0;
-
-      const getPos = (e) => {
-        const rect = canvas.getBoundingClientRect();
-        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-        return { x: clientX - rect.left, y: clientY - rect.top };
-      };
-
-      const scratchAt = (x, y) => {
-        ctx.beginPath();
-        ctx.arc(x, y, 22, 0, Math.PI * 2);
-        ctx.fill();
-      };
-
-      const checkScratchProgress = () => {
-        scratchedCheckCount++;
-        if (scratchedCheckCount % 8 !== 0) return; // throttle: only check every 8th stroke for performance
-        try {
-          const rect = wrap.getBoundingClientRect();
-          const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-          let transparent = 0;
-          const total = imgData.data.length / 4;
-          for (let i = 3; i < imgData.data.length; i += 4 * 37) { // sample every 37th pixel for speed
-            if (imgData.data[i] < 40) transparent++;
-          }
-          const sampledTotal = Math.ceil(total / 37);
-          const pct = transparent / sampledTotal;
-          if (hint) hint.textContent = pct < 0.5 ? 'Continua a raspar...' : 'Quase lá...';
-          if (pct > 0.55) {
-            const scratchScreen = document.getElementById('std-scratch-screen');
-            if (scratchScreen) {
-              scratchScreen.style.transition = 'opacity 0.5s ease';
-              scratchScreen.style.opacity = '0';
-              setTimeout(() => scratchScreen.remove(), 500);
-            }
-            window.removeEventListener('resize', resizeCanvas);
-          }
-        } catch(e) { /* getImageData can fail on some browsers for tainted canvases; ignore */ }
-      };
-
-      const startDraw = (e) => { isDrawing = true; const p = getPos(e); lastX = p.x; lastY = p.y; scratchAt(p.x, p.y); };
-      const moveDraw = (e) => {
-        if (!isDrawing) return;
-        e.preventDefault();
-        const p = getPos(e);
-        // Interpolate between last point and current to avoid gaps on fast swipes
-        const dist = Math.hypot(p.x - lastX, p.y - lastY);
-        const steps = Math.max(1, Math.floor(dist / 8));
-        for (let i = 0; i <= steps; i++) {
-          const ix = lastX + (p.x - lastX) * (i / steps);
-          const iy = lastY + (p.y - lastY) * (i / steps);
-          scratchAt(ix, iy);
-        }
-        lastX = p.x; lastY = p.y;
-        checkScratchProgress();
-      };
-      const endDraw = () => { isDrawing = false; };
-
-      canvas.addEventListener('mousedown', startDraw);
-      canvas.addEventListener('mousemove', moveDraw);
-      canvas.addEventListener('mouseup', endDraw);
-      canvas.addEventListener('mouseleave', endDraw);
-      canvas.addEventListener('touchstart', startDraw, { passive: true });
-      canvas.addEventListener('touchmove', moveDraw, { passive: false });
-      canvas.addEventListener('touchend', endDraw, { passive: true });
-    }
-  }
 
   // Música removida do Save the Date a pedido explícito do utilizador —
   // o leitor só aparece no convite completo, nunca nesta tela.

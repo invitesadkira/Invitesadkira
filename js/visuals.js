@@ -28,10 +28,15 @@ async function loadEventVisuals(eventId) {
 
 async function saveEventVisuals(eventId, visuals) {
   if (!eventId) return;
-  // Invalidate cache
-  delete _visualsCache[eventId];
-  // Update cache with new values
-  _visualsCache[eventId] = { event_id: eventId, ...visuals };
+  // CRITICAL: merge with whatever was already cached, never replace it
+  // entirely. Before this fix, saving from a single dedicated editor (e.g.
+  // the manual items editor, which only passes {manual_items, show_manual})
+  // would blow away every OTHER cached visual field (event_color, bible_text,
+  // etc.) from memory — not from the database, but the in-memory cache could
+  // then be served as if it were complete on a subsequent read within the
+  // same session, silently dropping fields that were never actually lost in
+  // the database. Merging fixes this class of bug for good.
+  _visualsCache[eventId] = { ...(_visualsCache[eventId] || {}), event_id: eventId, ...visuals };
 
   const payload = { event_id: eventId, updated_at: new Date().toISOString(), ...visuals };
 

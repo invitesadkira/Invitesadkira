@@ -940,3 +940,20 @@ html, body { height: 100%; margin: 0; width: 100%; overflow-x: hidden; }
   .landing-models-grid { grid-template-columns: repeat(2, 1fr); gap: 0.85rem; }
   .lm-thumb-names { font-size: 1.05rem; }
 }
+
+/* ── Save the Date: botão Confirmar Presença com a mesma animação do convite ── */
+.std-rsvp-btn-anim {
+  transition: all 0.25s ease;
+  animation: stdRsvpBreathe 2.6s ease-in-out infinite;
+}
+.std-rsvp-btn-anim:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 8px 28px rgba(0,0,0,0.3) !important;
+}
+.std-rsvp-btn-anim:active {
+  transform: translateY(0) scale(0.98);
+}
+@keyframes stdRsvpBreathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.035); }
+}

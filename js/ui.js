@@ -873,6 +873,9 @@ async function handleStdIntroPhotoUpload(input) {
     toast('Seleciona um ficheiro PNG ou JPG.'); return;
   }
   if (file.size > 4 * 1024 * 1024) { toast('Imagem muito grande. Máx. 4 MB.'); return; }
+  const eventId = Store.currentEventId || Store._intakeEventId;
+  const proceed = await _confirmIfDuplicatePhoto(file, eventId, 'Foto de abertura');
+  if (!proceed) { input.value = ''; return; }
   const prevWrap = document.getElementById('std-intro-photo-preview-wrap');
   const prev = document.getElementById('std-intro-photo-preview');
   if (prevWrap) prevWrap.classList.add('hidden');
@@ -927,6 +930,9 @@ async function handleStdCoverUpload(input) {
   const file = input.files[0];
   if (!file) return;
   if (file.size > 5*1024*1024) { toast('Imagem muito grande. Máx. 5 MB.'); return; }
+  const eventId = Store.currentEventId || Store._intakeEventId;
+  const proceed = await _confirmIfDuplicatePhoto(file, eventId, 'Foto de capa do Save the Date');
+  if (!proceed) { input.value = ''; return; }
   toast('A carregar foto de capa...');
   try {
     const url = await uploadImageToStorage(file, 'event-covers');
@@ -949,6 +955,9 @@ async function handleFinalPhotoUpload(input) {
   const file = input.files[0];
   if (!file) return;
   if (file.size > 5*1024*1024) { toast('Imagem muito grande. Máx. 5 MB.'); return; }
+  const eventId = Store.currentEventId || Store._intakeEventId;
+  const proceed = await _confirmIfDuplicatePhoto(file, eventId, 'Foto final dos noivos');
+  if (!proceed) { input.value = ''; return; }
   toast('A carregar foto final...');
   try {
     const url = await uploadImageToStorage(file, 'event-covers');
@@ -971,6 +980,9 @@ async function handleVenueImageUpload(input, venueKey) {
   const file = input.files[0];
   if (!file) return;
   if (file.size > 4*1024*1024) { toast('Imagem muito grande. Máx. 4 MB.'); return; }
+  const eventId = Store.currentEventId || Store._intakeEventId;
+  const proceed = await _confirmIfDuplicatePhoto(file, eventId, `Foto do local (${venueKey})`);
+  if (!proceed) { input.value = ''; return; }
   toast('A carregar foto do local...');
   try {
     const url = await uploadImageToStorage(file, 'event-covers');
@@ -993,6 +1005,9 @@ async function handleStoryPhotoUpload(input) {
   const file = input.files[0];
   if (!file) return;
   if (file.size > 5*1024*1024) { toast('Imagem muito grande. Máx. 5 MB.'); return; }
+  const eventId = Store.currentEventId || Store._intakeEventId;
+  const proceed = await _confirmIfDuplicatePhoto(file, eventId, 'Foto da Nossa História');
+  if (!proceed) { input.value = ''; return; }
   toast('A carregar foto...');
   try {
     const url = await uploadImageToStorage(file, 'event-covers');
