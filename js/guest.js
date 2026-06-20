@@ -2551,8 +2551,17 @@ function renderSaveTheDateScreen(ev, decision) {
     if (decision.reason==='on_confirmation' && yes) {
       if(window._stdCountdownInterval)clearInterval(window._stdCountdownInterval);
       if(typeof window._stdRestoreMusicPlayer==='function'){window._stdRestoreMusicPlayer();window._stdRestoreMusicPlayer=null;}
-      overlay.remove();
-      renderGuestView();
+      // Animação de saída suave — em vez de desaparecer instantaneamente
+      // (que parecia abrupto/"morto"), a tela desliza ligeiramente para
+      // cima ao mesmo tempo que se esvanece, dando a sensação de transição
+      // viva para o convite completo por trás.
+      overlay.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+      overlay.style.transform = 'translateY(-24px)';
+      overlay.style.opacity = '0';
+      setTimeout(() => {
+        overlay.remove();
+        renderGuestView();
+      }, 480);
       return;
     }
     if (yes) {
