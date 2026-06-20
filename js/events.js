@@ -662,9 +662,11 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
     show_rsvp_in_full_invite: document.getElementById('sw-rsvp-in-full-invite')?.classList.contains('active') || false,
     show_guest_name_in_invite: document.getElementById('sw-guest-name-in-invite')?.classList.contains('active') ?? true,
     save_the_date_enabled: document.getElementById('sw-std')?.classList.contains('active') || false,
-    release_type: document.getElementById('evt-std-release-type')?.value || 'manual',
-    release_date: document.getElementById('evt-std-release-date')?.value ? new Date(document.getElementById('evt-std-release-date').value).toISOString() : null,
-    is_invite_released: document.getElementById('sw-std-released')?.classList.contains('active') || false,
+    // release_type/release_date/is_invite_released/std_cover_url/std_show_cover/
+    // std_scratch_*/std_date_style REMOVIDOS deste PATCH — são geridos
+    // exclusivamente pelo editor dedicado (openStdEditor/saveStdEditor) agora,
+    // para nunca mais serem apagados/sobrescritos por um guardar do formulário
+    // geral que não tem esses campos visíveis.
     std_title: document.getElementById('evt-std-title')?.value?.trim() || 'Save the Date',
     std_subtitle: document.getElementById('evt-std-subtitle')?.value?.trim() || 'Nosso Casamento',
     std_font_family: document.getElementById('evt-std-font-select')?.value || null,
@@ -673,13 +675,6 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
     std_intro_enabled: document.getElementById('sw-std-intro')?.classList.contains('active') || false,
     std_intro_text: document.getElementById('evt-std-intro-text')?.value?.trim() || 'Recebeu este convite porque é importante para nós',
     std_intro_photo_url: document.getElementById('evt-std-intro-photo-url')?.value || null,
-    std_show_cover: document.getElementById('sw-std-cover')?.classList.contains('active') ?? true,
-    std_cover_url: document.getElementById('evt-std-cover-url')?.value || null,
-    std_scratch_enabled: document.getElementById('sw-std-scratch')?.classList.contains('active') || false,
-    std_scratch_mode: document.getElementById('evt-std-scratch-mode')?.value || 'photo',
-    std_scratch_photo_url: document.getElementById('evt-scratch-photo-url')?.value || null,
-    std_scratch_text: document.getElementById('evt-scratch-text')?.value?.trim() || 'Raspa para desvendar',
-    std_date_style: document.getElementById('evt-std-date-style')?.value || 'card',
     allow_messages: allowMessagesActive ? 'yes' : 'no',
     show_guest_messages: showGuestMessagesChecked ? 'yes' : 'no',
     music_url: newMusicUrl, music_title: newMusicTitle,
@@ -1003,10 +998,13 @@ function renderEventDetails() {
   
   document.getElementById('btn-delete-event').classList.toggle('hidden', !(isOwner || isAdmin));
 
-  // Botão "Marcar como Exemplo" — apenas visível para admin
+  // Botão "Marcar como Exemplo" — apenas o admin God autenticado directamente,
+  // NUNCA durante impersonação de um utilizador (Store.adminModeActive), por
+  // pedido explícito: só o admin real pode decidir quais eventos são exemplo.
+  const isRealAdminGod = Store.currentUser && Store.currentUser.role === 'admin' && !Store.adminModeActive;
   const exampleBtn = document.getElementById('btn-example-event');
   if (exampleBtn) {
-    exampleBtn.classList.toggle('hidden', !isAdmin);
+    exampleBtn.classList.toggle('hidden', !isRealAdminGod);
     const exampleLabel = document.getElementById('btn-example-event-label');
     if (exampleLabel) exampleLabel.textContent = event.is_example_event === true ? 'Remover de Exemplo' : 'Marcar como Exemplo';
   }
@@ -3862,6 +3860,9 @@ async function openStdEditor() {
       <div id="std2-sw-cover" class="switch ${d.std_show_cover !== false ? 'active' : ''}" onclick="toggleSwitch(this,'std2-cover-extra')"></div>
     </div>
     <div id="std2-cover-extra" class="${d.std_show_cover !== false ? '' : 'hidden'} mb-3">
+      <p class="text-xs font-semibold mb-1" style="color:${d.std_cover_url ? '#16a34a' : '#ef4444'}">
+        ${d.std_cover_url ? '✓ Foto de capa guardada actualmente' : '✗ Nenhuma foto de capa guardada ainda'}
+      </p>
       <input type="file" id="std2-cover-input" accept="image/*" class="input-field text-sm" onchange="handleStd2CoverUpload(this)">
       <input type="hidden" id="std2-cover-url" value="${d.std_cover_url || ''}">
       <div id="std2-cover-preview-wrap" class="${d.std_cover_url ? '' : 'hidden'} relative mt-1" style="max-width:160px">
@@ -3970,6 +3971,15 @@ async function saveStdEditor() {
 
 // ===================== ADMIN: EVENTO EXEMPLAR =====================
 async function adminToggleExampleEvent() {
+  // Defesa em profundidade: apenas o admin God autenticado directamente,
+  // nunca durante impersonação — mesmo que alguém chame esta função
+  // directamente sem passar pelo botão (que já está escondido nesse caso).
+  const isRealAdminGod = Store.currentUser && Store.currentUser.role === 'admin' && !Store.adminModeActive;
+  if (!isRealAdminGod) {
+    toast('Apenas o administrador pode marcar eventos como exemplo.');
+    return;
+  }
+
   const eventId = Store.currentEventId;
   const ev = Store.events.find(e => e.id === eventId);
   if (!ev) return;

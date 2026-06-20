@@ -554,6 +554,10 @@ function startMusicAutoplay(ytId, audioSrc) {
     document.addEventListener('touchstart', tryYtPlay, { passive: true });
     document.addEventListener('pointerdown', tryYtPlay, { passive: true });
     document.addEventListener('click', tryYtPlay);
+    // Tenta também imediatamente — útil quando isto corre pouco depois de
+    // um gesto real do utilizador (ex: confirmar presença no Save the Date),
+    // onde a autorização de autoplay do browser ainda pode estar "fresca".
+    setTimeout(tryYtPlay, 400);
     setTimeout(() => {
       // If user hasn't interacted, assume blocked and show play prompt
       if (sub && sub.textContent !== '') sub.textContent = 'Toca para ouvir';

@@ -263,6 +263,28 @@ async function rsvpSubmit() {
   if (!name) { toast('Por favor insere o teu nome.'); document.getElementById('rsvp-name-new')?.focus(); return; }
   if (!attending) { toast('Por favor indica se confirmas presença.'); return; }
 
+  // ── Desbloquear autoplay de áudio AGORA, dentro do gesto síncrono do
+  // clique. Browsers só permitem audio.play() sem bloqueio quando chamado
+  // directamente dentro de um evento de clique — uma vez desbloqueado o
+  // contexto de áudio do documento, reproduções futuras (mesmo depois de
+  // código assíncrono/setTimeout) deixam de ser bloqueadas. Isto é o que
+  // garante que a música arranca já a tocar quando o convite é revelado
+  // após confirmar presença no Save the Date, sem precisar de outro clique.
+  if (attending === 'yes') {
+    try {
+      const existingAudio = document.getElementById('guest-audio');
+      if (existingAudio) {
+        existingAudio.play().then(() => {}).catch(() => {});
+      } else {
+        // Cria um elemento de áudio temporário e silencioso só para desbloquear
+        // a política de autoplay do browser para este documento.
+        const unlockAudio = new Audio();
+        unlockAudio.muted = true;
+        unlockAudio.play().catch(() => {});
+      }
+    } catch(e) {}
+  }
+
   const sideInput = document.querySelector('input[name="rsvp-side"]:checked');
   const side = sideInput ? sideInput.value : null;
 

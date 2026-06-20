@@ -2367,7 +2367,6 @@ function renderSaveTheDateScreen(ev, decision) {
       <p id="std-rsvp-status-text" style="font-size:0.82rem;color:#16a34a;margin-bottom:0.7rem;font-weight:600;min-height:1.1em">${alreadyConfirmed?'Obrigado por confirmar! Já contamos consigo. 🎉':''}</p>
       ${rsvpBtnHtml}
       ${countdownTarget ? `<p style="font-size:0.73rem;color:#9ca3af;margin-top:0.5rem;font-weight:500">Confirmar até ${countdownTarget.label}</p>` : ''}
-      <div id="std-music-player-slot" style="display:flex;justify-content:center;margin-top:1rem"></div>
     </div>`;
 
   document.body.appendChild(overlay);
@@ -2508,25 +2507,9 @@ function renderSaveTheDateScreen(ev, decision) {
     }
   }
 
-  const floatingBtn = document.getElementById('floating-music-btn');
-  const musicSlot = document.getElementById('std-music-player-slot');
-  let musicOriginalParent=null, musicOriginalNextSibling=null;
-  if (floatingBtn && musicSlot) {
-    musicOriginalParent = floatingBtn.parentElement;
-    musicOriginalNextSibling = floatingBtn.nextSibling;
-    floatingBtn.style.position='relative';
-    floatingBtn.style.opacity='1';
-    floatingBtn.style.pointerEvents='all';
-    musicSlot.appendChild(floatingBtn);
-  }
-  window._stdRestoreMusicPlayer = () => {
-    if (floatingBtn && musicOriginalParent) {
-      floatingBtn.style.position='';
-      floatingBtn.style.opacity='';
-      floatingBtn.style.pointerEvents='';
-      musicOriginalParent.insertBefore(floatingBtn, musicOriginalNextSibling);
-    }
-  };
+  // Música removida do Save the Date a pedido explícito do utilizador —
+  // o leitor só aparece no convite completo, nunca nesta tela.
+  window._stdRestoreMusicPlayer = null;
 
   if (introEnabled) {
     document.getElementById('std-open-invite-btn').onclick = () => {
