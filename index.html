@@ -9,7 +9,7 @@
   <script>tailwind.config = { theme: { extend: { colors: { teal: { 500: '#007f9f', 600: '#006b86' } } } } }</script>
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💌</text></svg>">
-  <link rel="stylesheet" href="css/main.css?v=555400">
+  <link rel="stylesheet" href="css/main.css?v=555500">
 </head>
 <body class="h-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
 
@@ -465,6 +465,12 @@
          <label class="text-xs font-semibold text-gray-600">Prazo para confirmação de presença</label>
          <input id="evt-std-deadline-mirror" type="date" class="input-field text-sm" onchange="syncStdDateMirror('deadline', this.value)">
          <p class="text-xs text-gray-400 -mt-1">Estes campos são os mesmos usados no resto do convite — alterar aqui também actualiza lá, e vice-versa.</p>
+         <label class="text-xs font-semibold text-gray-600">Estilo visual da data do evento</label>
+         <select id="evt-std-date-style" class="input-field text-sm">
+          <option value="card">Cartão (clássico)</option>
+          <option value="minimal">Minimalista (apenas texto)</option>
+          <option value="bignum">Número grande em destaque</option>
+         </select>
          <label class="text-xs font-semibold text-gray-600">Título (aparece por cima dos nomes)</label>
          <input id="evt-std-title" class="input-field text-sm" placeholder="Save the Date" value="Save the Date">
          <label class="text-xs font-semibold text-gray-600">Subtítulo (aparece por baixo dos nomes)</label>
@@ -1239,19 +1245,19 @@ para testemunhar o seu enlace matrimonial</textarea>
   </a>
 
   <!-- ===================== SCRIPTS (ordem importa) ===================== -->
-  <script src="js/config.js?v=555400"></script>
-  <script src="js/store.js?v=555400"></script>
-  <script src="js/visuals.js?v=555400"></script>
-  <script src="js/venues.js?v=555400"></script>
-  <script src="js/rsvp.js?v=555400"></script>
-  <script src="js/ui.js?v=555400"></script>
-  <script src="js/auth.js?v=555400"></script>
-  <script src="js/dashboard.js?v=555400"></script>
-  <script src="js/events.js?v=555400"></script>
-  <script src="js/guest.js?v=555400"></script>
-  <script src="js/sections.js?v=555400"></script>
-  <script src="js/admin.js?v=555400"></script>
-  <script src="js/router.js?v=555400"></script>
+  <script src="js/config.js?v=555500"></script>
+  <script src="js/store.js?v=555500"></script>
+  <script src="js/visuals.js?v=555500"></script>
+  <script src="js/venues.js?v=555500"></script>
+  <script src="js/rsvp.js?v=555500"></script>
+  <script src="js/ui.js?v=555500"></script>
+  <script src="js/auth.js?v=555500"></script>
+  <script src="js/dashboard.js?v=555500"></script>
+  <script src="js/events.js?v=555500"></script>
+  <script src="js/guest.js?v=555500"></script>
+  <script src="js/sections.js?v=555500"></script>
+  <script src="js/admin.js?v=555500"></script>
+  <script src="js/router.js?v=555500"></script>
 
 </body>
 </html>

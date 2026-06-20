@@ -196,6 +196,7 @@ async function renderGuestView() {
     std_cover_url: eventData.std_cover_url,
     std_scratch_enabled: eventData.std_scratch_enabled, std_scratch_mode: eventData.std_scratch_mode,
     std_scratch_photo_url: eventData.std_scratch_photo_url, std_scratch_text: eventData.std_scratch_text,
+    std_date_style: eventData.std_date_style,
     show_rsvp_in_full_invite: eventData.show_rsvp_in_full_invite,
     show_guest_name_in_invite: eventData.show_guest_name_in_invite,
     // Visual data that's ALREADY in events table — keep unless visuals has a better value
@@ -273,7 +274,7 @@ async function renderGuestView() {
     } catch(e2) { console.warn('Visual fallback reload failed:', e2); }
   }
 
-  const RSVP_ONLY_FIELDS = new Set(['show_time','time','date','title','confirm_by_date','deadline','allowCompanions','allow_companions','maxCompanions','max_companions','allowKids','allow_kids','maxKids','max_kids','allowGifts','allow_gifts','allowSides','allow_sides','side1_name','side2_name','allowMessages','allow_messages','showGuestMessages','show_guest_messages','id','eventCode','cover_image','rsvp_enabled','save_the_date_enabled','release_type','release_date','is_invite_released','std_title','std_subtitle','std_font_family','std_name_size','std_title_size','std_intro_enabled','std_intro_text','std_intro_photo_url','std_show_cover','personalized_links_enabled','show_rsvp_in_full_invite','show_guest_name_in_invite','std_cover_url','userId','user_id','std_scratch_enabled','std_scratch_mode','std_scratch_photo_url','std_scratch_text']);
+  const RSVP_ONLY_FIELDS = new Set(['show_time','time','date','title','confirm_by_date','deadline','allowCompanions','allow_companions','maxCompanions','max_companions','allowKids','allow_kids','maxKids','max_kids','allowGifts','allow_gifts','allowSides','allow_sides','side1_name','side2_name','allowMessages','allow_messages','showGuestMessages','show_guest_messages','id','eventCode','cover_image','rsvp_enabled','save_the_date_enabled','release_type','release_date','is_invite_released','std_title','std_subtitle','std_font_family','std_name_size','std_title_size','std_intro_enabled','std_intro_text','std_intro_photo_url','std_show_cover','personalized_links_enabled','show_rsvp_in_full_invite','show_guest_name_in_invite','std_cover_url','userId','user_id','std_scratch_enabled','std_scratch_mode','std_scratch_photo_url','std_scratch_text','std_date_style']);
 
   // Restore all fields: RSVP fields always from events table; visual fields use
   // whichever source (visuals or events table) has a non-null value
@@ -2180,6 +2181,42 @@ function _evaluateSaveTheDate(ev) {
   return { showSaveTheDate: false };
 }
 
+// ── Bloco de data do evento dentro do Save the Date — estilo configurável ──
+function _buildStdDateBlock(eventDateLabel, evColor, style) {
+  if (!eventDateLabel) return '';
+  style = style || 'card';
+
+  if (style === 'minimal') {
+    return `
+      <div style="margin-bottom:1.1rem;text-align:center">
+        <p style="font-size:0.6rem;text-transform:uppercase;letter-spacing:0.1em;color:${evColor};opacity:0.6;font-weight:700;margin-bottom:0.15rem">Data do Evento</p>
+        <p style="font-size:1rem;font-weight:700;color:#1e293b">${eventDateLabel}</p>
+      </div>`;
+  }
+
+  if (style === 'bignum') {
+    // Extract day number and rest of the label (e.g. "23 de Setembro de 2026")
+    const dayMatch = eventDateLabel.match(/^(\d{1,2})\s+(.*)$/);
+    const day = dayMatch ? dayMatch[1] : '';
+    const rest = dayMatch ? dayMatch[2] : eventDateLabel;
+    return `
+      <div style="margin-bottom:1.1rem;display:flex;align-items:center;gap:0.75rem;background:${evColor}0d;border-radius:0.85rem;padding:0.6rem 1.25rem">
+        <span style="font-size:2.1rem;font-weight:900;color:${evColor};line-height:1">${day}</span>
+        <div style="text-align:left">
+          <p style="font-size:0.58rem;text-transform:uppercase;letter-spacing:0.1em;color:${evColor};opacity:0.65;font-weight:700">Data do Evento</p>
+          <p style="font-size:0.8rem;font-weight:700;color:#1e293b">${rest}</p>
+        </div>
+      </div>`;
+  }
+
+  // Style: CARD (default) — original look, kept as-is
+  return `
+    <div style="background:${evColor}13;border-radius:0.75rem;padding:0.45rem 1.5rem;margin-bottom:1.1rem;display:inline-block">
+      <p style="font-size:0.6rem;text-transform:uppercase;letter-spacing:0.1em;color:${evColor};opacity:0.65;font-weight:700;margin-bottom:0.1rem">Data do Evento</p>
+      <p style="font-size:0.95rem;font-weight:800;color:${evColor}">${eventDateLabel}</p>
+    </div>`;
+}
+
 function renderSaveTheDateScreen(ev, decision) {
   const evColor = ev.event_color || '#007f9f';
   const invertNames = _yesOrTrue(ev.invert_names);
@@ -2317,11 +2354,7 @@ function renderSaveTheDateScreen(ev, decision) {
       <p style="font-size:${titleSize}rem;letter-spacing:0.25em;text-transform:uppercase;font-weight:800;color:${evColor};font-family:'Quicksand',sans-serif;margin-bottom:0.5rem">${escapeHTML(stdTitle)}</p>
       ${coupleNames ? `<h2 style="font-family:${nameFont?`'${nameFont}',`:''}var(--event-font,'Playfair Display',serif);font-size:clamp(1.4rem,7vw,${nameSize}rem);line-height:1.2;margin-bottom:0.3rem;color:${evColor};padding:0 0.5rem">${coupleNames}</h2>` : ''}
       <p style="font-size:0.9rem;font-weight:500;color:#6b7280;font-family:'Quicksand',sans-serif;margin-bottom:1.25rem">${escapeHTML(stdSubtitle)}</p>
-      ${eventDateLabel ? `
-      <div style="background:${evColor}13;border-radius:0.75rem;padding:0.45rem 1.5rem;margin-bottom:1.1rem;display:inline-block">
-        <p style="font-size:0.6rem;text-transform:uppercase;letter-spacing:0.1em;color:${evColor};opacity:0.65;font-weight:700;margin-bottom:0.1rem">Data do Evento</p>
-        <p style="font-size:0.95rem;font-weight:800;color:${evColor}">${eventDateLabel}</p>
-      </div>` : ''}
+      ${_buildStdDateBlock(eventDateLabel, evColor, ev.std_date_style)}
       <div id="std-countdown-wrap" style="width:100%;margin-bottom:1.1rem">
         <p id="std-countdown-label" style="font-size:0.6rem;text-transform:uppercase;letter-spacing:0.1em;opacity:0.5;margin-bottom:0.4rem;font-weight:700">A calcular...</p>
         <div style="display:flex;gap:0.4rem;justify-content:center">
