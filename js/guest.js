@@ -197,6 +197,7 @@ async function renderGuestView() {
     std_scratch_enabled: eventData.std_scratch_enabled, std_scratch_mode: eventData.std_scratch_mode,
     std_scratch_photo_url: eventData.std_scratch_photo_url, std_scratch_text: eventData.std_scratch_text,
     std_date_style: eventData.std_date_style,
+    std_show_iban: eventData.std_show_iban,
     show_rsvp_in_full_invite: eventData.show_rsvp_in_full_invite,
     show_guest_name_in_invite: eventData.show_guest_name_in_invite,
     // Visual data that's ALREADY in events table — keep unless visuals has a better value
@@ -274,7 +275,7 @@ async function renderGuestView() {
     } catch(e2) { console.warn('Visual fallback reload failed:', e2); }
   }
 
-  const RSVP_ONLY_FIELDS = new Set(['show_time','time','date','title','confirm_by_date','deadline','allowCompanions','allow_companions','maxCompanions','max_companions','allowKids','allow_kids','maxKids','max_kids','allowGifts','allow_gifts','allowSides','allow_sides','side1_name','side2_name','allowMessages','allow_messages','showGuestMessages','show_guest_messages','id','eventCode','cover_image','rsvp_enabled','save_the_date_enabled','release_type','release_date','is_invite_released','std_title','std_subtitle','std_font_family','std_name_size','std_title_size','std_intro_enabled','std_intro_text','std_intro_photo_url','std_show_cover','personalized_links_enabled','show_rsvp_in_full_invite','show_guest_name_in_invite','std_cover_url','userId','user_id','std_scratch_enabled','std_scratch_mode','std_scratch_photo_url','std_scratch_text','std_date_style']);
+  const RSVP_ONLY_FIELDS = new Set(['show_time','time','date','title','confirm_by_date','deadline','allowCompanions','allow_companions','maxCompanions','max_companions','allowKids','allow_kids','maxKids','max_kids','allowGifts','allow_gifts','allowSides','allow_sides','side1_name','side2_name','allowMessages','allow_messages','showGuestMessages','show_guest_messages','id','eventCode','cover_image','rsvp_enabled','save_the_date_enabled','release_type','release_date','is_invite_released','std_title','std_subtitle','std_font_family','std_name_size','std_title_size','std_intro_enabled','std_intro_text','std_intro_photo_url','std_show_cover','personalized_links_enabled','show_rsvp_in_full_invite','show_guest_name_in_invite','std_cover_url','userId','user_id','std_scratch_enabled','std_scratch_mode','std_scratch_photo_url','std_scratch_text','std_date_style','std_show_iban']);
 
   // Restore all fields: RSVP fields always from events table; visual fields use
   // whichever source (visuals or events table) has a non-null value
@@ -2265,7 +2266,8 @@ function renderSaveTheDateScreen(ev, decision) {
 
   // Diagnostic: log what data actually arrived so debugging is easy
   console.log('🔖 Save the Date — dados:', {
-    std_cover_url: ev.std_cover_url ? '✓' : '✗ — SQL não corrido?',
+    std_cover_url_completo: coverUrl,
+    std_cover_url_comprimento: coverUrl ? coverUrl.length : 0,
     bg_url: ev.bg_url ? '✓' : '✗',
     confirm_by_date: ev.confirm_by_date || '✗ null',
     date: ev.date,
@@ -2346,8 +2348,10 @@ function renderSaveTheDateScreen(ev, decision) {
       </div>
     </div>` : ''}
     ${showCover ? `
-    <div style="position:relative;width:100%;height:42vh;min-height:240px;flex-shrink:0;overflow:hidden">
-      <img src="${coverUrl}" style="width:100%;height:100%;object-fit:cover;object-position:center top" alt="">
+    <div id="std-cover-wrap" style="position:relative;width:100%;height:42vh;min-height:240px;flex-shrink:0;overflow:hidden;background:#e2e8f0">
+      <img id="std-cover-img" src="${coverUrl}" style="width:100%;height:100%;object-fit:cover;object-position:center top" alt=""
+        onerror="console.error('❌ Falha ao carregar a foto de capa do Save the Date. URL tentado:', this.src); this.parentElement.style.background='${evColor}1a';"
+        onload="console.log('✅ Foto de capa do Save the Date carregada com sucesso:', this.src);">
       <div style="position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,0.08) 0%,rgba(253,250,246,0.97) 90%)"></div>
     </div>` : `<div style="height:2.5rem;flex-shrink:0"></div>`}
     <div id="std-main-content" style="position:relative;z-index:2;max-width:440px;width:100%;text-align:center;color:#1e293b;padding:1rem 1.5rem 2.5rem;flex:1;display:flex;flex-direction:column;align-items:center;${introEnabled?'display:none':''}">
@@ -2367,6 +2371,18 @@ function renderSaveTheDateScreen(ev, decision) {
       <p id="std-rsvp-status-text" style="font-size:0.82rem;color:#16a34a;margin-bottom:0.7rem;font-weight:600;min-height:1.1em">${alreadyConfirmed?'Obrigado por confirmar! Já contamos consigo. 🎉':''}</p>
       ${rsvpBtnHtml}
       ${countdownTarget ? `<p style="font-size:0.73rem;color:#9ca3af;margin-top:0.5rem;font-weight:500">Confirmar até ${countdownTarget.label}</p>` : ''}
+      ${(ev.std_show_iban === true && ev.iban_number) ? `
+      <div style="background:#fff;border-radius:0.85rem;padding:1rem 1.1rem;margin-top:1.5rem;max-width:320px;width:100%;border:1.5px solid color-mix(in srgb,${evColor} 22%,transparent);text-align:center">
+        <p style="font-size:0.88rem;font-weight:800;color:${evColor};margin-bottom:0.6rem">Gostaria de nos presentear?</p>
+        <div style="background:#f8fafc;border-radius:0.6rem;padding:0.5rem 0.7rem;margin-bottom:0.5rem">
+          <p style="font-size:0.62rem;color:#94a3b8;margin-bottom:0.15rem">IBAN</p>
+          <p style="font-size:0.78rem;font-weight:700;color:#374151;word-break:break-all">${escapeHTML(ev.iban_number)}</p>
+        </div>
+        <button onclick="copyIban('${escapeHTML(ev.iban_number)}')" style="background:${evColor}14;color:${evColor};border:none;border-radius:999px;padding:0.45rem 1rem;font-size:0.75rem;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:0.35rem">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          Copiar IBAN
+        </button>
+      </div>` : ''}
     </div>`;
 
   document.body.appendChild(overlay);
