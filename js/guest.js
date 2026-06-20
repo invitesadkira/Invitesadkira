@@ -2349,10 +2349,10 @@ function renderSaveTheDateScreen(ev, decision) {
     </div>` : ''}
     ${showCover ? `
     <div id="std-cover-wrap" style="position:relative;width:100%;height:42vh;min-height:240px;flex-shrink:0;overflow:hidden;background:#e2e8f0">
-      <img id="std-cover-img" src="${coverUrl}" style="width:100%;height:100%;object-fit:cover;object-position:center top" alt=""
+      <img id="std-cover-img" src="${coverUrl}" loading="eager" style="width:100%;height:100%;object-fit:cover;object-position:center top;opacity:1;display:block" alt=""
         onerror="console.error('❌ Falha ao carregar a foto de capa do Save the Date. URL tentado:', this.src); this.parentElement.style.background='${evColor}1a';"
         onload="console.log('✅ Foto de capa do Save the Date carregada com sucesso:', this.src);">
-      <div style="position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,0.08) 0%,rgba(253,250,246,0.97) 90%)"></div>
+      <div style="position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,0.05) 0%,rgba(253,250,246,0.15) 75%,rgba(253,250,246,0.85) 100%)"></div>
     </div>` : `<div style="height:2.5rem;flex-shrink:0"></div>`}
     <div id="std-main-content" style="position:relative;z-index:2;max-width:440px;width:100%;text-align:center;color:#1e293b;padding:1rem 1.5rem 2.5rem;flex:1;display:flex;flex-direction:column;align-items:center;${introEnabled?'display:none':''}">
       <p style="font-size:${titleSize}rem;letter-spacing:0.25em;text-transform:uppercase;font-weight:800;color:${evColor};font-family:'Quicksand',sans-serif;margin-bottom:0.5rem">${escapeHTML(stdTitle)}</p>
