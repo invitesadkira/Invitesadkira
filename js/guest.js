@@ -217,6 +217,8 @@ async function renderGuestView() {
     std_intro_photo_mobile_url: eventData.std_intro_photo_mobile_url,
     std_intro_photo_desktop_url: eventData.std_intro_photo_desktop_url,
     std_intro_on_invite: eventData.std_intro_on_invite,
+    std_cover_mobile_url: eventData.std_cover_mobile_url,
+    std_cover_desktop_url: eventData.std_cover_desktop_url,
     personalized_links_enabled: eventData.personalized_links_enabled,
     std_cover_url: eventData.std_cover_url,
     std_scratch_enabled: eventData.std_scratch_enabled, std_scratch_mode: eventData.std_scratch_mode,
@@ -300,7 +302,7 @@ async function renderGuestView() {
     } catch(e2) { console.warn('Visual fallback reload failed:', e2); }
   }
 
-  const RSVP_ONLY_FIELDS = new Set(['show_time','time','date','title','confirm_by_date','deadline','allowCompanions','allow_companions','maxCompanions','max_companions','allowKids','allow_kids','maxKids','max_kids','allowGifts','allow_gifts','allowSides','allow_sides','side1_name','side2_name','allowMessages','allow_messages','showGuestMessages','show_guest_messages','id','eventCode','cover_image','rsvp_enabled','save_the_date_enabled','release_type','release_date','is_invite_released','std_title','std_subtitle','std_font_family','std_name_size','std_title_size','std_intro_enabled','std_intro_text','std_intro_photo_url','std_show_cover','personalized_links_enabled','show_rsvp_in_full_invite','show_guest_name_in_invite','std_cover_url','userId','user_id','std_scratch_enabled','std_scratch_mode','std_scratch_photo_url','std_scratch_text','std_date_style','std_show_iban','allow_edit_rsvp','std_intro_photo_mobile_url','std_intro_photo_desktop_url','std_intro_on_invite']);
+  const RSVP_ONLY_FIELDS = new Set(['show_time','time','date','title','confirm_by_date','deadline','allowCompanions','allow_companions','maxCompanions','max_companions','allowKids','allow_kids','maxKids','max_kids','allowGifts','allow_gifts','allowSides','allow_sides','side1_name','side2_name','allowMessages','allow_messages','showGuestMessages','show_guest_messages','id','eventCode','cover_image','rsvp_enabled','save_the_date_enabled','release_type','release_date','is_invite_released','std_title','std_subtitle','std_font_family','std_name_size','std_title_size','std_intro_enabled','std_intro_text','std_intro_photo_url','std_show_cover','personalized_links_enabled','show_rsvp_in_full_invite','show_guest_name_in_invite','std_cover_url','userId','user_id','std_scratch_enabled','std_scratch_mode','std_scratch_photo_url','std_scratch_text','std_date_style','std_show_iban','allow_edit_rsvp','std_intro_photo_mobile_url','std_intro_photo_desktop_url','std_intro_on_invite','std_cover_mobile_url','std_cover_desktop_url']);
 
   // Restore all fields: RSVP fields always from events table; visual fields use
   // whichever source (visuals or events table) has a non-null value
@@ -1989,22 +1991,36 @@ function confirmDeleteConfirmation(confIndex, modal) {
 
 
 // ===================== BACKGROUND UPLOAD =====================
-async function handleBgUpload(input) {
+async function handleBgUpload(input, variant) {
   const file = input.files[0];
   if (!file) return;
   if (file.size > 8 * 1024 * 1024) { toast('Imagem de fundo muito grande. Máx. 8 MB.'); return; }
-  const area = document.getElementById('bg-upload-area');
+  const eventId = Store.currentEventId || Store._intakeEventId;
+  const label = variant === 'desktop' ? 'Foto de fundo do convite (computador)' : 'Foto de fundo do convite (telemóvel)';
+  const proceed = await _confirmIfDuplicatePhoto(file, eventId, label);
+  if (!proceed) { input.value = ''; return; }
+  const area = document.getElementById(`bg-upload-area-${variant}`);
   if (area) area.innerHTML = '<span class="text-xs text-teal-600 font-semibold">A carregar...</span>';
   try {
     const url = await uploadImageToStorage(file, 'event-covers');
-    document.getElementById('evt-bg-url').value = url;
+    document.getElementById(`evt-bg-url-${variant}`).value = url;
+    const prev = document.getElementById(`bg-preview-${variant}`);
+    if (prev) prev.src = url;
+    document.getElementById(`bg-preview-${variant}-wrap`)?.classList.remove('hidden');
     if (area) area.innerHTML = `<span class="text-xs text-teal-600 font-semibold">Imagem carregada</span>`;
     toast('Imagem de fundo carregada!');
   } catch(e) {
     toast('Erro ao carregar imagem de fundo.');
-    if (area) area.innerHTML = '<i data-lucide="image" class="w-5 h-5 mb-1 text-gray-400"></i> Carregar imagem de fundo';
+    if (area) area.innerHTML = `<i data-lucide="${variant === 'desktop' ? 'monitor' : 'smartphone'}" class="w-5 h-5 mb-1 text-gray-400"></i> Carregar imagem de fundo (${variant === 'desktop' ? 'computador' : 'telemóvel'})`;
     lucide.createIcons();
   }
+}
+
+function removeBgPhoto(variant) {
+  document.getElementById(`evt-bg-url-${variant}`).value = '';
+  document.getElementById(`bg-file-input-${variant}`).value = '';
+  document.getElementById(`bg-preview-${variant}-wrap`)?.classList.add('hidden');
+  toast('Foto de fundo removida.');
 }
 
 // ── Detecção de fotos duplicadas ────────────────────────────────────────────
@@ -2277,12 +2293,20 @@ function _evaluateSaveTheDate(ev) {
 // Detecta se o ecrã é de telemóvel ou computador (via largura da janela) e
 // escolhe a foto certa entre as duas que o organizador carregou. Se só uma
 // foi carregada, usa essa em qualquer dispositivo.
-function _pickIntroPhotoForDevice(ev) {
+// ── Escolhe a foto certa (mobile/desktop) consoante a largura do ecrã ──────
+// Função genérica reutilizada para a tela de abertura, a foto de capa do
+// Save the Date, e a foto de fundo do convite. Se só uma variante foi
+// carregada, usa essa em qualquer dispositivo; "legacyUrl" é o campo antigo
+// (de antes de existirem variantes mobile/desktop), usado como último recurso
+// para eventos criados antes desta funcionalidade existir.
+function _pickPhotoForDevice(mobileUrl, desktopUrl, legacyUrl) {
   const isMobile = window.innerWidth < 768;
-  if (isMobile) {
-    return ev.std_intro_photo_mobile_url || ev.std_intro_photo_desktop_url || ev.std_intro_photo_url || null;
-  }
-  return ev.std_intro_photo_desktop_url || ev.std_intro_photo_mobile_url || ev.std_intro_photo_url || null;
+  if (isMobile) return mobileUrl || desktopUrl || legacyUrl || null;
+  return desktopUrl || mobileUrl || legacyUrl || null;
+}
+
+function _pickIntroPhotoForDevice(ev) {
+  return _pickPhotoForDevice(ev.std_intro_photo_mobile_url, ev.std_intro_photo_desktop_url, ev.std_intro_photo_url);
 }
 
 function _buildIntroScreenHtml(ev, evColor, screenId) {
@@ -2384,7 +2408,8 @@ function renderSaveTheDateScreen(ev, decision) {
   // Cover photo: ONLY the dedicated Save the Date cover. Never falls back to
   // the invite's own background photo — the organiser must upload one
   // specifically for this screen if they want a cover here at all.
-  const coverUrl    = ev.std_cover_url || null;
+  // Escolhe a variante mobile ou desktop consoante o ecrã do visitante.
+  const coverUrl    = _pickPhotoForDevice(ev.std_cover_mobile_url, ev.std_cover_desktop_url, ev.std_cover_url);
   const showCover   = ev.std_show_cover !== false && !!coverUrl;
 
   const parseDateSafe = (str) => {

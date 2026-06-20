@@ -81,7 +81,9 @@ async function handleCreateEvent(e) {
   const groomName   = document.getElementById('evt-groom-name').value.trim() || null;
   const brideName   = document.getElementById('evt-bride-name').value.trim() || null;
   const coupleSize  = parseFloat(document.getElementById('evt-couple-size').value) || 2.4;
-  const bgUrl       = document.getElementById('evt-bg-url').value.trim() || null;
+  const bgUrlMobile  = document.getElementById('evt-bg-url-mobile')?.value?.trim() || null;
+  const bgUrlDesktop = document.getElementById('evt-bg-url-desktop')?.value?.trim() || null;
+  const bgUrl       = bgUrlMobile || bgUrlDesktop || null;
   const bgOverlay   = document.getElementById('evt-bg-overlay').value || 35;
   const showBible   = document.getElementById('sw-bible').classList.contains('active');
   const bibleText   = showBible ? (document.getElementById('evt-bible-text').value.trim() || null) : null;
@@ -125,15 +127,15 @@ async function handleCreateEvent(e) {
       toast('Imagem recebida, criando evento...');
       submitBtn.textContent = 'Criando evento...';
       // Agora criar evento com URL da imagem no Supabase
-      saveEventWithCover(eventId, title, date, time, deadlineWithTime, coverImageURL, allowComp, maxComp, allowGifts, allowKids, maxKids, allowSides, side1Name, side2Name, allowMessages, showGuestMessages, allowMusic ? musicUrl : null, musicTitle, ibanMessage, ibanNumber, ibanHolder, ibanFooter, {showCouple,groomName,brideName,coupleSize,bgUrl,bgOverlay,showBible,bibleText,bibleRef,bibleText2,bibleRef2,bibleSize,showInvite,inviteText,showParents,groomPar,bridePar,showGallery,galleryUrls,showManual,manualItems,showSchedule,schedItems,customFont,sectionOrder:Store.eventSectionOrder,storyText:document.getElementById('evt-story-text')?.value.trim()||null,inviteBlessing:document.getElementById('evt-invite-blessing')?.value.trim()||null,eventColor:document.getElementById('evt-event-color')?.value.trim()||null}, submitBtn, originalText);
+      saveEventWithCover(eventId, title, date, time, deadlineWithTime, coverImageURL, allowComp, maxComp, allowGifts, allowKids, maxKids, allowSides, side1Name, side2Name, allowMessages, showGuestMessages, allowMusic ? musicUrl : null, musicTitle, ibanMessage, ibanNumber, ibanHolder, ibanFooter, {showCouple,groomName,brideName,coupleSize,bgUrl,bgUrlMobile,bgUrlDesktop,bgOverlay,showBible,bibleText,bibleRef,bibleText2,bibleRef2,bibleSize,showInvite,inviteText,showParents,groomPar,bridePar,showGallery,galleryUrls,showManual,manualItems,showSchedule,schedItems,customFont,sectionOrder:Store.eventSectionOrder,storyText:document.getElementById('evt-story-text')?.value.trim()||null,inviteBlessing:document.getElementById('evt-invite-blessing')?.value.trim()||null,eventColor:document.getElementById('evt-event-color')?.value.trim()||null}, submitBtn, originalText);
     }).catch(error => {
       console.error('❌ ERRO upload imagem:', error);
       toast('Erro ao fazer upload da imagem. Criando evento sem capa...');
       submitBtn.textContent = 'Criando evento...';
-      saveEventWithCover(eventId, title, date, time, deadlineWithTime, null, allowComp, maxComp, allowGifts, allowKids, maxKids, allowSides, side1Name, side2Name, allowMessages, showGuestMessages, allowMusic ? musicUrl : null, musicTitle, ibanMessage, ibanNumber, ibanHolder, ibanFooter, {showCouple,groomName,brideName,coupleSize,bgUrl,bgOverlay,showBible,bibleText,bibleRef,bibleText2,bibleRef2,bibleSize,showInvite,inviteText,showParents,groomPar,bridePar,showGallery,galleryUrls,showManual,manualItems,showSchedule,schedItems,customFont,sectionOrder:Store.eventSectionOrder,storyText:document.getElementById('evt-story-text')?.value.trim()||null,inviteBlessing:document.getElementById('evt-invite-blessing')?.value.trim()||null,eventColor:document.getElementById('evt-event-color')?.value.trim()||null}, submitBtn, originalText);
+      saveEventWithCover(eventId, title, date, time, deadlineWithTime, null, allowComp, maxComp, allowGifts, allowKids, maxKids, allowSides, side1Name, side2Name, allowMessages, showGuestMessages, allowMusic ? musicUrl : null, musicTitle, ibanMessage, ibanNumber, ibanHolder, ibanFooter, {showCouple,groomName,brideName,coupleSize,bgUrl,bgUrlMobile,bgUrlDesktop,bgOverlay,showBible,bibleText,bibleRef,bibleText2,bibleRef2,bibleSize,showInvite,inviteText,showParents,groomPar,bridePar,showGallery,galleryUrls,showManual,manualItems,showSchedule,schedItems,customFont,sectionOrder:Store.eventSectionOrder,storyText:document.getElementById('evt-story-text')?.value.trim()||null,inviteBlessing:document.getElementById('evt-invite-blessing')?.value.trim()||null,eventColor:document.getElementById('evt-event-color')?.value.trim()||null}, submitBtn, originalText);
     });
   } else {
-    saveEventWithCover(eventId, title, date, time, deadlineWithTime, null, allowComp, maxComp, allowGifts, allowKids, maxKids, allowSides, side1Name, side2Name, allowMessages, showGuestMessages, allowMusic ? musicUrl : null, musicTitle, ibanMessage, ibanNumber, ibanHolder, ibanFooter, {showCouple,groomName,brideName,coupleSize,bgUrl,bgOverlay,showBible,bibleText,bibleRef,bibleText2,bibleRef2,bibleSize,showInvite,inviteText,showParents,groomPar,bridePar,showGallery,galleryUrls,showManual,manualItems,showSchedule,schedItems,customFont,sectionOrder:Store.eventSectionOrder,storyText:document.getElementById('evt-story-text')?.value.trim()||null,inviteBlessing:document.getElementById('evt-invite-blessing')?.value.trim()||null,eventColor:document.getElementById('evt-event-color')?.value.trim()||null}, submitBtn, originalText);
+    saveEventWithCover(eventId, title, date, time, deadlineWithTime, null, allowComp, maxComp, allowGifts, allowKids, maxKids, allowSides, side1Name, side2Name, allowMessages, showGuestMessages, allowMusic ? musicUrl : null, musicTitle, ibanMessage, ibanNumber, ibanHolder, ibanFooter, {showCouple,groomName,brideName,coupleSize,bgUrl,bgUrlMobile,bgUrlDesktop,bgOverlay,showBible,bibleText,bibleRef,bibleText2,bibleRef2,bibleSize,showInvite,inviteText,showParents,groomPar,bridePar,showGallery,galleryUrls,showManual,manualItems,showSchedule,schedItems,customFont,sectionOrder:Store.eventSectionOrder,storyText:document.getElementById('evt-story-text')?.value.trim()||null,inviteBlessing:document.getElementById('evt-invite-blessing')?.value.trim()||null,eventColor:document.getElementById('evt-event-color')?.value.trim()||null}, submitBtn, originalText);
   }
 }
 
@@ -293,7 +295,7 @@ function saveEventWithCover(eventId, title, date, time, deadline, coverImageURL,
     show_couple: v.showCouple ? 'yes' : 'no',
     groom_name: v.groomName || null, bride_name: v.brideName || null,
     couple_size: v.coupleSize || 2.4,
-    bg_url: v.bgUrl || null, bg_overlay: v.bgOverlay !== undefined ? v.bgOverlay : 35,
+    bg_url: v.bgUrl || null, bg_url_mobile: v.bgUrlMobile || null, bg_url_desktop: v.bgUrlDesktop || null, bg_overlay: v.bgOverlay !== undefined ? v.bgOverlay : 35,
     show_bible: v.showBible ? 'yes' : 'no', bible_text: v.bibleText || null, bible_ref: v.bibleRef || null, bible_text_2: v.bibleText2 || null, bible_ref_2: v.bibleRef2 || null, bible_size: v.bibleSize || '0.92',
     show_invite: v.showInvite ? 'yes' : 'no', invite_text: v.inviteText || null,
     show_parents: v.showParents ? 'yes' : 'no',
@@ -359,7 +361,7 @@ function saveEventWithCover(eventId, title, date, time, deadline, coverImageURL,
         groom_name: v.groomName || null,
         bride_name: v.brideName || null,
         couple_size: v.coupleSize || 2.4,
-        bg_url: v.bgUrl || null,
+        bg_url: v.bgUrl || null, bg_url_mobile: v.bgUrlMobile || null, bg_url_desktop: v.bgUrlDesktop || null,
         bg_overlay: v.bgOverlay !== undefined ? v.bgOverlay : 35,
         show_bible: v.showBible ? 'yes' : 'no',
         bible_text: v.bibleText || null,
@@ -392,7 +394,7 @@ function saveEventWithCover(eventId, title, date, time, deadline, coverImageURL,
           iban_holder: ibanHolder || null, iban_footer: ibanFooter || null,
           show_couple: v.showCouple ? 'yes' : 'no',
           groom_name: v.groomName || null, bride_name: v.brideName || null, couple_size: v.coupleSize || 2.4,
-          bg_url: v.bgUrl || null, bg_overlay: v.bgOverlay !== undefined ? v.bgOverlay : 35,
+          bg_url: v.bgUrl || null, bg_url_mobile: v.bgUrlMobile || null, bg_url_desktop: v.bgUrlDesktop || null, bg_overlay: v.bgOverlay !== undefined ? v.bgOverlay : 35,
           show_bible: v.showBible ? 'yes' : 'no', bible_text: v.bibleText || null, bible_ref: v.bibleRef || null, bible_text_2: v.bibleText2 || null, bible_ref_2: v.bibleRef2 || null, bible_size: v.bibleSize || '0.92',
           show_invite: v.showInvite ? 'yes' : 'no', invite_text: v.inviteText || null,
           show_parents: v.showParents ? 'yes' : 'no', groom_parents: v.groomPar || null, bride_parents: v.bridePar || null,
@@ -412,7 +414,7 @@ function saveEventWithCover(eventId, title, date, time, deadline, coverImageURL,
         event_color: v.eventColor || null,
         groom_name: v.groomName || null, bride_name: v.brideName || null,
         couple_size: v.coupleSize || 2.4, show_couple: v.showCouple ? 'yes' : 'no',
-        bg_url: v.bgUrl || null, bg_overlay: v.bgOverlay !== undefined ? v.bgOverlay : 35,
+        bg_url: v.bgUrl || null, bg_url_mobile: v.bgUrlMobile || null, bg_url_desktop: v.bgUrlDesktop || null, bg_overlay: v.bgOverlay !== undefined ? v.bgOverlay : 35,
         show_bible: v.showBible ? 'yes' : 'no', bible_text: v.bibleText || null, bible_ref: v.bibleRef || null, bible_text_2: v.bibleText2 || null, bible_ref_2: v.bibleRef2 || null, bible_size: v.bibleSize || '0.92',
         show_invite: v.showInvite ? 'yes' : 'no', invite_text: v.inviteText || null,
         invite_blessing: v.inviteBlessing || null,
@@ -622,7 +624,9 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
   const newGroomName   = document.getElementById('evt-groom-name')?.value.trim() || null;
   const newBrideName   = document.getElementById('evt-bride-name')?.value.trim() || null;
   const newCoupleSize  = parseFloat(document.getElementById('evt-couple-size')?.value) || 2.4;
-  const newBgUrl       = document.getElementById('evt-bg-url')?.value.trim() || null;
+  const newBgUrlMobile  = document.getElementById('evt-bg-url-mobile')?.value?.trim() || null;
+  const newBgUrlDesktop = document.getElementById('evt-bg-url-desktop')?.value?.trim() || null;
+  const newBgUrl       = newBgUrlMobile || newBgUrlDesktop || null;
   const newBgOverlay   = document.getElementById('evt-bg-overlay')?.value || 35;
   const newShowBible   = document.getElementById('sw-bible')?.classList.contains('active');
   const newBibleText   = newShowBible ? (document.getElementById('evt-bible-text')?.value.trim() || null) : null;
@@ -688,7 +692,7 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
     iban_holder: newIbanHolder, iban_footer: newIbanFooter,
     show_couple: newShowCouple ? 'yes' : 'no',
     groom_name: newGroomName, bride_name: newBrideName, couple_size: newCoupleSize,
-    bg_url: newBgUrl, bg_overlay: newBgOverlay,
+    bg_url: newBgUrl, bg_url_mobile: newBgUrlMobile, bg_url_desktop: newBgUrlDesktop, bg_overlay: newBgOverlay,
     show_bible: newShowBible ? 'yes' : 'no', bible_text: newBibleText, bible_ref: newBibleRef, bible_text_2: newBibleText2, bible_ref_2: newBibleRef2, bible_size: newBibleSize,
     show_invite: newShowInvite ? 'yes' : 'no', invite_text: newInviteText,
     show_parents: newShowParents ? 'yes' : 'no', groom_parents: newGroomPar, bride_parents: newBridePar,
@@ -769,7 +773,7 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
           event_color: document.getElementById('evt-event-color')?.value?.trim() || null,
           groom_name: newGroomName, bride_name: newBrideName, couple_size: newCoupleSize,
           show_couple: newShowCouple ? 'yes' : 'no',
-          bg_url: newBgUrl, bg_overlay: newBgOverlay,
+          bg_url: newBgUrl, bg_url_mobile: newBgUrlMobile, bg_url_desktop: newBgUrlDesktop, bg_overlay: newBgOverlay,
           show_bible: newShowBible ? 'yes' : 'no', bible_text: newBibleText, bible_ref: newBibleRef, bible_text_2: newBibleText2, bible_ref_2: newBibleRef2, bible_size: newBibleSize,
           show_invite: newShowInvite ? 'yes' : 'no', invite_text: newInviteText,
           invite_blessing: document.getElementById('evt-invite-blessing')?.value?.trim() || null,
@@ -843,7 +847,7 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
           music_url: newMusicUrl, music_title: newMusicTitle,
           iban_message: newIbanMessage, iban_number: newIbanNumber, iban_holder: newIbanHolder, iban_footer: newIbanFooter,
           show_couple: newShowCouple ? 'yes' : 'no', groom_name: newGroomName, bride_name: newBrideName, couple_size: newCoupleSize,
-          bg_url: newBgUrl, bg_overlay: newBgOverlay,
+          bg_url: newBgUrl, bg_url_mobile: newBgUrlMobile, bg_url_desktop: newBgUrlDesktop, bg_overlay: newBgOverlay,
           show_bible: newShowBible ? 'yes' : 'no', bible_text: newBibleText, bible_ref: newBibleRef, bible_text_2: newBibleText2, bible_ref_2: newBibleRef2, bible_size: newBibleSize,
           show_invite: newShowInvite ? 'yes' : 'no', invite_text: newInviteText,
           show_parents: newShowParents ? 'yes' : 'no', groom_parents: newGroomPar, bride_parents: newBridePar,
@@ -1479,7 +1483,7 @@ async function editEvent() {
   // Fetch fresh data from Supabase (no localStorage)
   try {
     const result = await supabaseRequest(
-      `events?id=eq.${eventId}&select=id,title,date,time,confirm_by_date,cover_image,event_code,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,rsvp_enabled,allow_edit_rsvp,save_the_date_enabled,release_type,release_date,is_invite_released,std_title,std_subtitle,std_font_family,std_name_size,std_title_size,std_intro_enabled,std_intro_text,std_intro_photo_url,std_intro_photo_mobile_url,std_intro_photo_desktop_url,std_intro_on_invite,std_show_cover,std_cover_url,std_scratch_enabled,std_scratch_mode,std_scratch_photo_url,std_scratch_text,std_date_style,is_example_event,std_show_iban,personalized_links_enabled,show_rsvp_in_full_invite,show_guest_name_in_invite,allow_messages,show_guest_messages,music_url,music_title,iban_message,iban_number,iban_holder,iban_footer,show_couple,groom_name,bride_name,couple_size,bg_url,bg_overlay,show_bible,bible_text,bible_ref,show_invite,invite_text,show_parents,groom_parents,bride_parents,show_gallery,gallery_urls,show_schedule,schedule_items,custom_font_family,section_order,story_text,invite_blessing,event_color&limit=1`
+      `events?id=eq.${eventId}&select=id,title,date,time,confirm_by_date,cover_image,event_code,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,rsvp_enabled,allow_edit_rsvp,save_the_date_enabled,release_type,release_date,is_invite_released,std_title,std_subtitle,std_font_family,std_name_size,std_title_size,std_intro_enabled,std_intro_text,std_intro_photo_url,std_intro_photo_mobile_url,std_intro_photo_desktop_url,std_intro_on_invite,std_show_cover,std_cover_url,std_cover_mobile_url,std_cover_desktop_url,std_scratch_enabled,std_scratch_mode,std_scratch_photo_url,std_scratch_text,std_date_style,is_example_event,std_show_iban,personalized_links_enabled,show_rsvp_in_full_invite,show_guest_name_in_invite,allow_messages,show_guest_messages,music_url,music_title,iban_message,iban_number,iban_holder,iban_footer,show_couple,groom_name,bride_name,couple_size,bg_url,bg_overlay,show_bible,bible_text,bible_ref,show_invite,invite_text,show_parents,groom_parents,bride_parents,show_gallery,gallery_urls,show_schedule,schedule_items,custom_font_family,section_order,story_text,invite_blessing,event_color&limit=1`
     );
     const fresh = (result && result[0]) ? result[0] : evStore;
     // Load visual data from event_visuals table
@@ -1639,8 +1643,18 @@ function _fillEditForm(ev) {
   const fsEl = document.getElementById('evt-font-select');
   if (fsEl) fsEl.value = ev.custom_font_family || '';
 
-  _setSwitch('sw-bg', ev.bg_url ? true : false, 'bg-extra');
-  document.getElementById('evt-bg-url').value = ev.bg_url || '';
+  _setSwitch('sw-bg', (ev.bg_url || ev.bg_url_mobile || ev.bg_url_desktop) ? true : false, 'bg-extra');
+  { const bgUrlM = document.getElementById('evt-bg-url-mobile'); const bgPrevM = document.getElementById('bg-preview-mobile');
+    if (ev.bg_url_mobile) { if (bgUrlM) bgUrlM.value = ev.bg_url_mobile; if (bgPrevM) bgPrevM.src = ev.bg_url_mobile; document.getElementById('bg-preview-mobile-wrap')?.classList.remove('hidden'); } }
+  { const bgUrlD = document.getElementById('evt-bg-url-desktop'); const bgPrevD = document.getElementById('bg-preview-desktop');
+    if (ev.bg_url_desktop) { if (bgUrlD) bgUrlD.value = ev.bg_url_desktop; if (bgPrevD) bgPrevD.src = ev.bg_url_desktop; document.getElementById('bg-preview-desktop-wrap')?.classList.remove('hidden'); } }
+  // Compatibilidade: eventos antigos só têm bg_url (sem variantes) — mostra essa
+  // foto como "mobile" por defeito, já que era a única que existia antes.
+  if (ev.bg_url && !ev.bg_url_mobile && !ev.bg_url_desktop) {
+    const bgUrlM = document.getElementById('evt-bg-url-mobile'); const bgPrevM = document.getElementById('bg-preview-mobile');
+    if (bgUrlM) bgUrlM.value = ev.bg_url; if (bgPrevM) bgPrevM.src = ev.bg_url;
+    document.getElementById('bg-preview-mobile-wrap')?.classList.remove('hidden');
+  }
   const ovEl = document.getElementById('evt-bg-overlay');
   if (ovEl) { ovEl.value = ev.bg_overlay !== undefined ? ev.bg_overlay : 35; document.getElementById('bg-overlay-val').textContent = ovEl.value + '%'; }
 
@@ -2084,7 +2098,7 @@ async function searchEvent() {
     // ✅ PASSO 1: Carregar eventos do Supabase COM JOIN para trazer RSVPS e GIFTS
     console.log('📥 Buscando evento DIRETO do Supabase...');
     
-    const allEvents = await supabaseRequest(`events?select=id,title,date,time,confirm_by_date,cover_image,event_code,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,rsvp_enabled,allow_edit_rsvp,save_the_date_enabled,release_type,release_date,is_invite_released,std_title,std_subtitle,std_font_family,std_name_size,std_title_size,std_intro_enabled,std_intro_text,std_intro_photo_url,std_intro_photo_mobile_url,std_intro_photo_desktop_url,std_intro_on_invite,std_show_cover,std_cover_url,std_scratch_enabled,std_scratch_mode,std_scratch_photo_url,std_scratch_text,std_date_style,is_example_event,std_show_iban,personalized_links_enabled,show_rsvp_in_full_invite,show_guest_name_in_invite,allow_messages,show_guest_messages,rsvps(guest_name,attending,side,companions,kids,wants_gift,message,created_at,updated_at),gifts(id,name,category,reserved,reserved_by)`);
+    const allEvents = await supabaseRequest(`events?select=id,title,date,time,confirm_by_date,cover_image,event_code,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,rsvp_enabled,allow_edit_rsvp,save_the_date_enabled,release_type,release_date,is_invite_released,std_title,std_subtitle,std_font_family,std_name_size,std_title_size,std_intro_enabled,std_intro_text,std_intro_photo_url,std_intro_photo_mobile_url,std_intro_photo_desktop_url,std_intro_on_invite,std_show_cover,std_cover_url,std_cover_mobile_url,std_cover_desktop_url,std_scratch_enabled,std_scratch_mode,std_scratch_photo_url,std_scratch_text,std_date_style,is_example_event,std_show_iban,personalized_links_enabled,show_rsvp_in_full_invite,show_guest_name_in_invite,allow_messages,show_guest_messages,rsvps(guest_name,attending,side,companions,kids,wants_gift,message,created_at,updated_at),gifts(id,name,category,reserved,reserved_by)`);
     
     console.log(' Total de eventos no Supabase:', allEvents?.length || 0);
     console.log('🔍 Query de busca (uppercase):', query);
@@ -2533,7 +2547,7 @@ async function checkURLForEvent() {
     
     // ✅ Query otimizada: procurar por event_code OU id, com LIMIT 1
     let eventsData = await supabaseRequest(
-      `events?or=(event_code.eq.${eventCode},id.eq.${eventCode})&select=id,user_id,title,date,time,confirm_by_date,cover_image,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,rsvp_enabled,allow_edit_rsvp,save_the_date_enabled,release_type,release_date,is_invite_released,std_title,std_subtitle,std_font_family,std_name_size,std_title_size,std_intro_enabled,std_intro_text,std_intro_photo_url,std_intro_photo_mobile_url,std_intro_photo_desktop_url,std_intro_on_invite,std_show_cover,std_cover_url,std_scratch_enabled,std_scratch_mode,std_scratch_photo_url,std_scratch_text,std_date_style,is_example_event,std_show_iban,personalized_links_enabled,show_rsvp_in_full_invite,show_guest_name_in_invite,allow_messages,show_guest_messages,music_url,music_title,iban_message,iban_number,iban_holder,iban_footer,groom_name,bride_name,couple_size,show_couple,bg_url,bg_overlay,bible_text,bible_ref,show_bible,invite_text,show_invite,groom_parents,bride_parents,show_parents,gallery_urls,show_gallery,show_schedule,schedule_items,custom_font_family,section_order,story_text,invite_blessing,event_color,rsvps(guest_name,attending,side,companions,kids,wants_gift,message,created_at,updated_at),gifts(id,name,category,reserved,reserved_by)&limit=1`
+      `events?or=(event_code.eq.${eventCode},id.eq.${eventCode})&select=id,user_id,title,date,time,confirm_by_date,cover_image,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,rsvp_enabled,allow_edit_rsvp,save_the_date_enabled,release_type,release_date,is_invite_released,std_title,std_subtitle,std_font_family,std_name_size,std_title_size,std_intro_enabled,std_intro_text,std_intro_photo_url,std_intro_photo_mobile_url,std_intro_photo_desktop_url,std_intro_on_invite,std_show_cover,std_cover_url,std_cover_mobile_url,std_cover_desktop_url,std_scratch_enabled,std_scratch_mode,std_scratch_photo_url,std_scratch_text,std_date_style,is_example_event,std_show_iban,personalized_links_enabled,show_rsvp_in_full_invite,show_guest_name_in_invite,allow_messages,show_guest_messages,music_url,music_title,iban_message,iban_number,iban_holder,iban_footer,groom_name,bride_name,couple_size,show_couple,bg_url,bg_overlay,bible_text,bible_ref,show_bible,invite_text,show_invite,groom_parents,bride_parents,show_parents,gallery_urls,show_gallery,show_schedule,schedule_items,custom_font_family,section_order,story_text,invite_blessing,event_color,rsvps(guest_name,attending,side,companions,kids,wants_gift,message,created_at,updated_at),gifts(id,name,category,reserved,reserved_by)&limit=1`
     );
     
     console.log('📥 Resultado da busca:', eventsData?.length === 1 ? 'Encontrado' : 'Não encontrado');
@@ -3706,7 +3720,7 @@ async function openIntakePreview(eventId) {
 
   try {
     const result = await supabaseRequest(
-      `events?id=eq.${eventId}&select=id,title,date,time,confirm_by_date,cover_image,event_code,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,rsvp_enabled,allow_edit_rsvp,save_the_date_enabled,release_type,release_date,is_invite_released,std_title,std_subtitle,std_font_family,std_name_size,std_title_size,std_intro_enabled,std_intro_text,std_intro_photo_url,std_intro_photo_mobile_url,std_intro_photo_desktop_url,std_intro_on_invite,std_show_cover,std_cover_url,std_scratch_enabled,std_scratch_mode,std_scratch_photo_url,std_scratch_text,std_date_style,is_example_event,std_show_iban,personalized_links_enabled,show_rsvp_in_full_invite,show_guest_name_in_invite,allow_messages,show_guest_messages,groom_name,bride_name,couple_size,show_couple,bg_url,bg_overlay,show_bible,bible_text,bible_ref,show_invite,invite_text,show_parents,groom_parents,bride_parents,show_gallery,gallery_urls,show_schedule,schedule_items,custom_font_family,section_order,story_text,event_color,iban_message,iban_number,iban_holder,iban_footer,music_url,music_title,rsvps(guest_name,attending,side,companions,kids,wants_gift,message),gifts(id,name,category,reserved,reserved_by)&limit=1`
+      `events?id=eq.${eventId}&select=id,title,date,time,confirm_by_date,cover_image,event_code,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,rsvp_enabled,allow_edit_rsvp,save_the_date_enabled,release_type,release_date,is_invite_released,std_title,std_subtitle,std_font_family,std_name_size,std_title_size,std_intro_enabled,std_intro_text,std_intro_photo_url,std_intro_photo_mobile_url,std_intro_photo_desktop_url,std_intro_on_invite,std_show_cover,std_cover_url,std_cover_mobile_url,std_cover_desktop_url,std_scratch_enabled,std_scratch_mode,std_scratch_photo_url,std_scratch_text,std_date_style,is_example_event,std_show_iban,personalized_links_enabled,show_rsvp_in_full_invite,show_guest_name_in_invite,allow_messages,show_guest_messages,groom_name,bride_name,couple_size,show_couple,bg_url,bg_overlay,show_bible,bible_text,bible_ref,show_invite,invite_text,show_parents,groom_parents,bride_parents,show_gallery,gallery_urls,show_schedule,schedule_items,custom_font_family,section_order,story_text,event_color,iban_message,iban_number,iban_holder,iban_footer,music_url,music_title,rsvps(guest_name,attending,side,companions,kids,wants_gift,message),gifts(id,name,category,reserved,reserved_by)&limit=1`
     );
     if (!result || !result[0]) throw new Error('not found');
 
@@ -3839,7 +3853,7 @@ async function openStdEditor() {
   toast('A carregar dados do Save the Date...');
   let fresh;
   try {
-    fresh = await supabaseRequest(`events?id=eq.${eventId}&select=date,confirm_by_date,save_the_date_enabled,release_type,release_date,is_invite_released,std_title,std_subtitle,std_name_size,std_title_size,std_show_cover,std_cover_url,std_date_style,std_scratch_enabled,std_scratch_mode,std_scratch_photo_url,std_scratch_text,std_show_iban,event_color&limit=1`);
+    fresh = await supabaseRequest(`events?id=eq.${eventId}&select=date,confirm_by_date,save_the_date_enabled,release_type,release_date,is_invite_released,std_title,std_subtitle,std_name_size,std_title_size,std_show_cover,std_cover_url,std_cover_mobile_url,std_cover_desktop_url,std_date_style,std_scratch_enabled,std_scratch_mode,std_scratch_photo_url,std_scratch_text,std_show_iban,event_color&limit=1`);
   } catch(e) { fresh = null; }
   const d = (fresh && fresh[0]) ? fresh[0] : ev;
 
@@ -3885,16 +3899,30 @@ async function openStdEditor() {
       <div id="std2-sw-cover" class="switch ${d.std_show_cover !== false ? 'active' : ''}" onclick="toggleSwitch(this,'std2-cover-extra')"></div>
     </div>
     <div id="std2-cover-extra" class="${d.std_show_cover !== false ? '' : 'hidden'} mb-3">
-      <p class="text-xs font-semibold mb-1" style="color:${d.std_cover_url ? '#16a34a' : '#ef4444'}">
-        ${d.std_cover_url ? '✓ Foto de capa guardada actualmente' : '✗ Nenhuma foto de capa guardada ainda'}
+      <p class="text-xs text-gray-400 mb-2">Foto independente — não usa a foto de fundo do convite.</p>
+
+      <label class="text-xs font-semibold text-gray-600 block mb-1">Foto para telemóvel (1080×1920px, vertical)</label>
+      <p class="text-xs font-semibold mb-1" style="color:${d.std_cover_mobile_url ? '#16a34a' : '#ef4444'}">
+        ${d.std_cover_mobile_url ? '✓ Guardada' : '✗ Nenhuma foto'}
       </p>
-      <input type="file" id="std2-cover-input" accept="image/*" class="input-field text-sm" onchange="handleStd2CoverUpload(this)">
-      <input type="hidden" id="std2-cover-url" value="${d.std_cover_url || ''}">
-      <div id="std2-cover-preview-wrap" class="${d.std_cover_url ? '' : 'hidden'} relative mt-1" style="max-width:160px">
-        <img id="std2-cover-preview" class="rounded-lg max-h-28 object-cover w-full" src="${d.std_cover_url || ''}">
-        <button type="button" onclick="document.getElementById('std2-cover-url').value='';document.getElementById('std2-cover-preview-wrap').classList.add('hidden')" class="absolute top-1 right-1 bg-white rounded-full w-6 h-6 flex items-center justify-center shadow text-red-500 text-xs font-bold">✕</button>
+      <input type="file" id="std2-cover-input-mobile" accept="image/*" class="input-field text-sm" onchange="handleStd2CoverUpload(this, 'mobile')">
+      <input type="hidden" id="std2-cover-url-mobile" value="${d.std_cover_mobile_url || ''}">
+      <div id="std2-cover-preview-mobile-wrap" class="${d.std_cover_mobile_url ? '' : 'hidden'} relative mt-1" style="max-width:120px">
+        <img id="std2-cover-preview-mobile" class="rounded-lg max-h-40 object-cover w-full" src="${d.std_cover_mobile_url || ''}">
+        <button type="button" onclick="document.getElementById('std2-cover-url-mobile').value='';document.getElementById('std2-cover-preview-mobile-wrap').classList.add('hidden')" class="absolute top-1 right-1 bg-white rounded-full w-6 h-6 flex items-center justify-center shadow text-red-500 text-xs font-bold">✕</button>
       </div>
-      <p class="text-xs text-gray-400 mt-1">Foto independente — não usa a foto de fundo do convite.</p>
+
+      <label class="text-xs font-semibold text-gray-600 block mt-2 mb-1">Foto para computador (1920×1080px, horizontal)</label>
+      <p class="text-xs font-semibold mb-1" style="color:${d.std_cover_desktop_url ? '#16a34a' : '#ef4444'}">
+        ${d.std_cover_desktop_url ? '✓ Guardada' : '✗ Nenhuma foto'}
+      </p>
+      <input type="file" id="std2-cover-input-desktop" accept="image/*" class="input-field text-sm" onchange="handleStd2CoverUpload(this, 'desktop')">
+      <input type="hidden" id="std2-cover-url-desktop" value="${d.std_cover_desktop_url || ''}">
+      <div id="std2-cover-preview-desktop-wrap" class="${d.std_cover_desktop_url ? '' : 'hidden'} relative mt-1" style="max-width:200px">
+        <img id="std2-cover-preview-desktop" class="rounded-lg max-h-24 object-cover w-full" src="${d.std_cover_desktop_url || ''}">
+        <button type="button" onclick="document.getElementById('std2-cover-url-desktop').value='';document.getElementById('std2-cover-preview-desktop-wrap').classList.add('hidden')" class="absolute top-1 right-1 bg-white rounded-full w-6 h-6 flex items-center justify-center shadow text-red-500 text-xs font-bold">✕</button>
+      </div>
+      <p class="text-xs text-gray-400 mt-1">Se carregares só uma das duas, essa é usada em todos os dispositivos.</p>
     </div>
 
     <label class="text-xs font-semibold text-gray-600 block mb-1">Quando liberar o convite completo?</label>
@@ -3926,20 +3954,21 @@ async function openStdEditor() {
   lucide.createIcons();
 }
 
-async function handleStd2CoverUpload(input) {
+async function handleStd2CoverUpload(input, variant) {
   const file = input.files[0];
   if (!file) return;
   if (file.size > 5*1024*1024) { toast('Imagem muito grande. Máx. 5 MB.'); return; }
   const eventId = Store.currentEventId;
-  const proceed = await _confirmIfDuplicatePhoto(file, eventId, 'Foto de capa do Save the Date');
+  const label = variant === 'desktop' ? 'Foto de capa do Save the Date (computador)' : 'Foto de capa do Save the Date (telemóvel)';
+  const proceed = await _confirmIfDuplicatePhoto(file, eventId, label);
   if (!proceed) { input.value = ''; return; }
   toast('A carregar foto...');
   try {
     const url = await uploadImageToStorage(file, 'event-covers');
-    document.getElementById('std2-cover-url').value = url;
-    const prev = document.getElementById('std2-cover-preview');
+    document.getElementById(`std2-cover-url-${variant}`).value = url;
+    const prev = document.getElementById(`std2-cover-preview-${variant}`);
     if (prev) prev.src = url;
-    document.getElementById('std2-cover-preview-wrap')?.classList.remove('hidden');
+    document.getElementById(`std2-cover-preview-${variant}-wrap`)?.classList.remove('hidden');
     toast('Foto carregada!');
   } catch(e) { toast('Erro ao carregar a foto.'); }
 }
@@ -3960,7 +3989,9 @@ async function saveStdEditor() {
     std_subtitle: document.getElementById('std2-subtitle')?.value?.trim() || 'Nosso Casamento',
     std_date_style: document.getElementById('std2-date-style')?.value || 'card',
     std_show_cover: document.getElementById('std2-sw-cover')?.classList.contains('active') || false,
-    std_cover_url: document.getElementById('std2-cover-url')?.value?.trim() || null,
+    std_cover_mobile_url: document.getElementById('std2-cover-url-mobile')?.value?.trim() || null,
+    std_cover_desktop_url: document.getElementById('std2-cover-url-desktop')?.value?.trim() || null,
+    std_cover_url: document.getElementById('std2-cover-url-mobile')?.value?.trim() || document.getElementById('std2-cover-url-desktop')?.value?.trim() || null,
     release_type: document.getElementById('std2-release-type')?.value || 'manual',
     release_date: releaseDateVal ? new Date(releaseDateVal).toISOString() : null,
     is_invite_released: document.getElementById('std2-sw-released')?.classList.contains('active') || false,

@@ -9,7 +9,7 @@
   <script>tailwind.config = { theme: { extend: { colors: { teal: { 500: '#007f9f', 600: '#006b86' } } } } }</script>
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💌</text></svg>">
-  <link rel="stylesheet" href="css/main.css?v=557400">
+  <link rel="stylesheet" href="css/main.css?v=557500">
 </head>
 <body class="h-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
 
@@ -625,12 +625,30 @@ A vossa presença neste dia tão especial é, para nós, o maior presente. No en
          <div id="sw-bg" class="switch" onclick="toggleSwitch(this, 'bg-extra')"></div>
         </div>
         <div id="bg-extra" class="hidden pl-4 space-y-2">
-         <div id="bg-upload-area" class="w-full rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 flex flex-col items-center justify-center py-3 cursor-pointer hover:border-teal-400 transition text-xs text-gray-500" onclick="document.getElementById('bg-file-input').click()">
-          <i data-lucide="image" class="w-5 h-5 mb-1 text-gray-400"></i> Carregar imagem de fundo
+         <label class="text-xs font-semibold text-gray-600 block">Foto para telemóvel (recomendado: 1080×1920px, vertical)</label>
+         <div id="bg-upload-area-mobile" class="w-full rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 flex flex-col items-center justify-center py-3 cursor-pointer hover:border-teal-400 transition text-xs text-gray-500" onclick="document.getElementById('bg-file-input-mobile').click()">
+          <i data-lucide="smartphone" class="w-5 h-5 mb-1 text-gray-400"></i> Carregar imagem de fundo (telemóvel)
          </div>
-         <input id="bg-file-input" type="file" accept="image/*" class="hidden" onchange="handleBgUpload(this)">
-         <input id="evt-bg-url" type="url" class="input-field" placeholder="Ou colar URL da imagem">
-         <label class="text-xs text-gray-500">Escurecimento do fundo (0–80%)</label>
+         <input id="bg-file-input-mobile" type="file" accept="image/*" class="hidden" onchange="handleBgUpload(this, 'mobile')">
+         <input id="evt-bg-url-mobile" type="hidden">
+         <div id="bg-preview-mobile-wrap" class="hidden relative mt-1" style="max-width:120px">
+          <img id="bg-preview-mobile" class="rounded-lg max-h-40 object-cover w-full">
+          <button type="button" onclick="removeBgPhoto('mobile')" class="absolute top-1 right-1 bg-white rounded-full w-6 h-6 flex items-center justify-center shadow text-red-500 text-xs font-bold">✕</button>
+         </div>
+
+         <label class="text-xs font-semibold text-gray-600 block mt-2">Foto para computador (recomendado: 1920×1080px, horizontal)</label>
+         <div id="bg-upload-area-desktop" class="w-full rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 flex flex-col items-center justify-center py-3 cursor-pointer hover:border-teal-400 transition text-xs text-gray-500" onclick="document.getElementById('bg-file-input-desktop').click()">
+          <i data-lucide="monitor" class="w-5 h-5 mb-1 text-gray-400"></i> Carregar imagem de fundo (computador)
+         </div>
+         <input id="bg-file-input-desktop" type="file" accept="image/*" class="hidden" onchange="handleBgUpload(this, 'desktop')">
+         <input id="evt-bg-url-desktop" type="hidden">
+         <div id="bg-preview-desktop-wrap" class="hidden relative mt-1" style="max-width:200px">
+          <img id="bg-preview-desktop" class="rounded-lg max-h-24 object-cover w-full">
+          <button type="button" onclick="removeBgPhoto('desktop')" class="absolute top-1 right-1 bg-white rounded-full w-6 h-6 flex items-center justify-center shadow text-red-500 text-xs font-bold">✕</button>
+         </div>
+         <p class="text-xs text-gray-400">Se carregares só uma das duas, essa é usada em todos os dispositivos.</p>
+
+         <label class="text-xs text-gray-500 block mt-2">Escurecimento do fundo (0–80%)</label>
          <input id="evt-bg-overlay" type="range" min="0" max="80" value="35" class="w-full accent-teal-500" oninput="document.getElementById('bg-overlay-val').textContent=this.value+'%'">
          <span id="bg-overlay-val" class="text-xs font-semibold text-teal-600">35%</span>
         </div>
@@ -1196,19 +1214,19 @@ para testemunhar o seu enlace matrimonial</textarea>
   </a>
 
   <!-- ===================== SCRIPTS (ordem importa) ===================== -->
-  <script src="js/config.js?v=557400"></script>
-  <script src="js/store.js?v=557400"></script>
-  <script src="js/visuals.js?v=557400"></script>
-  <script src="js/venues.js?v=557400"></script>
-  <script src="js/rsvp.js?v=557400"></script>
-  <script src="js/ui.js?v=557400"></script>
-  <script src="js/auth.js?v=557400"></script>
-  <script src="js/dashboard.js?v=557400"></script>
-  <script src="js/events.js?v=557400"></script>
-  <script src="js/guest.js?v=557400"></script>
-  <script src="js/sections.js?v=557400"></script>
-  <script src="js/admin.js?v=557400"></script>
-  <script src="js/router.js?v=557400"></script>
+  <script src="js/config.js?v=557500"></script>
+  <script src="js/store.js?v=557500"></script>
+  <script src="js/visuals.js?v=557500"></script>
+  <script src="js/venues.js?v=557500"></script>
+  <script src="js/rsvp.js?v=557500"></script>
+  <script src="js/ui.js?v=557500"></script>
+  <script src="js/auth.js?v=557500"></script>
+  <script src="js/dashboard.js?v=557500"></script>
+  <script src="js/events.js?v=557500"></script>
+  <script src="js/guest.js?v=557500"></script>
+  <script src="js/sections.js?v=557500"></script>
+  <script src="js/admin.js?v=557500"></script>
+  <script src="js/router.js?v=557500"></script>
 
 </body>
 </html>

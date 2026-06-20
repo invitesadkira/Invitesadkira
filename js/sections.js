@@ -257,7 +257,12 @@ function getSectionOrder(ev) {
 }
 
 function applyGuestBackground(ev) {
-  const bgUrl = ev.bg_url || '';
+  // Escolhe a variante mobile ou desktop consoante o ecrã do visitante,
+  // com fallback ao campo antigo (bg_url) para eventos criados antes desta
+  // funcionalidade existir.
+  const bgUrl = (typeof _pickPhotoForDevice === 'function')
+    ? _pickPhotoForDevice(ev.bg_url_mobile, ev.bg_url_desktop, ev.bg_url)
+    : (ev.bg_url || '');
   const overlayPct = parseFloat(ev.bg_overlay ?? 35);
   const overlayAlpha = Math.min(Math.max(overlayPct, 0), 80) / 100;
 
