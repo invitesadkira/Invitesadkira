@@ -164,8 +164,6 @@ async function renderGuestView() {
     if (dates.confirm_by_date) eventData.confirm_by_date = dates.confirm_by_date;
   } catch(e) { console.warn('loadEventDates failed:', e); }
 
-  console.log('🔬 TRACE std_cover_url antes de _keepFields:', eventData.std_cover_url);
-
   // ── Load visual settings from event_visuals table ──
   // Save ALL critical fields that must NEVER be overwritten by the visuals table
   const _keepFields = {
@@ -236,8 +234,6 @@ async function renderGuestView() {
     console.warn('event_visuals load failed:', e);
   }
 
-  console.log('🔬 TRACE std_cover_url depois de loadEventVisuals:', eventData.std_cover_url);
-
   // ── CRITICAL FIX: load venue/location data from the dedicated event_venues table ──
   // This was previously never loaded for guests — venue_ceremony/venue_civil/venue_reception
   // etc. live ONLY in event_venues, never in the events table, so without this call
@@ -294,8 +290,6 @@ async function renderGuestView() {
       }
     }
   });
-
-  console.log('🔬 TRACE std_cover_url depois do merge final RSVP_ONLY_FIELDS:', eventData.std_cover_url);
 
   // ── CRITICAL: Update Store.guestEventData with fully merged eventData ──
   Store.guestEventData = eventData;

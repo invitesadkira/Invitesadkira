@@ -2567,6 +2567,20 @@ async function checkURLForEvent() {
       console.log('✅ Event code final:', finalEventCode);
       
       const normalizedEvent = {
+        // ── CRÍTICO: herdar automaticamente TODOS os campos vindos da query ──
+        // Isto existe porque, durante meses, este objecto era construído à
+        // mão, campo a campo. Cada vez que uma nova funcionalidade adicionava
+        // uma coluna nova (ex: std_cover_url, std_scratch_enabled, release_type,
+        // rsvp_enabled, personalized_links_enabled...), ela tinha de ser
+        // lembrada e adicionada aqui manualmente — e isso falhou repetidamente,
+        // fazendo campos genuinamente gravados na BD desaparecerem em silêncio
+        // só porque ninguém os tinha listado nesta construção. O spread abaixo
+        // garante que QUALQUER coluna pedida na query SELECT chega sempre ao
+        // convidado, sem excepção — só os campos que precisam mesmo de
+        // transformação (strings 'yes'/'no' → boolean, renomes, defaults)
+        // são explicitamente sobrepostos depois.
+        ...eventData,
+
         id: eventData.id,
         userId: eventData.user_id,
         user_id: eventData.user_id,
@@ -2653,6 +2667,7 @@ async function checkURLForEvent() {
       console.log('✅ Evento carregado do Supabase e pronto para guest view:', normalizedEvent.title);
       console.log('  Código final do evento:', finalEventCode);
       console.log('  Allow Sides:', normalizedEvent.allowSides);
+      console.log('🔬 TRACE std_cover_url logo após normalizedEvent:', normalizedEvent.std_cover_url);
       if (giftsOnly && normalizedEvent.allowGifts) {
         return 'gifts';
       }
