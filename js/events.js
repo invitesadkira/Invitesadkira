@@ -692,8 +692,8 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
     show_invite: newShowInvite ? 'yes' : 'no', invite_text: newInviteText,
     show_parents: newShowParents ? 'yes' : 'no', groom_parents: newGroomPar, bride_parents: newBridePar,
     show_gallery: newShowGallery ? 'yes' : 'no', gallery_urls: newGalleryUrls,
-    show_manual: newShowManual ? 'yes' : 'no', manual_items: newManualItems,
-    show_schedule: newShowSched ? 'yes' : 'no', schedule_items: newSchedItems,
+    // manual_items/schedule_items removidos: vivem em event_visuals, nunca em events,
+    // e são geridos exclusivamente pelos editores dedicados (saveManualItems/saveScheduleItems)
     custom_font_family: newCustomFont,
     section_order: Store.eventSectionOrder ? JSON.stringify(Store.eventSectionOrder) : null,
     story_text: document.getElementById('evt-story-text')?.value.trim() || null,
@@ -731,8 +731,10 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
         ev.show_invite = newShowInvite ? 'yes' : 'no'; ev.invite_text = newInviteText;
         ev.show_parents = newShowParents ? 'yes' : 'no'; ev.groom_parents = newGroomPar; ev.bride_parents = newBridePar;
         ev.show_gallery = newShowGallery ? 'yes' : 'no'; ev.gallery_urls = newGalleryUrls;
-        ev.show_manual = newShowManual ? 'yes' : 'no'; ev.manual_items = newManualItems;
-        ev.show_schedule = newShowSched ? 'yes' : 'no'; ev.schedule_items = newSchedItems;
+        ev.show_manual = newShowManual ? 'yes' : 'no';
+        ev.show_schedule = newShowSched ? 'yes' : 'no';
+        // manual_items/schedule_items NOT touched here — see comment above
+        // where the actual save payload was fixed for the same reason.
         ev.custom_font_family = newCustomFont;
         ev.section_order = Store.eventSectionOrder ? JSON.stringify(Store.eventSectionOrder) : null;
         ev.story_text = document.getElementById('evt-story-text')?.value.trim() || null;
@@ -772,8 +774,12 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
           invite_blessing: document.getElementById('evt-invite-blessing')?.value?.trim() || null,
           show_parents: newShowParents ? 'yes' : 'no', groom_parents: newGroomPar, bride_parents: newBridePar,
           show_gallery: newShowGallery ? 'yes' : 'no', gallery_urls: newGalleryUrls,
-          show_manual: newShowManual ? 'yes' : 'no', manual_items: newManualItems,
-          show_schedule: newShowSched ? 'yes' : 'no', schedule_items: newSchedItems,
+          show_manual: newShowManual ? 'yes' : 'no',
+          show_schedule: newShowSched ? 'yes' : 'no',
+          // manual_items/schedule_items NUNCA gravados aqui — só pelos editores
+          // dedicados (saveManualItems/saveScheduleItems), que sabem o valor real.
+          // Gravar aqui com Store.eventManualItems/eventScheduleItems (que podem
+          // estar vazios nesta sessão) apagava silenciosamente o que já existia.
           custom_font_family: newCustomFont,
           story_text: document.getElementById('evt-story-text')?.value?.trim() || null,
           music_url: newMusicUrl, music_title: newMusicTitle,
@@ -841,8 +847,12 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
           show_invite: newShowInvite ? 'yes' : 'no', invite_text: newInviteText,
           show_parents: newShowParents ? 'yes' : 'no', groom_parents: newGroomPar, bride_parents: newBridePar,
           show_gallery: newShowGallery ? 'yes' : 'no', gallery_urls: newGalleryUrls,
-          show_manual: newShowManual ? 'yes' : 'no', manual_items: newManualItems,
-          show_schedule: newShowSched ? 'yes' : 'no', schedule_items: newSchedItems,
+          show_manual: newShowManual ? 'yes' : 'no',
+          show_schedule: newShowSched ? 'yes' : 'no',
+          // manual_items/schedule_items NUNCA gravados aqui — só pelos editores
+          // dedicados (saveManualItems/saveScheduleItems), que sabem o valor real.
+          // Gravar aqui com Store.eventManualItems/eventScheduleItems (que podem
+          // estar vazios nesta sessão) apagava silenciosamente o que já existia.
           custom_font_family: newCustomFont,
           section_order: Store.eventSectionOrder ? JSON.stringify(Store.eventSectionOrder) : null
         };
@@ -992,6 +1002,14 @@ function renderEventDetails() {
   if (editURLBtn) editURLBtn.parentElement.parentElement.classList.toggle('hidden', !isAdmin);
   
   document.getElementById('btn-delete-event').classList.toggle('hidden', !(isOwner || isAdmin));
+
+  // Botão "Marcar como Exemplo" — apenas visível para admin
+  const exampleBtn = document.getElementById('btn-example-event');
+  if (exampleBtn) {
+    exampleBtn.classList.toggle('hidden', !isAdmin);
+    const exampleLabel = document.getElementById('btn-example-event-label');
+    if (exampleLabel) exampleLabel.textContent = event.is_example_event === true ? 'Remover de Exemplo' : 'Marcar como Exemplo';
+  }
 
   const confirmations = event.confirmations || [];
   const confirmed = confirmations.filter(c => c.attending === true || c.attending === 'yes');
@@ -1457,7 +1475,7 @@ async function editEvent() {
   // Fetch fresh data from Supabase (no localStorage)
   try {
     const result = await supabaseRequest(
-      `events?id=eq.${eventId}&select=id,title,date,time,confirm_by_date,cover_image,event_code,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,rsvp_enabled,save_the_date_enabled,release_type,release_date,is_invite_released,std_title,std_subtitle,std_font_family,std_name_size,std_title_size,std_intro_enabled,std_intro_text,std_intro_photo_url,std_show_cover,std_cover_url,std_scratch_enabled,std_scratch_mode,std_scratch_photo_url,std_scratch_text,std_date_style,personalized_links_enabled,show_rsvp_in_full_invite,show_guest_name_in_invite,allow_messages,show_guest_messages,music_url,music_title,iban_message,iban_number,iban_holder,iban_footer,show_couple,groom_name,bride_name,couple_size,bg_url,bg_overlay,show_bible,bible_text,bible_ref,show_invite,invite_text,show_parents,groom_parents,bride_parents,show_gallery,gallery_urls,show_schedule,schedule_items,custom_font_family,section_order,story_text,invite_blessing,event_color&limit=1`
+      `events?id=eq.${eventId}&select=id,title,date,time,confirm_by_date,cover_image,event_code,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,rsvp_enabled,save_the_date_enabled,release_type,release_date,is_invite_released,std_title,std_subtitle,std_font_family,std_name_size,std_title_size,std_intro_enabled,std_intro_text,std_intro_photo_url,std_show_cover,std_cover_url,std_scratch_enabled,std_scratch_mode,std_scratch_photo_url,std_scratch_text,std_date_style,is_example_event,personalized_links_enabled,show_rsvp_in_full_invite,show_guest_name_in_invite,allow_messages,show_guest_messages,music_url,music_title,iban_message,iban_number,iban_holder,iban_footer,show_couple,groom_name,bride_name,couple_size,bg_url,bg_overlay,show_bible,bible_text,bible_ref,show_invite,invite_text,show_parents,groom_parents,bride_parents,show_gallery,gallery_urls,show_schedule,schedule_items,custom_font_family,section_order,story_text,invite_blessing,event_color&limit=1`
     );
     const fresh = (result && result[0]) ? result[0] : evStore;
     // Load visual data from event_visuals table
@@ -2058,7 +2076,7 @@ async function searchEvent() {
     // ✅ PASSO 1: Carregar eventos do Supabase COM JOIN para trazer RSVPS e GIFTS
     console.log('📥 Buscando evento DIRETO do Supabase...');
     
-    const allEvents = await supabaseRequest(`events?select=id,title,date,time,confirm_by_date,cover_image,event_code,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,rsvp_enabled,save_the_date_enabled,release_type,release_date,is_invite_released,std_title,std_subtitle,std_font_family,std_name_size,std_title_size,std_intro_enabled,std_intro_text,std_intro_photo_url,std_show_cover,std_cover_url,std_scratch_enabled,std_scratch_mode,std_scratch_photo_url,std_scratch_text,std_date_style,personalized_links_enabled,show_rsvp_in_full_invite,show_guest_name_in_invite,allow_messages,show_guest_messages,rsvps(guest_name,attending,side,companions,kids,wants_gift,message,created_at,updated_at),gifts(id,name,category,reserved,reserved_by)`);
+    const allEvents = await supabaseRequest(`events?select=id,title,date,time,confirm_by_date,cover_image,event_code,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,rsvp_enabled,save_the_date_enabled,release_type,release_date,is_invite_released,std_title,std_subtitle,std_font_family,std_name_size,std_title_size,std_intro_enabled,std_intro_text,std_intro_photo_url,std_show_cover,std_cover_url,std_scratch_enabled,std_scratch_mode,std_scratch_photo_url,std_scratch_text,std_date_style,is_example_event,personalized_links_enabled,show_rsvp_in_full_invite,show_guest_name_in_invite,allow_messages,show_guest_messages,rsvps(guest_name,attending,side,companions,kids,wants_gift,message,created_at,updated_at),gifts(id,name,category,reserved,reserved_by)`);
     
     console.log(' Total de eventos no Supabase:', allEvents?.length || 0);
     console.log('🔍 Query de busca (uppercase):', query);
@@ -2507,7 +2525,7 @@ async function checkURLForEvent() {
     
     // ✅ Query otimizada: procurar por event_code OU id, com LIMIT 1
     let eventsData = await supabaseRequest(
-      `events?or=(event_code.eq.${eventCode},id.eq.${eventCode})&select=id,user_id,title,date,time,confirm_by_date,cover_image,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,rsvp_enabled,save_the_date_enabled,release_type,release_date,is_invite_released,std_title,std_subtitle,std_font_family,std_name_size,std_title_size,std_intro_enabled,std_intro_text,std_intro_photo_url,std_show_cover,std_cover_url,std_scratch_enabled,std_scratch_mode,std_scratch_photo_url,std_scratch_text,std_date_style,personalized_links_enabled,show_rsvp_in_full_invite,show_guest_name_in_invite,allow_messages,show_guest_messages,music_url,music_title,iban_message,iban_number,iban_holder,iban_footer,groom_name,bride_name,couple_size,show_couple,bg_url,bg_overlay,bible_text,bible_ref,show_bible,invite_text,show_invite,groom_parents,bride_parents,show_parents,gallery_urls,show_gallery,show_schedule,schedule_items,custom_font_family,section_order,story_text,invite_blessing,event_color,rsvps(guest_name,attending,side,companions,kids,wants_gift,message,created_at,updated_at),gifts(id,name,category,reserved,reserved_by)&limit=1`
+      `events?or=(event_code.eq.${eventCode},id.eq.${eventCode})&select=id,user_id,title,date,time,confirm_by_date,cover_image,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,rsvp_enabled,save_the_date_enabled,release_type,release_date,is_invite_released,std_title,std_subtitle,std_font_family,std_name_size,std_title_size,std_intro_enabled,std_intro_text,std_intro_photo_url,std_show_cover,std_cover_url,std_scratch_enabled,std_scratch_mode,std_scratch_photo_url,std_scratch_text,std_date_style,is_example_event,personalized_links_enabled,show_rsvp_in_full_invite,show_guest_name_in_invite,allow_messages,show_guest_messages,music_url,music_title,iban_message,iban_number,iban_holder,iban_footer,groom_name,bride_name,couple_size,show_couple,bg_url,bg_overlay,bible_text,bible_ref,show_bible,invite_text,show_invite,groom_parents,bride_parents,show_parents,gallery_urls,show_gallery,show_schedule,schedule_items,custom_font_family,section_order,story_text,invite_blessing,event_color,rsvps(guest_name,attending,side,companions,kids,wants_gift,message,created_at,updated_at),gifts(id,name,category,reserved,reserved_by)&limit=1`
     );
     
     console.log('📥 Resultado da busca:', eventsData?.length === 1 ? 'Encontrado' : 'Não encontrado');
@@ -2523,6 +2541,12 @@ async function checkURLForEvent() {
         std_cover_url: eventData.std_cover_url,
         std_show_cover: eventData.std_show_cover,
       });
+
+      // ── Evento exemplar: renovar datas automaticamente se necessário ──
+      // Fire-and-forget — nunca bloqueia o carregamento da página do convidado.
+      if (eventData.is_example_event === true && typeof _autoRenewExampleEventDates === 'function') {
+        _autoRenewExampleEventDates(eventData).catch(() => {});
+      }
       
       const maxComp = eventData.max_companions !== null && eventData.max_companions !== undefined 
         ? parseInt(eventData.max_companions) 
@@ -3659,7 +3683,7 @@ async function openIntakePreview(eventId) {
 
   try {
     const result = await supabaseRequest(
-      `events?id=eq.${eventId}&select=id,title,date,time,confirm_by_date,cover_image,event_code,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,rsvp_enabled,save_the_date_enabled,release_type,release_date,is_invite_released,std_title,std_subtitle,std_font_family,std_name_size,std_title_size,std_intro_enabled,std_intro_text,std_intro_photo_url,std_show_cover,std_cover_url,std_scratch_enabled,std_scratch_mode,std_scratch_photo_url,std_scratch_text,std_date_style,personalized_links_enabled,show_rsvp_in_full_invite,show_guest_name_in_invite,allow_messages,show_guest_messages,groom_name,bride_name,couple_size,show_couple,bg_url,bg_overlay,show_bible,bible_text,bible_ref,show_invite,invite_text,show_parents,groom_parents,bride_parents,show_gallery,gallery_urls,show_schedule,schedule_items,custom_font_family,section_order,story_text,event_color,iban_message,iban_number,iban_holder,iban_footer,music_url,music_title,rsvps(guest_name,attending,side,companions,kids,wants_gift,message),gifts(id,name,category,reserved,reserved_by)&limit=1`
+      `events?id=eq.${eventId}&select=id,title,date,time,confirm_by_date,cover_image,event_code,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,rsvp_enabled,save_the_date_enabled,release_type,release_date,is_invite_released,std_title,std_subtitle,std_font_family,std_name_size,std_title_size,std_intro_enabled,std_intro_text,std_intro_photo_url,std_show_cover,std_cover_url,std_scratch_enabled,std_scratch_mode,std_scratch_photo_url,std_scratch_text,std_date_style,is_example_event,personalized_links_enabled,show_rsvp_in_full_invite,show_guest_name_in_invite,allow_messages,show_guest_messages,groom_name,bride_name,couple_size,show_couple,bg_url,bg_overlay,show_bible,bible_text,bible_ref,show_invite,invite_text,show_parents,groom_parents,bride_parents,show_gallery,gallery_urls,show_schedule,schedule_items,custom_font_family,section_order,story_text,event_color,iban_message,iban_number,iban_holder,iban_footer,music_url,music_title,rsvps(guest_name,attending,side,companions,kids,wants_gift,message),gifts(id,name,category,reserved,reserved_by)&limit=1`
     );
     if (!result || !result[0]) throw new Error('not found');
 
@@ -3775,4 +3799,244 @@ function removeEventFaqItem(idx) {
   if (!Store.eventFaqItems) return;
   Store.eventFaqItems.splice(idx, 1);
   renderEventFaqList();
+}
+
+// ===================== ABA DEDICADA: SAVE THE DATE =====================
+// Editor isolado, com o seu próprio PATCH exclusivo para os campos do Save
+// the Date. Construído porque o formulário geral de edição tem dezenas de
+// campos de secções completamente diferentes, e qualquer falha num desses
+// campos (coluna em falta, etc.) podia bloquear silenciosamente a gravação
+// de TUDO, incluindo o Save the Date. Isolar isto num PATCH próprio elimina
+// esse risco por completo: este editor só toca nos campos do Save the Date.
+async function openStdEditor() {
+  const eventId = Store.currentEventId;
+  const ev = Store.events.find(e => e.id === eventId);
+  if (!ev) { toast('Evento não encontrado.'); return; }
+
+  toast('A carregar dados do Save the Date...');
+  let fresh;
+  try {
+    fresh = await supabaseRequest(`events?id=eq.${eventId}&select=date,confirm_by_date,save_the_date_enabled,release_type,release_date,is_invite_released,std_title,std_subtitle,std_name_size,std_title_size,std_show_cover,std_cover_url,std_date_style,std_scratch_enabled,std_scratch_mode,std_scratch_photo_url,std_scratch_text,event_color&limit=1`);
+  } catch(e) { fresh = null; }
+  const d = (fresh && fresh[0]) ? fresh[0] : ev;
+
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.id = 'std-editor-modal';
+  modal.style.zIndex = '10600';
+  modal.innerHTML = `<div class="modal-content bg-white rounded-2xl p-5" style="max-width:480px;max-height:88vh;overflow-y:auto">
+    <h3 class="text-base font-bold mb-1 flex items-center gap-2"><i data-lucide="heart" class="w-5 h-5" style="color:#fbbf24"></i> Save the Date</h3>
+    <p class="text-xs text-gray-500 mb-4">Tudo o que precisas para configurar a tela de Save the Date, num só sítio. Guardar aqui não afecta nada do resto do convite.</p>
+
+    <div class="flex items-center justify-between mb-3 pb-3" style="border-bottom:1px solid #e5e7eb">
+      <span class="text-sm font-semibold text-gray-700">Activar Save the Date</span>
+      <div id="std2-sw-enabled" class="switch ${d.save_the_date_enabled === true ? 'active' : ''}" onclick="toggleSwitch(this)"></div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-3 mb-3">
+      <div>
+        <label class="text-xs font-semibold text-gray-600 block mb-1">Data do evento</label>
+        <input id="std2-date" type="date" class="input-field text-sm" value="${(d.date||'').split('T')[0]}">
+      </div>
+      <div>
+        <label class="text-xs font-semibold text-gray-600 block mb-1">Prazo de confirmação</label>
+        <input id="std2-deadline" type="date" class="input-field text-sm" value="${(d.confirm_by_date||'').split('T')[0]}">
+      </div>
+    </div>
+
+    <label class="text-xs font-semibold text-gray-600 block mb-1">Título (acima dos nomes)</label>
+    <input id="std2-title" class="input-field text-sm mb-2" value="${escapeHTML(d.std_title || 'Save the Date')}">
+
+    <label class="text-xs font-semibold text-gray-600 block mb-1">Subtítulo (abaixo dos nomes)</label>
+    <input id="std2-subtitle" class="input-field text-sm mb-3" value="${escapeHTML(d.std_subtitle || 'Nosso Casamento')}">
+
+    <label class="text-xs font-semibold text-gray-600 block mb-1">Estilo visual da data</label>
+    <select id="std2-date-style" class="input-field text-sm mb-3">
+      <option value="card" ${d.std_date_style==='card'||!d.std_date_style?'selected':''}>Cartão (clássico)</option>
+      <option value="minimal" ${d.std_date_style==='minimal'?'selected':''}>Minimalista</option>
+      <option value="bignum" ${d.std_date_style==='bignum'?'selected':''}>Número grande em destaque</option>
+    </select>
+
+    <div class="flex items-center justify-between mb-2">
+      <span class="text-xs font-semibold text-gray-600">Foto de capa</span>
+      <div id="std2-sw-cover" class="switch ${d.std_show_cover !== false ? 'active' : ''}" onclick="toggleSwitch(this,'std2-cover-extra')"></div>
+    </div>
+    <div id="std2-cover-extra" class="${d.std_show_cover !== false ? '' : 'hidden'} mb-3">
+      <input type="file" id="std2-cover-input" accept="image/*" class="input-field text-sm" onchange="handleStd2CoverUpload(this)">
+      <input type="hidden" id="std2-cover-url" value="${d.std_cover_url || ''}">
+      <div id="std2-cover-preview-wrap" class="${d.std_cover_url ? '' : 'hidden'} relative mt-1" style="max-width:160px">
+        <img id="std2-cover-preview" class="rounded-lg max-h-28 object-cover w-full" src="${d.std_cover_url || ''}">
+        <button type="button" onclick="document.getElementById('std2-cover-url').value='';document.getElementById('std2-cover-preview-wrap').classList.add('hidden')" class="absolute top-1 right-1 bg-white rounded-full w-6 h-6 flex items-center justify-center shadow text-red-500 text-xs font-bold">✕</button>
+      </div>
+      <p class="text-xs text-gray-400 mt-1">Foto independente — não usa a foto de fundo do convite.</p>
+    </div>
+
+    <div class="flex items-center justify-between mb-2">
+      <span class="text-xs font-semibold text-gray-600">Efeito "Raspadinha"</span>
+      <div id="std2-sw-scratch" class="switch ${d.std_scratch_enabled === true ? 'active' : ''}" onclick="toggleSwitch(this,'std2-scratch-extra')"></div>
+    </div>
+    <div id="std2-scratch-extra" class="${d.std_scratch_enabled === true ? '' : 'hidden'} mb-3 space-y-2">
+      <select id="std2-scratch-mode" class="input-field text-sm">
+        <option value="photo" ${d.std_scratch_mode==='photo'||!d.std_scratch_mode?'selected':''}>Raspar foto do casal</option>
+        <option value="heart" ${d.std_scratch_mode==='heart'?'selected':''}>Raspar coração com a data</option>
+      </select>
+      <input id="std2-scratch-text" class="input-field text-sm" value="${escapeHTML(d.std_scratch_text || 'Raspa para desvendar')}">
+    </div>
+
+    <label class="text-xs font-semibold text-gray-600 block mb-1">Quando liberar o convite completo?</label>
+    <select id="std2-release-type" class="input-field text-sm mb-3" onchange="document.getElementById('std2-release-date-wrap').classList.toggle('hidden', this.value!=='by_date')">
+      <option value="manual" ${d.release_type==='manual'||!d.release_type?'selected':''}>Manualmente</option>
+      <option value="on_confirmation" ${d.release_type==='on_confirmation'?'selected':''}>Quando confirmar presença</option>
+      <option value="by_date" ${d.release_type==='by_date'?'selected':''}>A partir de uma data</option>
+    </select>
+    <div id="std2-release-date-wrap" class="${d.release_type==='by_date'?'':'hidden'} mb-3">
+      <input id="std2-release-date" type="datetime-local" class="input-field text-sm" value="${d.release_date ? d.release_date.slice(0,16) : ''}">
+    </div>
+    <div class="flex items-center justify-between mb-4">
+      <span class="text-xs font-semibold text-gray-600">Convite já liberado para todos?</span>
+      <div id="std2-sw-released" class="switch ${d.is_invite_released === true ? 'active' : ''}" onclick="toggleSwitch(this)"></div>
+    </div>
+
+    <div class="flex gap-2">
+      <button class="flex-1 btn-main text-sm" onclick="saveStdEditor()">Guardar Save the Date</button>
+      <button class="btn-outline text-sm" onclick="this.closest('.modal-overlay').remove()">Cancelar</button>
+    </div>
+  </div>`;
+  document.body.appendChild(modal);
+  lucide.createIcons();
+}
+
+async function handleStd2CoverUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 5*1024*1024) { toast('Imagem muito grande. Máx. 5 MB.'); return; }
+  toast('A carregar foto...');
+  try {
+    const url = await uploadImageToStorage(file, 'event-covers');
+    document.getElementById('std2-cover-url').value = url;
+    const prev = document.getElementById('std2-cover-preview');
+    if (prev) prev.src = url;
+    document.getElementById('std2-cover-preview-wrap')?.classList.remove('hidden');
+    toast('Foto carregada!');
+  } catch(e) { toast('Erro ao carregar a foto.'); }
+}
+
+async function saveStdEditor() {
+  const eventId = Store.currentEventId;
+  if (!eventId) { toast('Erro: evento não identificado.'); return; }
+
+  const dateVal = document.getElementById('std2-date')?.value || null;
+  const deadlineVal = document.getElementById('std2-deadline')?.value || dateVal;
+  const releaseDateVal = document.getElementById('std2-release-date')?.value;
+
+  const payload = {
+    date: dateVal,
+    confirm_by_date: deadlineVal,
+    save_the_date_enabled: document.getElementById('std2-sw-enabled')?.classList.contains('active') || false,
+    std_title: document.getElementById('std2-title')?.value?.trim() || 'Save the Date',
+    std_subtitle: document.getElementById('std2-subtitle')?.value?.trim() || 'Nosso Casamento',
+    std_date_style: document.getElementById('std2-date-style')?.value || 'card',
+    std_show_cover: document.getElementById('std2-sw-cover')?.classList.contains('active') || false,
+    std_cover_url: document.getElementById('std2-cover-url')?.value || null,
+    std_scratch_enabled: document.getElementById('std2-sw-scratch')?.classList.contains('active') || false,
+    std_scratch_mode: document.getElementById('std2-scratch-mode')?.value || 'photo',
+    std_scratch_text: document.getElementById('std2-scratch-text')?.value?.trim() || 'Raspa para desvendar',
+    release_type: document.getElementById('std2-release-type')?.value || 'manual',
+    release_date: releaseDateVal ? new Date(releaseDateVal).toISOString() : null,
+    is_invite_released: document.getElementById('std2-sw-released')?.classList.contains('active') || false,
+  };
+
+  toast('A guardar...');
+  try {
+    const result = await supabaseRequest(`events?id=eq.${eventId}`, 'PATCH', payload);
+    if (result) {
+      toast('Save the Date guardado com sucesso!');
+      // Update local cache and re-fetch fresh in background
+      const ev = Store.events.find(e => e.id === eventId);
+      if (ev) Object.assign(ev, payload);
+      document.getElementById('std-editor-modal')?.remove();
+      try {
+        const freshRows = await supabaseRequest(`events?id=eq.${eventId}&select=*`);
+        if (freshRows && freshRows[0] && ev) Object.assign(ev, freshRows[0]);
+      } catch(e) {}
+    } else {
+      toast('Erro ao guardar. Verifica a consola para detalhes.');
+    }
+  } catch(e) {
+    console.error('Erro ao guardar Save the Date:', e);
+    toast('Erro ao guardar. Verifica a consola.');
+  }
+}
+
+// ===================== ADMIN: EVENTO EXEMPLAR =====================
+async function adminToggleExampleEvent() {
+  const eventId = Store.currentEventId;
+  const ev = Store.events.find(e => e.id === eventId);
+  if (!ev) return;
+
+  const newValue = !(ev.is_example_event === true);
+  try {
+    await supabaseRequest(`events?id=eq.${eventId}`, 'PATCH', { is_example_event: newValue });
+    ev.is_example_event = newValue;
+    toast(newValue
+      ? '⭐ Evento marcado como exemplar! As datas serão renovadas automaticamente sempre que se aproximarem do fim.'
+      : 'Evento removido da lista de exemplares.');
+    const exampleLabel = document.getElementById('btn-example-event-label');
+    if (exampleLabel) exampleLabel.textContent = newValue ? 'Remover de Exemplo' : 'Marcar como Exemplo';
+    if (newValue) {
+      // Renovar imediatamente as datas ao marcar, para já começar bem configurado
+      await _autoRenewExampleEventDates(ev, true);
+    }
+  } catch(e) {
+    console.error('Erro ao marcar evento exemplar:', e);
+    toast('Erro ao actualizar. Verifica a consola.');
+  }
+}
+
+// ── Auto-renovação de datas para eventos exemplares ─────────────────────────
+// Sempre que um evento marcado como "exemplar" (is_example_event = true) é
+// aberto — seja por um possível cliente a quem o link foi enviado, seja pelo
+// próprio organizador/admin — verificamos se a data do evento ou o prazo de
+// confirmação estão a menos de 1 mês de distância (ou já passaram). Se sim,
+// empurramos AMBAS as datas 2 meses para a frente a partir de hoje, mantendo
+// o intervalo original entre elas. Isto garante que um link de demonstração
+// enviado a clientes nunca mostra um evento "ultrapassado" ou prestes a
+// expirar — o link continua sempre a parecer um evento próximo e credível.
+async function _autoRenewExampleEventDates(ev, forceNow) {
+  if (!ev || !ev.id) return;
+  if (!forceNow && ev.is_example_event !== true) return;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const eventDate = ev.date ? new Date(ev.date.split('T')[0] + 'T00:00:00') : null;
+  const deadlineDate = ev.confirm_by_date ? new Date(ev.confirm_by_date.split('T')[0] + 'T00:00:00') : null;
+
+  const oneMonthMs = 30 * 24 * 60 * 60 * 1000;
+  const needsRenewal =
+    !eventDate || (eventDate - today) < oneMonthMs ||
+    !deadlineDate || (deadlineDate - today) < oneMonthMs;
+
+  if (!needsRenewal && !forceNow) return;
+
+  // Preserve the original gap between event date and deadline (e.g. if the
+  // deadline was always 2 weeks before the event, keep that same 2-week gap)
+  const gapMs = (eventDate && deadlineDate) ? (eventDate - deadlineDate) : (14 * 24 * 60 * 60 * 1000);
+
+  const newEventDate = new Date(today.getTime() + 60 * 24 * 60 * 60 * 1000); // +2 months
+  const newDeadlineDate = new Date(newEventDate.getTime() - gapMs);
+
+  const fmtDate = (d) => d.toISOString().split('T')[0];
+
+  try {
+    await supabaseRequest(`events?id=eq.${ev.id}`, 'PATCH', {
+      date: fmtDate(newEventDate),
+      confirm_by_date: fmtDate(newDeadlineDate),
+    });
+    ev.date = fmtDate(newEventDate);
+    ev.confirm_by_date = fmtDate(newDeadlineDate);
+    console.log('🔄 Evento exemplar renovado automaticamente:', { id: ev.id, newDate: ev.date, newDeadline: ev.confirm_by_date });
+  } catch(e) {
+    console.warn('Falha ao renovar datas do evento exemplar:', e);
+  }
 }
