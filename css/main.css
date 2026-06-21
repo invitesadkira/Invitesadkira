@@ -204,6 +204,12 @@ html, body { height: 100%; margin: 0; width: 100%; overflow-x: hidden; }
 .reveal-stagger.visible > *:nth-child(6) { opacity:1; transform:none; transition-delay:0.55s; }
 .reveal-stagger.visible > *:nth-child(7) { opacity:1; transform:none; transition-delay:0.65s; }
 .reveal-stagger.visible > *:nth-child(8) { opacity:1; transform:none; transition-delay:0.75s; }
+/* ✅ CORREÇÃO: as regras acima só cobriam os primeiros 8 itens — qualquer
+   9º item ou seguinte (ex: um item extra no Manual do Bom Convidado, mais
+   fotos na galeria, etc.) ficava com opacity:0 para sempre, porque nunca
+   recebia a classe "visible" combinada com a posição certa. Esta regra
+   cobre todos os itens a partir do 9º, com o mesmo atraso do último. */
+.reveal-stagger.visible > *:nth-child(n+9) { opacity:1; transform:none; transition-delay:0.75s; }
 
 /* ── Sections ── */
 .event-section { width: 100%; padding: 2.5rem 1.25rem; }
@@ -373,6 +379,8 @@ html, body { height: 100%; margin: 0; width: 100%; overflow-x: hidden; }
 .reveal-stagger.visible > *:nth-child(6) { opacity:1; transform:none; transition-delay:1.08s; }
 .reveal-stagger.visible > *:nth-child(7) { opacity:1; transform:none; transition-delay:1.08s; }
 .reveal-stagger.visible > *:nth-child(8) { opacity:1; transform:none; transition-delay:1.24s; }
+/* ✅ Mesma correção do bloco anterior: cobre o 9º item e seguintes. */
+.reveal-stagger.visible > *:nth-child(n+9) { opacity:1; transform:none; transition-delay:1.24s; }
 
 /* ── Floating music button — circular spinner ring ── */
 #floating-music-btn {
