@@ -132,25 +132,6 @@ async function renderGuestSections(eventData) {
   dlog('show_schedule:', eventData.show_schedule, '| schedule_items:', eventData.schedule_items ? '✓' : '✗ null/vazio');
   console.groupEnd();
 
-  // ── Painel de diagnóstico visível na página, sem precisar da consola ──
-  // Activa-se acrescentando &debug=1 ao link do convidado. Mostra os valores
-  // reais recebidos pelo browser no momento de construir as secções.
-  try {
-    if (new URLSearchParams(window.location.search).get('debug') === '1') {
-      document.getElementById('_adkira-debug-panel')?.remove();
-      const panel = document.createElement('div');
-      panel.id = '_adkira-debug-panel';
-      panel.style.cssText = 'position:fixed;bottom:0;left:0;right:0;max-height:60vh;overflow-y:auto;background:#0f172a;color:#a7f3d0;font:11px/1.5 monospace;padding:0.75rem;z-index:999999;white-space:pre-wrap;border-top:3px solid #f59e0b';
-      const safeManual = eventData.manual_items ? String(eventData.manual_items) : '(null/vazio)';
-      panel.textContent =
-        '🔧 DEBUG (remove &debug=1 do link para esconder isto)\n' +
-        'event.id: ' + eventData.id + '\n' +
-        'show_manual: ' + eventData.show_manual + '\n' +
-        'manual_items (bruto recebido pelo browser):\n' + safeManual;
-      document.body.appendChild(panel);
-    }
-  } catch(e) {}
-
   applyGuestBackground(eventData);
 
   let html = '';
