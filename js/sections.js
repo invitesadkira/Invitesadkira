@@ -121,15 +121,15 @@ async function renderGuestSections(eventData) {
 
   // DEBUG: Log what data we have for each section
   console.group('renderGuestSections — section data check');
-  console.log('bible_text:', eventData.bible_text ? '✓ '+String(eventData.bible_text).substring(0,30) : '✗ null');
-  console.log('gallery_urls:', eventData.gallery_urls ? '✓ '+String(eventData.gallery_urls).substring(0,50) : '✗ null');
-  console.log('groom_parents:', eventData.groom_parents ? '✓' : '✗');
-  console.log('iban_number:', eventData.iban_number ? '✓' : '✗');
-  console.log('invite_text:', eventData.invite_text ? '✓' : '✗');
-  console.log('event_color:', eventData.event_color);
-  console.log('section_order:', eventData.section_order ? JSON.parse(eventData.section_order) : 'default');
-  console.log('show_manual:', eventData.show_manual, '| manual_items:', eventData.manual_items ? '✓ '+String(eventData.manual_items).substring(0,80) : '✗ null/vazio');
-  console.log('show_schedule:', eventData.show_schedule, '| schedule_items:', eventData.schedule_items ? '✓' : '✗ null/vazio');
+  dlog('bible_text:', eventData.bible_text ? '✓ '+String(eventData.bible_text).substring(0,30) : '✗ null');
+  dlog('gallery_urls:', eventData.gallery_urls ? '✓ '+String(eventData.gallery_urls).substring(0,50) : '✗ null');
+  dlog('groom_parents:', eventData.groom_parents ? '✓' : '✗');
+  dlog('iban_number:', eventData.iban_number ? '✓' : '✗');
+  dlog('invite_text:', eventData.invite_text ? '✓' : '✗');
+  dlog('event_color:', eventData.event_color);
+  dlog('section_order:', eventData.section_order ? JSON.parse(eventData.section_order) : 'default');
+  dlog('show_manual:', eventData.show_manual, '| manual_items:', eventData.manual_items ? '✓ '+String(eventData.manual_items).substring(0,80) : '✗ null/vazio');
+  dlog('show_schedule:', eventData.show_schedule, '| schedule_items:', eventData.schedule_items ? '✓' : '✗ null/vazio');
   console.groupEnd();
 
   applyGuestBackground(eventData);
@@ -954,7 +954,7 @@ async function saveManualItems() {
 
   // Persist immediately to Supabase
   const eventId = Store.currentEventId || Store._intakeEventId;
-  console.log('📝 saveManualItems — a guardar para eventId:', eventId, 'itens:', items);
+  dlog('📝 saveManualItems — a guardar para eventId:', eventId, 'itens:', items);
   if (!eventId) {
     console.error('❌ saveManualItems: nenhum eventId disponível (Store.currentEventId e Store._intakeEventId estão ambos vazios). As alterações NÃO foram guardadas no Supabase, apenas em memória.');
     toast('Erro: não foi possível identificar o evento. As alterações podem não ter sido guardadas.');
@@ -965,7 +965,7 @@ async function saveManualItems() {
         manual_items: JSON.stringify(items),
         show_manual: 'yes'
       });
-      console.log('📝 saveManualItems — resultado da gravação:', saveResult);
+      dlog('📝 saveManualItems — resultado da gravação:', saveResult);
       const swManual = document.getElementById('sw-manual');
       if (swManual && !swManual.classList.contains('active')) swManual.classList.add('active');
       const ev2 = Store.events.find(e => e.id === eventId);
@@ -1147,7 +1147,7 @@ async function saveScheduleItems() {
 
   // Persist immediately to Supabase — don't wait for the main event form save
   const eventId = Store.currentEventId || Store._intakeEventId;
-  console.log('📝 saveScheduleItems — a guardar para eventId:', eventId, 'itens (ordenados):', items);
+  dlog('📝 saveScheduleItems — a guardar para eventId:', eventId, 'itens (ordenados):', items);
   if (!eventId) {
     console.error('❌ saveScheduleItems: nenhum eventId disponível. As alterações NÃO foram guardadas no Supabase.');
     toast('Erro: não foi possível identificar o evento.');
@@ -1158,7 +1158,7 @@ async function saveScheduleItems() {
         schedule_items: JSON.stringify(items),
         show_schedule: 'yes'   // Always enable display once the user has customised it
       });
-      console.log('📝 saveScheduleItems — resultado da gravação:', saveResult);
+      dlog('📝 saveScheduleItems — resultado da gravação:', saveResult);
       // Keep the main form switch in sync so a subsequent full-form save doesn't wipe it
       const swSchedule = document.getElementById('sw-schedule');
       if (swSchedule && !swSchedule.classList.contains('active')) swSchedule.classList.add('active');

@@ -119,7 +119,7 @@ function filterAdminAccounts() {
     u.phone.toLowerCase().includes(searchTerm)
   );
   
-  console.log('🔍 Pesquisa:', { searchTerm, total: nonAdminUsers.length, encontrados: filtered.length });
+  dlog('🔍 Pesquisa:', { searchTerm, total: nonAdminUsers.length, encontrados: filtered.length });
   
   if (filtered.length === 0) {
     document.getElementById('admin-accounts').innerHTML = `
@@ -152,12 +152,11 @@ function renderAdminAccountsList(users) {
   accountsHtml += users.map(u => {
     const userEvents = Store.events.filter(e => e.userId === u.id).length;
     const userStatus = statusLabels[u.status] || statusLabels['active'] || 'Ativo';
-    const userPhone = u.phone || 'N/A';
-    const userId = u.id || 'N/A';
-    const userPassword = u.password || 'N/A';
+    const userPhone = escapeHTML(u.phone || 'N/A');
+    const userId = escapeHTML(u.id || 'N/A');
     const userStatusClass = statusColors[u.status] || statusColors['active'] || 'bg-green-100 text-green-700';
     const eventLimit = u.eventLimit !== null ? u.eventLimit : '∞';
-    const adminLabel = u.adminLabel || '-';
+    const adminLabel = escapeHTML(u.adminLabel || '-');
     const userRole = u.role || 'user';
     
     let html = '<div class="bg-white rounded-xl shadow-sm p-4 mb-3">';
@@ -172,7 +171,7 @@ function renderAdminAccountsList(users) {
     html += '<div class="bg-gray-50 p-2 rounded"><p class="text-gray-500 mb-0.5">Username</p><p class="text-gray-800 font-semibold break-all">' + userPhone + '</p></div>';
     html += '<div class="bg-gray-50 p-2 rounded"><p class="text-gray-500 mb-0.5">Tipo</p><p class="text-gray-800 font-semibold">' + (userRole === 'moderator' ? 'Moderador' : 'Utilizador') + '</p></div>';
     html += '<div class="bg-gray-50 p-2 rounded"><p class="text-gray-500 mb-0.5">Nome Admin</p><p class="text-gray-800 font-semibold">' + adminLabel + '</p></div>';
-    html += '<div class="bg-gray-50 p-2 rounded"><p class="text-gray-500 mb-0.5">Senha</p><p class="text-gray-800 font-mono text-xs break-all">' + userPassword + '</p></div>';
+    html += '<div class="bg-gray-50 p-2 rounded"><p class="text-gray-500 mb-0.5">Senha</p><p class="text-gray-800 font-mono text-xs break-all">•••••••• <button class="text-teal-600 underline font-sans not-italic" style="font-size:0.68rem" onclick="changeUserPassword(\'' + u.id + '\')">redefinir</button></p></div>';
     html += '<div class="bg-gray-50 p-2 rounded"><p class="text-gray-500 mb-0.5">Status</p><span class="inline-block px-2 py-0.5 rounded-full font-semibold ' + userStatusClass + '">' + userStatus + '</span></div>';
     html += '<div class="bg-gray-50 p-2 rounded"><p class="text-gray-500 mb-0.5">Eventos</p><p class="text-gray-800 font-semibold">' + userEvents + '/' + eventLimit + '</p></div>';
     html += '</div>';
@@ -244,7 +243,7 @@ function adminAction(userId, action) {
       u.status = 'active';
       // ✅ CRÍTICO: Sincronizar com Supabase IMEDIATAMENTE
       supabaseRequest(`accounts?id=eq.${userId}`, 'PATCH', { status: 'active' }).then(result => {
-        console.log('✅ Conta aprovada e sincronizada com Supabase');
+        dlog('✅ Conta aprovada e sincronizada com Supabase');
         toast('Conta aprovada e salva!');
         renderAdmin();
       }).catch(error => {
@@ -264,7 +263,7 @@ function adminAction(userId, action) {
       u.status = 'blocked';
       // ✅ CRÍTICO: Sincronizar com Supabase IMEDIATAMENTE
       supabaseRequest(`accounts?id=eq.${userId}`, 'PATCH', { status: 'blocked' }).then(result => {
-        console.log('✅ Conta bloqueada e sincronizada com Supabase');
+        dlog('✅ Conta bloqueada e sincronizada com Supabase');
         toast('Conta bloqueada e salva!');
         renderAdmin();
       }).catch(error => {
@@ -517,7 +516,7 @@ function saveEventURL(eventId, modal) {
     // ✅ CRÍTICO: Atualizar URL do navegador com o novo código
     const newURL = `${window.location.origin}${window.location.pathname}?event=${newCode}`;
     window.history.replaceState({ eventCode: newCode }, document.title, newURL);
-    console.log('🔗 URL do navegador atualizada para:', newURL);
+    dlog('🔗 URL do navegador atualizada para:', newURL);
     
     modal.remove();
     toast(`URL alterada de "${oldCode}" para "${newCode}"`);
@@ -580,26 +579,26 @@ function exportCSV() {
   // ACCOUNTS
   csv += 'CONTAS\nID,TELEFONE,STATUS,ROLE,CRIADA_EM\n';
   Store.users.forEach(u => {
-    csv += `${u.id},"${u.phone}","${u.status}","${u.role}",${u.createdAt || 'N/A'}\n`;
+    csv += `${u.id},"${sanitizeCSVCell(u.phone)}","${u.status}","${u.role}",${u.createdAt || 'N/A'}\n`;
   });
 
   csv += '\n\nEVENTOS\nID,CRIADOR,TITULO,DATA,HORA,LIMITE_CONFIRMACAO,ACOMPANHANTES,PRESENTES,CRIANCAS,LINK\n';
   Store.events.forEach(e => {
     const criador = Store.users.find(u => u.id === e.userId)?.phone || 'N/A';
-    csv += `${e.id},"${criador}","${e.title}","${e.date}","${e.time}","${e.deadline}",${e.allowCompanions},${e.allowGifts},${e.allowKids},"rsvp.app/evento/${e.id}"\n`;
+    csv += `${e.id},"${sanitizeCSVCell(criador)}","${sanitizeCSVCell(e.title)}","${e.date}","${e.time}","${e.deadline}",${e.allowCompanions},${e.allowGifts},${e.allowKids},"rsvp.app/evento/${e.id}"\n`;
   });
 
   csv += '\n\nRSVPs - CONFIRMAÇÕES DE PRESENÇA\nEVENTO,CONVIDADO,CONFIRMACAO,LADO,ACOMPANHANTES,CRIANCAS\n';
   Store.events.forEach(e => {
     e.confirmations.forEach(c => {
-      csv += `${e.id},"${c.name}","${c.attending ? 'SIM' : 'NÃO'}","${c.side}","${c.companions.join('; ')}","${c.kids.join('; ')}"\n`;
+      csv += `${e.id},"${sanitizeCSVCell(c.name)}","${c.attending ? 'SIM' : 'NÃO'}","${sanitizeCSVCell(c.side)}","${sanitizeCSVCell(c.companions.join('; '))}","${sanitizeCSVCell(c.kids.join('; '))}"\n`;
     });
   });
 
   csv += '\n\nPRESENTES\nEVENTO,PRESENTE,ESTADO,RESERVADO_POR\n';
   Store.events.forEach(e => {
     e.gifts.forEach(g => {
-      csv += `${e.id},"${g.name}","${g.reserved ? 'RESERVADO' : 'DISPONIVEL'}","${g.reservedBy || 'N/A'}"\n`;
+      csv += `${e.id},"${sanitizeCSVCell(g.name)}","${g.reserved ? 'RESERVADO' : 'DISPONIVEL'}","${sanitizeCSVCell(g.reservedBy || 'N/A')}"\n`;
     });
   });
 
@@ -622,18 +621,18 @@ async function exportSupabaseSchema() {
   
   try {
     // 🎯 PASSO 1: Carregar TODAS as tabelas de dados
-    console.log('📥 Carregando dados do Supabase...');
+    dlog('📥 Carregando dados do Supabase...');
     
     const accountsData = await supabaseRequest('accounts?select=*');
     const eventsData = await supabaseRequest('events?select=*');
     const rsvpsData = await supabaseRequest('rsvps?select=*');
     const giftsData = await supabaseRequest('gifts?select=*');
     
-    console.log('✅ Dados carregados:');
-    console.log('  Contas:', accountsData?.length || 0);
-    console.log('  Eventos:', eventsData?.length || 0);
-    console.log('  RSVPs:', rsvpsData?.length || 0);
-    console.log('  Presentes:', giftsData?.length || 0);
+    dlog('✅ Dados carregados:');
+    dlog('  Contas:', accountsData?.length || 0);
+    dlog('  Eventos:', eventsData?.length || 0);
+    dlog('  RSVPs:', rsvpsData?.length || 0);
+    dlog('  Presentes:', giftsData?.length || 0);
     
     // 🎯 PASSO 2: Definir schema das tabelas
     const schema = {
@@ -849,7 +848,7 @@ async function exportSupabaseSchema() {
     a.click();
     
     toast(' Schema do Supabase exportado com sucesso!');
-    console.log('✅ Schema exportado:', schema);
+    dlog('✅ Schema exportado:', schema);
     
   } catch (error) {
     console.error('❌ Erro ao exportar schema:', error);
@@ -1091,7 +1090,7 @@ function processGuestList() {
     });
     
     // ✅ CRÍTICO: Salvar TODOS os convidados no Supabase
-    console.log('💾 Salvando convidados no Supabase...');
+    dlog('💾 Salvando convidados no Supabase...');
     saveGuestListToSupabase(eventId, event.confirmations);
     
     document.querySelector('.modal-overlay').remove();
@@ -1106,9 +1105,9 @@ function processGuestList() {
 // ✅ NOVA FUNÇÃO: Salvar lista de convidados no Supabase
 async function saveGuestListToSupabase(eventId, confirmations) {
   try {
-    console.log('📤 Iniciando upload de convidados para Supabase');
-    console.log('  Event ID:', eventId);
-    console.log('  Convidados a salvar:', confirmations.length);
+    dlog('📤 Iniciando upload de convidados para Supabase');
+    dlog('  Event ID:', eventId);
+    dlog('  Convidados a salvar:', confirmations.length);
     
     // Salvar CADA convidado como um RSVP no Supabase
     for (const conf of confirmations) {
@@ -1124,7 +1123,7 @@ async function saveGuestListToSupabase(eventId, confirmations) {
         updated_at: new Date().toISOString()
       };
       
-      console.log('  📝 Salvando convidado:', { name: conf.name, attending: rsvpData.attending });
+      dlog('  📝 Salvando convidado:', { name: conf.name, attending: rsvpData.attending });
       
       // Verificar se já existe (para UPDATE em vez de INSERT)
       const existingRsvps = await supabaseRequest(
@@ -1134,22 +1133,22 @@ async function saveGuestListToSupabase(eventId, confirmations) {
       
       if (existingRsvps && existingRsvps.length > 0) {
         // Já existe - fazer UPDATE
-        console.log('  🔄 Convidado já existe, atualizando...');
+        dlog('  🔄 Convidado já existe, atualizando...');
         const updateResult = await supabaseRequest(
           `rsvps?event_id=eq.${eventId}&guest_name=eq.${encodeURIComponent(conf.name)}`,
           'PATCH',
           rsvpData
         );
-        console.log('  ✅ RSVP atualizado');
+        dlog('  ✅ RSVP atualizado');
       } else {
         // Novo - fazer INSERT
-        console.log('  ➕ Novo convidado, inserindo...');
+        dlog('  ➕ Novo convidado, inserindo...');
         const createResult = await supabaseRequest('rsvps', 'POST', rsvpData);
-        console.log('  ✅ RSVP criado:', createResult);
+        dlog('  ✅ RSVP criado:', createResult);
       }
     }
     
-    console.log('✅ Todos os convidados foram salvos no Supabase!');
+    dlog('✅ Todos os convidados foram salvos no Supabase!');
     return true;
   } catch (error) {
     console.error('❌ Erro ao salvar convidados no Supabase:', error);
@@ -1167,7 +1166,7 @@ function parseGuestListText(text) {
     
     // ✅ PASSO 1: Detectar divisor alfabético (linha com APENAS uma letra)
     if (line.match(/^[A-Z]$/)) {
-      console.log('📍 Divisor encontrado:', line);
+      dlog('📍 Divisor encontrado:', line);
       i++;
       continue;
     }
@@ -1180,7 +1179,7 @@ function parseGuestListText(text) {
     
     // ✅ PASSO 3: Detectar se é uma linha de acompanhante (começa com +)
     if (line.includes('+') && line.includes('acompanhante')) {
-      console.log('⏭️ Pulando linha de acompanhante:', line);
+      dlog('⏭️ Pulando linha de acompanhante:', line);
       i++;
       continue;
     }
@@ -1193,12 +1192,12 @@ function parseGuestListText(text) {
     
     // Se não houver nome, pular
     if (!name || name.length < 2) {
-      console.log('⚠️ Nome muito curto, pulando:', name);
+      dlog('⚠️ Nome muito curto, pulando:', name);
       i++;
       continue;
     }
     
-    console.log('✅ Convidado encontrado:', { name, hasEmoji });
+    dlog('✅ Convidado encontrado:', { name, hasEmoji });
     
     // ✅ PASSO 5: Determinar lado
     const side = hasEmoji ? 'noiva' : 'noivo';
@@ -1210,7 +1209,7 @@ function parseGuestListText(text) {
       
       // Se a próxima linha contém "+X acompanhante(s):"
       if (nextLine.includes('+') && nextLine.includes('acompanhante')) {
-        console.log('🤝 Acompanhantes encontrados:', nextLine);
+        dlog('🤝 Acompanhantes encontrados:', nextLine);
         
         // Extrair tudo depois dos ":"
         const colonIndex = nextLine.indexOf(':');
@@ -1221,7 +1220,7 @@ function parseGuestListText(text) {
           const companionCountMatch = nextLine.match(/\+(\d+)/);
           const expectedCount = companionCountMatch ? parseInt(companionCountMatch[1]) : 1;
           
-          console.log('  🔍 Análise de acompanhantes:', { companionText, expectedCount, nextLine });
+          dlog('  🔍 Análise de acompanhantes:', { companionText, expectedCount, nextLine });
           
           if (companionText && companionText !== 'Definir' && companionText.length > 0) {
             // ✅ CRÍTICO: Se espera apenas 1 acompanhante, tomar TUDO como um nome SEM SPLIT
@@ -1229,7 +1228,7 @@ function parseGuestListText(text) {
               const singleCompanion = companionText.trim();
               if (singleCompanion && singleCompanion.length > 1) {
                 companions = [singleCompanion]; // ✅ Nome COMPLETO sem split
-                console.log('  📝 1 acompanhante (SEM SPLIT de vírgula):', companions);
+                dlog('  📝 1 acompanhante (SEM SPLIT de vírgula):', companions);
               }
             } else {
               // Se espera múltiplos (2+), SIM separar por vírgula
@@ -1238,7 +1237,7 @@ function parseGuestListText(text) {
                 .map(s => s.trim())
                 .filter(s => s && s !== 'Definir' && s.length > 1);
               
-              console.log(`  📝 ${expectedCount} acompanhante(s) (COM SPLIT):`, companions);
+              dlog(`  📝 ${expectedCount} acompanhante(s) (COM SPLIT):`, companions);
             }
           }
         }
@@ -1259,8 +1258,8 @@ function parseGuestListText(text) {
     i++;
   }
   
-  console.log('✅ parseGuestListText finalizado. Total de convidados:', confirmations.length);
-  console.log(' Convidados parseados:', confirmations);
+  dlog('✅ parseGuestListText finalizado. Total de convidados:', confirmations.length);
+  dlog(' Convidados parseados:', confirmations);
   
   return confirmations;
 }
@@ -1979,7 +1978,7 @@ function confirmToggleModeratorRole(userId, newRole, modal) {
   
   // ✅ Sincronizar com Supabase
   supabaseRequest(`accounts?id=eq.${userId}`, 'PATCH', { role: newRole }).then(result => {
-    console.log('✅ Role alterado para:', newRole);
+    dlog('✅ Role alterado para:', newRole);
     
     modal.remove();
     toast(newRole === 'moderator' 
@@ -2958,7 +2957,7 @@ async function checkAndRenewDemoEvent() {
         confirm_by_date: newDeadlineStr
       });
 
-      console.log(`Demo event renewed: ${newDateStr}`);
+      dlog(`Demo event renewed: ${newDateStr}`);
       toast(`Evento modelo renovado para ${newDateStr}.`);
     }
   } catch(e) {

@@ -103,7 +103,7 @@ async function renderGuestView() {
         c => c.name && c.name.toLowerCase() === localConfirmation.name.toLowerCase() && c.attending === true
       );
       if (!stillExistsInDb) {
-        console.log('🔄 Confirmação local não encontrada na base de dados (foi eliminada pelo organizador) — a repor o Save the Date.');
+        dlog('🔄 Confirmação local não encontrada na base de dados (foi eliminada pelo organizador) — a repor o Save the Date.');
         rsvpClearConfirmed(eventData.id);
       }
     }
@@ -116,7 +116,7 @@ async function renderGuestView() {
     supabaseRequest('visit_log', 'POST', { visit_type: 'guest_view', event_id: eventData.id }).catch(() => {});
   }
   
-  console.log('👤 renderGuestView - Dados do evento:', {
+  dlog('👤 renderGuestView - Dados do evento:', {
     id: eventData.id,
     title: eventData.title,
     confirm_by_date: eventData.confirm_by_date,
@@ -131,7 +131,7 @@ async function renderGuestView() {
 
   // Verificar se RSVP está desativado
   if (!eventData.allowRSVP && eventData.allowRSVP !== undefined) {
-    console.log('⚠️ RSVP desativado para este evento');
+    dlog('⚠️ RSVP desativado para este evento');
     Router.go('not-found');
     document.getElementById('screen-guest')?.classList.remove('std-pending');
     document.getElementById('std-loading-veil')?.remove();
@@ -345,7 +345,7 @@ async function renderGuestView() {
     const stdActive = eventData.save_the_date_enabled === true || eventData.save_the_date_enabled === 'true';
     const wantsBothRsvp = eventData.show_rsvp_in_full_invite === true || eventData.show_rsvp_in_full_invite === 'true';
     const hideDueToStd = stdActive && !wantsBothRsvp;
-    console.log('🔖 RSVP section visibility check:', { rsvp_enabled: eventData.rsvp_enabled, stdActive, wantsBothRsvp, hideDueToStd });
+    dlog('🔖 RSVP section visibility check:', { rsvp_enabled: eventData.rsvp_enabled, stdActive, wantsBothRsvp, hideDueToStd });
     _rsvpSec.style.display = (rsvpIsDisabled || hideDueToStd) ? 'none' : '';
   }
   // Also apply to music player icon
@@ -456,14 +456,14 @@ async function renderGuestView() {
   const showTimeRaw = eventData.show_time !== undefined ? eventData.show_time : eventData.showTime;
   const showTime = String(showTimeRaw).toLowerCase() === 'yes' || showTimeRaw === true;
   
-  console.log('👤 Guest view - Verificando show_time:', { raw: showTimeRaw, string: String(showTimeRaw), parsed: showTime });
+  dlog('👤 Guest view - Verificando show_time:', { raw: showTimeRaw, string: String(showTimeRaw), parsed: showTime });
   
   // ✅ NOVO: Mostrar hora APENAS se show_time está ativo (true ou 'yes')
   const timeDisplay = showTime 
     ? formatDate(eventData.date) + ' às ' + eventData.time
     : formatDate(eventData.date);
   
-  console.log('👤 Guest view - Time display:', { showTime, timeDisplay });
+  dlog('👤 Guest view - Time display:', { showTime, timeDisplay });
   
   // guest-date removed:  timeDisplay;
   
@@ -480,11 +480,11 @@ async function renderGuestView() {
     deadlineDate = eventData.date;
   }
   
-  console.log('👤 GUEST VIEW - Deadline para convidado:');
-  console.log('  confirm_by_date:', eventData.confirm_by_date);
-  console.log('  deadline:', eventData.deadline);
-  console.log('  date:', eventData.date);
-  console.log('  Resultado final:', deadlineDate);
+  dlog('👤 GUEST VIEW - Deadline para convidado:');
+  dlog('  confirm_by_date:', eventData.confirm_by_date);
+  dlog('  deadline:', eventData.deadline);
+  dlog('  date:', eventData.date);
+  dlog('  Resultado final:', deadlineDate);
   
   // ✅ Extrair data da deadline para mostrar ao convidado
   const deadlineDateOnly = deadlineDate.split(' ')[0];
@@ -598,15 +598,8 @@ function changeGuestMessageWallPage(direction) {
   renderGuestMessageWall(eventData);
 }
 
-function escapeHTML(value) {
-  return String(value || '').replace(/[&<>"']/g, char => ({
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#39;'
-  }[char]));
-}
+// escapeHTML() agora vive em config.js (carregado primeiro) — única fonte
+// de verdade, usada em todos os ficheiros.
 
 
 
@@ -715,7 +708,7 @@ function handleRSVP(e) {
   const kids = [...document.querySelectorAll('[data-kid]')].map(i => i.value.trim()).filter(Boolean);
   const messageText = document.getElementById('rsvp-message')?.value?.trim() || '';
 
-  console.log('📝 Processando RSVP:', { name, attending, side, companions, kids });
+  dlog('📝 Processando RSVP:', { name, attending, side, companions, kids });
 
   // ✅ CRÍTICO: Verificar se JÁ EXISTE resposta anterior para este convidado
   const existingConfIndex = ev.confirmations ? ev.confirmations.findIndex(c => c.name.toLowerCase() === name.toLowerCase()) : -1;
@@ -741,7 +734,7 @@ function handleRSVP(e) {
 
   if (existingConfIndex !== -1 && ev.confirmations) {
     // ✅ JÁ EXISTE - fazer UPDATE
-    console.log('🔄 Atualizando resposta anterior (índice:', existingConfIndex, ')');
+    dlog('🔄 Atualizando resposta anterior (índice:', existingConfIndex, ')');
     
     ev.confirmations[existingConfIndex] = {
       name: name,
@@ -758,7 +751,7 @@ function handleRSVP(e) {
     saveRSVPToSupabase(eventData, true);
   } else {
     // ✅ NOVO - fazer INSERT
-    console.log('✨ Adicionando nova resposta');
+    dlog('✨ Adicionando nova resposta');
     
     if (!ev.confirmations) ev.confirmations = [];
     ev.confirmations.push({
@@ -812,11 +805,11 @@ async function saveRSVPToSupabase(data, isUpdate) {
         data
       );
       if (response) {
-        console.log('✅ RSVP atualizado no Supabase');
+        dlog('✅ RSVP atualizado no Supabase');
         // 📢 Enviar notificação em tempo real
         sendRealtimeNotification(data);
         // ✅ CRÍTICO: Aguardar um pouco e depois recarregar
-        console.log('⏳ Aguardando 500ms antes de recarregar evento...');
+        dlog('⏳ Aguardando 500ms antes de recarregar evento...');
         await new Promise(r => setTimeout(r, 500));
         await reloadEventFromSupabase(data.event_id);
       } else {
@@ -826,11 +819,11 @@ async function saveRSVPToSupabase(data, isUpdate) {
       // Criar novo registro
       const response = await supabaseRequest('rsvps', 'POST', data);
       if (response && response.length > 0) {
-        console.log('✅ RSVP criado no Supabase');
+        dlog('✅ RSVP criado no Supabase');
         // 📢 Enviar notificação em tempo real
         sendRealtimeNotification(data);
         // ✅ CRÍTICO: Aguardar um pouco e depois recarregar
-        console.log('⏳ Aguardando 500ms antes de recarregar evento...');
+        dlog('⏳ Aguardando 500ms antes de recarregar evento...');
         await new Promise(r => setTimeout(r, 500));
         await reloadEventFromSupabase(data.event_id);
       } else {
@@ -845,14 +838,14 @@ async function saveRSVPToSupabase(data, isUpdate) {
 // ✅ NOVA FUNÇÃO: Recarregar evento do Supabase
 async function reloadEventFromSupabase(eventId) {
   try {
-    console.log('🔄 Recarregando evento do Supabase:', eventId);
+    dlog('🔄 Recarregando evento do Supabase:', eventId);
     
     // Buscar evento COM JOIN para presentes e RSVPs
     const eventData = await supabaseRequest(`events?id=eq.${eventId}&select=id,title,date,time,user_id,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,music_url,music_title,iban_message,iban_number,iban_holder,iban_footer,groom_name,bride_name,couple_size,show_couple,bg_url,bg_overlay,bible_text,bible_ref,show_bible,invite_text,show_invite,groom_parents,bride_parents,show_parents,gallery_urls,show_gallery,show_manual,manual_items,show_schedule,schedule_items,custom_font_family,section_order,story_text,invite_blessing,event_color,confirm_by_date,cover_image,event_code,gifts(id,name,category,reserved,reserved_by),rsvps(guest_name,attending,side,companions,kids,wants_gift,message,created_at,updated_at)`);
     
     if (eventData && eventData.length > 0) {
       const event = eventData[0];
-      console.log('✅ Evento recarregado do Supabase com', (event.rsvps || []).length, 'RSVPs');
+      dlog('✅ Evento recarregado do Supabase com', (event.rsvps || []).length, 'RSVPs');
       
       // Normalizar dados
       const maxComp = event.max_companions !== null && event.max_companions !== undefined ? parseInt(event.max_companions) : 2;
@@ -950,11 +943,11 @@ async function reloadEventFromSupabase(eventId) {
       if (existingIndex !== -1) {
         // ✅ SUBSTITUIR COMPLETAMENTE o evento antigo pelo novo
         Store.events[existingIndex] = normalizedEvent;
-        console.log('✅ Store.events[' + existingIndex + '] COMPLETAMENTE atualizado com', normalizedEvent.confirmations.length, 'confirmações');
+        dlog('✅ Store.events[' + existingIndex + '] COMPLETAMENTE atualizado com', normalizedEvent.confirmations.length, 'confirmações');
       } else {
         // Se não existe, adicionar
         Store.events.push(normalizedEvent);
-        console.log('✅ Evento NOVO adicionado ao Store com', normalizedEvent.confirmations.length, 'confirmações');
+        dlog('✅ Evento NOVO adicionado ao Store com', normalizedEvent.confirmations.length, 'confirmações');
       }
       
       return normalizedEvent;
@@ -1084,7 +1077,7 @@ async function saveGiftsToSupabase(eventId, gifts) {
         console.error('❌ Erro ao salvar presente:', gift.name);
       }
     }
-    console.log('✅ Presentes sincronizados com Supabase');
+    dlog('✅ Presentes sincronizados com Supabase');
   } catch (error) {
     console.error('❌ Erro ao salvar presentes:', error);
   }
@@ -1177,16 +1170,16 @@ function showAlreadyReservedModal() {
 
 // ✅ NOVA FUNÇÃO: Voltar da tela de presentes para guest view
 function backFromGifts() {
-  console.log('👈 Voltando da tela de presentes');
-  console.log('  guestEventData:', Store.guestEventData ? 'Sim' : 'Não');
-  console.log('  currentEventId:', Store.currentEventId);
+  dlog('👈 Voltando da tela de presentes');
+  dlog('  guestEventData:', Store.guestEventData ? 'Sim' : 'Não');
+  dlog('  currentEventId:', Store.currentEventId);
   
   // ✅ NOVO: Se veio de URL com ?gifts=only, voltar para home
   const params = new URLSearchParams(window.location.search);
   const giftsOnly = params.get('gifts') === 'only';
   
   if (giftsOnly) {
-    console.log('🏠 URL com modo gifts-only detectado - voltando para home');
+    dlog('🏠 URL com modo gifts-only detectado - voltando para home');
     Router.go('home');
   }
   // Se temos guestEventData, voltar para guest view (RSVP)
@@ -1230,10 +1223,10 @@ function renderGiftsManager(ev) {
       const cat = categoryArray[catIndex];
       const gifts = categories[cat];
       
-      html += '<div class="bg-white rounded-lg shadow-sm border-l-3 border-teal-500 p-3"><div class="flex items-center justify-between mb-2"><h4 class="text-sm font-bold text-teal-600">' + cat + '</h4><button class="text-gray-300 hover:text-red-500 transition" onclick="deleteCategory(\'' + cat + '\', \'' + ev.id + '\')"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div><div class="space-y-1">';
+      html += '<div class="bg-white rounded-lg shadow-sm border-l-3 border-teal-500 p-3"><div class="flex items-center justify-between mb-2"><h4 class="text-sm font-bold text-teal-600">' + escapeHTML(cat) + '</h4><button class="text-gray-300 hover:text-red-500 transition" onclick="deleteCategory(\'' + encodeURIComponent(cat).replace(/'/g, '%27') + '\', \'' + ev.id + '\')"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div><div class="space-y-1">';
       
       gifts.forEach(g => {
-        html += '<div class="flex items-center gap-2 group hover:bg-gray-50 px-1 rounded transition text-xs"><span class="text-teal-400 flex-shrink-0">◯</span><span class="text-gray-700 flex-1 truncate">' + g.name + '</span><div class="flex gap-1 opacity-0 group-hover:opacity-100 transition"><button class="text-gray-300 hover:text-teal-500 p-0.5" onclick="editGiftModal(\'' + g.id + '\')"><i data-lucide="edit" class="w-3 h-3"></i></button><button class="text-gray-300 hover:text-red-500 p-0.5" onclick="deleteGift(\'' + g.id + '\')"><i data-lucide="trash-2" class="w-3 h-3"></i></button></div></div>';
+        html += '<div class="flex items-center gap-2 group hover:bg-gray-50 px-1 rounded transition text-xs"><span class="text-teal-400 flex-shrink-0">◯</span><span class="text-gray-700 flex-1 truncate">' + escapeHTML(g.name) + '</span><div class="flex gap-1 opacity-0 group-hover:opacity-100 transition"><button class="text-gray-300 hover:text-teal-500 p-0.5" onclick="editGiftModal(\'' + g.id + '\')"><i data-lucide="edit" class="w-3 h-3"></i></button><button class="text-gray-300 hover:text-red-500 p-0.5" onclick="deleteGift(\'' + g.id + '\')"><i data-lucide="trash-2" class="w-3 h-3"></i></button></div></div>';
       });
       
       html += '</div></div>';
@@ -1259,13 +1252,13 @@ function renderGiftsGuest(ev) {
           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#007f9f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
           <span class="text-sm font-bold text-teal-700">Transferência Bancária</span>
         </div>
-        ${ev.iban_message ? `<p class="text-sm text-gray-600 mb-3 leading-relaxed whitespace-pre-line">${ev.iban_message}</p>` : ''}
+        ${ev.iban_message ? `<p class="text-sm text-gray-600 mb-3 leading-relaxed whitespace-pre-line">${escapeHTML(ev.iban_message)}</p>` : ''}
         <div class="bg-white rounded-lg px-3 py-2 mb-2 border border-teal-200">
           <p class="text-xs text-gray-400 mb-0.5">IBAN</p>
-          <p class="iban-value">${ev.iban_number}</p>
+          <p class="iban-value">${escapeHTML(ev.iban_number)}</p>
         </div>
-        ${ev.iban_holder ? `<div class="bg-white rounded-lg px-3 py-2 mb-2 border border-teal-200"><p class="text-xs text-gray-400 mb-0.5">Titular</p><p class="text-sm font-semibold text-gray-700">${ev.iban_holder}</p></div>` : ''}
-        ${ev.iban_footer ? `<p class="text-xs text-gray-500 mt-2 text-right italic">${ev.iban_footer}</p>` : ''}
+        ${ev.iban_holder ? `<div class="bg-white rounded-lg px-3 py-2 mb-2 border border-teal-200"><p class="text-xs text-gray-400 mb-0.5">Titular</p><p class="text-sm font-semibold text-gray-700">${escapeHTML(ev.iban_holder)}</p></div>` : ''}
+        ${ev.iban_footer ? `<p class="text-xs text-gray-500 mt-2 text-right italic">${escapeHTML(ev.iban_footer)}</p>` : ''}
       </div>`;
   }
 
@@ -1284,7 +1277,7 @@ function renderGiftsGuest(ev) {
     html += `
       <div class="bg-white rounded-xl shadow-sm border-l-4 border-teal-500 overflow-hidden">
         <div class="bg-teal-50 px-4 py-3 border-b border-teal-100">
-          <h4 class="text-sm font-bold text-teal-700">${cat}</h4>
+          <h4 class="text-sm font-bold text-teal-700">${escapeHTML(cat)}</h4>
         </div>
         <div class="divide-y">
           ${gifts.map(g => `
@@ -1293,7 +1286,7 @@ function renderGiftsGuest(ev) {
                 ${g.reserved ? '<i data-lucide="check" class="w-5 h-5 text-white"></i>' : ''}
               </div>
               <div class="flex-1 min-w-0">
-                <p class="text-sm font-medium ${g.reserved ? 'text-gray-500 line-through' : 'text-gray-800'} break-words">${g.name}</p>
+                <p class="text-sm font-medium ${g.reserved ? 'text-gray-500 line-through' : 'text-gray-800'} break-words">${escapeHTML(g.name)}</p>
               </div>
               ${g.reserved
                 ? `<span class="text-xs font-semibold px-2 py-1 rounded-full bg-green-100 text-green-700 flex-shrink-0">Escolhido</span>`
@@ -1330,27 +1323,27 @@ async function toggleGiftSelection(giftId, element) {
   // 1️⃣ Tentar sessão armazenada
   if (Store.currentGuestSession?.guestName) {
     guestName = Store.currentGuestSession.guestName;
-    console.log('✅ Nome obtido da sessão:', guestName);
+    dlog('✅ Nome obtido da sessão:', guestName);
   }
   // 2️⃣ Tentar input do formulário (se estiver visível)
   else if (document.getElementById('rsvp-name')) {
     const nameInput = document.getElementById('rsvp-name').value?.trim();
     if (nameInput) {
       guestName = nameInput;
-      console.log('✅ Nome obtido do input:', guestName);
+      dlog('✅ Nome obtido do input:', guestName);
     }
   }
   // 3️⃣ Fallback (não deveria chegar aqui)
   if (!guestName) {
     guestName = 'Convidado Anónimo';
-    console.log('⚠️ Nome padrão usado:', guestName);
+    dlog('⚠️ Nome padrão usado:', guestName);
   }
   
-  console.log('👤 Nome do convidado FINAL:', { guestName, session: Store.currentGuestSession });
+  dlog('👤 Nome do convidado FINAL:', { guestName, session: Store.currentGuestSession });
   
   // ✅ Convidado só pode ESCOLHER presente, não desmarcar
   if (gift.reserved && normalizeGuestName(gift.reservedBy) !== normalizeGuestName(guestName)) {
-    console.log('❌ Presente já reservado por outro convidado:', gift.reservedBy);
+    dlog('❌ Presente já reservado por outro convidado:', gift.reservedBy);
     toast('Este presente já foi escolhido por outro convidado.');
     return;
   }
@@ -1362,7 +1355,7 @@ async function toggleGiftSelection(giftId, element) {
     normalizeGuestName(g.reservedBy) === normalizeGuestName(guestName)  // Por ESTE convidado
   );
   
-  console.log('🎁 Verificação de presente anterior:', {
+  dlog('🎁 Verificação de presente anterior:', {
     guestName,
     giftIdAtual: giftId,
     giftsDoConvidado: ev.gifts.filter(g => normalizeGuestName(g.reservedBy) === normalizeGuestName(guestName)),
@@ -1371,15 +1364,15 @@ async function toggleGiftSelection(giftId, element) {
   });
   
   if (otherReservedGifts.length > 0) {
-    console.log('⚠️ ALERTA: Convidado já tem outro(s) presente(s) escolhido(s)!');
-    console.log('  Presentes existentes:', otherReservedGifts.map(g => ({ name: g.name, reservedBy: g.reservedBy })));
+    dlog('⚠️ ALERTA: Convidado já tem outro(s) presente(s) escolhido(s)!');
+    dlog('  Presentes existentes:', otherReservedGifts.map(g => ({ name: g.name, reservedBy: g.reservedBy })));
     
     // ✅ Mostrar modal com aviso IMEDIATAMENTE
     showAlreadyReservedModal();
     return;
   }
   
-  console.log('🎁 Escolhendo presente:', { giftId, giftName: gift.name, chosenBy: guestName });
+  dlog('🎁 Escolhendo presente:', { giftId, giftName: gift.name, chosenBy: guestName });
   
   gift.reserved = true;
   gift.reservedBy = guestName;
@@ -1396,9 +1389,9 @@ async function toggleGiftSelection(giftId, element) {
   }
   
   // ✅ CRÍTICO: Recarregar evento do Supabase para garantir que dono vê a mudança
-  console.log('🔄 Recarregando evento do Supabase para sincronizar com dono...');
+  dlog('🔄 Recarregando evento do Supabase para sincronizar com dono...');
   reloadEventFromSupabase(ev.id).then(() => {
-    console.log('✅ Evento recarregado. Dono verá a mudança em tempo real.');
+    dlog('✅ Evento recarregado. Dono verá a mudança em tempo real.');
   });
   
   // Animar a seleção
@@ -1481,16 +1474,16 @@ function editGiftModal(giftId) {
       <div class="space-y-3 mb-4">
         <div>
           <label class="block text-sm font-semibold text-gray-600 mb-1">Nome</label>
-          <input id="edit-gift-name" class="input-field" value="${gift.name}">
+          <input id="edit-gift-name" class="input-field" value="${escapeHTML(gift.name)}">
         </div>
         <div>
           <label class="block text-sm font-semibold text-gray-600 mb-1">Categoria</label>
-          <input id="edit-gift-category" class="input-field" value="${gift.category || 'Sem categoria'}">
+          <input id="edit-gift-category" class="input-field" value="${escapeHTML(gift.category || 'Sem categoria')}">
         </div>
         ${gift.reserved ? `
         <div class="bg-amber-50 border-l-3 border-amber-500 p-3 rounded text-xs text-amber-700">
           <p class="font-semibold mb-1">Presente Reservado</p>
-          <p class="mb-2">Escolhido por: <strong>${gift.reservedBy}</strong></p>
+          <p class="mb-2">Escolhido por: <strong>${escapeHTML(gift.reservedBy)}</strong></p>
           <button type="button" class="text-amber-600 hover:text-amber-700 font-semibold underline" onclick="removeGiftReservationFromModal('${giftId}', this.closest('.modal-overlay'))">
             Remover Reserva
           </button>
@@ -1519,10 +1512,10 @@ function removeGiftReservationFromModal(giftId, modal) {
   confirmModal.innerHTML = `
     <div class="modal-content bg-white rounded-2xl shadow-lg p-6 max-w-sm w-full mx-4">
       <h3 class="text-lg font-bold text-gray-800 mb-2">Remover Reserva?</h3>
-      <p class="text-sm text-gray-600 mb-2">Presente: <strong>${gift.name}</strong></p>
-      <p class="text-sm text-gray-600 mb-4">Pessoa: <strong>${gift.reservedBy}</strong></p>
+      <p class="text-sm text-gray-600 mb-2">Presente: <strong>${escapeHTML(gift.name)}</strong></p>
+      <p class="text-sm text-gray-600 mb-4">Pessoa: <strong>${escapeHTML(gift.reservedBy)}</strong></p>
       
-      <p class="text-xs text-amber-600 font-semibold mb-4">O convidado "${gift.reservedBy}" poderá escolher outro presente.</p>
+      <p class="text-xs text-amber-600 font-semibold mb-4">O convidado "${escapeHTML(gift.reservedBy)}" poderá escolher outro presente.</p>
       
       <div class="flex gap-2">
         <button class="flex-1 bg-amber-500 hover:bg-amber-600 text-white rounded-lg py-2 px-4 font-semibold transition" onclick="confirmRemoveGiftReservation('${giftId}', this.closest('.modal-overlay'), document.querySelector('[class*=\"modal-overlay\"]'))">
@@ -1543,7 +1536,7 @@ async function confirmRemoveGiftReservation(giftId, confirmModal, editModal) {
   const gift = ev.gifts.find(g => g.id === giftId);
   if (!gift) return;
 
-  console.log('🎁 Removendo reserva do presente:', { giftId, giftName: gift.name, reservedBy: gift.reservedBy });
+  dlog('🎁 Removendo reserva do presente:', { giftId, giftName: gift.name, reservedBy: gift.reservedBy });
 
   const previousReservedBy = gift.reservedBy;
   gift.reserved = false;
@@ -1577,10 +1570,10 @@ function removeGiftReservation(giftId) {
   confirmModal.innerHTML = `
     <div class="modal-content bg-white rounded-2xl shadow-lg p-6 max-w-sm w-full mx-4">
       <h3 class="text-lg font-bold text-gray-800 mb-2">Remover Reserva?</h3>
-      <p class="text-sm text-gray-600 mb-2">Presente: <strong>${gift.name}</strong></p>
-      <p class="text-sm text-gray-600 mb-4">Pessoa: <strong>${gift.reservedBy}</strong></p>
+      <p class="text-sm text-gray-600 mb-2">Presente: <strong>${escapeHTML(gift.name)}</strong></p>
+      <p class="text-sm text-gray-600 mb-4">Pessoa: <strong>${escapeHTML(gift.reservedBy)}</strong></p>
       
-      <p class="text-xs text-amber-600 font-semibold mb-4">O convidado "${gift.reservedBy}" poderá escolher outro presente.</p>
+      <p class="text-xs text-amber-600 font-semibold mb-4">O convidado "${escapeHTML(gift.reservedBy)}" poderá escolher outro presente.</p>
       
       <div class="flex gap-2">
         <button class="flex-1 bg-amber-500 hover:bg-amber-600 text-white rounded-lg py-2 px-4 font-semibold transition" onclick="confirmRemoveGiftReservation('${giftId}', this.closest('.modal-overlay'), null)">
@@ -1616,7 +1609,8 @@ function saveGiftEdit(giftId, modal) {
   renderGifts();
 }
 
-function deleteCategory(category, eventId) {
+function deleteCategory(categoryEncoded, eventId) {
+  const category = decodeURIComponent(categoryEncoded);
   const ev = Store.events.find(e => e.id === eventId || e.id === Store.currentEventId);
   if (!ev) return;
 
@@ -1630,7 +1624,7 @@ function deleteCategory(category, eventId) {
       <h3 class="text-lg font-bold text-gray-800 mb-2">Eliminar Categoria?</h3>
       <p class="text-gray-500 text-sm mb-4">Isto irá remover <strong>${giftsInCategory.length} presente(s)</strong> desta categoria. Esta ação não pode ser desfeita.</p>
       <div class="flex gap-2">
-        <button class="flex-1 bg-red-500 hover:bg-red-600 text-white rounded-lg py-2 px-4 font-semibold transition" onclick="confirmDeleteCategory('${category}', this.closest('.modal-overlay'))">Eliminar</button>
+        <button class="flex-1 bg-red-500 hover:bg-red-600 text-white rounded-lg py-2 px-4 font-semibold transition" onclick="confirmDeleteCategory('${encodeURIComponent(category).replace(/'/g, '%27')}', this.closest('.modal-overlay'))">Eliminar</button>
         <button class="flex-1 btn-outline" onclick="this.closest('.modal-overlay').remove()">Cancelar</button>
       </div>
     </div>
@@ -1638,7 +1632,8 @@ function deleteCategory(category, eventId) {
   document.body.appendChild(modal);
 }
 
-function confirmDeleteCategory(category, modal) {
+function confirmDeleteCategory(categoryEncoded, modal) {
+  const category = decodeURIComponent(categoryEncoded);
   const ev = Store.events.find(e => e.id === Store.currentEventId);
   if (!ev) return;
 
@@ -1663,7 +1658,7 @@ function deleteGift(giftId) {
   modal.innerHTML = `
     <div class="modal-content bg-white rounded-2xl shadow-lg p-6 max-w-sm w-full mx-4">
       <h3 class="text-lg font-bold text-gray-800 mb-2">Eliminar Presente?</h3>
-      <p class="text-gray-500 text-sm mb-4">"${gift.name}" - Esta ação não pode ser desfeita.</p>
+      <p class="text-gray-500 text-sm mb-4">"${escapeHTML(gift.name)}" - Esta ação não pode ser desfeita.</p>
       <div class="flex gap-2">
         <button class="flex-1 bg-red-500 hover:bg-red-600 text-white rounded-lg py-2 px-4 font-semibold transition" onclick="confirmDeleteGift('${giftId}', this.closest('.modal-overlay'))">Eliminar</button>
         <button class="flex-1 btn-outline" onclick="this.closest('.modal-overlay').remove()">Cancelar</button>
@@ -1700,7 +1695,7 @@ async function reserveGift(giftId) {
     const guestName = Store.currentGuestSession?.guestName || document.getElementById('rsvp-name')?.value || 'Convidado';
     gift.reserved = true; 
     gift.reservedBy = guestName; 
-    console.log('🎁 Presente reservado:', { giftName: gift.name, reservedBy: guestName });
+    dlog('🎁 Presente reservado:', { giftName: gift.name, reservedBy: guestName });
     await updateGiftReservationInSupabase(giftId, true, guestName);
   }
   Router.go('gift-confirmed');
@@ -1957,7 +1952,7 @@ function confirmDeleteConfirmation(confIndex, modal) {
   const conf = ev.confirmations[confIndex];
   const guestName = conf.name;
   
-  console.log('🗑️ Iniciando exclusão de RSVP:', {
+  dlog('🗑️ Iniciando exclusão de RSVP:', {
     eventId: Store.currentEventId,
     guestName: guestName,
     confIndex: confIndex
@@ -1968,15 +1963,15 @@ function confirmDeleteConfirmation(confIndex, modal) {
   const encodedGuestName = encodeURIComponent(guestName).replace(/%20/g, ' ');
   const deleteUrl = `rsvps?event_id=eq.${Store.currentEventId}&guest_name=eq.${encodedGuestName}`;
   
-  console.log('📤 URL de exclusão:', deleteUrl);
+  dlog('📤 URL de exclusão:', deleteUrl);
   
   supabaseRequest(deleteUrl, 'DELETE', {}).then(result => {
-    console.log('✅ RSVP deletado do Supabase:', { guestName, result });
+    dlog('✅ RSVP deletado do Supabase:', { guestName, result });
     
     // DEPOIS: remover do Store local
     if (ev.confirmations && confIndex >= 0 && confIndex < ev.confirmations.length) {
       ev.confirmations.splice(confIndex, 1);
-      console.log('✅ RSVP removido do Store local. Restam:', ev.confirmations.length);
+      dlog('✅ RSVP removido do Store local. Restam:', ev.confirmations.length);
     }
     
     modal.remove();
@@ -2246,7 +2241,7 @@ function _evaluateSaveTheDate(ev) {
   };
   // Feature off entirely → always show full invite (current behaviour)
   if (!ev.save_the_date_enabled || ev.save_the_date_enabled === false || ev.save_the_date_enabled === 'no') {
-    console.log('🚪 STD Gate: OFF (save_the_date_enabled is falsy) →', diag);
+    dlog('🚪 STD Gate: OFF (save_the_date_enabled is falsy) →', diag);
     return { showSaveTheDate: false };
   }
 
@@ -2255,10 +2250,10 @@ function _evaluateSaveTheDate(ev) {
   // Condition C: Manual — admin/organiser controls is_invite_released directly
   if (releaseType === 'manual') {
     if (ev.is_invite_released === true || ev.is_invite_released === 'yes') {
-      console.log('🚪 STD Gate: OFF — manual release, is_invite_released=true →', diag);
+      dlog('🚪 STD Gate: OFF — manual release, is_invite_released=true →', diag);
       return { showSaveTheDate: false };
     }
-    console.log('🚪 STD Gate: ON — manual release, not yet released →', diag);
+    dlog('🚪 STD Gate: ON — manual release, not yet released →', diag);
     return { showSaveTheDate: true, reason: 'manual' };
   }
 
@@ -2439,7 +2434,7 @@ function renderSaveTheDateScreen(ev, decision) {
   const deadlineLabel   = hasRealDeadline ? `Confirmar até ${deadlineParsed.label}` : null;
 
   // Diagnostic: log what data actually arrived so debugging is easy
-  console.log('🔖 Save the Date — dados:', {
+  dlog('🔖 Save the Date — dados:', {
     std_cover_url_completo: coverUrl,
     std_cover_url_comprimento: coverUrl ? coverUrl.length : 0,
     bg_url: ev.bg_url ? '✓' : '✗',
@@ -2485,7 +2480,7 @@ function renderSaveTheDateScreen(ev, decision) {
     <div id="std-cover-wrap" class="std-cover-anim" style="position:relative;width:100%;height:42vh;max-height:380px;overflow:hidden;background:#1a1a2e;flex-shrink:0">
       <img id="std-cover-img" src="${coverUrl}" loading="eager" style="width:100%;height:100%;object-fit:cover;object-position:center;display:block"
         onerror="console.error('❌ Falha ao carregar a foto de capa do Save the Date. URL tentado:', this.src); this.style.display='none';"
-        onload="console.log('✅ Foto de capa do Save the Date carregada com sucesso:', this.src);">
+        onload="dlog('✅ Foto de capa do Save the Date carregada com sucesso:', this.src);">
       <div style="position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,0.15) 0%,rgba(0,0,0,0.35) 100%)"></div>
       <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:0 1rem">
         <p style="font-size:${titleSize}rem;letter-spacing:0.3em;text-transform:uppercase;font-weight:800;color:#fff;font-family:'Quicksand',sans-serif;text-shadow:0 2px 12px rgba(0,0,0,0.5);margin:0">${escapeHTML(stdTitle)}</p>

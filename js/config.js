@@ -2,6 +2,37 @@
 const SUPABASE_URL = 'https://kdvgqjpwizplvvlggjtx.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtkdmdxanB3aXpwbHZ2bGdnanR4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA5NDMyMTgsImV4cCI6MjA5NjUxOTIxOH0.E-uDSHQopiDBbRqSUd-fjnz-ONiQGuTOLhdj2uvmVes';
 
+// ✅ DEBUG: desliga os logs verbosos (incluem corpo de pedidos/respostas, por
+// vezes com dados sensíveis) fora de desenvolvimento. Muda para `true`
+// manualmente no browser (`DEBUG_NETWORK = true`) quando precisares de depurar.
+const DEBUG_NETWORK = false;
+function dlog(...args) { if (DEBUG_NETWORK) console.log(...args); }
+
+// ===================== SEGURANÇA: HELPERS PARTILHADOS =====================
+// Única fonte de verdade para escapar texto antes de o inserir em innerHTML.
+// Usa-se em QUALQUER sítio onde texto vindo de convidados/utilizadores
+// (nomes, mensagens, recados, etc.) seja interpolado em HTML — nunca confiar
+// em texto livre dentro de innerHTML sem passar primeiro por aqui.
+function escapeHTML(value) {
+  return String(value ?? '').replace(/[&<>"']/g, char => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  }[char]));
+}
+
+// Neutraliza "CSV/formula injection": se um nome de convidado começar por
+// =, +, -, @ (ou tab/CR), o Excel/Sheets pode interpretar a célula como uma
+// fórmula ao abrir o ficheiro exportado. Prefixamos com um apóstrofo para
+// forçar leitura como texto simples, sem alterar o valor visível.
+function sanitizeCSVCell(value) {
+  let v = String(value ?? '');
+  if (/^[=+\-@\t\r]/.test(v)) v = "'" + v;
+  return v;
+}
+
 async function supabaseRequest(endpoint, method = 'GET', body = null) {
   const headers = {
     'Content-Type': 'application/json',
@@ -26,7 +57,7 @@ async function supabaseRequest(endpoint, method = 'GET', body = null) {
   if (body) options.body = JSON.stringify(body);
 
   try {
-    console.log(`📡 [${method}] Requisição ao Supabase:`, {
+    dlog(`📡 [${method}] Requisição ao Supabase:`, {
       url: `${SUPABASE_URL}/rest/v1/${endpoint}`,
       endpoint: endpoint,
       method: method,
@@ -35,7 +66,7 @@ async function supabaseRequest(endpoint, method = 'GET', body = null) {
     
     const response = await fetch(`${SUPABASE_URL}/rest/v1/${endpoint}`, options);
     
-    console.log(`📡 [${method}] Resposta recebida:`, {
+    dlog(`📡 [${method}] Resposta recebida:`, {
       status: response.status,
       statusText: response.statusText,
       headers: {
@@ -202,13 +233,13 @@ async function supabaseRequest(endpoint, method = 'GET', body = null) {
     
     const text = await response.text();
     if (!text) {
-      console.log('✅ Operação bem-sucedida (resposta vazia esperada para INSERT/UPDATE/DELETE)');
+      dlog('✅ Operação bem-sucedida (resposta vazia esperada para INSERT/UPDATE/DELETE)');
       return [{ success: true }];
     }
     
     try {
       const parsed = JSON.parse(text);
-      console.log(`✅ [${method}] Resposta parseada:`, {
+      dlog(`✅ [${method}] Resposta parseada:`, {
         endpoint: endpoint,
         itemCount: Array.isArray(parsed) ? parsed.length : 1
       });
@@ -232,7 +263,7 @@ async function supabaseRequest(endpoint, method = 'GET', body = null) {
 // 🎯 CONVIDADO: Puxar APENAS evento específico + RSVPs + presentes (SEM N+1, QUERY OTIMIZADA)
 async function fetchEventForGuest(eventId) {
   try {
-    console.log('👤 fetchEventForGuest iniciado para:', eventId);
+    dlog('👤 fetchEventForGuest iniciado para:', eventId);
     
     // ✅ CRÍTICO: SELECT apenas o que convidado precisa (sem informações sensíveis)
     // ✅ Usar event_code ou id com filtro EXATO
@@ -247,7 +278,7 @@ async function fetchEventForGuest(eventId) {
     
     const event = eventData[0];
     
-    console.log('📥 Dados brutos do Supabase (convidado):', {
+    dlog('📥 Dados brutos do Supabase (convidado):', {
       id: event.id,
       title: event.title,
       confirm_by_date: event.confirm_by_date,
@@ -278,7 +309,7 @@ async function fetchEventForGuest(eventId) {
       deadlineValue = event.date;
     }
     
-    console.log('✅ Valores processados (convidado):', {
+    dlog('✅ Valores processados (convidado):', {
       allow_companions: String(event.allow_companions).toLowerCase(),
       max_companions: maxComp,
       allow_kids: String(event.allow_kids).toLowerCase(),
@@ -379,7 +410,7 @@ async function fetchUserDataForOrganizer(userId) {
     // Selecionar TODOS os campos necessários incluindo cover_image, max_companions, max_kids, event_code
     const eventsData = await supabaseRequest(`events?user_id=eq.${userId}&select=id,title,date,time,user_id,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,music_url,music_title,iban_message,iban_number,iban_holder,iban_footer,groom_name,bride_name,couple_size,show_couple,bg_url,bg_overlay,bible_text,bible_ref,show_bible,invite_text,show_invite,groom_parents,bride_parents,show_parents,gallery_urls,show_gallery,show_manual,manual_items,show_schedule,schedule_items,custom_font_family,section_order,story_text,invite_blessing,event_color,confirm_by_date,cover_image,event_code,gifts(id,name,category,reserved,reserved_by),rsvps(guest_name,attending,side,companions,kids,wants_gift,message,created_at,updated_at)`);
     
-    console.log('📥 fetchUserDataForOrganizer recebido:', eventsData);
+    dlog('📥 fetchUserDataForOrganizer recebido:', eventsData);
     
     // 2. Puxar dados da conta (APENAS campos necessários)
     const accountData = await supabaseRequest(`accounts?id=eq.${userId}&select=id,phone,status`);
@@ -403,7 +434,7 @@ async function fetchUserDataForOrganizer(userId) {
         deadlineValue = event.date;
       }
       
-      console.log('✅ Normalizando evento (organizador):', {
+      dlog('✅ Normalizando evento (organizador):', {
         id: event.id,
         title: event.title,
         confirm_by_date: event.confirm_by_date,

@@ -77,7 +77,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const _intakeHandled = await checkForIntakeMode();
   if (_intakeHandled) return;
 
-  console.log('🚀 Inicializando aplicação...');
+  dlog('🚀 Inicializando aplicação...');
   
   // ✅ PASSO 1: Verificar token NO LOCALSTORAGE (persiste entre refreshes)
   const token = localStorage.getItem('authToken');
@@ -96,14 +96,14 @@ function invalidateEventsCache() { _forceNextLoad = true; }
 async function loadEventosComDelay() {
   const now = Date.now();
   if (!_forceNextLoad && Store.events && Store.events.length > 0 && (now - _lastLoad) < _CACHE_TTL) {
-    console.log('📦 Cache OK — não recarrega eventos');
+    dlog('📦 Cache OK — não recarrega eventos');
     renderDashboard();
     return;
   }
   _lastLoad = now;
   _forceNextLoad = false;
     if (token && userId) {
-      console.log('✅ Sessão anterior encontrada, restaurando...', { userId, userPhone, userRole });
+      dlog('✅ Sessão anterior encontrada, restaurando...', { userId, userPhone, userRole });
       
       // ✅ PASSO 2: Restaurar informações do utilizador PRIMEIRO (COM ROLE!)
       Store.currentUser = {
@@ -116,17 +116,17 @@ async function loadEventosComDelay() {
       // Restaurar topbar
       showTopbar(Store.currentUser);
       
-      console.log('✅ Utilizador restaurado:', Store.currentUser);
+      dlog('✅ Utilizador restaurado:', Store.currentUser);
       
       // ✅ PASSO 3: CRÍTICO - RECARREGAR DADOS DO SUPABASE COM DELAY PARA GARANTIR
-      console.log('📥 Recarregando dados do Supabase...');
+      dlog('📥 Recarregando dados do Supabase...');
       
       // Dar 500ms para garantir que a conexão está pronta
       await new Promise(r => setTimeout(r, 500));
       
       try {
         if (userRole === 'admin' && impersonatingUserId) {
-          console.log('Admin em modo cliente restaurado apos refresh:', impersonatingUserId);
+          dlog('Admin em modo cliente restaurado apos refresh:', impersonatingUserId);
           Store.adminModeActive = true;
           Store.adminOriginalUser = { id: userId, phone: userPhone || 'admin', role: 'admin', status: 'active' };
           Store.currentUser = { id: impersonatingUserId, phone: impersonatingUserPhone || 'cliente', role: 'user', status: 'active' };
@@ -137,11 +137,11 @@ async function loadEventosComDelay() {
 
         // ✅ SE É ADMIN: carregar TODAS as contas e TODOS os eventos
         if (userRole === 'admin') {
-          console.log('👨‍💼 Admin detectado - carregando dados administrativos...');
+          dlog('👨‍💼 Admin detectado - carregando dados administrativos...');
           
           // Carregar TODAS as contas (excluindo admins)
           const allAccounts = await supabaseRequest(`accounts?role=eq.user&select=id,phone,password,role,status,created_at,event_limit,admin_label&limit=500&order=created_at.desc`);
-          console.log('✅ Contas carregadas:', allAccounts?.length || 0);
+          dlog('✅ Contas carregadas:', allAccounts?.length || 0);
           
           Store.users = (allAccounts || []).filter(a => a.role !== 'admin' && a.status !== 'deleted').map(u => ({
             id: u.id,
@@ -156,7 +156,7 @@ async function loadEventosComDelay() {
           
           // Carregar TODOS os eventos (com JOIN para presentes e RSVPs)
           const allEvents = await supabaseRequest(`events?select=id,title,date,time,user_id,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,music_url,music_title,iban_message,iban_number,iban_holder,iban_footer,groom_name,bride_name,couple_size,show_couple,bg_url,bg_overlay,bible_text,bible_ref,show_bible,invite_text,show_invite,groom_parents,bride_parents,show_parents,gallery_urls,show_gallery,show_manual,manual_items,show_schedule,schedule_items,custom_font_family,section_order,story_text,invite_blessing,event_color,decor_ornament_url,decor_side_url,show_decor,save_the_date,confirm_by_date,cover_image,event_code,gifts(id,name,category,reserved,reserved_by),rsvps(guest_name,attending,side,companions,kids,wants_gift,message,created_at,updated_at)&limit=500&order=date.desc`);
-          console.log('✅ Eventos carregados:', allEvents?.length || 0);
+          dlog('✅ Eventos carregados:', allEvents?.length || 0);
           
           Store.events = (allEvents || []).map(event => {
             const maxComp = event.max_companions !== null && event.max_companions !== undefined ? parseInt(event.max_companions) : 2;
@@ -256,14 +256,14 @@ async function loadEventosComDelay() {
             };
           });
           
-          console.log('✅ Admin dashboard carregado:', { contas: Store.users.length, eventos: Store.events.length });
+          dlog('✅ Admin dashboard carregado:', { contas: Store.users.length, eventos: Store.events.length });
         } else {
           // ✅ SE É UTILIZADOR NORMAL: carregar apenas seus eventos
-          console.log('Utilizador normal - carregando seus eventos...');
+          dlog('Utilizador normal - carregando seus eventos...');
           
           const userEvents = await supabaseRequest(`events?user_id=eq.${userId}&select=id,title,date,time,user_id,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,music_url,music_title,iban_message,iban_number,iban_holder,iban_footer,groom_name,bride_name,couple_size,show_couple,bg_url,bg_overlay,bible_text,bible_ref,show_bible,invite_text,show_invite,groom_parents,bride_parents,show_parents,gallery_urls,show_gallery,show_manual,manual_items,show_schedule,schedule_items,custom_font_family,section_order,story_text,invite_blessing,event_color,decor_ornament_url,decor_side_url,show_decor,save_the_date,confirm_by_date,cover_image,event_code,gifts(id,name,category,reserved,reserved_by),rsvps(guest_name,attending,side,companions,kids,wants_gift,message,created_at,updated_at)`);
           
-          console.log('📥 Eventos recebidos do Supabase:', userEvents?.length || 0);
+          dlog('📥 Eventos recebidos do Supabase:', userEvents?.length || 0);
           
           // ✅ Normalizar dados do Supabase
           if (userEvents && Array.isArray(userEvents) && userEvents.length >= 0) {
@@ -365,9 +365,9 @@ async function loadEventosComDelay() {
               };
             });
             
-            console.log('✅ Store.events sincronizado:', Store.events.length, 'eventos carregados');
+            dlog('✅ Store.events sincronizado:', Store.events.length, 'eventos carregados');
           } else {
-            console.log('⚠️ Nenhum evento retornado');
+            dlog('⚠️ Nenhum evento retornado');
             Store.events = [];
           }
         }
@@ -387,7 +387,7 @@ async function loadEventosComDelay() {
   const eventFromURL = await checkURLForEvent();
   
   if (eventFromURL) {
-    console.log('📍 Evento encontrado na URL');
+    dlog('📍 Evento encontrado na URL');
     // Load session in background if logged in (for back button functionality)
     if (token && userId) loadEventosComDelay().catch(() => {});
     Router.go(eventFromURL);
@@ -396,10 +396,10 @@ async function loadEventosComDelay() {
     const sessaoCarregada = await loadEventosComDelay();
     
     if (token && userId && sessaoCarregada) {
-      console.log('✅ Sessão válida com', Store.events.length, 'evento(s)');
+      dlog('✅ Sessão válida com', Store.events.length, 'evento(s)');
       Router.go('dashboard');
     } else {
-      console.log('🏠 Navegando para home');
+      dlog('🏠 Navegando para home');
       Router.go('home');
 
       // ── Landing nav scroll effect ──

@@ -7,6 +7,28 @@ function toast(msg) {
   setTimeout(() => t.remove(), 2600);
 }
 
+// ===================== LANDING: MOBILE NAV MENU =====================
+function toggleLandingMenu() {
+  const links = document.getElementById('landing-nav-links');
+  const overlay = document.getElementById('landing-nav-overlay');
+  const btn = document.getElementById('landing-nav-toggle');
+  if (!links || !overlay || !btn) return;
+  const open = links.classList.toggle('open');
+  overlay.classList.toggle('open', open);
+  btn.classList.toggle('open', open);
+  document.body.style.overflow = open ? 'hidden' : '';
+}
+function closeLandingMenu() {
+  const links = document.getElementById('landing-nav-links');
+  const overlay = document.getElementById('landing-nav-overlay');
+  const btn = document.getElementById('landing-nav-toggle');
+  if (!links || !overlay || !btn) return;
+  links.classList.remove('open');
+  overlay.classList.remove('open');
+  btn.classList.remove('open');
+  document.body.style.overflow = '';
+}
+
 
 // ===================== HELPERS =====================
 function togglePassVisibility(inputId, btn) {

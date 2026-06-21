@@ -9,7 +9,7 @@ async function handleRegister(e) {
 
   if (!accessToken) { showErr('Insere o código de acesso fornecido pela AdKira.'); return; }
   if (!phone) { showErr('Insere o teu telefone ou ID.'); return; }
-  if (pass.length < 4) { showErr('A senha deve ter pelo menos 4 caracteres.'); return; }
+  if (pass.length < 6) { showErr('A senha deve ter pelo menos 6 caracteres.'); return; }
   if (pass !== pass2) { showErr('As senhas não coincidem.'); return; }
   errEl.classList.add('hidden');
 
@@ -90,32 +90,161 @@ async function handleRegister(e) {
 }
 
 
+// ===================== ANTI BRUTE-FORCE (mitigação no browser) =====================
+// ⚠️ Isto é só uma camada extra de fricção contra tentativa-e-erro feita
+// através do FORMULÁRIO de login. Não substitui rate-limiting no servidor
+// (alguém pode sempre chamar a API do Supabase directamente, sem passar pelo
+// formulário) — ver SECURITY.md, secção "Fase 2", para a proteção real.
+const LOGIN_THROTTLE_KEY = 'loginAttempts';
+const LOGIN_MAX_ATTEMPTS = 5;
+const LOGIN_LOCKOUT_MS = 2 * 60 * 1000; // 2 minutos
+
+function _getLoginAttempts(phone) {
+  try {
+    const all = JSON.parse(localStorage.getItem(LOGIN_THROTTLE_KEY) || '{}');
+    return all[phone] || { count: 0, lockedUntil: 0 };
+  } catch (e) { return { count: 0, lockedUntil: 0 }; }
+}
+function _setLoginAttempts(phone, data) {
+  try {
+    const all = JSON.parse(localStorage.getItem(LOGIN_THROTTLE_KEY) || '{}');
+    all[phone] = data;
+    localStorage.setItem(LOGIN_THROTTLE_KEY, JSON.stringify(all));
+  } catch (e) {}
+}
+function _clearLoginAttempts(phone) {
+  try {
+    const all = JSON.parse(localStorage.getItem(LOGIN_THROTTLE_KEY) || '{}');
+    delete all[phone];
+    localStorage.setItem(LOGIN_THROTTLE_KEY, JSON.stringify(all));
+  } catch (e) {}
+}
+function _registerFailedLogin(phone) {
+  const data = _getLoginAttempts(phone);
+  data.count = (data.count || 0) + 1;
+  if (data.count >= LOGIN_MAX_ATTEMPTS) {
+    data.lockedUntil = Date.now() + LOGIN_LOCKOUT_MS;
+    data.count = 0;
+  }
+  _setLoginAttempts(phone, data);
+}
+
+// ============================================================================
+// LOGIN — FASE 2 (opcional, desligado por padrão): login via RPC sem nunca
+// trazer a senha para o browser.
+// ============================================================================
+// COMO ACTIVAR (faz isto só depois de testares a função no Supabase, ver
+// supabase/02_rpc_login_fase2.sql):
+//   1. Confirma que `rpc_login` funciona no SQL Editor do Supabase.
+//   2. No HTML do formulário de login, troca onsubmit="handleLogin(event)"
+//      por onsubmit="handleLoginSecure(event)".
+//   3. Testa login com uma conta de teste antes de avisar utilizadores reais.
+//   4. Só depois disto correr bem por uns dias, podes voltar ao SQL e correr
+//      o REVOKE comentado no fundo do ficheiro 02_rpc_login_fase2.sql.
+//
+// Por agora, `handleLogin` (a função original, mais abaixo) continua a ser
+// a usada — nada muda automaticamente.
+async function handleLoginSecure(e) {
+  e.preventDefault();
+  const phone = document.getElementById('login-phone').value.trim();
+  const pass = document.getElementById('login-pass').value;
+  const errEl = document.getElementById('login-error');
+
+  const throttle = _getLoginAttempts(phone);
+  if (throttle.lockedUntil && throttle.lockedUntil > Date.now()) {
+    const waitMin = Math.ceil((throttle.lockedUntil - Date.now()) / 60000);
+    errEl.textContent = `Demasiadas tentativas falhadas. Tenta novamente em ${waitMin} min.`;
+    errEl.classList.remove('hidden');
+    return;
+  }
+
+  toast('Autenticando...');
+
+  let rows;
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/rpc_login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+      },
+      body: JSON.stringify({ p_phone: phone, p_password: pass })
+    });
+    rows = await res.json();
+  } catch (err) {
+    errEl.textContent = 'Erro de ligação. Tenta novamente.';
+    errEl.classList.remove('hidden');
+    return;
+  }
+
+  if (!Array.isArray(rows) || rows.length === 0) {
+    _registerFailedLogin(phone);
+    errEl.textContent = 'Telefone ou senha incorrectos.'; // ✅ mensagem única — não revela qual dos dois está errado
+    errEl.classList.remove('hidden');
+    return;
+  }
+
+  _clearLoginAttempts(phone);
+  const user = rows[0];
+
+  if (user.status === 'pending') {
+    errEl.textContent = 'A tua conta ainda está pendente de aprovação.';
+    errEl.classList.remove('hidden');
+    return;
+  }
+  if (user.status === 'blocked') {
+    errEl.textContent = 'Esta conta foi bloqueada. Contacta o suporte.';
+    errEl.classList.remove('hidden');
+    return;
+  }
+
+  localStorage.setItem('authToken', user.id);
+  localStorage.setItem('userId', user.id);
+  localStorage.setItem('userPhone', user.phone);
+  localStorage.setItem('userRole', user.role || 'user');
+
+  Store.currentUser = { id: user.id, phone: user.phone, role: user.role || 'user', status: 'active' };
+  toast('Bem-vindo! Carregando seus dados...');
+  Router.go(user.role === 'admin' ? 'admin' : 'dashboard');
+}
+
 async function handleLogin(e) {
   e.preventDefault();
   const phone = document.getElementById('login-phone').value.trim();
   const pass = document.getElementById('login-pass').value;
   const errEl = document.getElementById('login-error');
 
+  // ✅ Verificar bloqueio temporário por demasiadas tentativas falhadas
+  const throttle = _getLoginAttempts(phone);
+  if (throttle.lockedUntil && throttle.lockedUntil > Date.now()) {
+    const waitMin = Math.ceil((throttle.lockedUntil - Date.now()) / 60000);
+    errEl.textContent = `Demasiadas tentativas falhadas. Tenta novamente em ${waitMin} min.`;
+    errEl.classList.remove('hidden');
+    return;
+  }
+
   toast('Autenticando...');
   
   // ✅ Buscar no Supabase
   const accountData = await supabaseRequest(`accounts?phone=eq.${encodeURIComponent(phone)}`);
   
-  console.log('🔍 Resultado da busca de conta:', {
+  dlog('🔍 Resultado da busca de conta:', {
     phone: phone,
     resultado: accountData,
     encontrou: accountData && accountData.length > 0
   });
   
   if (!accountData || accountData.length === 0) {
-    console.log('❌ Nenhuma conta encontrada para:', phone);
+    dlog('❌ Nenhuma conta encontrada para:', phone);
+    _registerFailedLogin(phone);
     errEl.textContent = 'Conta não encontrada.';
     errEl.classList.remove('hidden');
     return;
   }
 
   const user = accountData[0];
-  console.log('✅ Conta encontrada:', {
+  dlog('✅ Conta encontrada:', {
     id: user.id,
     phone: user.phone,
     status: user.status,
@@ -124,15 +253,19 @@ async function handleLogin(e) {
   
   // ✅ Validar senha (em produção usar bcrypt)
   if (user.password !== pass) {
-    console.log('❌ Senha incorreta para:', phone);
+    dlog('❌ Senha incorreta para:', phone);
+    _registerFailedLogin(phone);
     errEl.textContent = 'Senha incorreta.';
     errEl.classList.remove('hidden');
     return;
   }
 
+  // ✅ Login bem-sucedido — limpar contador de tentativas
+  _clearLoginAttempts(phone);
+
   // ✅ CRÍTICO: Verificar se conta está APROVADA pelo admin
   if (user.status === 'pending') {
-    console.log('⏳ Conta pendente de aprovação:', phone);
+    dlog('⏳ Conta pendente de aprovação:', phone);
     errEl.textContent = '⏳ Sua conta ainda não foi aprovada pelo administrador.';
     errEl.classList.remove('hidden');
     return;
@@ -140,7 +273,7 @@ async function handleLogin(e) {
 
   // ✅ CRÍTICO: Verificar se conta foi BLOQUEADA
   if (user.status === 'blocked') {
-    console.log('🚫 Conta bloqueada:', phone);
+    dlog('🚫 Conta bloqueada:', phone);
     errEl.textContent = 'Sua conta foi bloqueada. Contacte o administrador.';
     errEl.classList.remove('hidden');
     return;
@@ -148,14 +281,14 @@ async function handleLogin(e) {
   
   // ✅ CRÍTICO: Verificar se conta foi DELETADA (não deveria chegar aqui, mas é proteção extra)
   if (user.status === 'deleted' || user.deleted_at) {
-    console.log('🗑️ Conta deletada:', phone);
+    dlog('🗑️ Conta deletada:', phone);
     errEl.textContent = 'Esta conta foi eliminada. Não é possível fazer login.';
     errEl.classList.remove('hidden');
     return;
   }
 
   // ✅ Login bem-sucedido
-  console.log('✅ Login bem-sucedido para:', phone);
+  dlog('✅ Login bem-sucedido para:', phone);
 
   // CRITICAL: always reset admin impersonation state on a fresh login.
   // Prevents a leftover Store.adminModeActive=true (from a previous admin
@@ -212,7 +345,7 @@ async function handleLogin(e) {
 
   // 🎯 Carregar dados do Supabase
   if (user.role === 'admin') {
-    console.log('👨‍💼 Admin logado - carregando dados administrativos...');
+    dlog('👨‍💼 Admin logado - carregando dados administrativos...');
     
     // ✅ AGUARDAR um pouco para garantir conexão
     await new Promise(r => setTimeout(r, 300));
@@ -231,12 +364,12 @@ async function handleLogin(e) {
       createdAt: u.created_at
     }));
     
-    console.log('✅ Contas carregadas:', Store.users?.length || 0, 'contas');
+    dlog('✅ Contas carregadas:', Store.users?.length || 0, 'contas');
     
     // ✅ CARREGA 2: TODOS OS EVENTOS (COM JOIN para presentes e RSVPs)
     const allEvents = await supabaseRequest(`events?select=id,title,date,time,user_id,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,music_url,music_title,iban_message,iban_number,iban_holder,iban_footer,groom_name,bride_name,couple_size,show_couple,bg_url,bg_overlay,bible_text,bible_ref,show_bible,invite_text,show_invite,groom_parents,bride_parents,show_parents,gallery_urls,show_gallery,show_manual,manual_items,show_schedule,schedule_items,custom_font_family,section_order,story_text,invite_blessing,event_color,confirm_by_date,cover_image,event_code,gifts(id,name,category,reserved,reserved_by),rsvps(guest_name,attending,side,companions,kids,wants_gift,message,created_at,updated_at)&limit=500&order=date.desc`);
     
-    console.log('✅ Eventos carregados:', allEvents?.length || 0, 'eventos');
+    dlog('✅ Eventos carregados:', allEvents?.length || 0, 'eventos');
     
     Store.events = (allEvents || []).map(event => {
       const maxComp = event.max_companions !== null && event.max_companions !== undefined ? parseInt(event.max_companions) : 2;
@@ -328,7 +461,7 @@ async function handleLogin(e) {
       };
     });
     
-    console.log('📊 Admin dashboard carregado:', {
+    dlog('📊 Admin dashboard carregado:', {
       contas: Store.users.length,
       eventos: Store.events.length,
       role: userRole
@@ -336,13 +469,13 @@ async function handleLogin(e) {
     
     setTimeout(() => Router.go('admin'), 300);
   } else {
-    console.log('Utilizador normal logado - carregando eventos pessoais...');
+    dlog('Utilizador normal logado - carregando eventos pessoais...');
     
     // ✅ Usar função melhorada que já traz tudo pronto
     const userData = await fetchUserDataForOrganizer(user.id);
     if (userData && userData.events) {
       Store.events = userData.events;
-      console.log('✅ Store.events sincronizado com Supabase:', Store.events.length, 'eventos carregados');
+      dlog('✅ Store.events sincronizado com Supabase:', Store.events.length, 'eventos carregados');
     }
     Router.go('dashboard');
   }
@@ -424,22 +557,22 @@ function saveAdminLabel(userId, modal) {
     return;
   }
 
-  console.log('💾 Salvando admin label:', { userId, label });
+  dlog('💾 Salvando admin label:', { userId, label });
 
   // ✅ Atualizar Store PRIMEIRO
   user.adminLabel = label && label.length > 0 ? label : null;
   
-  console.log('✅ Store atualizado. Novo valor:', user.adminLabel);
+  dlog('✅ Store atualizado. Novo valor:', user.adminLabel);
 
   // ✅ CRÍTICO: Sincronizar com Supabase
   const updateData = label && label.length > 0 
     ? { admin_label: label } 
     : { admin_label: null };
 
-  console.log('📤 Enviando para Supabase:', updateData);
+  dlog('📤 Enviando para Supabase:', updateData);
 
   supabaseRequest(`accounts?id=eq.${userId}`, 'PATCH', updateData).then(result => {
-    console.log('✅ Resposta do Supabase:', result);
+    dlog('✅ Resposta do Supabase:', result);
     
     modal.remove();
     toast(label && label.length > 0 
@@ -462,13 +595,13 @@ function changeUserPassword(userId) {
   modal.innerHTML = `
     <div class="modal-content bg-white rounded-2xl shadow-lg p-6 max-w-sm w-full mx-4">
       <h3 class="text-lg font-bold text-gray-800 mb-2">Alterar Senha</h3>
-      <p class="text-sm text-gray-500 mb-4">Utilizador: <strong>${user.phone}</strong></p>
+      <p class="text-sm text-gray-500 mb-4">Utilizador: <strong>${escapeHTML(user.phone)}</strong></p>
       
       <div class="space-y-3 mb-4">
         <div>
           <label class="block text-sm font-semibold text-gray-600 mb-1">Nova Senha</label>
           <input id="new-password-input" type="text" class="input-field" placeholder="Digite a nova senha" value="">
-          <p class="text-xs text-gray-400 mt-1">Mínimo 4 caracteres</p>
+          <p class="text-xs text-gray-400 mt-1">Mínimo 6 caracteres</p>
         </div>
       </div>
       
@@ -485,8 +618,8 @@ function changeUserPassword(userId) {
 function saveUserPassword(userId, modal) {
   const newPassword = document.getElementById('new-password-input').value.trim();
   
-  if (newPassword.length < 4) {
-    toast('Senha deve ter mínimo 4 caracteres!');
+  if (newPassword.length < 6) {
+    toast('Senha deve ter mínimo 6 caracteres!');
     return;
   }
 
@@ -601,7 +734,7 @@ function saveUserId(userId, modal) {
   const oldId = user.id;
   
   // ✅ PASSO 1: Atualizar TODOS os eventos deste utilizador
-  console.log('🔄 Atualizando user_id em todos os eventos...');
+  dlog('🔄 Atualizando user_id em todos os eventos...');
   const userEvents = Store.events.filter(e => e.userId === oldId || e.user_id === oldId);
   
   userEvents.forEach(event => {
@@ -617,7 +750,7 @@ function saveUserId(userId, modal) {
   
   // ✅ PASSO 3: Sincronizar utilizador no Supabase
   // ⚠️ CRÍTICO: Deletar o registo antigo e criar um novo com o novo ID
-  console.log('🔄 Atualizando ID do utilizador no Supabase...');
+  dlog('🔄 Atualizando ID do utilizador no Supabase...');
   
   // Primeiro, copiar os dados do utilizador antigo
   const userData = {
@@ -633,11 +766,11 @@ function saveUserId(userId, modal) {
 
   // Inserir novo registo com novo ID
   supabaseRequest('accounts', 'POST', userData).then(result => {
-    console.log('✅ Novo registo criado com ID:', newId);
+    dlog('✅ Novo registo criado com ID:', newId);
     
     // Depois, deletar o registo antigo
     supabaseRequest(`accounts?id=eq.${oldId}`, 'DELETE', {}).then(delResult => {
-      console.log('✅ Registo antigo deletado');
+      dlog('✅ Registo antigo deletado');
       
       modal.remove();
       toast(`ID alterado de "${oldId}" para "${newId}" e todos os ${userEvents.length} evento(s) foram atualizados!`);

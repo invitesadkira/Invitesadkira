@@ -5,7 +5,7 @@ async function handleCreateEvent(e) {
   // 🔒 Prevenir submissão dupla
   const submitBtn = e.target.querySelector('button[type="submit"]');
   if (submitBtn.disabled) {
-    console.log('⚠️ Submissão duplicada bloqueada');
+    dlog('⚠️ Submissão duplicada bloqueada');
     return;
   }
   
@@ -51,7 +51,7 @@ async function handleCreateEvent(e) {
   // ✅ CRÍTICO: Se deadline estiver vazio, usar a data do evento
   if (!deadline || deadline.trim() === '') {
     deadline = date;
-    console.log('⚠️ Deadline vazio, usando data do evento:', deadline);
+    dlog('⚠️ Deadline vazio, usando data do evento:', deadline);
   }
   
   // ✅ CRÍTICO: Combinar data + hora do deadline: "2026-03-15 23:59"
@@ -59,7 +59,7 @@ async function handleCreateEvent(e) {
   if (deadline && deadlineTime) {
     deadlineWithTime = `${deadline} ${deadlineTime}`;
   }
-  console.log('💾 Deadline salvo como:', deadlineWithTime);
+  dlog('💾 Deadline salvo como:', deadlineWithTime);
   
   const allowComp = document.getElementById('sw-companions').classList.contains('active');
   const allowGifts = document.getElementById('sw-gifts').classList.contains('active');
@@ -123,7 +123,7 @@ async function handleCreateEvent(e) {
     submitBtn.textContent = 'Enviando imagem...';
     
     uploadCoverImageToSupabase(coverImg.src, eventId).then(coverImageURL => {
-      console.log('✅ URL da imagem recebida:', coverImageURL);
+      dlog('✅ URL da imagem recebida:', coverImageURL);
       toast('Imagem recebida, criando evento...');
       submitBtn.textContent = 'Criando evento...';
       // Agora criar evento com URL da imagem no Supabase
@@ -156,15 +156,15 @@ async function uploadCoverImageToSupabase(base64Image, eventId) {
     const fileName = `event_${sanitizedId}_${Date.now()}.jpg`;
     const bucketName = 'event-covers';
     
-    console.log('📤 Iniciando upload para Supabase Storage');
-    console.log('  Bucket:', bucketName);
-    console.log('  Arquivo:', fileName);
-    console.log('  Tamanho:', blob.size, 'bytes');
+    dlog('📤 Iniciando upload para Supabase Storage');
+    dlog('  Bucket:', bucketName);
+    dlog('  Arquivo:', fileName);
+    dlog('  Tamanho:', blob.size, 'bytes');
     
     // ✅ URL CORRETA para Supabase Storage Upload
     const uploadURL = `${SUPABASE_URL}/storage/v1/object/${bucketName}/${fileName}`;
     
-    console.log('  Upload URL:', uploadURL);
+    dlog('  Upload URL:', uploadURL);
     
     const response = await fetch(uploadURL, {
       method: 'POST',
@@ -176,7 +176,7 @@ async function uploadCoverImageToSupabase(base64Image, eventId) {
       body: blob
     });
     
-    console.log('📡 Resposta do upload:', response.status, response.statusText);
+    dlog('📡 Resposta do upload:', response.status, response.statusText);
     
     if (!response.ok) {
       const errorText = await response.text();
@@ -186,13 +186,13 @@ async function uploadCoverImageToSupabase(base64Image, eventId) {
     
     // ✅ URL PÚBLICA - usar formato CDN que tem CORS configurado
     const imageURL = `${SUPABASE_URL}/storage/v1/object/public/${bucketName}/${fileName}`;
-    console.log('✅ Imagem enviada com sucesso!');
-    console.log('  URL Pública (CDN):', imageURL);
+    dlog('✅ Imagem enviada com sucesso!');
+    dlog('  URL Pública (CDN):', imageURL);
     
     // Testar se a URL é acessível
     const testResponse = await fetch(imageURL, { method: 'HEAD' });
     if (testResponse.ok) {
-      console.log('✅ URL acessível e com CORS OK');
+      dlog('✅ URL acessível e com CORS OK');
     } else {
       console.warn('⚠️ URL pode ter problemas CORS:', testResponse.status);
     }
@@ -310,8 +310,8 @@ function saveEventWithCover(eventId, title, date, time, deadline, coverImageURL,
     event_color: v.eventColor || null
   };
   
-  console.log('📤 Enviando ao Supabase:', eventData);
-  console.log('  ✅ confirm_by_date será:', finalDeadline);
+  dlog('📤 Enviando ao Supabase:', eventData);
+  dlog('  ✅ confirm_by_date será:', finalDeadline);
   
   supabaseRequest('events', 'POST', eventData).then(result => {
     // result may be null if Supabase columns don't exist yet (auto-retry stripped them)
@@ -532,7 +532,7 @@ async function deleteImageFromSupabase(fileName) {
     const bucketName = 'event-covers';
     const deleteURL = `${SUPABASE_URL}/storage/v1/object/${bucketName}/${fileName}`;
     
-    console.log('🗑️ Deletando imagem:', fileName);
+    dlog('🗑️ Deletando imagem:', fileName);
     
     const response = await fetch(deleteURL, {
       method: 'DELETE',
@@ -543,7 +543,7 @@ async function deleteImageFromSupabase(fileName) {
     });
     
     if (response.ok) {
-      console.log('✅ Imagem antiga deletada:', fileName);
+      dlog('✅ Imagem antiga deletada:', fileName);
       return true;
     } else {
       console.error('❌ Erro ao deletar imagem:', response.status);
@@ -557,7 +557,7 @@ async function deleteImageFromSupabase(fileName) {
 
 function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, coverImageURL, allowComp, maxComp, allowGifts, allowKids, maxKids, allowSides, side1NameVal, side2NameVal, showTime, submitBtn, originalText) {
   // ✅ CRÍTICO: Procurar o evento no Store usando Store.currentEventId
-  console.log('🔍 Procurando evento:', { eventId, currentEventId: Store.currentEventId });
+  dlog('🔍 Procurando evento:', { eventId, currentEventId: Store.currentEventId });
   
   let ev = Store.events.find(e => e.id === Store.currentEventId);
   
@@ -577,7 +577,7 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
     return;
   }
   
-  console.log('✅ Evento encontrado:', ev.title);
+  dlog('✅ Evento encontrado:', ev.title);
 
   // ✅ CRÍTICO: Ler DIRETAMENTE do formulário (não confiar em parâmetros)
   const side1NameInput = document.getElementById('evt-side1-name');
@@ -591,7 +591,7 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
     ? side2NameInput.value.trim() 
     : 'Grupo 2';
 
-  console.log('💾 Atualizando evento no Supabase:', {
+  dlog('💾 Atualizando evento no Supabase:', {
     eventId,
     title,
     date,
@@ -705,7 +705,7 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
     invite_blessing: document.getElementById('evt-invite-blessing')?.value.trim() || null,
     event_color: document.getElementById('evt-event-color')?.value.trim() || null
   }).then(result => {
-    console.log('✅ Resposta do Supabase:', result);
+    dlog('✅ Resposta do Supabase:', result);
     
     if (result) {
       if (ev) {
@@ -895,7 +895,7 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
       }
       
       // ✅ CRÍTICO: VOLTA PARA DETALHES (NÃO para dashboard)
-      console.log('🔄 Navegando para event-details com eventId:', eventId);
+      dlog('🔄 Navegando para event-details com eventId:', eventId);
       Store.currentEventId = eventId;
       Router.go('event-details');
     } else {
@@ -944,10 +944,10 @@ function renderEventDetails() {
   const coverImage = event.cover_image;
   const coverEl = document.getElementById('detail-cover');
   
-  console.log('🖼️ Renderizando capa do evento:');
-  console.log('  Event ID:', event.id);
-  console.log('  Cover Image:', coverImage);
-  console.log('  É URL HTTP?', coverImage && coverImage.startsWith('http'));
+  dlog('🖼️ Renderizando capa do evento:');
+  dlog('  Event ID:', event.id);
+  dlog('  Cover Image:', coverImage);
+  dlog('  É URL HTTP?', coverImage && coverImage.startsWith('http'));
   
   if (coverImage && coverImage.trim() !== '' && coverImage.startsWith('http')) {
     const img = document.createElement('img');
@@ -960,12 +960,12 @@ function renderEventDetails() {
       lucide.createIcons();
     };
     img.onload = function() {
-      console.log('✅ Imagem carregada com sucesso!');
+      dlog('✅ Imagem carregada com sucesso!');
     };
     coverEl.innerHTML = '';
     coverEl.appendChild(img);
   } else {
-    console.log('⚠️ Sem imagem de capa válida, usando ícone padrão');
+    dlog('⚠️ Sem imagem de capa válida, usando ícone padrão');
     coverEl.innerHTML = '<i data-lucide="calendar-heart" class="w-16 h-16 text-white/60"></i>';
   }
 
@@ -1098,13 +1098,13 @@ function renderEventDetails() {
     const lastDownloadKey = `last_download_${Store.currentEventId}`;
     const lastDownloadTime = localStorage.getItem(lastDownloadKey);
     
-    console.log('🔍 Renderizando confirmações:');
-    console.log('  Último download:', lastDownloadTime);
+    dlog('🔍 Renderizando confirmações:');
+    dlog('  Último download:', lastDownloadTime);
     
     // 📌 Determinar se confirmação é nova
     const isNewConfirmation = (conf) => {
       if (!lastDownloadTime) {
-        console.log('  ℹ️ Primeiro download - nenhuma é nova:', conf.name);
+        dlog('  ℹ️ Primeiro download - nenhuma é nova:', conf.name);
         return false; // Primeiro download, nenhuma é nova
       }
       
@@ -1112,7 +1112,7 @@ function renderEventDetails() {
       const confTimestamp = new Date(confTime).getTime();
       const isNew = confTimestamp > parseInt(lastDownloadTime);
       
-      console.log(`  ${conf.name}: ${confTime} > ${lastDownloadTime}? ${isNew}`);
+      dlog(`  ${conf.name}: ${confTime} > ${lastDownloadTime}? ${isNew}`);
       
       return isNew;
     };
@@ -1147,13 +1147,17 @@ function renderEventDetails() {
       }
       
       const sideLabel = getSideLabel(c.side, event);
+      const safeName = escapeHTML(c.name);
+      const safeCompanions = (c.companions || []).map(escapeHTML).join(', ');
+      const safeKids = (c.kids || []).map(escapeHTML).join(', ');
+      const safeGiftName = hasReservedGift ? escapeHTML(reservedGift.name) : '';
       const details = [
         sideLabel,
-        ((c.companions || []).length ? 'Acomp: ' + c.companions.join(', ') : ''),
-        ((c.kids || []).length ? 'Crianças: ' + c.kids.join(', ') : ''),
-        (hasReservedGift ? reservedGift.name : '')
+        ((c.companions || []).length ? 'Acomp: ' + safeCompanions : ''),
+        ((c.kids || []).length ? 'Crianças: ' + safeKids : ''),
+        (hasReservedGift ? safeGiftName : '')
       ].filter(Boolean).join(' · ');
-      return '<div class="flex items-center gap-3 p-3 rounded-xl ' + (c.attending ? 'bg-green-50' : 'bg-red-50') + ' mb-2 ' + (isNew ? 'border-2 border-green-300' : '') + '"><div class="w-9 h-9 rounded-full ' + (c.attending ? 'bg-green-200 text-green-700' : 'bg-red-200 text-red-600') + ' flex items-center justify-center font-bold text-sm">' + c.name.charAt(0) + '</div><div class="flex-1 min-w-0"><p class="font-semibold text-gray-800 text-sm truncate">' + c.name + newBadge + '</p><p class="text-xs text-gray-500">' + details + '</p></div><span class="text-xs font-semibold ' + (c.attending ? 'text-green-600' : 'text-red-500') + ' mr-2">' + (c.attending ? 'Vai' : 'Não vai') + '</span><div class="flex gap-1">' + removeGiftBtn + replyMessageBtn + (isOwner ? '<button class="text-gray-400 hover:text-teal-500 transition p-1" onclick="editConfirmationModal(' + idx + ')"><i data-lucide="pencil" class="w-4 h-4"></i></button><button class="text-gray-400 hover:text-red-500 transition p-1" onclick="deleteConfirmation(' + idx + ')"><i data-lucide="trash-2" class="w-4 h-4"></i></button>' : '') + '</div></div>';
+      return '<div class="flex items-center gap-3 p-3 rounded-xl ' + (c.attending ? 'bg-green-50' : 'bg-red-50') + ' mb-2 ' + (isNew ? 'border-2 border-green-300' : '') + '"><div class="w-9 h-9 rounded-full ' + (c.attending ? 'bg-green-200 text-green-700' : 'bg-red-200 text-red-600') + ' flex items-center justify-center font-bold text-sm">' + escapeHTML((c.name || '?').charAt(0)) + '</div><div class="flex-1 min-w-0"><p class="font-semibold text-gray-800 text-sm truncate">' + safeName + newBadge + '</p><p class="text-xs text-gray-500">' + details + '</p></div><span class="text-xs font-semibold ' + (c.attending ? 'text-green-600' : 'text-red-500') + ' mr-2">' + (c.attending ? 'Vai' : 'Não vai') + '</span><div class="flex gap-1">' + removeGiftBtn + replyMessageBtn + (isOwner ? '<button class="text-gray-400 hover:text-teal-500 transition p-1" onclick="editConfirmationModal(' + idx + ')"><i data-lucide="pencil" class="w-4 h-4"></i></button><button class="text-gray-400 hover:text-red-500 transition p-1" onclick="deleteConfirmation(' + idx + ')"><i data-lucide="trash-2" class="w-4 h-4"></i></button>' : '') + '</div></div>';
     }).join('');
   }
 
@@ -1274,8 +1278,8 @@ function downloadGiftsPDF() {
           <div class="gift-status ${gift.reserved ? 'reserved' : 'available'}">
             ${gift.reserved ? 'Reservado' : 'Livre'}
           </div>
-          <div class="gift-name">${gift.name}</div>
-          ${gift.reserved ? `<div class="gift-reserved-by">Escolhido por: ${gift.reservedBy}</div>` : ''}
+          <div class="gift-name">${escapeHTML(gift.name)}</div>
+          ${gift.reserved ? `<div class="gift-reserved-by">Escolhido por: ${escapeHTML(gift.reservedBy)}</div>` : ''}
         </div>
       `;
     });
@@ -1288,7 +1292,7 @@ function downloadGiftsPDF() {
 
   htmlContent += `
       <div class="footer">
-        <p> Evento: ${ev.title}</p>
+        <p> Evento: ${escapeHTML(ev.title)}</p>
         <p>© Created By AdKira 2026</p>
       </div>
     </body>
@@ -1765,7 +1769,7 @@ function _fillEditForm(ev) {
     // 🔒 Prevenir submissão dupla
     const submitBtn = e.target.querySelector('button[type="submit"]');
     if (submitBtn.disabled) {
-      console.log('⚠️ Submissão duplicada bloqueada');
+      dlog('⚠️ Submissão duplicada bloqueada');
       return;
     }
     
@@ -1783,7 +1787,7 @@ function _fillEditForm(ev) {
     // ✅ CRÍTICO: Se deadline estiver vazio, usar a data do evento
     if (!deadline || deadline.trim() === '') {
       deadline = date;
-      console.log('⚠️ Deadline vazio, usando data do evento:', deadline);
+      dlog('⚠️ Deadline vazio, usando data do evento:', deadline);
     }
     
     // ✅ CRÍTICO: Combinar data + hora do deadline
@@ -1814,7 +1818,7 @@ function _fillEditForm(ev) {
       submitBtn.textContent = 'Enviando imagem...';
       
       uploadCoverImageToSupabase(coverImgEdit.src, ev.id).then(coverImageURL => {
-        console.log('✅ URL da imagem recebida:', coverImageURL);
+        dlog('✅ URL da imagem recebida:', coverImageURL);
         toast('Imagem recebida, guardando alterações...');
         submitBtn.textContent = 'Guardando...';
         // ✅ CRÍTICO: Ler valores AQUI dentro do formulário
@@ -2092,82 +2096,82 @@ async function searchEvent() {
   const query = document.getElementById('home-search').value.trim().toUpperCase();
   if (!query) return;
   
-  console.log('🔍 Buscando evento com query:', query);
+  dlog('🔍 Buscando evento com query:', query);
   
   try {
     // ✅ PASSO 1: Carregar eventos do Supabase COM JOIN para trazer RSVPS e GIFTS
-    console.log('📥 Buscando evento DIRETO do Supabase...');
+    dlog('📥 Buscando evento DIRETO do Supabase...');
     
     const allEvents = await supabaseRequest(`events?select=id,title,date,time,confirm_by_date,cover_image,event_code,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,rsvp_enabled,allow_edit_rsvp,save_the_date_enabled,release_type,release_date,is_invite_released,std_title,std_subtitle,std_font_family,std_name_size,std_title_size,std_intro_enabled,std_intro_text,std_intro_photo_url,std_intro_photo_mobile_url,std_intro_photo_desktop_url,std_intro_on_invite,std_show_cover,std_cover_url,std_cover_mobile_url,std_cover_desktop_url,std_scratch_enabled,std_scratch_mode,std_scratch_photo_url,std_scratch_text,std_date_style,is_example_event,std_show_iban,personalized_links_enabled,show_rsvp_in_full_invite,show_guest_name_in_invite,allow_messages,show_guest_messages,rsvps(guest_name,attending,side,companions,kids,wants_gift,message,created_at,updated_at),gifts(id,name,category,reserved,reserved_by)`);
     
-    console.log(' Total de eventos no Supabase:', allEvents?.length || 0);
-    console.log('🔍 Query de busca (uppercase):', query);
+    dlog(' Total de eventos no Supabase:', allEvents?.length || 0);
+    dlog('🔍 Query de busca (uppercase):', query);
     
     if (!allEvents || allEvents.length === 0) {
-      console.log('❌ Nenhum evento encontrado no Supabase');
+      dlog('❌ Nenhum evento encontrado no Supabase');
       Router.go('not-found');
       return;
     }
     
     // ✅ PASSO 2: Debug - mostrar TODOS os codes
-    console.log('🔎 Debug - Primeiros 5 eventos:');
+    dlog('🔎 Debug - Primeiros 5 eventos:');
     allEvents.slice(0, 5).forEach((e, i) => {
-      console.log(`  ${i}. ID: "${e.id}" | event_code: "${e.event_code}" | title: ${e.title}`);
+      dlog(`  ${i}. ID: "${e.id}" | event_code: "${e.event_code}" | title: ${e.title}`);
     });
     
     // ✅ PASSO 3: Procurar com múltiplas estratégias
     let found = null;
     
     // Estratégia 1: Procurar por event_code EXATO
-    console.log('🔍 Estratégia 1: Procurando por event_code EXATO...');
+    dlog('🔍 Estratégia 1: Procurando por event_code EXATO...');
     found = allEvents.find(e => {
       if (!e.event_code) return false;
       const code = String(e.event_code).trim().toUpperCase();
-      console.log(`  Comparando: "${code}" === "${query}"`);
+      dlog(`  Comparando: "${code}" === "${query}"`);
       const match = code === query;
-      if (match) console.log('  ✅ MATCH ENCONTRADO!');
+      if (match) dlog('  ✅ MATCH ENCONTRADO!');
       return match;
     });
     
     if (found) {
-      console.log('✅ Sucesso na estratégia 1 (event_code):', found.title);
+      dlog('✅ Sucesso na estratégia 1 (event_code):', found.title);
     } else {
       // Estratégia 2: Procurar por ID EXATO
-      console.log('🔍 Estratégia 2: Procurando por ID EXATO...');
+      dlog('🔍 Estratégia 2: Procurando por ID EXATO...');
       found = allEvents.find(e => {
         if (!e.id) return false;
         const id = String(e.id).trim().toUpperCase();
-        console.log(`  Comparando: "${id}" === "${query}"`);
+        dlog(`  Comparando: "${id}" === "${query}"`);
         const match = id === query;
-        if (match) console.log('  ✅ MATCH ENCONTRADO!');
+        if (match) dlog('  ✅ MATCH ENCONTRADO!');
         return match;
       });
       
       if (found) {
-        console.log('✅ Sucesso na estratégia 2 (ID):', found.title);
+        dlog('✅ Sucesso na estratégia 2 (ID):', found.title);
       } else {
         // Estratégia 3: Procurar por TÍTULO (parcial)
-        console.log('🔍 Estratégia 3: Procurando por TÍTULO...');
+        dlog('🔍 Estratégia 3: Procurando por TÍTULO...');
         found = allEvents.find(e => {
           if (!e.title) return false;
           const match = e.title.toUpperCase().includes(query);
-          if (match) console.log('  ✅ MATCH ENCONTRADO:', e.title);
+          if (match) dlog('  ✅ MATCH ENCONTRADO:', e.title);
           return match;
         });
         
         if (found) {
-          console.log('✅ Sucesso na estratégia 3 (título):', found.title);
+          dlog('✅ Sucesso na estratégia 3 (título):', found.title);
         }
       }
     }
     
     if (!found) {
-      console.log('❌ Evento não encontrado em nenhuma estratégia');
+      dlog('❌ Evento não encontrado em nenhuma estratégia');
       Router.go('not-found');
       return;
     }
     
-    console.log('✅✅ EVENTO ENCONTRADO:', found.title);
+    dlog('✅✅ EVENTO ENCONTRADO:', found.title);
     
     // ✅ PASSO 4: Normalizar dados do Supabase
     const maxComp = found.max_companions !== null && found.max_companions !== undefined 
@@ -2238,7 +2242,7 @@ async function searchEvent() {
     Store.currentEventId = found.id;
     Store.guestEventData = eventData;
     
-    console.log('✅ Evento carregado e pronto para guest view');
+    dlog('✅ Evento carregado e pronto para guest view');
     Router.go('guest');
     
   } catch (error) {
@@ -2257,9 +2261,9 @@ function cleanId(id) {
   
   // ✅ CRÍTICO: Remover prefixo "id. " se existir
   if (str.startsWith('id. ')) {
-    console.log('🧹 Limpando ID com prefixo "id. ":', str);
+    dlog('🧹 Limpando ID com prefixo "id. ":', str);
     str = str.replace(/^id\.\s*/, '').trim();
-    console.log('   Resultado:', str);
+    dlog('   Resultado:', str);
   }
   
   return str.toUpperCase();
@@ -2318,7 +2322,7 @@ async function executeRepairCorruptedData(modal) {
   let errors = 0;
   
   const addLog = (msg) => {
-    console.log(msg);
+    dlog(msg);
     log.push(msg);
     logDiv.textContent = log.join('\n');
     logDiv.parentElement.parentElement.scrollTop = logDiv.parentElement.parentElement.scrollHeight;
@@ -2479,7 +2483,7 @@ function isValidEventCode(code) {
   
   // ✅ CRÍTICO: NÃO pode ter prefixo "id. "
   if (str.startsWith('id.')) {
-    console.log('  ❌ Código inválido (tem prefixo "id."):', str);
+    dlog('  ❌ Código inválido (tem prefixo "id."):', str);
     return false;
   }
   
@@ -2487,7 +2491,7 @@ function isValidEventCode(code) {
   const isValid = /^[A-Z0-9]{6,}$/.test(str);
   
   if (!isValid) {
-    console.log('  ❌ Código inválido (não é alphanummérico ou muito curto):', str);
+    dlog('  ❌ Código inválido (não é alphanummérico ou muito curto):', str);
   }
   
   return isValid;
@@ -2535,27 +2539,27 @@ async function checkURLForEvent() {
     }
   }
 
-  console.log('🔗 URL Detection iniciado. Event code:', eventCode, 'Gifts only:', giftsOnly);
+  dlog('🔗 URL Detection iniciado. Event code:', eventCode, 'Gifts only:', giftsOnly);
   
   if (eventCode) {
-    console.log('📍 Event code encontrado na URL:', eventCode);
+    dlog('📍 Event code encontrado na URL:', eventCode);
     
     // ✅ PASSO 1: Buscar APENAS ESTE EVENTO específico do Supabase (NÃO todos!)
     // CRÍTICO: Usar query otimizada para evitar carregar todo o banco de dados
-    console.log('📥 Buscando evento ESPECÍFICO do Supabase...');
-    console.log('🔍 Procurando por event_code=', eventCode);
+    dlog('📥 Buscando evento ESPECÍFICO do Supabase...');
+    dlog('🔍 Procurando por event_code=', eventCode);
     
     // ✅ Query otimizada: procurar por event_code OU id, com LIMIT 1
     let eventsData = await supabaseRequest(
       `events?or=(event_code.eq.${eventCode},id.eq.${eventCode})&select=id,user_id,title,date,time,confirm_by_date,cover_image,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,rsvp_enabled,allow_edit_rsvp,save_the_date_enabled,release_type,release_date,is_invite_released,std_title,std_subtitle,std_font_family,std_name_size,std_title_size,std_intro_enabled,std_intro_text,std_intro_photo_url,std_intro_photo_mobile_url,std_intro_photo_desktop_url,std_intro_on_invite,std_show_cover,std_cover_url,std_cover_mobile_url,std_cover_desktop_url,std_scratch_enabled,std_scratch_mode,std_scratch_photo_url,std_scratch_text,std_date_style,is_example_event,std_show_iban,personalized_links_enabled,show_rsvp_in_full_invite,show_guest_name_in_invite,allow_messages,show_guest_messages,music_url,music_title,iban_message,iban_number,iban_holder,iban_footer,groom_name,bride_name,couple_size,show_couple,bg_url,bg_overlay,bible_text,bible_ref,show_bible,invite_text,show_invite,groom_parents,bride_parents,show_parents,gallery_urls,show_gallery,show_schedule,schedule_items,custom_font_family,section_order,story_text,invite_blessing,event_color,rsvps(guest_name,attending,side,companions,kids,wants_gift,message,created_at,updated_at),gifts(id,name,category,reserved,reserved_by)&limit=1`
     );
     
-    console.log('📥 Resultado da busca:', eventsData?.length === 1 ? 'Encontrado' : 'Não encontrado');
+    dlog('📥 Resultado da busca:', eventsData?.length === 1 ? 'Encontrado' : 'Não encontrado');
     
     if (eventsData && eventsData.length > 0) {
-      console.log('✅ Evento encontrado no Supabase!');
+      dlog('✅ Evento encontrado no Supabase!');
       const eventData = eventsData[0];
-      console.log('🔖 STD — valores brutos recebidos da query principal:', {
+      dlog('🔖 STD — valores brutos recebidos da query principal:', {
         save_the_date_enabled: eventData.save_the_date_enabled,
         release_type: eventData.release_type,
         is_invite_released: eventData.is_invite_released,
@@ -2588,7 +2592,7 @@ async function checkURLForEvent() {
       
       let finalEventCode = eventData.event_code || eventData.id;
       
-      console.log('✅ Event code final:', finalEventCode);
+      dlog('✅ Event code final:', finalEventCode);
       
       const normalizedEvent = {
         // ── CRÍTICO: herdar automaticamente TODOS os campos vindos da query ──
@@ -2688,17 +2692,17 @@ async function checkURLForEvent() {
       
       Store.currentEventId = eventData.id;
       Store.guestEventData = normalizedEvent;
-      console.log('✅ Evento carregado do Supabase e pronto para guest view:', normalizedEvent.title);
-      console.log('  Código final do evento:', finalEventCode);
-      console.log('  Allow Sides:', normalizedEvent.allowSides);
-      console.log('🔬 TRACE std_cover_url logo após normalizedEvent:', normalizedEvent.std_cover_url);
+      dlog('✅ Evento carregado do Supabase e pronto para guest view:', normalizedEvent.title);
+      dlog('  Código final do evento:', finalEventCode);
+      dlog('  Allow Sides:', normalizedEvent.allowSides);
+      dlog('🔬 TRACE std_cover_url logo após normalizedEvent:', normalizedEvent.std_cover_url);
       if (giftsOnly && normalizedEvent.allowGifts) {
         return 'gifts';
       }
       return 'guest';
     }
     
-    console.log('❌ Evento não encontrado no Supabase');
+    dlog('❌ Evento não encontrado no Supabase');
     return 'not-found';
   }
   return null;
@@ -2863,7 +2867,7 @@ async function executeCleanupEventCodes(modal) {
   let skipped = 0;
   
   const addLog = (msg) => {
-    console.log(msg);
+    dlog(msg);
     log.push(msg);
     logDiv.textContent = log.join('\n');
     logDiv.parentElement.scrollTop = logDiv.parentElement.scrollHeight;
@@ -3299,7 +3303,7 @@ async function openIntakeFormMain(eventId) {
   // ── Pre-fill existing gallery photos ──
   const galleryStr = ev.gallery_urls || '';
   const existingGallery = galleryStr.split('|').filter(u => u && u.trim() !== '' && u !== '__DELETE__');
-  console.log('[Intake] gallery_urls:', galleryStr, '→', existingGallery);
+  dlog('[Intake] gallery_urls:', galleryStr, '→', existingGallery);
   existingGallery.slice(0, 4).forEach((url, i) => {
     const prev = document.getElementById(`int-gal-preview-${i}`);
     const icon = document.getElementById(`int-gal-icon-${i}`);
@@ -3675,12 +3679,12 @@ function downloadGuestListCSV() {
   const rows = [['Nome','Presença','Grupo','Acompanhantes','Crianças','Mensagem']];
   ev.confirmations.forEach(c => {
     rows.push([
-      c.name,
+      sanitizeCSVCell(c.name),
       c.attending ? 'Confirmado' : 'Não confirmado',
-      c.side || '',
-      (c.companions || []).join('; '),
-      (c.kids || []).join('; '),
-      (c.message || '').replace(/"/g, '""')
+      sanitizeCSVCell(c.side || ''),
+      sanitizeCSVCell((c.companions || []).join('; ')),
+      sanitizeCSVCell((c.kids || []).join('; ')),
+      sanitizeCSVCell((c.message || '').replace(/"/g, '""'))
     ]);
   });
   const csv = rows.map(r => r.map(v => `"${v}"`).join(',')).join('\n');
@@ -4096,7 +4100,7 @@ async function _autoRenewExampleEventDates(ev, forceNow) {
     });
     ev.date = fmtDate(newEventDate);
     ev.confirm_by_date = fmtDate(newDeadlineDate);
-    console.log('🔄 Evento exemplar renovado automaticamente:', { id: ev.id, newDate: ev.date, newDeadline: ev.confirm_by_date });
+    dlog('🔄 Evento exemplar renovado automaticamente:', { id: ev.id, newDate: ev.date, newDeadline: ev.confirm_by_date });
   } catch(e) {
     console.warn('Falha ao renovar datas do evento exemplar:', e);
   }

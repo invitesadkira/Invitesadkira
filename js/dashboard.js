@@ -88,7 +88,7 @@ function renderDashboard() {
 
 // ✅ NOVA FUNÇÃO: Limpar formulário ANTES de ir para create-event
 function goToCreateEvent() {
-  console.log('🔄 Limpando formulário para novo evento...');
+  dlog('🔄 Limpando formulário para novo evento...');
   
   // ✅ Limpar TODOS os campos do formulário
   document.getElementById('evt-title').value = '';
@@ -125,7 +125,7 @@ function goToCreateEvent() {
   btn.style.opacity = '1';
   btn.textContent = 'Criar Evento';
   
-  console.log('✅ Formulário limpo e pronto para novo evento');
+  dlog('✅ Formulário limpo e pronto para novo evento');
   
   // Navegar para create-event
   Router.go('create-event');
