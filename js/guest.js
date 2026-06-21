@@ -1169,6 +1169,143 @@ function showAlreadyReservedModal() {
 }
 
 // ✅ NOVA FUNÇÃO: Voltar da tela de presentes para guest view
+// ===================== MODAIS: DRESS CODE + SUGESTÃO DE PRESENTES =====================
+// Abertos a partir dos botões da secção combinada (ver buildDressGiftsSection
+// em sections.js). Ambos funcionam sem o convidado ter de confirmar presença
+// primeiro — só pedem o nome no momento em que escolhem mesmo um presente.
+
+function openGuestDresscodeModal() {
+  const ev = Store.guestEventData || Store.events.find(e => e.id === Store.currentEventId);
+  if (!ev) return;
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.id = 'guest-dresscode-modal';
+  modal.innerHTML = `<div class="modal-content bg-white rounded-2xl shadow-lg p-6 max-w-sm w-full mx-4">
+    <div class="flex items-center justify-between mb-3">
+      <h3 class="text-base font-bold text-gray-800">Dress Code</h3>
+      <button onclick="this.closest('.modal-overlay').remove()" style="background:none;border:none;cursor:pointer;color:#9ca3af;padding:4px;line-height:0">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    ${_buildDresscodeContentHTML(ev)}
+  </div>`;
+  document.body.appendChild(modal);
+  modal.onclick = e => { if (e.target === modal) modal.remove(); };
+  lucide.createIcons();
+}
+
+function _resolveKnownGuestName(eventId) {
+  if (Store.currentGuestSession?.guestName) return Store.currentGuestSession.guestName;
+  const confirmed = rsvpCheckConfirmed(eventId);
+  if (confirmed && confirmed.name) return confirmed.name;
+  return null;
+}
+
+function openGuestGiftsModal() {
+  const ev = Store.guestEventData || Store.events.find(e => e.id === Store.currentEventId);
+  if (!ev || !Array.isArray(ev.gifts) || ev.gifts.length === 0) { toast('Ainda não há presentes configurados.'); return; }
+
+  const knownName = _resolveKnownGuestName(ev.id);
+  const categories = {};
+  ev.gifts.forEach(g => {
+    const cat = g.category || 'Sem categoria';
+    if (!categories[cat]) categories[cat] = [];
+    categories[cat].push(g);
+  });
+
+  const listHtml = Object.keys(categories).sort().map(cat => `
+    <div class="bg-white rounded-xl shadow-sm border-l-4 border-teal-500 overflow-hidden mb-3">
+      <div class="bg-teal-50 px-4 py-2.5 border-b border-teal-100">
+        <h4 class="text-sm font-bold text-teal-700">${escapeHTML(cat)}</h4>
+      </div>
+      <div class="divide-y">
+        ${categories[cat].map(g => `
+          <div class="flex items-center gap-3 p-3.5 hover:bg-gray-50 transition active:bg-teal-50 cursor-pointer" onclick="_selectGiftInModal('${g.id}', this)">
+            <div class="flex-shrink-0 w-7 h-7 rounded-full border-2 ${g.reserved ? 'border-green-500 bg-green-500' : 'border-gray-300 bg-white'} flex items-center justify-center transition-all" data-gift-checkbox="${g.id}">
+              ${g.reserved ? '<i data-lucide="check" class="w-4 h-4 text-white"></i>' : ''}
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium ${g.reserved ? 'text-gray-500 line-through' : 'text-gray-800'} break-words">${escapeHTML(g.name)}</p>
+            </div>
+            ${g.reserved
+              ? `<span class="text-xs font-semibold px-2 py-1 rounded-full bg-green-100 text-green-700 flex-shrink-0">Escolhido</span>`
+              : `<span class="text-xs font-semibold px-2 py-1 rounded-full bg-gray-100 text-gray-600 flex-shrink-0">Disponível</span>`}
+          </div>`).join('')}
+      </div>
+    </div>`).join('');
+
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.id = 'guest-gifts-modal';
+  modal.innerHTML = `<div class="modal-content bg-white rounded-2xl shadow-lg p-5 max-w-md w-full mx-4" style="max-height:85vh;overflow-y:auto">
+    <div class="flex items-center justify-between mb-1">
+      <h3 class="text-base font-bold text-gray-800">Sugestão de Presentes</h3>
+      <button onclick="this.closest('.modal-overlay').remove()" style="background:none;border:none;cursor:pointer;color:#9ca3af;padding:4px;line-height:0">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <p class="text-xs text-gray-500 mb-3">Escolhe um presente — só podes escolher um.</p>
+    <div id="guest-gifts-modal-list">${listHtml}</div>
+  </div>`;
+  document.body.appendChild(modal);
+  modal.onclick = e => { if (e.target === modal) modal.remove(); };
+  modal.dataset.knownName = knownName || '';
+  lucide.createIcons();
+}
+
+async function _selectGiftInModal(giftId, element) {
+  const ev = Store.guestEventData || Store.events.find(e => e.id === Store.currentEventId);
+  if (!ev) return;
+  const gift = ev.gifts.find(g => g.id === giftId);
+  if (!gift) return;
+
+  const modal = document.getElementById('guest-gifts-modal');
+  let guestName = (modal && modal.dataset.knownName) || _resolveKnownGuestName(ev.id);
+
+  // Se já está reservado por outra pessoa, não deixa escolher
+  if (gift.reserved && (!guestName || normalizeGuestName(gift.reservedBy) !== normalizeGuestName(guestName))) {
+    toast('Este presente já foi escolhido por outro convidado.');
+    return;
+  }
+
+  // ── Não sabemos ainda quem é o convidado: pedir o nome antes de continuar ──
+  if (!guestName) {
+    const typed = prompt('Para escolher este presente, diz-nos o teu nome:');
+    if (!typed || !typed.trim()) return;
+    guestName = typed.trim();
+    if (modal) modal.dataset.knownName = guestName;
+  }
+
+  // Verificar se já escolheu outro presente diferente deste
+  const otherReserved = ev.gifts.find(g => g.id !== giftId && g.reserved && normalizeGuestName(g.reservedBy) === normalizeGuestName(guestName));
+  if (otherReserved) { showAlreadyReservedModal(); return; }
+
+  gift.reserved = true;
+  gift.reservedBy = guestName;
+  try {
+    await updateGiftReservationInSupabase(giftId, true, guestName);
+  } catch (e) {
+    gift.reserved = false; gift.reservedBy = null;
+    toast('Não foi possível reservar o presente. Tenta novamente.');
+    return;
+  }
+  reloadEventFromSupabase(ev.id).catch(() => {});
+
+  const checkbox = element.querySelector('[data-gift-checkbox]');
+  if (checkbox) {
+    checkbox.classList.remove('border-gray-300', 'bg-white');
+    checkbox.classList.add('border-green-500', 'bg-green-500');
+    checkbox.innerHTML = '<i data-lucide="check" class="w-4 h-4 text-white"></i>';
+  }
+  const badge = element.querySelector('span.rounded-full');
+  if (badge) { badge.textContent = 'Escolhido'; badge.className = 'text-xs font-semibold px-2 py-1 rounded-full bg-green-100 text-green-700 flex-shrink-0'; }
+  const label = element.querySelector('p');
+  if (label) { label.classList.add('text-gray-500', 'line-through'); label.classList.remove('text-gray-800'); }
+  lucide.createIcons();
+  toast(`Presente escolhido, obrigado ${guestName.split(' ')[0]}!`);
+}
+
+
 function backFromGifts() {
   dlog('👈 Voltando da tela de presentes');
   dlog('  guestEventData:', Store.guestEventData ? 'Sim' : 'Não');

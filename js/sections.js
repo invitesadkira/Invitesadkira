@@ -158,7 +158,7 @@ async function renderGuestSections(eventData) {
         case 'venues':   if (_yesOrTrue(eventData.show_venues) && (eventData.venue_ceremony || eventData.venue_civil || eventData.venue_reception)) html += buildVenueSection(eventData); break;
         case 'manual':   if (_yesOrTrue(eventData.show_manual)) html += buildManualSection(eventData); break;
         case 'schedule': if (_yesOrTrue(eventData.show_schedule)) html += buildScheduleSection(eventData); break;
-        case 'dresscode': if (_yesOrTrue(eventData.show_dresscode) && eventData.dresscode_text) html += buildDresscodeSection(eventData); break;
+        case 'dresscode': if (_yesOrTrue(eventData.show_dress_gifts ?? 'yes')) html += buildDressGiftsSection(eventData); break;
         case 'couplemsg': if (_yesOrTrue(eventData.show_couplemsg) && eventData.couplemsg_text) html += buildCoupleMsgSection(eventData); break;
         case 'final_photo': if (_yesOrTrue(eventData.show_final_photo) && eventData.final_photo_url) html += buildFinalPhotoSection(eventData); break;
         case 'event_faq': if (_yesOrTrue(eventData.show_event_faq) && eventData.event_faq_items) html += buildEventFaqSection(eventData); break;
@@ -1213,7 +1213,7 @@ const ALL_SECTION_DEFS = [
   { key: 'gallery',   label: 'Galeria de Fotos',                     icon: 'image' },
   { key: 'manual',    label: 'Manual do Bom Convidado',              icon: 'list-checks' },
   { key: 'schedule',  label: 'Itinerário',                           icon: 'clock' },
-  { key: 'dresscode',  label: 'Dress Code',                             icon: 'shirt' },
+  { key: 'dresscode',  label: 'Dress Code + Sugestão de Presentes',     icon: 'shirt' },
   { key: 'couplemsg',   label: 'Mensagem dos Noivos',                   icon: 'message-circle' },
   { key: 'final_photo', label: 'Foto Final dos Noivos',                 icon: 'image' },
   { key: 'event_faq',   label: 'Perguntas Frequentes',                  icon: 'help-circle' },
@@ -1343,15 +1343,51 @@ function buildVenueSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
   </div>`;
 }
 
-// ── DRESS CODE SECTION ──
-function buildDresscodeSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
+// ── DRESS CODE + SUGESTÃO DE PRESENTES (secção combinada com 2 botões) ──
+// Cada botão abre uma tela própria (modal) só quando o convidado toca nele —
+// não obriga a confirmar presença primeiro para ver/escolher um presente.
+function buildDressGiftsSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
   const evColor = ev.event_color || '#007f9f';
+  const showDressBtn = _yesOrTrue(ev.show_dresscode) && !!ev.dresscode_text;
+  const showGiftsBtn = !!ev.allowGifts && Array.isArray(ev.gifts) && ev.gifts.length > 0;
+
+  if (!showDressBtn && !showGiftsBtn) return ''; // nada para mostrar — secção desaparece sozinha
+
+  const dressBtn = showDressBtn ? `
+    <button type="button" class="dg-btn" onclick="openGuestDresscodeModal()">
+      <span class="dg-btn-icon" style="background:color-mix(in srgb,${evColor} 14%,white)">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="${evColor}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20.38 3.46 16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.57a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.57a2 2 0 0 0-1.34-2.23z"/></svg>
+      </span>
+      <span class="dg-btn-label">Dress Code</span>
+    </button>` : '';
+
+  const giftsBtn = showGiftsBtn ? `
+    <button type="button" class="dg-btn" onclick="openGuestGiftsModal()">
+      <span class="dg-btn-icon" style="background:color-mix(in srgb,${evColor} 14%,white)">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="${evColor}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>
+      </span>
+      <span class="dg-btn-label">Sugestão de Presentes</span>
+    </button>` : '';
+
   return _SD + `<div class="event-section">
-    <div class="section-inner reveal" style="text-align:center">
+    <div class="section-inner reveal">
+      <h3 class="section-title" style="text-align:center">Informações Úteis</h3>
+      <div class="dg-buttons-grid" style="grid-template-columns:${(showDressBtn && showGiftsBtn) ? 'repeat(2,1fr)' : '1fr'}">
+        ${dressBtn}${giftsBtn}
+      </div>
+    </div>
+  </div>`;
+}
+
+
+// Conteúdo do Dress Code, reaproveitado dentro do modal do convidado
+// (ver openGuestDresscodeModal em guest.js).
+function _buildDresscodeContentHTML(ev) {
+  const evColor = ev.event_color || '#007f9f';
+  return `<div style="text-align:center">
       <div style="width:52px;height:52px;border-radius:50%;background:color-mix(in srgb,${evColor} 12%,white);display:flex;align-items:center;justify-content:center;margin:0 auto 0.75rem">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="${evColor}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.38 3.46 16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.57a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.57a2 2 0 0 0-1.34-2.23z"/></svg>
       </div>
-      <h3 class="section-title">Dress Code</h3>
       ${ev.dresscode_text ? `<p style="font-size:1rem;font-weight:600;color:#1e293b;margin-bottom:0.5rem">${escapeHTML(ev.dresscode_text)}</p>` : ''}
       ${ev.dresscode_detail ? `<p style="font-size:0.85rem;color:#374151;line-height:1.6;max-width:420px;margin:0 auto 0.5rem">${escapeHTML(ev.dresscode_detail)}</p>` : ''}
       ${(() => {
@@ -1362,8 +1398,7 @@ function buildDresscodeSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
           ${cols.map(c => `<div title="${c}" style="width:36px;height:36px;border-radius:50%;background:${c};border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.15)"></div>`).join('')}
         </div>`;
       })()}
-    </div>
-  </div>`;
+    </div>`;
 }
 
 // Mensagem dos Noivos — a heartfelt note from the couple to their guests

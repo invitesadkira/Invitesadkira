@@ -11,7 +11,7 @@
   <script>tailwind.config = { theme: { extend: { colors: { teal: { 500: '#007f9f', 600: '#006b86' } } } } }</script>
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💌</text></svg>">
-  <link rel="stylesheet" href="css/main.css?v=1782054381">
+  <link rel="stylesheet" href="css/main.css?v=1782055198">
 </head>
 <body class="h-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
 
@@ -795,21 +795,36 @@ para testemunhar o seu enlace matrimonial</textarea>
          <button type="button" onclick="addEventFaqItem()" class="text-xs text-teal-600 font-semibold">+ Adicionar pergunta</button>
         </div>
 
-        <!-- Dress Code -->
+        <!-- Secção combinada: Dress Code + Sugestão de Presentes -->
         <div class="flex items-center justify-between">
-         <span class="text-sm font-semibold text-gray-700">Dress Code</span>
-         <div id="sw-dresscode" class="switch active" onclick="toggleSwitch(this, 'dresscode-extra')"></div>
+         <span class="text-sm font-semibold text-gray-700">Secção "Dress Code + Presentes"</span>
+         <div id="sw-dressgifts" class="switch active" onclick="toggleSwitch(this, 'dressgifts-extra')"></div>
         </div>
-        <div id="dresscode-extra" class="pl-4 space-y-2">
-         <input id="evt-dresscode-text" class="input-field text-sm" placeholder="Ex: Traje social ou Roupa a rigor">
-         <label class="text-xs text-gray-500 mt-1 block">Paleta de cores (códigos HEX, um por linha, máx. 4)</label>
-         <div id="evt-dresscode-swatches" style="display:flex;gap:0.5rem;margin-bottom:0.4rem;flex-wrap:wrap"></div>
-         <textarea id="evt-dresscode-colors" class="input-field text-sm mb-2" rows="4" placeholder="#FFFFFF
+        <div id="dressgifts-extra" class="pl-4 space-y-3">
+         <p class="text-xs text-gray-500 leading-relaxed">Mostra 2 botões no convite — um abre o Dress Code, o outro abre a lista de presentes para o convidado escolher (sem precisar de confirmar presença primeiro). Desliga um botão individualmente abaixo se só quiseres mostrar o outro; a secção esconde-se sozinha se desligares os dois.</p>
+
+         <!-- Dress Code -->
+         <div class="flex items-center justify-between">
+          <span class="text-sm font-semibold text-gray-700">Botão: Dress Code</span>
+          <div id="sw-dresscode" class="switch active" onclick="toggleSwitch(this, 'dresscode-extra')"></div>
+         </div>
+         <div id="dresscode-extra" class="pl-4 space-y-2">
+          <input id="evt-dresscode-text" class="input-field text-sm" placeholder="Ex: Traje social ou Roupa a rigor">
+          <label class="text-xs text-gray-500 mt-1 block">Paleta de cores (códigos HEX, um por linha, máx. 4)</label>
+          <div id="evt-dresscode-swatches" style="display:flex;gap:0.5rem;margin-bottom:0.4rem;flex-wrap:wrap"></div>
+          <textarea id="evt-dresscode-colors" class="input-field text-sm mb-2" rows="4" placeholder="#FFFFFF
 #C9A84C
 #2D6A4F
 #1A1A2E" oninput="updateDressCodeSwatches(this.value)"></textarea>
-         <label class="text-xs text-gray-500 mt-1 block">Detalhe adicional (opcional)</label>
-         <textarea id="evt-dresscode-detail" class="input-field text-sm" rows="2" placeholder="Ex: Pedimos gentilmente que os convidados optem por um traje elegante..."></textarea>
+          <label class="text-xs text-gray-500 mt-1 block">Detalhe adicional (opcional)</label>
+          <textarea id="evt-dresscode-detail" class="input-field text-sm" rows="2" placeholder="Ex: Pedimos gentilmente que os convidados optem por um traje elegante..."></textarea>
+         </div>
+
+         <!-- Sugestão de Presentes (botão) -->
+         <div class="flex items-center justify-between pt-2 border-t border-gray-100">
+          <span class="text-sm font-semibold text-gray-700">Botão: Sugestão de Presentes</span>
+          <span class="text-xs text-gray-400 text-right" style="max-width:140px">Segue a opção "Permitir Presentes" mais acima</span>
+         </div>
         </div>
 
         <div class="flex items-center justify-between">
@@ -1254,19 +1269,19 @@ para testemunhar o seu enlace matrimonial</textarea>
   </a>
 
   <!-- ===================== SCRIPTS (ordem importa) ===================== -->
-  <script src="js/config.js?v=1782054381"></script>
-  <script src="js/store.js?v=1782054381"></script>
-  <script src="js/visuals.js?v=1782054381"></script>
-  <script src="js/venues.js?v=1782054381"></script>
-  <script src="js/rsvp.js?v=1782054381"></script>
-  <script src="js/ui.js?v=1782054381"></script>
-  <script src="js/auth.js?v=1782054381"></script>
-  <script src="js/dashboard.js?v=1782054381"></script>
-  <script src="js/events.js?v=1782054381"></script>
-  <script src="js/guest.js?v=1782054381"></script>
-  <script src="js/sections.js?v=1782054381"></script>
-  <script src="js/admin.js?v=1782054381"></script>
-  <script src="js/router.js?v=1782054381"></script>
+  <script src="js/config.js?v=1782055198"></script>
+  <script src="js/store.js?v=1782055198"></script>
+  <script src="js/visuals.js?v=1782055198"></script>
+  <script src="js/venues.js?v=1782055198"></script>
+  <script src="js/rsvp.js?v=1782055198"></script>
+  <script src="js/ui.js?v=1782055198"></script>
+  <script src="js/auth.js?v=1782055198"></script>
+  <script src="js/dashboard.js?v=1782055198"></script>
+  <script src="js/events.js?v=1782055198"></script>
+  <script src="js/guest.js?v=1782055198"></script>
+  <script src="js/sections.js?v=1782055198"></script>
+  <script src="js/admin.js?v=1782055198"></script>
+  <script src="js/router.js?v=1782055198"></script>
 
 </body>
 </html>
