@@ -33,11 +33,60 @@ function sanitizeCSVCell(value) {
   return v;
 }
 
+// ===================== FASE 3 (opt-in): sessão real do Supabase Auth =====================
+// Estas funções só fazem alguma diferença depois de chamares
+// `loginViaSupabaseAuth()` (em auth.js) — até lá, ficam dormentes e
+// `supabaseRequest` continua a usar a anon key exactamente como hoje.
+const SB_SESSION_KEY = 'sb_auth_session'; // { access_token, refresh_token, expires_at }
+
+function getStoredSupabaseSession() {
+  try { return JSON.parse(localStorage.getItem(SB_SESSION_KEY) || 'null'); }
+  catch (e) { return null; }
+}
+function setStoredSupabaseSession(session) {
+  try {
+    if (session) localStorage.setItem(SB_SESSION_KEY, JSON.stringify(session));
+    else localStorage.removeItem(SB_SESSION_KEY);
+  } catch (e) {}
+}
+async function refreshSupabaseSessionIfNeeded() {
+  const session = getStoredSupabaseSession();
+  if (!session) return null;
+  const expiresAt = (session.expires_at || 0) * 1000;
+  if (Date.now() < expiresAt - 60000) return session; // ainda válida por mais de 1 min
+  try {
+    const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY },
+      body: JSON.stringify({ refresh_token: session.refresh_token })
+    });
+    if (!res.ok) { setStoredSupabaseSession(null); return null; }
+    const data = await res.json();
+    const newSession = {
+      access_token: data.access_token,
+      refresh_token: data.refresh_token,
+      expires_at: data.expires_at
+    };
+    setStoredSupabaseSession(newSession);
+    return newSession;
+  } catch (e) {
+    return null;
+  }
+}
+
 async function supabaseRequest(endpoint, method = 'GET', body = null) {
+  // ✅ Fase 3 (opt-in): se houver uma sessão real do Supabase Auth guardada,
+  // usa o token DESSA pessoa em vez da anon key genérica — é isto que
+  // permite às políticas de RLS saberem "quem está a pedir isto" via
+  // auth.uid(). Continua a enviar a apikey (a Supabase exige sempre isso).
+  let bearerToken = SUPABASE_ANON_KEY;
+  const sbSession = await refreshSupabaseSessionIfNeeded();
+  if (sbSession && sbSession.access_token) bearerToken = sbSession.access_token;
+
   const headers = {
     'Content-Type': 'application/json',
     'apikey': SUPABASE_ANON_KEY,
-    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+    'Authorization': `Bearer ${bearerToken}`,
     'Accept': 'application/json'
   };
   // CRITICAL: force Supabase/PostgREST to return the affected row(s) in the body.

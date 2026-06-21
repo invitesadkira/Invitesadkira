@@ -762,7 +762,21 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
           const freshRows = await supabaseRequest(`events?id=eq.${eventId}&select=*`);
           if (freshRows && freshRows[0]) {
             const idx = Store.events.findIndex(e => e.id === eventId);
-            if (idx > -1) Store.events[idx] = { ...Store.events[idx], ...freshRows[0] };
+            if (idx > -1) {
+              // ✅ CORREÇÃO: manual_items/schedule_items na tabela `events` são
+              // um valor congelado da criação do evento — a fonte de verdade
+              // real vive em event_visuals (gerida só pelos editores
+              // dedicados). Sem esta exclusão, este refresh genérico
+              // sobrescrevia silenciosamente em memória qualquer edição mais
+              // recente do manual/cronograma com esse valor antigo, fazendo
+              // parecer que as alterações "desapareceram" ao pré-visualizar
+              // como convidado pouco depois de guardar outra coisa no evento.
+              const preserved = {
+                manual_items: Store.events[idx].manual_items,
+                schedule_items: Store.events[idx].schedule_items
+              };
+              Store.events[idx] = { ...Store.events[idx], ...freshRows[0], ...preserved };
+            }
           }
         } catch(e) { console.warn('Falha ao atualizar Store.events após guardar:', e); }
       })();
@@ -4013,7 +4027,13 @@ async function saveStdEditor() {
       document.getElementById('std-editor-modal')?.remove();
       try {
         const freshRows = await supabaseRequest(`events?id=eq.${eventId}&select=*`);
-        if (freshRows && freshRows[0] && ev) Object.assign(ev, freshRows[0]);
+        // ✅ Mesma correção do formulário principal: não deixar este refresh
+        // genérico sobrescrever manual_items/schedule_items com o valor
+        // congelado da tabela events — a fonte de verdade é event_visuals.
+        if (freshRows && freshRows[0] && ev) {
+          const preserved = { manual_items: ev.manual_items, schedule_items: ev.schedule_items };
+          Object.assign(ev, freshRows[0], preserved);
+        }
       } catch(e) {}
     } else {
       toast('Erro ao guardar. Verifica a consola para detalhes.');

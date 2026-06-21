@@ -209,6 +209,115 @@ async function handleLoginSecure(e) {
   Router.go(user.role === 'admin' ? 'admin' : 'dashboard');
 }
 
+// ============================================================================
+// LOGIN/REGISTO — FASE 3 (opcional, desligado por padrão): sessão real do
+// Supabase Auth, para o RLS conseguir verificar "és mesmo o dono disto?"
+// ============================================================================
+// Segue supabase/04_fase3_guia_migracao.md antes de activar isto. Resumo:
+//   1. Cria as contas equivalentes no Supabase Auth (painel → Authentication)
+//   2. Liga-as à tabela accounts via a coluna auth_uid
+//   3. Só DEPOIS troca os onsubmit dos formulários para chamarem
+//      loginViaSupabaseAuth / registerViaSupabaseAuth, e chama
+//      bootstrapSupabaseSession() na inicialização (router.js)
+//   4. Corre supabase/05_fase3_apertar_politicas.sql só no fim, confirmado
+//      que o login novo já funciona.
+//
+// Até activares isto, handleLogin/handleRegister (mais abaixo) continuam a
+// ser usados — nada muda automaticamente.
+
+function _phoneToSyntheticEmail(phone) {
+  const clean = String(phone).trim().replace(/[^a-zA-Z0-9]/g, '');
+  return `${clean}@adkira.local`;
+}
+
+async function registerViaSupabaseAuth(phone, password, accessTokenCode) {
+  // 1) Validar o código de acesso, exactamente como o registo actual
+  const tokenRows = await supabaseRequest(
+    `intake_tokens?token=eq.${encodeURIComponent(accessTokenCode)}&select=token,locked,expires_at,event_id&limit=1`
+  );
+  const tk = tokenRows && tokenRows[0];
+  if (!tk) return { error: 'Código inválido. Verifica e tenta novamente.' };
+  if (tk.locked) return { error: 'Este código já foi utilizado.' };
+  if (tk.expires_at && new Date(tk.expires_at) < new Date()) return { error: 'Este código expirou.' };
+
+  // 2) Criar o utilizador no Supabase Auth
+  const email = _phoneToSyntheticEmail(phone);
+  const res = await fetch(`${SUPABASE_URL}/auth/v1/signup`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY },
+    body: JSON.stringify({ email, password })
+  });
+  const data = await res.json();
+  if (!res.ok || !data.user) {
+    return { error: data?.msg || data?.error_description || 'Erro ao criar conta. O telefone pode já estar em uso.' };
+  }
+
+  // 3) Criar a linha em accounts, já ligada ao auth_uid novo
+  const result = await supabaseRequest('accounts', 'POST', {
+    phone, password, role: 'user', approved: true, event_limit: 1, login_count: 0,
+    auth_uid: data.user.id
+  });
+  if (!result || !result[0]) return { error: 'Conta criada no Auth, mas falhou ao guardar em accounts. Contacta o suporte.' };
+
+  // 4) Trancar o código de acesso
+  await supabaseRequest(`intake_tokens?token=eq.${encodeURIComponent(accessTokenCode)}`, 'PATCH', {
+    locked: true, locked_at: new Date().toISOString(), locked_by: phone
+  });
+
+  // 5) Guardar sessão, se o Supabase já tiver devolvido tokens (depende de
+  // confirmação de email estar desligada no projecto)
+  if (data.access_token) {
+    setStoredSupabaseSession({ access_token: data.access_token, refresh_token: data.refresh_token, expires_at: data.expires_at });
+  }
+
+  return { account: result[0] };
+}
+
+async function loginViaSupabaseAuth(phone, password) {
+  const email = _phoneToSyntheticEmail(phone);
+  const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY },
+    body: JSON.stringify({ email, password })
+  });
+  const data = await res.json();
+  if (!res.ok || !data.access_token) {
+    return { error: 'Telefone ou senha incorrectos.' };
+  }
+
+  setStoredSupabaseSession({
+    access_token: data.access_token,
+    refresh_token: data.refresh_token,
+    expires_at: data.expires_at
+  });
+  localStorage.setItem('sb_session_phone', phone);
+
+  // Agora que já há sessão real, supabaseRequest() vai usar este token —
+  // basta procurar a conta correspondente.
+  const accountRows = await supabaseRequest(`accounts?phone=eq.${encodeURIComponent(phone)}&limit=1`);
+  const account = accountRows && accountRows[0];
+  if (!account) return { error: 'Conta não encontrada em accounts (auth_uid pode não estar ligado).' };
+
+  return { account };
+}
+
+// Chamar isto no arranque da app (router.js), ANTES de tentar restaurar a
+// sessão antiga por localStorage — se houver uma sessão real do Supabase
+// Auth guardada, usa-a; caso contrário, não faz nada (deixa o fluxo actual
+// continuar normalmente).
+async function bootstrapSupabaseSession() {
+  const session = await refreshSupabaseSessionIfNeeded();
+  if (!session) return null;
+  // Não sabemos o telefone só pelo token; procuramos a conta cujo
+  // auth_uid corresponde ao utilizador autenticado actual via uma RPC
+  // simples, ou — mais simples — guardamos o telefone também ao fazer
+  // login (ver loginViaSupabaseAuth) e lemos daqui:
+  const phone = localStorage.getItem('sb_session_phone');
+  if (!phone) return null;
+  const accountRows = await supabaseRequest(`accounts?phone=eq.${encodeURIComponent(phone)}&limit=1`);
+  return (accountRows && accountRows[0]) || null;
+}
+
 async function handleLogin(e) {
   e.preventDefault();
   const phone = document.getElementById('login-phone').value.trim();
@@ -503,6 +612,9 @@ function handleLogout() {
   localStorage.removeItem('adminImpersonatingUserPhone');
   localStorage.removeItem('adminOriginalUserId');
   localStorage.removeItem('adminOriginalUserPhone');
+  // Fase 3 (dormente até ser activada, mas limpa por precaução)
+  localStorage.removeItem('sb_auth_session');
+  localStorage.removeItem('sb_session_phone');
   Router.go('home');
   toast('Desconectado com sucesso.');
 }

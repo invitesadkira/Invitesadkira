@@ -857,24 +857,44 @@ function buildScheduleSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
 
 
 // ===================== MANUAL EDITOR =====================
-function openManualEditor() {
-  // Defensive fallback chain: prefer Store.eventManualItems (set when the
-  // edit/intake form loaded), but if it's somehow null, try to recover the
-  // REAL saved data from Store.events before ever falling back to defaults
-  // — this prevents accidentally overwriting genuine saved items.
-  let items;
-  if (Store.eventManualItems) {
-    items = JSON.parse(JSON.stringify(Store.eventManualItems));
-  } else {
-    const eventId = Store.currentEventId || Store._intakeEventId;
-    const evFromStore = eventId ? Store.events.find(e => e.id === eventId) : null;
-    if (evFromStore && evFromStore.manual_items) {
-      try { items = JSON.parse(JSON.stringify(JSON.parse(evFromStore.manual_items))); }
-      catch(e) { items = JSON.parse(JSON.stringify(DEFAULT_MANUAL_ITEMS)); }
-    } else {
-      items = JSON.parse(JSON.stringify(DEFAULT_MANUAL_ITEMS));
+async function openManualEditor() {
+  // ✅ CORREÇÃO: a fonte de verdade é SEMPRE a tabela event_visuals (é onde
+  // saveManualItems() grava). Antes, este editor confiava primeiro numa
+  // variável em memória (Store.eventManualItems) que podia estar
+  // desactualizada — isso fazia o organizador editar "por cima" de uma
+  // versão antiga e perder itens que já tinha guardado, sem aviso nenhum.
+  const eventId = Store.currentEventId || Store._intakeEventId;
+  let items = null;
+
+  if (eventId) {
+    try {
+      const visuals = await loadEventVisuals(eventId);
+      if (visuals && visuals.manual_items) {
+        items = JSON.parse(visuals.manual_items);
+      }
+    } catch (e) {
+      console.warn('openManualEditor: falha ao carregar event_visuals, a usar fallback', e);
     }
   }
+
+  // Ainda não há nada gravado em event_visuals (ex.: evento criado há pouco,
+  // ou edição em curso nesta mesma sessão que ainda não recarregou) — usa o
+  // que está em memória.
+  if (!items && Store.eventManualItems) {
+    items = JSON.parse(JSON.stringify(Store.eventManualItems));
+  }
+
+  // Último recurso: valor antigo gravado directamente na tabela events
+  // (acontece em eventos criados antes desta correcção).
+  if (!items) {
+    const evFromStore = eventId ? Store.events.find(e => e.id === eventId) : null;
+    if (evFromStore && evFromStore.manual_items) {
+      try { items = JSON.parse(evFromStore.manual_items); }
+      catch (e) { items = null; }
+    }
+  }
+
+  if (!items) items = JSON.parse(JSON.stringify(DEFAULT_MANUAL_ITEMS));
   const modal = document.createElement('div');
   modal.className = 'modal-overlay';
   modal.id = 'manual-editor-modal';

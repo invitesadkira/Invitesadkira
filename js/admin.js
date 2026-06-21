@@ -79,6 +79,7 @@ function renderAdmin() {
 
   // Quick grid do admin
   buildAdminQuickGrid();
+  renderAdminBusinessOverview();
 
   const nonAdminUsers = Store.users.filter(u => u.role !== 'admin' && u.status !== 'deleted');
   const active = nonAdminUsers.filter(u => u.status === 'active').length;
@@ -3392,55 +3393,191 @@ function openSendNotificationModal() {
 }
 
 // ===================== ADMIN: ORDERS MANAGER =====================
+// ===================== ENCOMENDAS: rótulos/cores partilhados =====================
+const ORDER_STATUS_LABELS = {
+  pending: 'Pendente', token_sent: 'Código Enviado', account_created: 'Conta Criada',
+  paid_70: '70% Pago', paid_100: '100% Pago', completed: 'Concluído', cancelled: 'Cancelado'
+};
+const ORDER_STATUS_COLORS = {
+  pending: '#f59e0b', token_sent: '#3b82f6', account_created: '#8b5cf6',
+  paid_70: '#06b6d4', paid_100: '#16a34a', completed: '#16a34a', cancelled: '#ef4444'
+};
+
+// ===================== VISÃO DO NEGÓCIO (receita, pendentes, atrasos) =====================
+async function renderAdminBusinessOverview() {
+  const el = document.getElementById('admin-business-overview');
+  if (!el) return;
+  el.innerHTML = '<div style="text-align:center;padding:1.5rem;color:#9ca3af;font-size:0.82rem">A calcular receita...</div>';
+
+  let orders = [];
+  try {
+    orders = await supabaseRequest('orders?select=*&order=created_at.desc&limit=500') || [];
+  } catch (e) {
+    el.innerHTML = '<p style="text-align:center;color:#ef4444;font-size:0.82rem;padding:1rem">Erro ao carregar dados de encomendas.</p>';
+    return;
+  }
+
+  const now = new Date();
+  const thisMonth = now.getMonth();
+  const thisYear = now.getFullYear();
+  const isThisMonth = (dateStr) => {
+    if (!dateStr) return false;
+    const d = new Date(dateStr);
+    return d.getMonth() === thisMonth && d.getFullYear() === thisYear;
+  };
+  const PAID_STATUSES = ['paid_100', 'completed'];
+  const OPEN_STATUSES = ['pending', 'token_sent', 'account_created', 'paid_70'];
+
+  // Receita: soma do total_price das encomendas já pagas a 100% (este mês vs. total)
+  const paidOrders = orders.filter(o => PAID_STATUSES.includes(o.status));
+  const revenueThisMonth = paidOrders.filter(o => isThisMonth(o.updated_at || o.created_at))
+    .reduce((sum, o) => sum + (o.total_price || 0), 0);
+  const revenueTotal = paidOrders.reduce((sum, o) => sum + (o.total_price || 0), 0);
+
+  // Por receber: encomendas ainda não fechadas. Para 70% pago, falta a 2ª prestação;
+  // para os outros estados (ainda sem pagamento confirmado), falta o valor total.
+  const pendingAmount = orders.filter(o => OPEN_STATUSES.includes(o.status)).reduce((sum, o) => {
+    if (o.status === 'paid_70') return sum + (o.installment2 || 0);
+    return sum + (o.total_price || 0);
+  }, 0);
+  const pendingCount = orders.filter(o => OPEN_STATUSES.includes(o.status)).length;
+
+  // Entregas em atraso: data de entrega já passou e a encomenda não está concluída/cancelada
+  const todayStr = now.toISOString().split('T')[0];
+  const overdue = orders.filter(o =>
+    o.delivery_date &&
+    o.delivery_date.split('T')[0] < todayStr &&
+    !['completed', 'cancelled'].includes(o.status)
+  );
+
+  const fmt = n => (n || 0).toLocaleString('pt-PT') + ' Kz';
+
+  el.innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:0.75rem;margin-bottom:${overdue.length ? '0.75rem' : '1rem'}">
+      <div style="background:linear-gradient(135deg,#0f766e,#0d9488);border-radius:0.85rem;padding:1rem;color:#fff">
+        <p style="font-size:1.5rem;font-weight:800;margin:0">${fmt(revenueThisMonth)}</p>
+        <p style="font-size:0.72rem;opacity:0.85;margin:0.2rem 0 0">Receita este mês</p>
+      </div>
+      <div style="background:#f0fdfa;border:1.5px solid #99f6e4;border-radius:0.85rem;padding:1rem">
+        <p style="font-size:1.5rem;font-weight:800;margin:0;color:#0f766e">${fmt(revenueTotal)}</p>
+        <p style="font-size:0.72rem;color:#6b7280;margin:0.2rem 0 0">Receita total (pagas)</p>
+      </div>
+      <div style="background:#fffbeb;border:1.5px solid #fde68a;border-radius:0.85rem;padding:1rem">
+        <p style="font-size:1.5rem;font-weight:800;margin:0;color:#92400e">${fmt(pendingAmount)}</p>
+        <p style="font-size:0.72rem;color:#6b7280;margin:0.2rem 0 0">Por receber (${pendingCount} encomenda${pendingCount===1?'':'s'})</p>
+      </div>
+      <div style="background:${overdue.length ? '#fef2f2' : '#f8fafc'};border:1.5px solid ${overdue.length ? '#fecaca' : '#e5e7eb'};border-radius:0.85rem;padding:1rem;cursor:pointer" onclick="openOrdersManager()">
+        <p style="font-size:1.5rem;font-weight:800;margin:0;color:${overdue.length ? '#b91c1c' : '#374151'}">${overdue.length}</p>
+        <p style="font-size:0.72rem;color:#6b7280;margin:0.2rem 0 0">Entregas em atraso</p>
+      </div>
+    </div>
+    ${overdue.length ? `
+      <div style="background:#fef2f2;border:1.5px solid #fecaca;border-radius:0.85rem;padding:0.85rem 1rem;margin-bottom:1rem">
+        <p style="font-size:0.78rem;font-weight:800;color:#b91c1c;margin-bottom:0.5rem">⚠️ Precisam de atenção:</p>
+        ${overdue.slice(0, 4).map(o => `
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:0.4rem 0;border-bottom:1px solid #fee2e2;font-size:0.78rem">
+            <span style="color:#374151">${escapeHTML(o.customer_name)} · entrega era ${new Date(o.delivery_date).toLocaleDateString('pt-PT')}</span>
+            <a href="https://wa.me/${(o.whatsapp||'').replace(/\\D/g,'')}" target="_blank" style="color:#0f766e;font-weight:700;text-decoration:none;flex-shrink:0;margin-left:0.5rem">WhatsApp →</a>
+          </div>`).join('')}
+        ${overdue.length > 4 ? `<p style="font-size:0.72rem;color:#9ca3af;margin-top:0.4rem">+ ${overdue.length - 4} outra(s) — ver em "Encomendas"</p>` : ''}
+      </div>` : ''}
+  `;
+}
+
+
+let _ordersCache = [];
+
+function _orderMatchesFilter(o, filterStatus, searchTerm) {
+  if (filterStatus && filterStatus !== 'all' && o.status !== filterStatus) return false;
+  if (searchTerm) {
+    const hay = `${o.customer_name || ''} ${o.whatsapp || ''} ${o.package_name || ''}`.toLowerCase();
+    if (!hay.includes(searchTerm.toLowerCase())) return false;
+  }
+  return true;
+}
+
+function _orderCardHTML(o) {
+  const waDigits = (o.whatsapp || '').replace(/\D/g, '');
+  return `<div style="background:#f8fafc;border-radius:0.75rem;padding:0.85rem;margin-bottom:0.65rem;border:1px solid #e5e7eb">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:0.4rem">
+      <div>
+        <p style="font-weight:700;font-size:0.88rem;color:#1e293b;margin:0">${escapeHTML(o.customer_name)}</p>
+        <p style="font-size:0.75rem;color:#6b7280;margin:0.1rem 0 0">${escapeHTML(o.whatsapp)} · ${escapeHTML(o.package_name||'')}</p>
+      </div>
+      <span style="font-size:0.68rem;font-weight:700;padding:2px 8px;border-radius:999px;background:${ORDER_STATUS_COLORS[o.status]}18;color:${ORDER_STATUS_COLORS[o.status]};flex-shrink:0">${ORDER_STATUS_LABELS[o.status]||o.status}</span>
+    </div>
+    <div style="display:flex;gap:1rem;font-size:0.72rem;color:#6b7280;margin-bottom:0.5rem">
+      <span>Total: <strong>${(o.total_price||0).toLocaleString('pt-PT')} Kz</strong></span>
+      <span>1ª: ${(o.installment1||0).toLocaleString('pt-PT')} Kz</span>
+      <span>2ª: ${(o.installment2||0).toLocaleString('pt-PT')} Kz</span>
+    </div>
+    ${o.access_token ? `<p style="font-size:0.72rem;color:#374151;background:#fff;border:1px dashed #cbd5e1;border-radius:0.4rem;padding:0.3rem 0.5rem;margin-bottom:0.5rem;font-family:monospace">${escapeHTML(o.access_token)}</p>` : ''}
+    <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.5rem;background:#fff;border:1px solid #e5e7eb;border-radius:0.5rem;padding:0.4rem 0.6rem">
+      <span style="font-size:0.7rem;color:#6b7280;white-space:nowrap">Entrega:</span>
+      <input type="date" id="delivery-date-${o.id}" value="${o.delivery_date ? o.delivery_date.split('T')[0] : ''}" style="font-size:0.72rem;border:none;flex:1;color:#1e293b;font-weight:600">
+      <button onclick="adminSetDeliveryDate('${o.id}', document.getElementById('delivery-date-${o.id}').value)" style="background:#007f9f;color:#fff;border:none;border-radius:0.4rem;padding:0.25rem 0.6rem;font-size:0.65rem;font-weight:700;cursor:pointer;flex-shrink:0">Guardar</button>
+    </div>
+    <textarea id="notes-${o.id}" placeholder="Nota interna (só tu vês)..." style="width:100%;font-size:0.72rem;border:1px solid #e5e7eb;border-radius:0.5rem;padding:0.4rem 0.6rem;margin-bottom:0.5rem;resize:vertical;min-height:32px;font-family:inherit;color:#374151" onblur="adminSaveOrderNotes('${o.id}', this.value)">${escapeHTML(o.admin_notes || '')}</textarea>
+    <div style="display:flex;gap:0.4rem;flex-wrap:wrap">
+      ${waDigits ? `<a href="https://wa.me/${waDigits}" target="_blank" rel="noopener" style="background:#dcfce7;color:#166534;border-radius:0.5rem;padding:0.3rem 0.7rem;font-size:0.7rem;font-weight:700;text-decoration:none;display:inline-flex;align-items:center;gap:0.3rem">💬 WhatsApp</a>` : ''}
+      ${!o.access_token ? `<button onclick="adminGenerateOrderToken('${o.id}')" style="background:#007f9f;color:#fff;border:none;border-radius:0.5rem;padding:0.3rem 0.7rem;font-size:0.7rem;font-weight:700;cursor:pointer">Gerar Código</button>` : `<button onclick="copyOrderToken('${o.access_token}')" style="background:#f3f4f6;color:#374151;border:none;border-radius:0.5rem;padding:0.3rem 0.7rem;font-size:0.7rem;font-weight:600;cursor:pointer">Copiar Código</button>`}
+      <button onclick="adminUpdateOrderStatus('${o.id}','paid_70')" style="background:#e0f2fe;color:#0369a1;border:none;border-radius:0.5rem;padding:0.3rem 0.7rem;font-size:0.7rem;cursor:pointer">Marcar 70% Pago</button>
+      <button onclick="adminUpdateOrderStatus('${o.id}','paid_100')" style="background:#dcfce7;color:#166534;border:none;border-radius:0.5rem;padding:0.3rem 0.7rem;font-size:0.7rem;cursor:pointer">Marcar 100% Pago</button>
+      <button onclick="adminUpdateOrderStatus('${o.id}','completed')" style="background:#bbf7d0;color:#14532d;border:none;border-radius:0.5rem;padding:0.3rem 0.7rem;font-size:0.7rem;font-weight:700;cursor:pointer">✓ Concluir</button>
+      <button onclick="adminUpdateOrderStatus('${o.id}','cancelled')" style="background:#fee2e2;color:#991b1b;border:none;border-radius:0.5rem;padding:0.3rem 0.7rem;font-size:0.7rem;cursor:pointer">Cancelar</button>
+    </div>
+  </div>`;
+}
+
+function _renderOrdersList() {
+  const listEl = document.getElementById('orders-list');
+  if (!listEl) return;
+  const filterStatus = document.getElementById('orders-filter-status')?.value || 'all';
+  const searchTerm = document.getElementById('orders-search-input')?.value || '';
+  const filtered = _ordersCache.filter(o => _orderMatchesFilter(o, filterStatus, searchTerm));
+  listEl.innerHTML = filtered.length
+    ? filtered.map(_orderCardHTML).join('')
+    : '<p style="text-align:center;color:#9ca3af;padding:1.5rem">Nenhuma encomenda encontrada.</p>';
+  lucide.createIcons();
+}
+
+async function adminSaveOrderNotes(orderId, notes) {
+  const order = _ordersCache.find(o => o.id === orderId);
+  if (order) order.admin_notes = notes;
+  try {
+    await supabaseRequest(`orders?id=eq.${orderId}`, 'PATCH', { admin_notes: notes });
+  } catch (e) {
+    // Coluna admin_notes pode ainda não existir na tua base de dados —
+    // supabaseRequest já tenta automaticamente sem essa coluna; se vires
+    // este aviso sempre, corre: ALTER TABLE orders ADD COLUMN admin_notes text;
+    console.warn('Não foi possível guardar a nota (falta a coluna admin_notes?)', e);
+  }
+}
+
 async function openOrdersManager() {
-  const orders = await supabaseRequest('orders?select=*&order=created_at.desc&limit=100').catch(() => []);
+  _ordersCache = await supabaseRequest('orders?select=*&order=created_at.desc&limit=500').catch(() => []) || [];
   const modal = document.createElement('div');
   modal.className = 'modal-overlay';
   modal.id = '_orders-modal';
-  const STATUS_LABELS = {
-    pending: 'Pendente', token_sent: 'Código Enviado', account_created: 'Conta Criada',
-    paid_70: '70% Pago', paid_100: '100% Pago', completed: 'Concluído', cancelled: 'Cancelado'
-  };
-  const STATUS_COLORS = {
-    pending: '#f59e0b', token_sent: '#3b82f6', account_created: '#8b5cf6',
-    paid_70: '#06b6d4', paid_100: '#16a34a', completed: '#16a34a', cancelled: '#ef4444'
-  };
+
   modal.innerHTML = `<div class="modal-content bg-white rounded-2xl p-5" style="max-width:680px;max-height:88vh;overflow-y:auto">
-    <h3 class="text-base font-bold mb-3">Encomendas</h3>
-    <div id="orders-list">
-      ${(orders||[]).map(o => `<div style="background:#f8fafc;border-radius:0.75rem;padding:0.85rem;margin-bottom:0.65rem;border:1px solid #e5e7eb">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:0.4rem">
-          <div>
-            <p style="font-weight:700;font-size:0.88rem;color:#1e293b;margin:0">${escapeHTML(o.customer_name)}</p>
-            <p style="font-size:0.75rem;color:#6b7280;margin:0.1rem 0 0">${escapeHTML(o.whatsapp)} · ${escapeHTML(o.package_name||'')}</p>
-          </div>
-          <span style="font-size:0.68rem;font-weight:700;padding:2px 8px;border-radius:999px;background:${STATUS_COLORS[o.status]}18;color:${STATUS_COLORS[o.status]};flex-shrink:0">${STATUS_LABELS[o.status]||o.status}</span>
-        </div>
-        <div style="display:flex;gap:1rem;font-size:0.72rem;color:#6b7280;margin-bottom:0.5rem">
-          <span>Total: <strong>${o.total_price?.toLocaleString('pt-PT')} Kz</strong></span>
-          <span>1ª: ${o.installment1?.toLocaleString('pt-PT')} Kz</span>
-          <span>2ª: ${o.installment2?.toLocaleString('pt-PT')} Kz</span>
-        </div>
-        ${o.access_token ? `<p style="font-size:0.72rem;color:#374151;background:#fff;border:1px dashed #cbd5e1;border-radius:0.4rem;padding:0.3rem 0.5rem;margin-bottom:0.5rem;font-family:monospace">${o.access_token}</p>` : ''}
-        <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.5rem;background:#fff;border:1px solid #e5e7eb;border-radius:0.5rem;padding:0.4rem 0.6rem">
-          <span style="font-size:0.7rem;color:#6b7280;white-space:nowrap">Entrega:</span>
-          <input type="date" id="delivery-date-${o.id}" value="${o.delivery_date ? o.delivery_date.split('T')[0] : ''}" style="font-size:0.72rem;border:none;flex:1;color:#1e293b;font-weight:600">
-          <button onclick="adminSetDeliveryDate('${o.id}', document.getElementById('delivery-date-${o.id}').value)" style="background:#007f9f;color:#fff;border:none;border-radius:0.4rem;padding:0.25rem 0.6rem;font-size:0.65rem;font-weight:700;cursor:pointer;flex-shrink:0">Guardar</button>
-        </div>
-        <div style="display:flex;gap:0.4rem;flex-wrap:wrap">
-          ${!o.access_token ? `<button onclick="adminGenerateOrderToken('${o.id}')" style="background:#007f9f;color:#fff;border:none;border-radius:0.5rem;padding:0.3rem 0.7rem;font-size:0.7rem;font-weight:700;cursor:pointer">Gerar Código</button>` : `<button onclick="copyOrderToken('${o.access_token}')" style="background:#f3f4f6;color:#374151;border:none;border-radius:0.5rem;padding:0.3rem 0.7rem;font-size:0.7rem;font-weight:600;cursor:pointer">Copiar Código</button>`}
-          <button onclick="adminUpdateOrderStatus('${o.id}','paid_70')" style="background:#e0f2fe;color:#0369a1;border:none;border-radius:0.5rem;padding:0.3rem 0.7rem;font-size:0.7rem;cursor:pointer">Marcar 70% Pago</button>
-          <button onclick="adminUpdateOrderStatus('${o.id}','paid_100')" style="background:#dcfce7;color:#166534;border:none;border-radius:0.5rem;padding:0.3rem 0.7rem;font-size:0.7rem;cursor:pointer">Marcar 100% Pago</button>
-          <button onclick="adminUpdateOrderStatus('${o.id}','cancelled')" style="background:#fee2e2;color:#991b1b;border:none;border-radius:0.5rem;padding:0.3rem 0.7rem;font-size:0.7rem;cursor:pointer">Cancelar</button>
-        </div>
-      </div>`).join('') || '<p style="text-align:center;color:#9ca3af;padding:1.5rem">Nenhuma encomenda ainda.</p>'}
+    <h3 class="text-base font-bold mb-3">Encomendas (${_ordersCache.length})</h3>
+    <div style="display:flex;gap:0.5rem;margin-bottom:0.85rem">
+      <input id="orders-search-input" type="text" placeholder="Pesquisar nome/whatsapp..." class="input-field text-sm" style="flex:1" oninput="_renderOrdersList()">
+      <select id="orders-filter-status" class="input-field text-sm" style="max-width:160px" onchange="_renderOrdersList()">
+        <option value="all">Todos os estados</option>
+        ${Object.entries(ORDER_STATUS_LABELS).map(([k,v]) => `<option value="${k}">${v}</option>`).join('')}
+      </select>
     </div>
+    <div id="orders-list"></div>
     <button class="btn-outline w-full mt-3 text-sm" onclick="this.closest('.modal-overlay').remove()">Fechar</button>
   </div>`;
   document.body.appendChild(modal);
+  _renderOrdersList();
 }
 
 async function adminSetDeliveryDate(orderId, dateStr) {
+
   if (!dateStr) { toast('Seleciona uma data primeiro.'); return; }
   try {
     await supabaseRequest(`orders?id=eq.${orderId}`, 'PATCH', {
