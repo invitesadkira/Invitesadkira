@@ -295,8 +295,10 @@ function saveEventWithCover(eventId, title, date, time, deadline, coverImageURL,
     show_couple: v.showCouple ? 'yes' : 'no',
     groom_name: v.groomName || null, bride_name: v.brideName || null,
     couple_size: v.coupleSize || 2.4,
-    bg_url: v.bgUrl || null, bg_url_mobile: v.bgUrlMobile || null, bg_url_desktop: v.bgUrlDesktop || null, bg_overlay: v.bgOverlay !== undefined ? v.bgOverlay : 35,
-    show_bible: v.showBible ? 'yes' : 'no', bible_text: v.bibleText || null, bible_ref: v.bibleRef || null, bible_text_2: v.bibleText2 || null, bible_ref_2: v.bibleRef2 || null, bible_size: v.bibleSize || '0.92',
+    bg_url: v.bgUrl || null, bg_overlay: v.bgOverlay !== undefined ? v.bgOverlay : 35,
+    // bg_url_mobile/bg_url_desktop/bible_text_2/bible_ref_2/bible_size removidos
+    // daqui — só existem em event_visuals (ver saveEventVisuals mais abaixo).
+    show_bible: v.showBible ? 'yes' : 'no', bible_text: v.bibleText || null, bible_ref: v.bibleRef || null,
     show_invite: v.showInvite ? 'yes' : 'no', invite_text: v.inviteText || null,
     show_parents: v.showParents ? 'yes' : 'no',
     groom_parents: v.groomPar || null, bride_parents: v.bridePar || null,
@@ -692,8 +694,13 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
     iban_holder: newIbanHolder, iban_footer: newIbanFooter,
     show_couple: newShowCouple ? 'yes' : 'no',
     groom_name: newGroomName, bride_name: newBrideName, couple_size: newCoupleSize,
-    bg_url: newBgUrl, bg_url_mobile: newBgUrlMobile, bg_url_desktop: newBgUrlDesktop, bg_overlay: newBgOverlay,
-    show_bible: newShowBible ? 'yes' : 'no', bible_text: newBibleText, bible_ref: newBibleRef, bible_text_2: newBibleText2, bible_ref_2: newBibleRef2, bible_size: newBibleSize,
+    bg_url: newBgUrl, bg_overlay: newBgOverlay,
+    // bg_url_mobile/bg_url_desktop/bible_text_2/bible_ref_2/bible_size REMOVIDOS
+    // deste PATCH: essas colunas só existem em event_visuals (nunca existiram
+    // em events), causavam 5 erros 400 (PGRST204) em cada gravação — inofensivo
+    // graças ao auto-retry, mas lento e ruidoso. Já são gravados correctamente
+    // mais abaixo, na chamada a saveEventVisuals().
+    show_bible: newShowBible ? 'yes' : 'no', bible_text: newBibleText, bible_ref: newBibleRef,
     show_invite: newShowInvite ? 'yes' : 'no', invite_text: newInviteText,
     show_parents: newShowParents ? 'yes' : 'no', groom_parents: newGroomPar, bride_parents: newBridePar,
     show_gallery: newShowGallery ? 'yes' : 'no', gallery_urls: newGalleryUrls,
