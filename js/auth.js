@@ -476,7 +476,7 @@ async function handleLogin(e) {
     dlog('✅ Contas carregadas:', Store.users?.length || 0, 'contas');
     
     // ✅ CARREGA 2: TODOS OS EVENTOS (COM JOIN para presentes e RSVPs)
-    const allEvents = await supabaseRequest(`events?select=id,title,date,time,user_id,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,music_url,music_title,iban_message,iban_number,iban_holder,iban_footer,groom_name,bride_name,couple_size,show_couple,bg_url,bg_overlay,bible_text,bible_ref,show_bible,invite_text,show_invite,groom_parents,bride_parents,show_parents,gallery_urls,show_gallery,show_manual,manual_items,show_schedule,schedule_items,custom_font_family,section_order,story_text,invite_blessing,event_color,confirm_by_date,cover_image,event_code,gifts(id,name,category,reserved,reserved_by),rsvps(guest_name,attending,side,companions,kids,wants_gift,message,created_at,updated_at)&limit=500&order=date.desc`);
+    const allEvents = await supabaseRequest(`events?select=id,title,date,time,user_id,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,music_url,music_title,iban_message,iban_number,iban_holder,iban_footer,groom_name,bride_name,couple_size,show_couple,bg_url,bg_overlay,bible_text,bible_ref,show_bible,invite_text,show_invite,groom_parents,bride_parents,show_parents,gallery_urls,show_gallery,show_manual,manual_items,show_schedule,schedule_items,custom_font_family,section_order,story_text,invite_blessing,event_color,confirm_by_date,cover_image,event_code,gifts(id,name,category,reserved,reserved_by,quantity,image_url),rsvps(guest_name,attending,side,companions,kids,wants_gift,message,created_at,updated_at)&limit=500&order=date.desc`);
     
     dlog('✅ Eventos carregados:', allEvents?.length || 0, 'eventos');
     
@@ -555,7 +555,9 @@ async function handleLogin(e) {
           name: g.name,
           category: g.category || 'Sem categoria',
           reserved: g.reserved || false,
-          reservedBy: g.reserved_by || null
+          reservedBy: g.reserved_by || null,
+        quantity: g.quantity || 1,
+        imageUrl: g.image_url || null
         })),
         confirmations: (event.rsvps || []).map(rsvp => ({
           name: rsvp.guest_name,

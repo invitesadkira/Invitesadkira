@@ -841,7 +841,7 @@ async function reloadEventFromSupabase(eventId) {
     dlog('🔄 Recarregando evento do Supabase:', eventId);
     
     // Buscar evento COM JOIN para presentes e RSVPs
-    const eventData = await supabaseRequest(`events?id=eq.${eventId}&select=id,title,date,time,user_id,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,music_url,music_title,iban_message,iban_number,iban_holder,iban_footer,groom_name,bride_name,couple_size,show_couple,bg_url,bg_overlay,bible_text,bible_ref,show_bible,invite_text,show_invite,groom_parents,bride_parents,show_parents,gallery_urls,show_gallery,show_manual,manual_items,show_schedule,schedule_items,custom_font_family,section_order,story_text,invite_blessing,event_color,confirm_by_date,cover_image,event_code,gifts(id,name,category,reserved,reserved_by),rsvps(guest_name,attending,side,companions,kids,wants_gift,message,created_at,updated_at)`);
+    const eventData = await supabaseRequest(`events?id=eq.${eventId}&select=id,title,date,time,user_id,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,music_url,music_title,iban_message,iban_number,iban_holder,iban_footer,groom_name,bride_name,couple_size,show_couple,bg_url,bg_overlay,bible_text,bible_ref,show_bible,invite_text,show_invite,groom_parents,bride_parents,show_parents,gallery_urls,show_gallery,show_manual,manual_items,show_schedule,schedule_items,custom_font_family,section_order,story_text,invite_blessing,event_color,confirm_by_date,cover_image,event_code,gifts(id,name,category,reserved,reserved_by,quantity,image_url),rsvps(guest_name,attending,side,companions,kids,wants_gift,message,created_at,updated_at)`);
     
     if (eventData && eventData.length > 0) {
       const event = eventData[0];
@@ -922,7 +922,9 @@ async function reloadEventFromSupabase(eventId) {
           name: g.name,
           category: g.category || 'Sem categoria',
           reserved: g.reserved || false,
-          reservedBy: g.reserved_by || null
+          reservedBy: g.reserved_by || null,
+        quantity: g.quantity || 1,
+        imageUrl: g.image_url || null
         })),
         confirmations: (event.rsvps || []).map(rsvp => ({
           name: rsvp.guest_name,
@@ -1069,7 +1071,9 @@ async function saveGiftsToSupabase(eventId, gifts) {
         name: gift.name,
         category: gift.category || 'Sem categoria',
         reserved: gift.reserved || false,
-        reserved_by: gift.reservedBy || null
+        reserved_by: gift.reservedBy || null,
+        quantity: gift.quantity || 1,
+        image_url: gift.imageUrl || null
       };
       
       const response = await supabaseRequest('gifts', 'POST', giftData);
@@ -1093,7 +1097,9 @@ async function loadGiftsFromSupabase(eventId) {
         name: g.name,
         category: g.category || 'Sem categoria',
         reserved: g.reserved || false,
-        reservedBy: g.reserved_by || null
+        reservedBy: g.reserved_by || null,
+        quantity: g.quantity || 1,
+        imageUrl: g.image_url || null
       }));
     }
     return [];
@@ -1194,17 +1200,44 @@ function openGuestDresscodeModal() {
   lucide.createIcons();
 }
 
+function _giftGuestNameKey(eventId) { return `giftGuestName_${eventId}`; }
+
 function _resolveKnownGuestName(eventId) {
   if (Store.currentGuestSession?.guestName) return Store.currentGuestSession.guestName;
   const confirmed = rsvpCheckConfirmed(eventId);
   if (confirmed && confirmed.name) return confirmed.name;
+  // ✅ Nome dado anteriormente só para escolher presente (sem ter confirmado
+  // presença) — guardado neste aparelho, para nunca pedir duas vezes nem
+  // arriscar uma escrita diferente da primeira vez (o que deixava a mesma
+  // pessoa escolher 2 presentes sem o site perceber que era a mesma pessoa).
+  try {
+    const saved = localStorage.getItem(_giftGuestNameKey(eventId));
+    if (saved) return saved;
+  } catch(e) {}
   return null;
 }
 
-function openGuestGiftsModal() {
-  const ev = Store.guestEventData || Store.events.find(e => e.id === Store.currentEventId);
-  if (!ev || !Array.isArray(ev.gifts) || ev.gifts.length === 0) { toast('Ainda não há presentes configurados.'); return; }
+function _rememberGiftGuestName(eventId, name) {
+  try { localStorage.setItem(_giftGuestNameKey(eventId), name); } catch(e) {}
+}
 
+function _giftClaimants(g) {
+  return (g.reservedBy || '').split('|').map(s => s.trim()).filter(Boolean);
+}
+function _giftQuantity(g) { return g.quantity && g.quantity > 0 ? g.quantity : 1; }
+function _giftIsFull(g) { return _giftClaimants(g).length >= _giftQuantity(g); }
+
+function _giftCardInner(g, knownName) {
+  const claimants = _giftClaimants(g);
+  const qty = _giftQuantity(g);
+  const full = claimants.length >= qty;
+  const mineClaimed = knownName && claimants.some(c => normalizeGuestName(c) === normalizeGuestName(knownName));
+  const badgeText = qty > 1 ? `${claimants.length}/${qty} escolhido${claimants.length===1?'':'s'}` : (full ? 'Escolhido' : 'Disponível');
+  const badgeClass = full && qty === 1 ? 'bg-green-100 text-green-700' : (claimants.length > 0 ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-600');
+  return { claimants, qty, full, mineClaimed, badgeText, badgeClass };
+}
+
+function _renderGuestGiftsContent(ev, viewMode) {
   const knownName = _resolveKnownGuestName(ev.id);
   const categories = {};
   ev.gifts.forEach(g => {
@@ -1213,26 +1246,65 @@ function openGuestGiftsModal() {
     categories[cat].push(g);
   });
 
-  const listHtml = Object.keys(categories).sort().map(cat => `
+  if (viewMode === 'grid') {
+    return Object.keys(categories).sort().map(cat => `
+      <div class="mb-4">
+        <h4 class="text-sm font-bold text-teal-700 mb-2">${escapeHTML(cat)}</h4>
+        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:0.6rem">
+          ${categories[cat].map(g => {
+            const { full, badgeText, badgeClass } = _giftCardInner(g, knownName);
+            return `<div class="rounded-xl border border-gray-200 overflow-hidden cursor-pointer hover:shadow-md transition bg-white" onclick="_selectGiftInModal('${g.id}', this)">
+              <div style="aspect-ratio:1;background:#f1f5f9;display:flex;align-items:center;justify-content:center;overflow:hidden">
+                ${g.imageUrl ? `<img src="${g.imageUrl}" style="width:100%;height:100%;object-fit:cover">` : `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>`}
+              </div>
+              <div class="p-2">
+                <p class="text-xs font-medium ${full ? 'text-gray-500 line-through' : 'text-gray-800'} break-words leading-tight mb-1">${escapeHTML(g.name)}</p>
+                <span class="text-[0.65rem] font-semibold px-1.5 py-0.5 rounded-full ${badgeClass}">${badgeText}</span>
+              </div>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>`).join('');
+  }
+
+  // viewMode === 'list' (padrão)
+  return Object.keys(categories).sort().map(cat => `
     <div class="bg-white rounded-xl shadow-sm border-l-4 border-teal-500 overflow-hidden mb-3">
       <div class="bg-teal-50 px-4 py-2.5 border-b border-teal-100">
         <h4 class="text-sm font-bold text-teal-700">${escapeHTML(cat)}</h4>
       </div>
       <div class="divide-y">
-        ${categories[cat].map(g => `
-          <div class="flex items-center gap-3 p-3.5 hover:bg-gray-50 transition active:bg-teal-50 cursor-pointer" onclick="_selectGiftInModal('${g.id}', this)">
-            <div class="flex-shrink-0 w-7 h-7 rounded-full border-2 ${g.reserved ? 'border-green-500 bg-green-500' : 'border-gray-300 bg-white'} flex items-center justify-center transition-all" data-gift-checkbox="${g.id}">
-              ${g.reserved ? '<i data-lucide="check" class="w-4 h-4 text-white"></i>' : ''}
-            </div>
+        ${categories[cat].map(g => {
+          const { full, badgeText, badgeClass } = _giftCardInner(g, knownName);
+          return `<div class="flex items-center gap-3 p-3.5 hover:bg-gray-50 transition active:bg-teal-50 cursor-pointer" onclick="_selectGiftInModal('${g.id}', this)">
+            ${g.imageUrl
+              ? `<div style="width:42px;height:42px;border-radius:0.5rem;overflow:hidden;flex-shrink:0;background:#f1f5f9"><img src="${g.imageUrl}" style="width:100%;height:100%;object-fit:cover"></div>`
+              : `<div class="flex-shrink-0 w-7 h-7 rounded-full border-2 ${full ? 'border-green-500 bg-green-500' : 'border-gray-300 bg-white'} flex items-center justify-center transition-all" data-gift-checkbox="${g.id}">${full ? '<i data-lucide="check" class="w-4 h-4 text-white"></i>' : ''}</div>`}
             <div class="flex-1 min-w-0">
-              <p class="text-sm font-medium ${g.reserved ? 'text-gray-500 line-through' : 'text-gray-800'} break-words">${escapeHTML(g.name)}</p>
+              <p class="text-sm font-medium ${full ? 'text-gray-500 line-through' : 'text-gray-800'} break-words">${escapeHTML(g.name)}</p>
             </div>
-            ${g.reserved
-              ? `<span class="text-xs font-semibold px-2 py-1 rounded-full bg-green-100 text-green-700 flex-shrink-0">Escolhido</span>`
-              : `<span class="text-xs font-semibold px-2 py-1 rounded-full bg-gray-100 text-gray-600 flex-shrink-0">Disponível</span>`}
-          </div>`).join('')}
+            <span class="text-xs font-semibold px-2 py-1 rounded-full ${badgeClass} flex-shrink-0">${badgeText}</span>
+          </div>`;
+        }).join('')}
       </div>
     </div>`).join('');
+}
+
+function _toggleGuestGiftsView(mode) {
+  localStorage.setItem('giftViewMode', mode);
+  const ev = Store.guestEventData || Store.events.find(e => e.id === Store.currentEventId);
+  document.getElementById('guest-gifts-modal-list').innerHTML = _renderGuestGiftsContent(ev, mode);
+  document.getElementById('gv-btn-list')?.classList.toggle('active-view', mode === 'list');
+  document.getElementById('gv-btn-grid')?.classList.toggle('active-view', mode === 'grid');
+  lucide.createIcons();
+}
+
+function openGuestGiftsModal() {
+  const ev = Store.guestEventData || Store.events.find(e => e.id === Store.currentEventId);
+  if (!ev || !Array.isArray(ev.gifts) || ev.gifts.length === 0) { toast('Ainda não há presentes configurados.'); return; }
+
+  const knownName = _resolveKnownGuestName(ev.id);
+  const viewMode = localStorage.getItem('giftViewMode') || 'list';
 
   const modal = document.createElement('div');
   modal.className = 'modal-overlay';
@@ -1244,8 +1316,14 @@ function openGuestGiftsModal() {
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
     </div>
-    <p class="text-xs text-gray-500 mb-3">Escolhe um presente — só podes escolher um.</p>
-    <div id="guest-gifts-modal-list">${listHtml}</div>
+    <div class="flex items-center justify-between mb-3">
+      <p class="text-xs text-gray-500">Escolhe um presente.</p>
+      <div style="display:flex;gap:0.25rem;background:#f1f5f9;border-radius:999px;padding:2px">
+        <button id="gv-btn-list" class="gift-view-toggle-btn ${viewMode==='list'?'active-view':''}" onclick="_toggleGuestGiftsView('list')" title="Lista"><i data-lucide="list" class="w-3.5 h-3.5"></i></button>
+        <button id="gv-btn-grid" class="gift-view-toggle-btn ${viewMode==='grid'?'active-view':''}" onclick="_toggleGuestGiftsView('grid')" title="Grelha"><i data-lucide="grid-2x2" class="w-3.5 h-3.5"></i></button>
+      </div>
+    </div>
+    <div id="guest-gifts-modal-list">${_renderGuestGiftsContent(ev, viewMode)}</div>
   </div>`;
   document.body.appendChild(modal);
   modal.onclick = e => { if (e.target === modal) modal.remove(); };
@@ -1296,11 +1374,16 @@ async function _selectGiftInModal(giftId, element) {
   const modal = document.getElementById('guest-gifts-modal');
   let guestName = (modal && modal.dataset.knownName) || _resolveKnownGuestName(ev.id);
 
-  // Se já está reservado por outra pessoa, não deixa escolher
-  if (gift.reserved && (!guestName || normalizeGuestName(gift.reservedBy) !== normalizeGuestName(guestName))) {
-    toast('Este presente já foi escolhido por outro convidado.');
+  const claimants = _giftClaimants(gift);
+  const qty = _giftQuantity(gift);
+  const alreadyMine = guestName && claimants.some(c => normalizeGuestName(c) === normalizeGuestName(guestName));
+
+  // Já totalmente reservado por outras pessoas (e não é já meu) — não deixa escolher
+  if (claimants.length >= qty && !alreadyMine) {
+    toast(qty > 1 ? 'Este presente já atingiu o limite de pessoas.' : 'Este presente já foi escolhido por outro convidado.');
     return;
   }
+  if (alreadyMine) { toast('Já escolheste este presente!'); return; }
 
   // ── Não sabemos ainda quem é o convidado: pedir o nome antes de continuar ──
   if (!guestName) {
@@ -1309,33 +1392,34 @@ async function _selectGiftInModal(giftId, element) {
     if (!typed) return;
     guestName = typed;
     if (modal) modal.dataset.knownName = guestName;
+    _rememberGiftGuestName(ev.id, guestName);
   }
 
-  // Verificar se já escolheu outro presente diferente deste
-  const otherReserved = ev.gifts.find(g => g.id !== giftId && g.reserved && normalizeGuestName(g.reservedBy) === normalizeGuestName(guestName));
+  // Regra: um convidado só pode escolher 1 presente no total — mesmo que
+  // ESTE presente em particular permita várias pessoas (quantity > 1), a
+  // mesma pessoa não pode estar a escolher um SEGUNDO presente diferente.
+  const otherReserved = ev.gifts.find(g => g.id !== giftId && _giftClaimants(g).some(c => normalizeGuestName(c) === normalizeGuestName(guestName)));
   if (otherReserved) { showAlreadyReservedModal(); return; }
 
-  gift.reserved = true;
-  gift.reservedBy = guestName;
+  const newClaimants = [...claimants, guestName];
+  const newReservedByStr = newClaimants.join('|');
+  const nowFull = newClaimants.length >= qty;
+
+  gift.reservedBy = newReservedByStr;
+  gift.reserved = nowFull;
   try {
-    await updateGiftReservationInSupabase(giftId, true, guestName);
+    await updateGiftReservationInSupabase(giftId, nowFull, newReservedByStr);
   } catch (e) {
-    gift.reserved = false; gift.reservedBy = null;
+    gift.reservedBy = claimants.join('|') || null; gift.reserved = claimants.length >= qty;
     toast('Não foi possível reservar o presente. Tenta novamente.');
     return;
   }
   reloadEventFromSupabase(ev.id).catch(() => {});
 
-  const checkbox = element.querySelector('[data-gift-checkbox]');
-  if (checkbox) {
-    checkbox.classList.remove('border-gray-300', 'bg-white');
-    checkbox.classList.add('border-green-500', 'bg-green-500');
-    checkbox.innerHTML = '<i data-lucide="check" class="w-4 h-4 text-white"></i>';
-  }
-  const badge = element.querySelector('span.rounded-full');
-  if (badge) { badge.textContent = 'Escolhido'; badge.className = 'text-xs font-semibold px-2 py-1 rounded-full bg-green-100 text-green-700 flex-shrink-0'; }
-  const label = element.querySelector('p');
-  if (label) { label.classList.add('text-gray-500', 'line-through'); label.classList.remove('text-gray-800'); }
+  // Re-renderiza o item para refletir o novo estado (compatível com lista e grelha)
+  const viewMode = localStorage.getItem('giftViewMode') || 'list';
+  const listEl = document.getElementById('guest-gifts-modal-list');
+  if (listEl) listEl.innerHTML = _renderGuestGiftsContent(ev, viewMode);
   lucide.createIcons();
   toast(`Presente escolhido, obrigado ${guestName.split(' ')[0]}!`);
 }
@@ -1398,7 +1482,11 @@ function renderGiftsManager(ev) {
       html += '<div class="bg-white rounded-lg shadow-sm border-l-3 border-teal-500 p-3"><div class="flex items-center justify-between mb-2"><h4 class="text-sm font-bold text-teal-600">' + escapeHTML(cat) + '</h4><button class="text-gray-300 hover:text-red-500 transition" onclick="deleteCategory(\'' + encodeURIComponent(cat).replace(/'/g, '%27') + '\', \'' + ev.id + '\')"><i data-lucide="trash-2" class="w-4 h-4"></i></button></div><div class="space-y-1">';
       
       gifts.forEach(g => {
-        html += '<div class="flex items-center gap-2 group hover:bg-gray-50 px-1 rounded transition text-xs"><span class="text-teal-400 flex-shrink-0">◯</span><span class="text-gray-700 flex-1 truncate">' + escapeHTML(g.name) + '</span><div class="flex gap-1 opacity-0 group-hover:opacity-100 transition"><button class="text-gray-300 hover:text-teal-500 p-0.5" onclick="editGiftModal(\'' + g.id + '\')"><i data-lucide="edit" class="w-3 h-3"></i></button><button class="text-gray-300 hover:text-red-500 p-0.5" onclick="deleteGift(\'' + g.id + '\')"><i data-lucide="trash-2" class="w-3 h-3"></i></button></div></div>';
+        const claimants = _giftClaimants(g);
+        const qty = _giftQuantity(g);
+        const badge = qty > 1 ? `<span class="text-[0.6rem] font-semibold px-1 py-0.5 rounded bg-blue-50 text-blue-600 flex-shrink-0">${claimants.length}/${qty}</span>` : '';
+        const thumb = g.imageUrl ? `<img src="${g.imageUrl}" style="width:18px;height:18px;border-radius:4px;object-fit:cover;flex-shrink:0">` : '<span class="text-teal-400 flex-shrink-0">◯</span>';
+        html += '<div class="flex items-center gap-2 group hover:bg-gray-50 px-1 rounded transition text-xs">' + thumb + '<span class="text-gray-700 flex-1 truncate">' + escapeHTML(g.name) + '</span>' + badge + '<div class="flex gap-1 opacity-0 group-hover:opacity-100 transition"><button class="text-gray-300 hover:text-teal-500 p-0.5" onclick="editGiftModal(\'' + g.id + '\')"><i data-lucide="edit" class="w-3 h-3"></i></button><button class="text-gray-300 hover:text-red-500 p-0.5" onclick="deleteGift(\'' + g.id + '\')"><i data-lucide="trash-2" class="w-3 h-3"></i></button></div></div>';
       });
       
       html += '</div></div>';
@@ -1505,56 +1593,67 @@ async function toggleGiftSelection(giftId, element) {
       dlog('✅ Nome obtido do input:', guestName);
     }
   }
-  // 3️⃣ Fallback (não deveria chegar aqui)
+  // 3️⃣ Nome guardado anteriormente (escolheu presente sem ter confirmado presença)
+  if (!guestName) {
+    const saved = _resolveKnownGuestName(ev.id);
+    if (saved) { guestName = saved; dlog('✅ Nome obtido da memória de presentes:', guestName); }
+  }
+  // 4️⃣ Fallback (não deveria chegar aqui)
   if (!guestName) {
     guestName = 'Convidado Anónimo';
     dlog('⚠️ Nome padrão usado:', guestName);
+  } else {
+    _rememberGiftGuestName(ev.id, guestName);
   }
   
   dlog('👤 Nome do convidado FINAL:', { guestName, session: Store.currentGuestSession });
-  
+
+  const claimants = _giftClaimants(gift);
+  const qty = _giftQuantity(gift);
+  const alreadyMine = claimants.some(c => normalizeGuestName(c) === normalizeGuestName(guestName));
+
   // ✅ Convidado só pode ESCOLHER presente, não desmarcar
-  if (gift.reserved && normalizeGuestName(gift.reservedBy) !== normalizeGuestName(guestName)) {
-    dlog('❌ Presente já reservado por outro convidado:', gift.reservedBy);
-    toast('Este presente já foi escolhido por outro convidado.');
+  if (claimants.length >= qty && !alreadyMine) {
+    dlog('❌ Presente já atingiu o limite de pessoas:', gift.reservedBy);
+    toast(qty > 1 ? 'Este presente já atingiu o limite de pessoas.' : 'Este presente já foi escolhido por outro convidado.');
     return;
   }
-  
+  if (alreadyMine) { toast('Já escolheste este presente!'); return; }
+
   // ✅ CRÍTICO: Verificar se convidado JÁ ESCOLHEU outro presente (diferente deste)
-  const otherReservedGifts = ev.gifts.filter(g => 
-    g.id !== giftId &&                                      // Não é este presente
-    g.reserved &&                                           // Está reservado
-    normalizeGuestName(g.reservedBy) === normalizeGuestName(guestName)  // Por ESTE convidado
+  const otherReservedGifts = ev.gifts.filter(g =>
+    g.id !== giftId &&
+    _giftClaimants(g).some(c => normalizeGuestName(c) === normalizeGuestName(guestName))
   );
-  
+
   dlog('🎁 Verificação de presente anterior:', {
     guestName,
     giftIdAtual: giftId,
-    giftsDoConvidado: ev.gifts.filter(g => normalizeGuestName(g.reservedBy) === normalizeGuestName(guestName)),
     outrosPresentes: otherReservedGifts,
     totalOutros: otherReservedGifts.length
   });
-  
+
   if (otherReservedGifts.length > 0) {
     dlog('⚠️ ALERTA: Convidado já tem outro(s) presente(s) escolhido(s)!');
-    dlog('  Presentes existentes:', otherReservedGifts.map(g => ({ name: g.name, reservedBy: g.reservedBy })));
-    
-    // ✅ Mostrar modal com aviso IMEDIATAMENTE
     showAlreadyReservedModal();
     return;
   }
-  
+
   dlog('🎁 Escolhendo presente:', { giftId, giftName: gift.name, chosenBy: guestName });
-  
-  gift.reserved = true;
-  gift.reservedBy = guestName;
-  
+
+  const newClaimants = [...claimants, guestName];
+  const newReservedByStr = newClaimants.join('|');
+  const nowFull = newClaimants.length >= qty;
+
+  gift.reservedBy = newReservedByStr;
+  gift.reserved = nowFull;
+
   // ✅ Sincronizar com Supabase
   try {
-    await updateGiftReservationInSupabase(giftId, true, guestName);
+    await updateGiftReservationInSupabase(giftId, nowFull, newReservedByStr);
   } catch (error) {
-    gift.reserved = false;
-    gift.reservedBy = null;
+    gift.reservedBy = claimants.join('|') || null;
+    gift.reserved = claimants.length >= qty;
     console.error('Erro ao reservar presente:', error);
     toast('Nao foi possivel reservar o presente. Tente novamente.');
     return;
@@ -1638,10 +1737,13 @@ function editGiftModal(giftId) {
   const gift = ev.gifts.find(g => g.id === giftId);
   if (!gift) return;
 
+  const claimants = _giftClaimants(gift);
+  const qty = _giftQuantity(gift);
+
   const modal = document.createElement('div');
   modal.className = 'modal-overlay';
   modal.innerHTML = `
-    <div class="modal-content bg-white rounded-2xl shadow-lg p-6 max-w-sm w-full mx-4">
+    <div class="modal-content bg-white rounded-2xl shadow-lg p-6 max-w-sm w-full mx-4" style="max-height:88vh;overflow-y:auto">
       <h3 class="text-lg font-bold text-gray-800 mb-4">Editar Presente</h3>
       <div class="space-y-3 mb-4">
         <div>
@@ -1652,13 +1754,27 @@ function editGiftModal(giftId) {
           <label class="block text-sm font-semibold text-gray-600 mb-1">Categoria</label>
           <input id="edit-gift-category" class="input-field" value="${escapeHTML(gift.category || 'Sem categoria')}">
         </div>
-        ${gift.reserved ? `
+        <div>
+          <label class="block text-sm font-semibold text-gray-600 mb-1">Quantas pessoas podem escolher este presente?</label>
+          <input id="edit-gift-quantity" type="number" min="1" max="50" class="input-field" value="${qty}">
+          <p class="text-xs text-gray-400 mt-1">1 = só um convidado pode escolher (padrão). Mais que 1 = vários convidados podem escolher o mesmo presente (ex: contribuição para lua-de-mel).</p>
+        </div>
+        <div>
+          <label class="block text-sm font-semibold text-gray-600 mb-1">Foto do presente (opcional)</label>
+          <div id="edit-gift-image-wrap" class="${gift.imageUrl ? '' : 'hidden'} relative mb-2" style="max-width:140px">
+            <img id="edit-gift-image-preview" class="rounded-lg w-full" style="aspect-ratio:1;object-fit:cover" src="${gift.imageUrl || ''}">
+            <button type="button" onclick="document.getElementById('edit-gift-image-url').value='';document.getElementById('edit-gift-image-wrap').classList.add('hidden')" class="absolute top-1 right-1 bg-white rounded-full w-6 h-6 flex items-center justify-center shadow text-red-500 text-xs font-bold">✕</button>
+          </div>
+          <input type="hidden" id="edit-gift-image-url" value="${gift.imageUrl || ''}">
+          <div class="flex gap-2">
+            <input type="file" id="edit-gift-image-input" accept="image/*" class="input-field text-sm" onchange="handleGiftImageUpload(this)" style="flex:1">
+          </div>
+          <button type="button" class="text-xs text-teal-600 font-semibold mt-1" onclick="openMediaLibraryPicker((url) => { document.getElementById('edit-gift-image-url').value=url; document.getElementById('edit-gift-image-preview').src=url; document.getElementById('edit-gift-image-wrap').classList.remove('hidden'); })">📁 Escolher da Biblioteca</button>
+        </div>
+        ${claimants.length ? `
         <div class="bg-amber-50 border-l-3 border-amber-500 p-3 rounded text-xs text-amber-700">
-          <p class="font-semibold mb-1">Presente Reservado</p>
-          <p class="mb-2">Escolhido por: <strong>${escapeHTML(gift.reservedBy)}</strong></p>
-          <button type="button" class="text-amber-600 hover:text-amber-700 font-semibold underline" onclick="removeGiftReservationFromModal('${giftId}', this.closest('.modal-overlay'))">
-            Remover Reserva
-          </button>
+          <p class="font-semibold mb-2">Escolhido por (${claimants.length}/${qty}):</p>
+          ${claimants.map(name => `<div class="flex items-center justify-between mb-1"><span>${escapeHTML(name)}</span><button type="button" class="text-amber-600 hover:text-red-600 font-semibold underline text-xs" onclick="removeGiftReservationFromModal('${giftId}', '${encodeURIComponent(name)}', this.closest('.modal-overlay'))">remover</button></div>`).join('')}
         </div>
         ` : ''}
       </div>
@@ -1671,13 +1787,36 @@ function editGiftModal(giftId) {
   document.body.appendChild(modal);
 }
 
-// ✅ NOVA FUNÇÃO: Remover reserva de presente do modal
-function removeGiftReservationFromModal(giftId, modal) {
+async function handleGiftImageUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 4*1024*1024) { toast('Imagem muito grande. Máx. 4 MB.'); return; }
+  const eventId = Store.currentEventId;
+  const label = 'Foto de presente';
+  const applyUrl = (url) => {
+    document.getElementById('edit-gift-image-url').value = url;
+    document.getElementById('edit-gift-image-preview').src = url;
+    document.getElementById('edit-gift-image-wrap').classList.remove('hidden');
+  };
+  const proceed = await _confirmIfDuplicatePhoto(file, eventId, label, applyUrl);
+  if (!proceed) { input.value = ''; return; }
+  toast('A carregar foto...');
+  try {
+    const url = await uploadImageToStorage(file, 'event-covers', label);
+    applyUrl(url);
+    toast('Foto do presente carregada!');
+  } catch(e) { toast('Erro ao carregar a foto.'); }
+}
+
+// ✅ Remover a reserva de UM convidado específico (não afecta outros, se o
+// presente permitir várias pessoas).
+function removeGiftReservationFromModal(giftId, claimantNameEncoded, modal) {
   const ev = Store.events.find(e => e.id === Store.currentEventId);
   if (!ev) return;
 
   const gift = ev.gifts.find(g => g.id === giftId);
-  if (!gift || !gift.reserved) return;
+  if (!gift) return;
+  const claimantName = decodeURIComponent(claimantNameEncoded);
 
   const confirmModal = document.createElement('div');
   confirmModal.className = 'modal-overlay';
@@ -1685,12 +1824,12 @@ function removeGiftReservationFromModal(giftId, modal) {
     <div class="modal-content bg-white rounded-2xl shadow-lg p-6 max-w-sm w-full mx-4">
       <h3 class="text-lg font-bold text-gray-800 mb-2">Remover Reserva?</h3>
       <p class="text-sm text-gray-600 mb-2">Presente: <strong>${escapeHTML(gift.name)}</strong></p>
-      <p class="text-sm text-gray-600 mb-4">Pessoa: <strong>${escapeHTML(gift.reservedBy)}</strong></p>
+      <p class="text-sm text-gray-600 mb-4">Pessoa: <strong>${escapeHTML(claimantName)}</strong></p>
       
-      <p class="text-xs text-amber-600 font-semibold mb-4">O convidado "${escapeHTML(gift.reservedBy)}" poderá escolher outro presente.</p>
+      <p class="text-xs text-amber-600 font-semibold mb-4">"${escapeHTML(claimantName)}" poderá escolher outro presente.</p>
       
       <div class="flex gap-2">
-        <button class="flex-1 bg-amber-500 hover:bg-amber-600 text-white rounded-lg py-2 px-4 font-semibold transition" onclick="confirmRemoveGiftReservation('${giftId}', this.closest('.modal-overlay'), document.querySelector('[class*=\"modal-overlay\"]'))">
+        <button class="flex-1 bg-amber-500 hover:bg-amber-600 text-white rounded-lg py-2 px-4 font-semibold transition" onclick="confirmRemoveGiftReservation('${giftId}', '${claimantNameEncoded}', this.closest('.modal-overlay'), document.querySelector('[class*=\"modal-overlay\"]'))">
           Remover Reserva
         </button>
         <button class="flex-1 btn-outline" onclick="this.closest('.modal-overlay').remove()">Cancelar</button>
@@ -1700,42 +1839,46 @@ function removeGiftReservationFromModal(giftId, modal) {
   document.body.appendChild(confirmModal);
 }
 
-// ✅ NOVA FUNÇÃO: Confirmar remoção de reserva
-async function confirmRemoveGiftReservation(giftId, confirmModal, editModal) {
+// ✅ Confirmar remoção da reserva de UM convidado específico
+async function confirmRemoveGiftReservation(giftId, claimantNameEncoded, confirmModal, editModal) {
   const ev = Store.events.find(e => e.id === Store.currentEventId);
   if (!ev) return;
 
   const gift = ev.gifts.find(g => g.id === giftId);
   if (!gift) return;
+  const claimantName = decodeURIComponent(claimantNameEncoded);
 
-  dlog('🎁 Removendo reserva do presente:', { giftId, giftName: gift.name, reservedBy: gift.reservedBy });
+  const previousClaimants = _giftClaimants(gift);
+  const newClaimants = previousClaimants.filter(c => normalizeGuestName(c) !== normalizeGuestName(claimantName));
+  const newReservedByStr = newClaimants.join('|') || null;
+  const qty = _giftQuantity(gift);
 
-  const previousReservedBy = gift.reservedBy;
-  gift.reserved = false;
-  gift.reservedBy = null;
+  gift.reservedBy = newReservedByStr;
+  gift.reserved = newClaimants.length >= qty;
 
   try {
-    await updateGiftReservationInSupabase(giftId, false, null);
+    await updateGiftReservationInSupabase(giftId, gift.reserved, newReservedByStr);
     confirmModal.remove();
     if (editModal) editModal.remove();
-    
-    toast(`Reserva de "${gift.name}" foi removida. "${previousReservedBy}" pode escolher outro presente.`);
+
+    toast(`Reserva de "${gift.name}" removida para "${claimantName}". Pode escolher outro presente.`);
     renderEventDetails();
   } catch (error) {
-    gift.reserved = true;
-    gift.reservedBy = previousReservedBy;
+    gift.reservedBy = previousClaimants.join('|') || null;
+    gift.reserved = previousClaimants.length >= qty;
     console.error('Erro ao remover reserva:', error);
     toast('Nao foi possivel remover a reserva. Tente novamente.');
   }
 }
 
-// ✅ NOVA FUNÇÃO: Remover reserva de presente (pelo botão na lista de confirmações)
-function removeGiftReservation(giftId) {
+// ✅ Remover reserva de presente (pelo botão na lista de confirmações) — de UM convidado específico
+function removeGiftReservation(giftId, claimantNameEncoded) {
   const ev = Store.events.find(e => e.id === Store.currentEventId);
   if (!ev) return;
 
   const gift = ev.gifts.find(g => g.id === giftId);
-  if (!gift || !gift.reserved) return;
+  if (!gift) return;
+  const claimantName = decodeURIComponent(claimantNameEncoded || '');
 
   const confirmModal = document.createElement('div');
   confirmModal.className = 'modal-overlay';
@@ -1743,12 +1886,12 @@ function removeGiftReservation(giftId) {
     <div class="modal-content bg-white rounded-2xl shadow-lg p-6 max-w-sm w-full mx-4">
       <h3 class="text-lg font-bold text-gray-800 mb-2">Remover Reserva?</h3>
       <p class="text-sm text-gray-600 mb-2">Presente: <strong>${escapeHTML(gift.name)}</strong></p>
-      <p class="text-sm text-gray-600 mb-4">Pessoa: <strong>${escapeHTML(gift.reservedBy)}</strong></p>
+      <p class="text-sm text-gray-600 mb-4">Pessoa: <strong>${escapeHTML(claimantName)}</strong></p>
       
-      <p class="text-xs text-amber-600 font-semibold mb-4">O convidado "${escapeHTML(gift.reservedBy)}" poderá escolher outro presente.</p>
+      <p class="text-xs text-amber-600 font-semibold mb-4">"${escapeHTML(claimantName)}" poderá escolher outro presente.</p>
       
       <div class="flex gap-2">
-        <button class="flex-1 bg-amber-500 hover:bg-amber-600 text-white rounded-lg py-2 px-4 font-semibold transition" onclick="confirmRemoveGiftReservation('${giftId}', this.closest('.modal-overlay'), null)">
+        <button class="flex-1 bg-amber-500 hover:bg-amber-600 text-white rounded-lg py-2 px-4 font-semibold transition" onclick="confirmRemoveGiftReservation('${giftId}', '${claimantNameEncoded}', this.closest('.modal-overlay'), null)">
           Remover Reserva
         </button>
         <button class="flex-1 btn-outline" onclick="this.closest('.modal-overlay').remove()">Cancelar</button>
@@ -1767,11 +1910,18 @@ function saveGiftEdit(giftId, modal) {
 
   const newName = document.getElementById('edit-gift-name').value.trim();
   const newCategory = document.getElementById('edit-gift-category').value.trim();
+  const newQuantity = parseInt(document.getElementById('edit-gift-quantity')?.value, 10) || 1;
+  const newImageUrl = document.getElementById('edit-gift-image-url')?.value.trim() || null;
 
   if (!newName) { toast('Digite o nome do presente!'); return; }
 
   gift.name = newName;
   gift.category = newCategory || 'Sem categoria';
+  gift.quantity = Math.max(1, newQuantity);
+  gift.imageUrl = newImageUrl;
+  // Se a nova quantidade ficar abaixo do nº de pessoas já inscritas, o
+  // presente passa a "completo" com quem já está — não remove ninguém.
+  gift.reserved = _giftClaimants(gift).length >= gift.quantity;
 
   // ✅ Sincronizar com Supabase
   saveGiftsToSupabase(ev.id, ev.gifts);
