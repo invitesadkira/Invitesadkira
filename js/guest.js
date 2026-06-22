@@ -2570,7 +2570,7 @@ function showFontUploadModal() {
   modal.innerHTML = `
     <div class="modal-content bg-white rounded-2xl shadow-lg p-6 max-w-md w-full">
       <h3 class="text-lg font-bold text-gray-800 mb-3">Carregar Fonte de Letra</h3>
-      <p class="text-xs text-gray-500 mb-3">A fonte ficará disponível para todos os utilizadores. Formatos: TTF, OTF, WOFF, WOFF2.</p>
+      <p class="text-xs text-gray-500 mb-3">A fonte ficará disponível para todos os utilizadores. Formatos: TTF, OTF, WOFF, WOFF2 — prefere WOFF2 quando possível, é mais pequeno e carrega mais rápido para o convidado.</p>
       <input id="font-name-input" class="input-field mb-2" placeholder="Nome da fonte (ex: Great Vibes)">
       <div id="font-upload-area" class="w-full rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 flex flex-col items-center justify-center py-4 cursor-pointer hover:border-teal-400 transition text-sm text-gray-500 mb-3" onclick="document.getElementById('font-file-input').click()">
         <i data-lucide="type" class="w-6 h-6 mb-1 text-gray-400"></i> Clique para seleccionar ficheiro
@@ -2666,7 +2666,7 @@ async function loadAvailableFonts() {
       if (!document.getElementById('font-face-' + f.name.replace(/\s/g,'_'))) {
         const style = document.createElement('style');
         style.id = 'font-face-' + f.name.replace(/\s/g,'_');
-        style.textContent = `@font-face { font-family: '${f.name}'; src: url('${f.url}'); }`;
+        style.textContent = `@font-face { font-family: '${f.name}'; src: url('${f.url}'); font-display: swap; }`;
         document.head.appendChild(style);
       }
     });

@@ -53,9 +53,17 @@ async function _gatherLegacyImagesForUser(userId) {
       if (e.std_scratch_photo_url) found.push({ url: e.std_scratch_photo_url, label: `Raspadinha STD — ${evLabel}` });
     });
 
-    const visualsRows = await supabaseRequest(
-      `event_visuals?event_id=in.(${ids})&select=event_id,gallery_urls,bg_url,bg_url_mobile,bg_url_desktop,final_photo_url,story_photo_url,dresscode_image_url`
-    ).catch(() => []);
+    // ✅ Estas duas consultas não dependem uma da outra — corre-las em
+    // paralelo (Promise.all) em vez de uma a seguir à outra corta o tempo
+    // de espera real quase a metade.
+    const [visualsRows, venueRows] = await Promise.all([
+      supabaseRequest(
+        `event_visuals?event_id=in.(${ids})&select=event_id,gallery_urls,bg_url,bg_url_mobile,bg_url_desktop,final_photo_url,story_photo_url,dresscode_image_url`
+      ).catch(() => []),
+      supabaseRequest(
+        `event_venues?event_id=in.(${ids})&select=event_id,venue_ceremony_image,venue_civil_image,venue_reception_image`
+      ).catch(() => [])
+    ]);
     (visualsRows || []).forEach(v => {
       const ev = events.find(e => e.id === v.event_id);
       const evLabel = ev ? (ev.title || ev.id) : v.event_id;
@@ -68,9 +76,6 @@ async function _gatherLegacyImagesForUser(userId) {
       if (v.dresscode_image_url) found.push({ url: v.dresscode_image_url, label: `Dress Code — ${evLabel}` });
     });
 
-    const venueRows = await supabaseRequest(
-      `event_venues?event_id=in.(${ids})&select=event_id,venue_ceremony_image,venue_civil_image,venue_reception_image`
-    ).catch(() => []);
     (venueRows || []).forEach(v => {
       const ev = events.find(e => e.id === v.event_id);
       const evLabel = ev ? (ev.title || ev.id) : v.event_id;
