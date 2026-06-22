@@ -14,7 +14,7 @@
   <script>tailwind.config = { theme: { extend: { colors: { teal: { 500: '#007f9f', 600: '#006b86' } } } } }</script>
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💌</text></svg>">
-  <link rel="stylesheet" href="css/main.css?v=1782145327">
+  <link rel="stylesheet" href="css/main.css?v=1782161172">
 </head>
 <body class="h-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
 
@@ -133,38 +133,6 @@
       <p class="landing-section-sub">Exemplos reais — toque para abrir e explorar como um convidado faria.</p>
       <div class="landing-demo-grid" id="landing-demo-grid">
         <!-- Populated by renderLandingDemos() from Supabase site_config 'demo_events' -->
-      </div>
-    </div>
-
-    <!-- ── STATS ── -->
-    <div class="landing-stats">
-      <h2 class="landing-stats-title">A confiança de muitos</h2>
-      <p class="landing-stats-sub">Junte-se a quem já celebra connosco</p>
-      <div class="landing-stats-row">
-        <div class="landing-stat">
-          <div id="stat-events" class="landing-stat-num">150+</div>
-          <div class="landing-stat-label">Convites Criados</div>
-        </div>
-        <div class="landing-stat">
-          <div id="stat-users" class="landing-stat-num">100+</div>
-          <div class="landing-stat-label">Clientes Satisfeitos</div>
-        </div>
-        <div class="landing-stat">
-          <div id="stat-confirmations" class="landing-stat-num">850+</div>
-          <div class="landing-stat-label">Presenças Confirmadas</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ── AVALIAÇÕES ── -->
-    <div class="landing-section landing-section--alt" id="landing-reviews-section">
-      <div class="landing-eyebrow">Testemunhos</div>
-      <h2 class="landing-section-title">O que dizem os nossos clientes</h2>
-      <div id="reviews-grid" class="landing-reviews-grid">
-        <!-- Loaded from Supabase -->
-      </div>
-      <div class="landing-center">
-        <button class="landing-btn-solid" onclick="openLeaveReview()">Deixar Avaliação</button>
       </div>
     </div>
 
@@ -777,25 +745,59 @@ para testemunhar o seu enlace matrimonial</textarea>
          <span class="text-sm font-semibold text-gray-700">Decoração de Flores (PNG)</span>
          <div id="sw-decor" class="switch" onclick="toggleSwitch(this, 'decor-extra')"></div>
         </div>
-        <div id="decor-extra" class="hidden pl-4 space-y-2">
-         <p class="text-xs text-gray-500">Carrega uma imagem PNG de flores para as laterais de cada secção. Afecta apenas o teu evento.</p>
-         <div class="flex gap-2 items-center">
-          <div id="decor-side-upload-area" class="flex-1 rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 flex flex-col items-center justify-center py-3 cursor-pointer hover:border-teal-400 transition text-xs text-gray-500" onclick="document.getElementById('decor-side-file').click()">
-           <i data-lucide="image" class="w-5 h-5 mb-1 text-gray-400"></i> PNG flores laterais
+        <div id="decor-extra" class="hidden pl-4 space-y-3">
+         <p class="text-xs text-gray-500 leading-relaxed">Carrega imagens PNG (com fundo transparente) de flores ou folhagem. Ficam em 4 zonas fixas e seguras, desenhadas para nunca cobrir texto nenhum, em qualquer ecrã — não é possível arrastar livremente, de propósito, para garantir que nada fica ilegível. Podes usar 1, 2, 3 ou as 4 zonas, à escolha.</p>
+
+         <div>
+          <label class="text-xs font-semibold text-gray-600 block mb-1">1. Topo do convite</label>
+          <div class="flex gap-2 items-center">
+           <div id="decor-top-upload-area" class="flex-1 rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 flex flex-col items-center justify-center py-3 cursor-pointer hover:border-teal-400 transition text-xs text-gray-500" onclick="document.getElementById('decor-top-file').click()">
+            <i data-lucide="image" class="w-5 h-5 mb-1 text-gray-400"></i> PNG do topo
+           </div>
+           <input type="file" id="decor-top-file" accept="image/png" class="hidden" onchange="handleDecorSlotUpload(this,'top')">
           </div>
-          <input type="file" id="decor-side-file" accept="image/png" class="hidden" onchange="handleDecorSideUpload(this)">
+          <input type="hidden" id="evt-decor-top-url">
+          <img id="decor-top-preview" class="h-12 object-contain rounded mt-1" style="display:none">
+          <button type="button" class="text-xs text-teal-600 font-semibold mt-1" onclick="openMediaLibraryPicker((url) => { document.getElementById('evt-decor-top-url').value=url; const p=document.getElementById('decor-top-preview'); p.src=url; p.style.display=''; })">📁 Escolher da Biblioteca</button>
          </div>
-         <input type="hidden" id="evt-decor-side-url">
-         <div class="flex gap-2 items-center">
-          <div id="decor-ornament-upload-area" class="flex-1 rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 flex flex-col items-center justify-center py-3 cursor-pointer hover:border-teal-400 transition text-xs text-gray-500" onclick="document.getElementById('decor-ornament-file').click()">
-           <i data-lucide="sparkles" class="w-5 h-5 mb-1 text-gray-400"></i> PNG ornamento (substitui ✦)
+
+         <div>
+          <label class="text-xs font-semibold text-gray-600 block mb-1">2. Laterais (repete em cada secção)</label>
+          <div class="flex gap-2 items-center">
+           <div id="decor-side-upload-area" class="flex-1 rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 flex flex-col items-center justify-center py-3 cursor-pointer hover:border-teal-400 transition text-xs text-gray-500" onclick="document.getElementById('decor-side-file').click()">
+            <i data-lucide="image" class="w-5 h-5 mb-1 text-gray-400"></i> PNG flores laterais
+           </div>
+           <input type="file" id="decor-side-file" accept="image/png" class="hidden" onchange="handleDecorSlotUpload(this,'side')">
           </div>
-          <input type="file" id="decor-ornament-file" accept="image/png" class="hidden" onchange="handleDecorOrnamentUpload(this)">
+          <input type="hidden" id="evt-decor-side-url">
+          <img id="decor-side-preview" class="h-12 object-contain rounded mt-1" style="display:none">
+          <button type="button" class="text-xs text-teal-600 font-semibold mt-1" onclick="openMediaLibraryPicker((url) => { document.getElementById('evt-decor-side-url').value=url; const p=document.getElementById('decor-side-preview'); p.src=url; p.style.display=''; })">📁 Escolher da Biblioteca</button>
          </div>
-         <input type="hidden" id="evt-decor-ornament-url">
-         <div id="decor-preview" class="hidden flex gap-2 mt-1">
-          <img id="decor-side-preview" class="h-12 object-contain rounded" style="display:none">
-          <img id="decor-ornament-preview" class="h-12 object-contain rounded" style="display:none">
+
+         <div>
+          <label class="text-xs font-semibold text-gray-600 block mb-1">3. Canto inferior esquerdo (fim do convite)</label>
+          <div class="flex gap-2 items-center">
+           <div id="decor-bottom-left-upload-area" class="flex-1 rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 flex flex-col items-center justify-center py-3 cursor-pointer hover:border-teal-400 transition text-xs text-gray-500" onclick="document.getElementById('decor-bottom-left-file').click()">
+            <i data-lucide="image" class="w-5 h-5 mb-1 text-gray-400"></i> PNG canto esquerdo
+           </div>
+           <input type="file" id="decor-bottom-left-file" accept="image/png" class="hidden" onchange="handleDecorSlotUpload(this,'bottom-left')">
+          </div>
+          <input type="hidden" id="evt-decor-bottom-left-url">
+          <img id="decor-bottom-left-preview" class="h-12 object-contain rounded mt-1" style="display:none">
+          <button type="button" class="text-xs text-teal-600 font-semibold mt-1" onclick="openMediaLibraryPicker((url) => { document.getElementById('evt-decor-bottom-left-url').value=url; const p=document.getElementById('decor-bottom-left-preview'); p.src=url; p.style.display=''; })">📁 Escolher da Biblioteca</button>
+         </div>
+
+         <div>
+          <label class="text-xs font-semibold text-gray-600 block mb-1">4. Canto inferior direito (fim do convite)</label>
+          <div class="flex gap-2 items-center">
+           <div id="decor-bottom-right-upload-area" class="flex-1 rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 flex flex-col items-center justify-center py-3 cursor-pointer hover:border-teal-400 transition text-xs text-gray-500" onclick="document.getElementById('decor-bottom-right-file').click()">
+            <i data-lucide="image" class="w-5 h-5 mb-1 text-gray-400"></i> PNG canto direito
+           </div>
+           <input type="file" id="decor-bottom-right-file" accept="image/png" class="hidden" onchange="handleDecorSlotUpload(this,'bottom-right')">
+          </div>
+          <input type="hidden" id="evt-decor-bottom-right-url">
+          <img id="decor-bottom-right-preview" class="h-12 object-contain rounded mt-1" style="display:none">
+          <button type="button" class="text-xs text-teal-600 font-semibold mt-1" onclick="openMediaLibraryPicker((url) => { document.getElementById('evt-decor-bottom-right-url').value=url; const p=document.getElementById('decor-bottom-right-preview'); p.src=url; p.style.display=''; })">📁 Escolher da Biblioteca</button>
          </div>
         </div>
 
@@ -1136,19 +1138,19 @@ para testemunhar o seu enlace matrimonial</textarea>
   </a>
 
   <!-- ===================== SCRIPTS (ordem importa) ===================== -->
-  <script src="js/config.js?v=1782145327"></script>
-  <script src="js/store.js?v=1782145327"></script>
-  <script src="js/visuals.js?v=1782145327"></script>
-  <script src="js/venues.js?v=1782145327"></script>
-  <script src="js/rsvp.js?v=1782145327"></script>
-  <script src="js/ui.js?v=1782145327"></script>
-  <script src="js/auth.js?v=1782145327"></script>
-  <script src="js/dashboard.js?v=1782145327"></script>
-  <script src="js/events.js?v=1782145327"></script>
-  <script src="js/guest.js?v=1782145327"></script>
-  <script src="js/sections.js?v=1782145327"></script>
-  <script src="js/admin.js?v=1782145327"></script>
-  <script src="js/router.js?v=1782145327"></script>
+  <script src="js/config.js?v=1782161172"></script>
+  <script src="js/store.js?v=1782161172"></script>
+  <script src="js/visuals.js?v=1782161172"></script>
+  <script src="js/venues.js?v=1782161172"></script>
+  <script src="js/rsvp.js?v=1782161172"></script>
+  <script src="js/ui.js?v=1782161172"></script>
+  <script src="js/auth.js?v=1782161172"></script>
+  <script src="js/dashboard.js?v=1782161172"></script>
+  <script src="js/events.js?v=1782161172"></script>
+  <script src="js/guest.js?v=1782161172"></script>
+  <script src="js/sections.js?v=1782161172"></script>
+  <script src="js/admin.js?v=1782161172"></script>
+  <script src="js/router.js?v=1782161172"></script>
 
 </body>
 </html>

@@ -315,7 +315,13 @@ function saveEventWithCover(eventId, title, date, time, deadline, coverImageURL,
     section_order: v.sectionOrder ? JSON.stringify(v.sectionOrder) : null,
     story_text: v.storyText || null,
     invite_blessing: v.inviteBlessing || null,
-    event_color: v.eventColor || null
+    event_color: v.eventColor || null,
+    decor_side_url: document.getElementById('evt-decor-side-url')?.value || null,
+    decor_ornament_url: document.getElementById('evt-decor-ornament-url')?.value || null,
+    decor_top_url: document.getElementById('evt-decor-top-url')?.value || null,
+    decor_bottom_left_url: document.getElementById('evt-decor-bottom-left-url')?.value || null,
+    decor_bottom_right_url: document.getElementById('evt-decor-bottom-right-url')?.value || null,
+    show_decor: document.getElementById('sw-decor')?.classList.contains('active') ? 'yes' : 'no'
   };
   
   dlog('📤 Enviando ao Supabase:', eventData);
@@ -437,10 +443,8 @@ function saveEventWithCover(eventId, title, date, time, deadline, coverImageURL,
         iban_message: ibanMessage || null, iban_number: ibanNumber || null,
         iban_holder: ibanHolder || null, iban_footer: ibanFooter || null,
       };
-      // Add decor fields
-      _visPayload.decor_side_url = document.getElementById('evt-decor-side-url')?.value || null;
-      _visPayload.decor_ornament_url = document.getElementById('evt-decor-ornament-url')?.value || null;
-      _visPayload.show_decor   = document.getElementById('sw-decor')?.classList.contains('active') ? 'yes' : 'no';
+      // decor_side_url/decor_ornament_url/show_decor: NUNCA gravados aqui —
+      // vivem na tabela events (ver eventData mais abaixo).
       _visPayload.show_story   = document.getElementById('sw-story')?.classList.contains('active') ? 'yes' : 'no';
       _visPayload.invert_names = document.getElementById('sw-invert-names')?.classList.contains('active') ? 'yes' : 'no';
       _visPayload.event_type   = document.getElementById('evt-event-type')?.value || 'wedding';
@@ -698,6 +702,17 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
     music_url: newMusicUrl, music_title: newMusicTitle,
     iban_message: newIbanMessage, iban_number: newIbanNumber,
     iban_holder: newIbanHolder, iban_footer: newIbanFooter,
+    // ✅ CORREÇÃO: decor_side_url/decor_ornament_url/show_decor e as 3 zonas
+    // novas vivem na tabela `events` (não em event_visuals) — estavam a ser
+    // gravadas no sítio errado mais abaixo (saveEventVisuals), o que fazia
+    // qualquer alteração à decoração, ao EDITAR um evento já criado, falhar
+    // silenciosamente (a tabela event_visuals não tem estas colunas).
+    decor_side_url: document.getElementById('evt-decor-side-url')?.value || null,
+    decor_ornament_url: document.getElementById('evt-decor-ornament-url')?.value || null,
+    decor_top_url: document.getElementById('evt-decor-top-url')?.value || null,
+    decor_bottom_left_url: document.getElementById('evt-decor-bottom-left-url')?.value || null,
+    decor_bottom_right_url: document.getElementById('evt-decor-bottom-right-url')?.value || null,
+    show_decor: document.getElementById('sw-decor')?.classList.contains('active') ? 'yes' : 'no',
     show_couple: newShowCouple ? 'yes' : 'no',
     groom_name: newGroomName, bride_name: newBrideName, couple_size: newCoupleSize,
     bg_url: newBgUrl, bg_overlay: newBgOverlay,
@@ -813,9 +828,8 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
           story_text: document.getElementById('evt-story-text')?.value?.trim() || null,
           music_url: newMusicUrl, music_title: newMusicTitle,
           iban_message: newIbanMessage, iban_number: newIbanNumber, iban_holder: newIbanHolder, iban_footer: newIbanFooter,
-          decor_side_url: document.getElementById('evt-decor-side-url')?.value || null,
-          decor_ornament_url: document.getElementById('evt-decor-ornament-url')?.value || null,
-          show_decor:    document.getElementById('sw-decor')?.classList.contains('active') ? 'yes' : 'no',
+          // decor_side_url/decor_ornament_url/show_decor: NUNCA gravados aqui
+          // — vivem na tabela events, já gravados correctamente acima.
           // show_dresscode / show_dress_gifts: NUNCA gravados aqui — geridos
           // exclusivamente por openDressGiftsEditor()/saveDressGiftsEditor(),
           // que já existem nesta altura na tabela event_visuals.
@@ -1827,6 +1841,13 @@ function _fillEditForm(ev) {
   if (decorSideUrl) decorSideUrl.value = ev.decor_side_url || '';
   const decorOrnUrl = document.getElementById('evt-decor-ornament-url');
   if (decorOrnUrl) decorOrnUrl.value = ev.decor_ornament_url || '';
+  ['top','bottom-left','bottom-right'].forEach(slot => {
+    const urlInput = document.getElementById(`evt-decor-${slot}-url`);
+    const prev = document.getElementById(`decor-${slot}-preview`);
+    const url = ev[`decor_${slot.replace('-','_')}_url`];
+    if (urlInput) urlInput.value = url || '';
+    if (prev && url) { prev.src = url; prev.style.display = ''; }
+  });
 
   // Venues
   _setSwitch('sw-venues', _yesOrTrue(ev.show_venues), 'venues-extra');
@@ -2648,7 +2669,7 @@ async function checkURLForEvent() {
     
     // ✅ Query otimizada: procurar por event_code OU id, com LIMIT 1
     let eventsData = await supabaseRequest(
-      `events?or=(event_code.eq.${eventCode},id.eq.${eventCode})&select=id,user_id,title,date,time,confirm_by_date,cover_image,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,rsvp_enabled,allow_edit_rsvp,save_the_date_enabled,release_type,release_date,is_invite_released,std_title,std_subtitle,std_font_family,std_name_size,std_title_size,std_intro_enabled,std_intro_text,std_intro_photo_url,std_intro_photo_mobile_url,std_intro_photo_desktop_url,std_intro_on_invite,std_show_cover,std_cover_url,std_cover_mobile_url,std_cover_desktop_url,std_scratch_enabled,std_scratch_mode,std_scratch_photo_url,std_scratch_text,std_date_style,is_example_event,std_show_iban,personalized_links_enabled,show_rsvp_in_full_invite,show_guest_name_in_invite,allow_messages,show_guest_messages,music_url,music_title,iban_message,iban_number,iban_holder,iban_footer,groom_name,bride_name,couple_size,show_couple,bg_url,bg_overlay,bible_text,bible_ref,show_bible,invite_text,show_invite,groom_parents,bride_parents,show_parents,gallery_urls,show_gallery,show_manual,manual_items,show_schedule,schedule_items,custom_font_family,section_order,story_text,invite_blessing,event_color,rsvps(guest_name,attending,side,companions,kids,wants_gift,message,created_at,updated_at),gifts(id,name,category,reserved,reserved_by,quantity,image_url)&limit=1`
+      `events?or=(event_code.eq.${eventCode},id.eq.${eventCode})&select=id,user_id,title,date,time,confirm_by_date,cover_image,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,rsvp_enabled,allow_edit_rsvp,save_the_date_enabled,release_type,release_date,is_invite_released,std_title,std_subtitle,std_font_family,std_name_size,std_title_size,std_intro_enabled,std_intro_text,std_intro_photo_url,std_intro_photo_mobile_url,std_intro_photo_desktop_url,std_intro_on_invite,std_show_cover,std_cover_url,std_cover_mobile_url,std_cover_desktop_url,std_scratch_enabled,std_scratch_mode,std_scratch_photo_url,std_scratch_text,std_date_style,is_example_event,std_show_iban,personalized_links_enabled,show_rsvp_in_full_invite,show_guest_name_in_invite,allow_messages,show_guest_messages,music_url,music_title,iban_message,iban_number,iban_holder,iban_footer,groom_name,bride_name,couple_size,show_couple,bg_url,bg_overlay,bible_text,bible_ref,show_bible,invite_text,show_invite,groom_parents,bride_parents,show_parents,gallery_urls,show_gallery,show_manual,manual_items,show_schedule,schedule_items,custom_font_family,section_order,story_text,invite_blessing,event_color,show_decor,decor_side_url,decor_ornament_url,decor_top_url,decor_bottom_left_url,decor_bottom_right_url,rsvps(guest_name,attending,side,companions,kids,wants_gift,message,created_at,updated_at),gifts(id,name,category,reserved,reserved_by,quantity,image_url)&limit=1`
     );
     
     dlog('📥 Resultado da busca:', eventsData?.length === 1 ? 'Encontrado' : 'Não encontrado');
@@ -3628,6 +3649,38 @@ function showIntakeLink(eventId) {
 
 
 // ===================== DECOR PNG UPLOAD =====================
+const DECOR_SLOT_LABELS = {
+  top: 'Decoração — Topo do convite',
+  side: 'Decoração — Laterais',
+  'bottom-left': 'Decoração — Canto inferior esquerdo',
+  'bottom-right': 'Decoração — Canto inferior direito'
+};
+async function handleDecorSlotUpload(input, slot) {
+  const file = input.files[0];
+  if (!file || !file.type.includes('png')) { toast('Selecciona um ficheiro PNG.'); return; }
+  if (file.size > 3 * 1024 * 1024) { toast('PNG muito grande. Máx. 3 MB.'); return; }
+  const eventId = Store.currentEventId || Store._intakeEventId;
+  const label = DECOR_SLOT_LABELS[slot] || 'Decoração';
+  const area = document.getElementById(`decor-${slot}-upload-area`);
+  const applyUrl = (url) => {
+    document.getElementById(`evt-decor-${slot}-url`).value = url;
+    const prev = document.getElementById(`decor-${slot}-preview`);
+    if (prev) { prev.src = url; prev.style.display = ''; }
+    if (area) area.innerHTML = '<span class="text-xs text-teal-600 font-semibold">✓ Carregada</span>';
+  };
+  const proceed = await _confirmIfDuplicatePhoto(file, eventId, label, applyUrl);
+  if (!proceed) { input.value = ''; return; }
+  if (area) area.innerHTML = '<span class="text-xs text-teal-600">A carregar...</span>';
+  try {
+    const url = await uploadImageToStorage(file, 'event-covers', label);
+    applyUrl(url);
+    toast('Imagem de decoração carregada!');
+  } catch(e) {
+    if (area) area.innerHTML = '<i data-lucide="image" class="w-5 h-5 mb-1 text-gray-400"></i> PNG';
+    toast('Erro ao carregar imagem.');
+  }
+}
+
 async function handleDecorSideUpload(input) {
   const file = input.files[0];
   if (!file || !file.type.includes('png')) { toast('Selecciona um ficheiro PNG.'); return; }

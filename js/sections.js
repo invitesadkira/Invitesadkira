@@ -192,9 +192,10 @@ async function renderGuestSections(eventData) {
   // Wrap sections with subtle dividers
   const sectionParts = html.split('<!-- SECTION_DIVIDER -->').filter(Boolean);
   const sideUrl = eventData.decor_side_url || '';
-  container.innerHTML = sectionParts.map((part, i) => {
+  const decorOn = _yesOrTrue(eventData.show_decor);
+  let bodyHtml = sectionParts.map((part, i) => {
     const div = i === 0 ? '' : `<div class="section-divider"><div class="section-divider-line"></div></div>`;
-    if (sideUrl && _yesOrTrue(eventData.show_decor)) {
+    if (sideUrl && decorOn) {
       return div + `<div class="decor-side-wrap" style="position:relative">
         <div class="decor-side-img left" style="background-image:url('${sideUrl}')"></div>
         <div class="decor-side-img right" style="background-image:url('${sideUrl}')"></div>
@@ -203,6 +204,21 @@ async function renderGuestSections(eventData) {
     }
     return div + part;
   }).join('');
+
+  // ── Zonas seguras de decoração: topo e os 2 cantos do fim ──
+  // Posicionadas pelo CSS para nunca tocarem o texto (pointer-events:none,
+  // atrás do conteúdo, com margem garantida) — não são arrastáveis de
+  // propósito, para isso não depender do tamanho do ecrã do convidado.
+  if (decorOn && eventData.decor_top_url) {
+    bodyHtml = `<div class="decor-top-wrap"><div class="decor-top-img" style="background-image:url('${eventData.decor_top_url}')"></div></div>` + bodyHtml;
+  }
+  if (decorOn && (eventData.decor_bottom_left_url || eventData.decor_bottom_right_url)) {
+    bodyHtml += `<div class="decor-bottom-wrap">
+      ${eventData.decor_bottom_left_url ? `<div class="decor-bottom-img left" style="background-image:url('${eventData.decor_bottom_left_url}')"></div>` : ''}
+      ${eventData.decor_bottom_right_url ? `<div class="decor-bottom-img right" style="background-image:url('${eventData.decor_bottom_right_url}')"></div>` : ''}
+    </div>`;
+  }
+  container.innerHTML = bodyHtml;
 
   lucide.createIcons();
 
