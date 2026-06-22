@@ -1145,6 +1145,52 @@ function renderGifts() {
 }
 
 // ✅ NOVA FUNÇÃO: Mostrar aviso quando convidado tenta escolher segundo presente
+// Em vez de bloquear sem alternativa, oferece trocar a escolha anterior
+// pela nova — devolve true se o convidado confirmou a troca.
+function askSwapGiftModal(oldGiftName, newGiftName) {
+  return new Promise((resolve) => {
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.style.zIndex = '10800';
+    modal.innerHTML = `<div class="modal-content bg-white rounded-2xl shadow-lg p-6 max-w-sm w-full mx-4">
+      <div class="flex items-center justify-center w-12 h-12 rounded-full bg-amber-100 mx-auto mb-4">
+        <i data-lucide="repeat" class="w-6 h-6 text-amber-600"></i>
+      </div>
+      <h3 class="text-lg font-bold text-gray-800 text-center mb-2">Trocar Presente?</h3>
+      <p class="text-sm text-gray-600 text-center mb-4">
+        Já escolheste <strong>${escapeHTML(oldGiftName)}</strong>. Queres trocar para <strong>${escapeHTML(newGiftName)}</strong>? A tua escolha anterior fica livre para outro convidado.
+      </p>
+      <div class="flex gap-2">
+        <button id="swap-gift-yes" class="flex-1 btn-main">Trocar</button>
+        <button id="swap-gift-no" class="flex-1 btn-outline">Manter a anterior</button>
+      </div>
+    </div>`;
+    document.body.appendChild(modal);
+    lucide.createIcons();
+    const finish = (v) => { modal.remove(); resolve(v); };
+    document.getElementById('swap-gift-yes').onclick = () => finish(true);
+    document.getElementById('swap-gift-no').onclick = () => finish(false);
+    modal.onclick = (e) => { if (e.target === modal) finish(false); };
+  });
+}
+
+// Liberta a escolha anterior de um convidado num presente específico
+// (usado quando ele troca de presente) — devolve true se conseguiu.
+async function _releaseGiftClaimant(gift, guestName) {
+  const remaining = _giftClaimants(gift).filter(c => normalizeGuestName(c) !== normalizeGuestName(guestName));
+  const newReservedByStr = remaining.join('|') || null;
+  const stillFull = remaining.length >= _giftQuantity(gift);
+  try {
+    await updateGiftReservationInSupabase(gift.id, stillFull, newReservedByStr);
+    gift.reservedBy = newReservedByStr;
+    gift.reserved = stillFull;
+    return true;
+  } catch(e) {
+    return false;
+  }
+}
+
+
 function showAlreadyReservedModal() {
   const modal = document.createElement('div');
   modal.className = 'modal-overlay';
@@ -1153,9 +1199,9 @@ function showAlreadyReservedModal() {
       <div class="flex items-center justify-center w-12 h-12 rounded-full bg-amber-100 mx-auto mb-4">
         <i data-lucide="alert-circle" class="w-6 h-6 text-amber-600"></i>
       </div>
-      
+
       <h3 class="text-lg font-bold text-gray-800 text-center mb-2">Presente Já Escolhido</h3>
-      
+
       <p class="text-sm text-gray-600 text-center mb-4">
         Você já escolheu um presente. Para escolher outro, contacte o dono do evento para remover a sua escolha anterior.
       </p>
@@ -1232,26 +1278,80 @@ function _giftCardInner(g, knownName) {
   const qty = _giftQuantity(g);
   const full = claimants.length >= qty;
   const mineClaimed = knownName && claimants.some(c => normalizeGuestName(c) === normalizeGuestName(knownName));
-  const badgeText = qty > 1 ? `${claimants.length}/${qty} escolhido${claimants.length===1?'':'s'}` : (full ? 'Escolhido' : 'Disponível');
-  const badgeClass = full && qty === 1 ? 'bg-green-100 text-green-700' : (claimants.length > 0 ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-600');
+  let badgeText = qty > 1 ? `${claimants.length}/${qty} escolhido${claimants.length===1?'':'s'}` : (full ? 'Escolhido' : 'Disponível');
+  let badgeClass = full && qty === 1 ? 'bg-green-100 text-green-700' : (claimants.length > 0 ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-600');
+  if (mineClaimed) { badgeText = '✓ A tua escolha'; badgeClass = 'bg-teal-100 text-teal-700'; }
   return { claimants, qty, full, mineClaimed, badgeText, badgeClass };
 }
 
-function _renderGuestGiftsContent(ev, viewMode) {
-  const knownName = _resolveKnownGuestName(ev.id);
+const GIFTS_PER_PAGE = 10;
+
+function _flattenGiftsByCategory(ev) {
   const categories = {};
   ev.gifts.forEach(g => {
     const cat = g.category || 'Sem categoria';
     if (!categories[cat]) categories[cat] = [];
     categories[cat].push(g);
   });
+  const flat = [];
+  Object.keys(categories).sort().forEach(cat => {
+    categories[cat].forEach(g => flat.push({ cat, gift: g }));
+  });
+  return flat;
+}
 
+function _renderGiftsPagination(current, total) {
+  if (total <= 1) return '';
+  let pages = [];
+  if (total <= 7) {
+    pages = Array.from({length: total}, (_, i) => i + 1);
+  } else {
+    pages = [1, 2];
+    if (current > 4) pages.push('…');
+    for (let i = Math.max(3, current - 1); i <= Math.min(total - 2, current + 1); i++) pages.push(i);
+    if (current < total - 3) pages.push('…');
+    pages.push(total - 1, total);
+    pages = [...new Set(pages)];
+  }
+  const btns = pages.map(p => p === '…'
+    ? `<span style="padding:0.3rem 0.4rem;color:#9ca3af;font-size:0.78rem">…</span>`
+    : `<button onclick="_goToGiftsPage(${p})" class="gifts-page-btn ${p === current ? 'active-page' : ''}">${p}</button>`
+  ).join('');
+  return `<div style="display:flex;justify-content:center;align-items:center;gap:0.25rem;margin-top:1rem;flex-wrap:wrap">${btns}</div>`;
+}
+
+function _goToGiftsPage(page) {
+  window._giftsCurrentPage = page;
+  const ev = Store.guestEventData || Store.events.find(e => e.id === Store.currentEventId);
+  const viewMode = localStorage.getItem('giftViewMode') || 'list';
+  const listEl = document.getElementById('guest-gifts-modal-list');
+  if (listEl) { listEl.innerHTML = _renderGuestGiftsContent(ev, viewMode); listEl.scrollIntoView({ block: 'nearest' }); }
+  lucide.createIcons();
+}
+
+function _renderGuestGiftsContent(ev, viewMode) {
+  const knownName = _resolveKnownGuestName(ev.id);
+  const flat = _flattenGiftsByCategory(ev);
+  const totalPages = Math.max(1, Math.ceil(flat.length / GIFTS_PER_PAGE));
+  let page = Math.min(Math.max(1, window._giftsCurrentPage || 1), totalPages);
+  window._giftsCurrentPage = page;
+  const pageItems = flat.slice((page - 1) * GIFTS_PER_PAGE, page * GIFTS_PER_PAGE);
+
+  // Agrupar os itens DESTA página por categoria, preservando a ordem
+  const grouped = [];
+  pageItems.forEach(({ cat, gift }) => {
+    let group = grouped[grouped.length - 1];
+    if (!group || group.cat !== cat) { group = { cat, gifts: [] }; grouped.push(group); }
+    group.gifts.push(gift);
+  });
+
+  let bodyHtml;
   if (viewMode === 'grid') {
-    return Object.keys(categories).sort().map(cat => `
+    bodyHtml = grouped.map(({ cat, gifts }) => `
       <div class="mb-4">
         <h4 class="text-sm font-bold text-teal-700 mb-2">${escapeHTML(cat)}</h4>
         <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:0.6rem">
-          ${categories[cat].map(g => {
+          ${gifts.map(g => {
             const { full, badgeText, badgeClass } = _giftCardInner(g, knownName);
             return `<div class="rounded-xl border border-gray-200 overflow-hidden cursor-pointer hover:shadow-md transition bg-white" onclick="_selectGiftInModal('${g.id}', this)">
               <div style="aspect-ratio:1;background:#f1f5f9;display:flex;align-items:center;justify-content:center;overflow:hidden">
@@ -1265,29 +1365,30 @@ function _renderGuestGiftsContent(ev, viewMode) {
           }).join('')}
         </div>
       </div>`).join('');
+  } else {
+    bodyHtml = grouped.map(({ cat, gifts }) => `
+      <div class="bg-white rounded-xl shadow-sm border-l-4 border-teal-500 overflow-hidden mb-3">
+        <div class="bg-teal-50 px-4 py-2.5 border-b border-teal-100">
+          <h4 class="text-sm font-bold text-teal-700">${escapeHTML(cat)}</h4>
+        </div>
+        <div class="divide-y">
+          ${gifts.map(g => {
+            const { full, badgeText, badgeClass } = _giftCardInner(g, knownName);
+            return `<div class="flex items-center gap-3 p-3.5 hover:bg-gray-50 transition active:bg-teal-50 cursor-pointer" onclick="_selectGiftInModal('${g.id}', this)">
+              ${g.imageUrl
+                ? `<div style="width:42px;height:42px;border-radius:0.5rem;overflow:hidden;flex-shrink:0;background:#f1f5f9"><img src="${g.imageUrl}" style="width:100%;height:100%;object-fit:cover"></div>`
+                : `<div class="flex-shrink-0 w-7 h-7 rounded-full border-2 ${full ? 'border-green-500 bg-green-500' : 'border-gray-300 bg-white'} flex items-center justify-center transition-all" data-gift-checkbox="${g.id}">${full ? '<i data-lucide="check" class="w-4 h-4 text-white"></i>' : ''}</div>`}
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium ${full ? 'text-gray-500 line-through' : 'text-gray-800'} break-words">${escapeHTML(g.name)}</p>
+              </div>
+              <span class="text-xs font-semibold px-2 py-1 rounded-full ${badgeClass} flex-shrink-0">${badgeText}</span>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>`).join('');
   }
 
-  // viewMode === 'list' (padrão)
-  return Object.keys(categories).sort().map(cat => `
-    <div class="bg-white rounded-xl shadow-sm border-l-4 border-teal-500 overflow-hidden mb-3">
-      <div class="bg-teal-50 px-4 py-2.5 border-b border-teal-100">
-        <h4 class="text-sm font-bold text-teal-700">${escapeHTML(cat)}</h4>
-      </div>
-      <div class="divide-y">
-        ${categories[cat].map(g => {
-          const { full, badgeText, badgeClass } = _giftCardInner(g, knownName);
-          return `<div class="flex items-center gap-3 p-3.5 hover:bg-gray-50 transition active:bg-teal-50 cursor-pointer" onclick="_selectGiftInModal('${g.id}', this)">
-            ${g.imageUrl
-              ? `<div style="width:42px;height:42px;border-radius:0.5rem;overflow:hidden;flex-shrink:0;background:#f1f5f9"><img src="${g.imageUrl}" style="width:100%;height:100%;object-fit:cover"></div>`
-              : `<div class="flex-shrink-0 w-7 h-7 rounded-full border-2 ${full ? 'border-green-500 bg-green-500' : 'border-gray-300 bg-white'} flex items-center justify-center transition-all" data-gift-checkbox="${g.id}">${full ? '<i data-lucide="check" class="w-4 h-4 text-white"></i>' : ''}</div>`}
-            <div class="flex-1 min-w-0">
-              <p class="text-sm font-medium ${full ? 'text-gray-500 line-through' : 'text-gray-800'} break-words">${escapeHTML(g.name)}</p>
-            </div>
-            <span class="text-xs font-semibold px-2 py-1 rounded-full ${badgeClass} flex-shrink-0">${badgeText}</span>
-          </div>`;
-        }).join('')}
-      </div>
-    </div>`).join('');
+  return bodyHtml + _renderGiftsPagination(page, totalPages);
 }
 
 function _toggleGuestGiftsView(mode) {
@@ -1303,6 +1404,7 @@ function openGuestGiftsModal() {
   const ev = Store.guestEventData || Store.events.find(e => e.id === Store.currentEventId);
   if (!ev || !Array.isArray(ev.gifts) || ev.gifts.length === 0) { toast('Ainda não há presentes configurados.'); return; }
 
+  window._giftsCurrentPage = 1;
   const knownName = _resolveKnownGuestName(ev.id);
   const viewMode = localStorage.getItem('giftViewMode') || 'list';
 
@@ -1395,11 +1497,16 @@ async function _selectGiftInModal(giftId, element) {
     _rememberGiftGuestName(ev.id, guestName);
   }
 
-  // Regra: um convidado só pode escolher 1 presente no total — mesmo que
-  // ESTE presente em particular permita várias pessoas (quantity > 1), a
-  // mesma pessoa não pode estar a escolher um SEGUNDO presente diferente.
+  // Regra: um convidado só pode ter 1 presente activo ao mesmo tempo — mas
+  // agora, em vez de simplesmente bloquear, oferece trocar a escolha
+  // anterior pela nova (a anterior fica livre automaticamente).
   const otherReserved = ev.gifts.find(g => g.id !== giftId && _giftClaimants(g).some(c => normalizeGuestName(c) === normalizeGuestName(guestName)));
-  if (otherReserved) { showAlreadyReservedModal(); return; }
+  if (otherReserved) {
+    const wantsSwap = await askSwapGiftModal(otherReserved.name, gift.name);
+    if (!wantsSwap) return;
+    const released = await _releaseGiftClaimant(otherReserved, guestName);
+    if (!released) { toast('Não foi possível trocar agora. Tenta novamente.'); return; }
+  }
 
   const newClaimants = [...claimants, guestName];
   const newReservedByStr = newClaimants.join('|');
@@ -1634,9 +1741,12 @@ async function toggleGiftSelection(giftId, element) {
   });
 
   if (otherReservedGifts.length > 0) {
-    dlog('⚠️ ALERTA: Convidado já tem outro(s) presente(s) escolhido(s)!');
-    showAlreadyReservedModal();
-    return;
+    dlog('⚠️ Convidado já tem outro presente escolhido — a oferecer troca.');
+    const otherReserved = otherReservedGifts[0];
+    const wantsSwap = await askSwapGiftModal(otherReserved.name, gift.name);
+    if (!wantsSwap) return;
+    const released = await _releaseGiftClaimant(otherReserved, guestName);
+    if (!released) { toast('Não foi possível trocar agora. Tenta novamente.'); return; }
   }
 
   dlog('🎁 Escolhendo presente:', { giftId, giftName: gift.name, chosenBy: guestName });

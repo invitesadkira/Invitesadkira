@@ -295,6 +295,14 @@ html, body { height: 100%; margin: 0; width: 100%; overflow-x: hidden; }
   border-radius: 999px; border: none; background: transparent; color: #94a3b8; cursor: pointer; transition: all 0.15s;
 }
 .gift-view-toggle-btn.active-view { background: #fff; color: #007f9f; box-shadow: 0 1px 3px rgba(0,0,0,0.12); }
+
+/* ── Paginação dos presentes ── */
+.gifts-page-btn {
+  min-width: 28px; height: 28px; padding: 0 6px; border-radius: 8px; border: 1px solid #e5e7eb;
+  background: #fff; color: #475569; font-size: 0.78rem; font-weight: 600; cursor: pointer; transition: all 0.15s;
+}
+.gifts-page-btn:hover { border-color: #007f9f; color: #007f9f; }
+.gifts-page-btn.active-page { background: #007f9f; border-color: #007f9f; color: #fff; }
 .manual-item { display: flex; flex-direction: column; align-items: center; background: #fff; border-radius: 1rem; padding: 1rem 0.5rem; border: 1.5px solid #e5e7eb; text-align: center; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
 .manual-item .mi-icon { width: 48px; height: 48px; background: color-mix(in srgb, var(--ev-color) 12%, white); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 0.5rem; }
 .manual-item .mi-icon svg, .manual-item .mi-icon i { width: 26px; height: 26px; color: var(--ev-color); }
