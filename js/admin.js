@@ -3914,7 +3914,102 @@ async function renderLandingDemos() {
   }
 }
 
-// ===================== ADMIN: EDITAR EVENTOS DE DEMONSTRAÇÃO =====================
+// ===================== ADMIN: VITRINE DO HERO (SITE COMERCIAL) =====================
+// Permite ao admin substituir os 3 cartões ilustrativos do topo do site
+// comercial por fotos reais de convites já criados na plataforma — boa
+// prova social, em vez de ficar só com a ilustração genérica.
+async function renderLandingHeroShowcase() {
+  try {
+    const rows = await supabaseRequest('site_config?key=eq.hero_showcase_images&select=value&limit=1');
+    const row = rows && rows[0];
+    if (!row || !row.value) return; // mantém os cartões ilustrativos padrão
+    let items = [];
+    try { items = JSON.parse(row.value); } catch(e) { return; }
+    items.slice(0, 3).forEach((item, i) => {
+      const card = document.getElementById(`hero-card-${i+1}`);
+      const seal = document.getElementById(`hero-seal-${i+1}`);
+      if (!card) return;
+      if (item.url) {
+        card.style.background = `url('${item.url}') center/cover no-repeat`;
+        card.classList.add('invite-card--photo');
+      }
+      if (seal && item.label) seal.textContent = item.label;
+      else if (seal && !item.label) seal.style.display = 'none';
+    });
+  } catch(e) { /* mantém o padrão em caso de erro */ }
+}
+
+async function adminEditHeroShowcase() {
+  const rows = await supabaseRequest('site_config?key=eq.hero_showcase_images&select=value&limit=1').catch(() => []);
+  const row = rows && rows[0];
+  let items = [];
+  if (row && row.value) { try { items = JSON.parse(row.value); } catch(e) {} }
+  while (items.length < 3) items.push({ url: '', label: '' });
+
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.id = 'hero-showcase-modal';
+  modal.innerHTML = `<div class="modal-content bg-white rounded-2xl p-5" style="max-width:460px;max-height:88vh;overflow-y:auto">
+    <h3 class="text-base font-bold mb-1">Vitrine do Hero (Site Comercial)</h3>
+    <p class="text-xs text-gray-500 mb-4">Mostra até 3 fotos reais de convites no topo do site, em vez da ilustração padrão. Deixa um slot em branco para usar a ilustração nesse lugar.</p>
+    <div id="hero-showcase-fields" class="space-y-4">
+      ${items.slice(0,3).map((it, i) => `
+        <div style="border:1px solid #e5e7eb;border-radius:0.6rem;padding:0.75rem">
+          <label class="text-xs font-semibold text-gray-600 block mb-1">Cartão ${i+1}</label>
+          <div id="hero-showcase-preview-${i}" class="${it.url ? '' : 'hidden'} mb-2" style="width:70px;aspect-ratio:3/4.2;border-radius:8px;overflow:hidden;background:#f1f5f9">
+            <img id="hero-showcase-img-${i}" src="${escapeHTML(it.url||'')}" style="width:100%;height:100%;object-fit:cover">
+          </div>
+          <input type="hidden" id="hero-showcase-url-${i}" value="${escapeHTML(it.url||'')}">
+          <div class="flex gap-2 mb-2">
+            <input type="file" accept="image/*" class="input-field text-sm" style="flex:1" onchange="_handleHeroShowcaseUpload(this, ${i})">
+          </div>
+          <button type="button" class="text-xs text-teal-600 font-semibold mb-2" onclick="openMediaLibraryPicker((url) => { document.getElementById('hero-showcase-url-${i}').value = url; document.getElementById('hero-showcase-img-${i}').src = url; document.getElementById('hero-showcase-preview-${i}').classList.remove('hidden'); })">📁 Escolher da Biblioteca</button>
+          <input id="hero-showcase-label-${i}" class="input-field text-sm" placeholder="Legenda curta (ex: A &amp; P)" value="${escapeHTML(it.label||'')}">
+        </div>`).join('')}
+    </div>
+    <div class="flex gap-2 mt-4">
+      <button class="flex-1 btn-main text-sm" onclick="adminSaveHeroShowcase()">Guardar</button>
+      <button class="btn-outline text-sm" onclick="this.closest('.modal-overlay').remove()">Cancelar</button>
+    </div>
+  </div>`;
+  document.body.appendChild(modal);
+}
+
+async function _handleHeroShowcaseUpload(input, idx) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 4*1024*1024) { toast('Imagem muito grande. Máx. 4 MB.'); return; }
+  const applyUrl = (url) => {
+    document.getElementById(`hero-showcase-url-${idx}`).value = url;
+    document.getElementById(`hero-showcase-img-${idx}`).src = url;
+    document.getElementById(`hero-showcase-preview-${idx}`).classList.remove('hidden');
+  };
+  const proceed = await _confirmIfDuplicatePhoto(file, null, 'Vitrine do site comercial', applyUrl);
+  if (!proceed) { input.value = ''; return; }
+  toast('A carregar...');
+  try {
+    const url = await uploadImageToStorage(file, 'event-covers', 'Vitrine do site comercial');
+    applyUrl(url);
+  } catch(e) { toast('Erro ao carregar a imagem.'); }
+}
+
+async function adminSaveHeroShowcase() {
+  const items = [0,1,2].map(i => ({
+    url: document.getElementById(`hero-showcase-url-${i}`)?.value?.trim() || '',
+    label: document.getElementById(`hero-showcase-label-${i}`)?.value?.trim() || ''
+  }));
+  const ts = new Date().toISOString();
+  const val = JSON.stringify(items);
+  const patch = await supabaseRequest('site_config?key=eq.hero_showcase_images', 'PATCH', { value: val, updated_at: ts });
+  if (!patch || patch.length === 0) {
+    await supabaseRequest('site_config', 'POST', { key: 'hero_showcase_images', value: val });
+  }
+  toast('Vitrine do hero actualizada!');
+  document.getElementById('hero-showcase-modal')?.remove();
+  renderLandingHeroShowcase();
+}
+
+
 async function adminEditDemoEvents() {
   const rows = await supabaseRequest('site_config?key=in.(demo_events,demo_events_enabled)&select=key,value').catch(() => []);
   const demosRow = (rows || []).find(r => r.key === 'demo_events');
