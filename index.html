@@ -11,7 +11,7 @@
   <script>tailwind.config = { theme: { extend: { colors: { teal: { 500: '#007f9f', 600: '#006b86' } } } } }</script>
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💌</text></svg>">
-  <link rel="stylesheet" href="css/main.css?v=1782109251">
+  <link rel="stylesheet" href="css/main.css?v=1782122245">
 </head>
 <body class="h-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
 
@@ -615,7 +615,7 @@ A vossa presença neste dia tão especial é, para nós, o maior presente. No en
         <!-- Tipo de Evento -->
         <div>
          <label class="block text-sm font-semibold text-gray-700 mb-1">Tipo de Evento</label>
-         <select id="evt-event-type" class="input-field">
+         <select id="evt-event-type" class="input-field" onchange="updateLabelsForEventType(this.value)">
           <option value="wedding">Casamento</option>
           <option value="engagement">Noivado</option>
           <option value="birthday">Aniversário</option>
@@ -624,7 +624,7 @@ A vossa presença neste dia tão especial é, para nós, o maior presente. No en
         </div>
 
         <div class="flex items-center justify-between">
-         <span class="text-sm font-semibold text-gray-700">Nomes dos Noivos no Hero</span>
+         <span id="lbl-couple-names" class="text-sm font-semibold text-gray-700">Nomes dos Noivos no Hero</span>
          <div id="sw-couple" class="switch active" onclick="toggleSwitch(this, 'couple-extra')"></div>
         </div>
         <div id="couple-extra" class="pl-4 space-y-2">
@@ -654,7 +654,7 @@ A vossa presença neste dia tão especial é, para nós, o maior presente. No en
          <div class="flex items-center justify-between pt-1" style="border-top:1px solid #f3f4f6;margin-top:0.25rem">
           <div>
            <span class="text-xs font-semibold text-gray-600">Inverter ordem</span>
-           <p class="text-xs text-gray-400">Noiva aparece primeiro</p>
+           <p id="lbl-invert-hint" class="text-xs text-gray-400">Noiva aparece primeiro</p>
           </div>
           <div id="sw-invert-names" class="switch" onclick="toggleSwitch(this)"></div>
          </div>
@@ -732,9 +732,9 @@ para testemunhar o seu enlace matrimonial</textarea>
         </div>
         <div id="parents-extra" class="pl-4 space-y-2">
          <p class="text-xs text-gray-500">Coloque um nome por linha. Para indicar "em memória", escreva "(em memória)" ou adicione o símbolo ✟ no final do nome.</p>
-         <label class="text-xs font-semibold text-gray-600">Pais do Noivo</label>
+         <label id="lbl-groom-parents" class="text-xs font-semibold text-gray-600">Pais do Noivo</label>
          <textarea id="evt-groom-parents" class="input-field text-sm" rows="3" placeholder="Ex: João Silva&#10;Maria Silva (em memória)"></textarea>
-         <label class="text-xs font-semibold text-gray-600">Pais da Noiva</label>
+         <label id="lbl-bride-parents" class="text-xs font-semibold text-gray-600">Pais da Noiva</label>
          <textarea id="evt-bride-parents" class="input-field text-sm" rows="3" placeholder="Ex: Pedro Santos&#10;Ana Santos"></textarea>
          <label class="text-xs text-gray-500">Tamanho do texto dos nomes dos pais</label>
          <div class="flex items-center gap-2">
@@ -765,7 +765,7 @@ para testemunhar o seu enlace matrimonial</textarea>
 
         <!-- Mensagem dos Noivos -->
         <div class="flex items-center justify-between">
-         <span class="text-sm font-semibold text-gray-700">Mensagem dos Noivos</span>
+         <span id="lbl-couplemsg" class="text-sm font-semibold text-gray-700">Mensagem dos Noivos</span>
          <div id="sw-couplemsg" class="switch active" onclick="toggleSwitch(this, 'couplemsg-extra')"></div>
         </div>
         <div id="couplemsg-extra" class="pl-4">
@@ -774,7 +774,7 @@ para testemunhar o seu enlace matrimonial</textarea>
 
         <!-- Foto Final dos Noivos -->
         <div class="flex items-center justify-between">
-         <span class="text-sm font-semibold text-gray-700">Foto Final dos Noivos</span>
+         <span id="lbl-final-photo" class="text-sm font-semibold text-gray-700">Foto Final dos Noivos</span>
          <div id="sw-final-photo" class="switch" onclick="toggleSwitch(this, 'final-photo-extra')"></div>
         </div>
         <p class="text-xs text-gray-400 -mt-1 mb-1">Aparece no final do convite para que a última coisa que o convidado veja seja uma foto dos noivos.</p>
@@ -1244,19 +1244,19 @@ para testemunhar o seu enlace matrimonial</textarea>
   </a>
 
   <!-- ===================== SCRIPTS (ordem importa) ===================== -->
-  <script src="js/config.js?v=1782109251"></script>
-  <script src="js/store.js?v=1782109251"></script>
-  <script src="js/visuals.js?v=1782109251"></script>
-  <script src="js/venues.js?v=1782109251"></script>
-  <script src="js/rsvp.js?v=1782109251"></script>
-  <script src="js/ui.js?v=1782109251"></script>
-  <script src="js/auth.js?v=1782109251"></script>
-  <script src="js/dashboard.js?v=1782109251"></script>
-  <script src="js/events.js?v=1782109251"></script>
-  <script src="js/guest.js?v=1782109251"></script>
-  <script src="js/sections.js?v=1782109251"></script>
-  <script src="js/admin.js?v=1782109251"></script>
-  <script src="js/router.js?v=1782109251"></script>
+  <script src="js/config.js?v=1782122245"></script>
+  <script src="js/store.js?v=1782122245"></script>
+  <script src="js/visuals.js?v=1782122245"></script>
+  <script src="js/venues.js?v=1782122245"></script>
+  <script src="js/rsvp.js?v=1782122245"></script>
+  <script src="js/ui.js?v=1782122245"></script>
+  <script src="js/auth.js?v=1782122245"></script>
+  <script src="js/dashboard.js?v=1782122245"></script>
+  <script src="js/events.js?v=1782122245"></script>
+  <script src="js/guest.js?v=1782122245"></script>
+  <script src="js/sections.js?v=1782122245"></script>
+  <script src="js/admin.js?v=1782122245"></script>
+  <script src="js/router.js?v=1782122245"></script>
 
 </body>
 </html>

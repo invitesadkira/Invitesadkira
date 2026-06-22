@@ -1,3 +1,28 @@
+// ===================== TIPO DE EVENTO: adaptar rótulos do formulário =====================
+// Casamento/Noivado mantêm a linguagem de "noivos". Aniversário (adultos)
+// troca para linguagem de uma só pessoa — sem reescrever a estrutura de
+// dados (continua a usar groom_name internamente, só muda o texto visível).
+function updateLabelsForEventType(type) {
+  const isBirthday = type === 'birthday';
+  const isOther = type === 'other';
+  const singlePerson = isBirthday || isOther;
+
+  const set = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
+  const setPlaceholder = (id, text) => { const el = document.getElementById(id); if (el) el.placeholder = text; };
+
+  set('lbl-couplemsg', singlePerson ? 'Mensagem para o Convidado de Honra' : 'Mensagem dos Noivos');
+  set('lbl-final-photo', singlePerson ? 'Foto Final' : 'Foto Final dos Noivos');
+  set('lbl-couple-names', singlePerson ? 'Nome no Hero' : 'Nomes dos Noivos no Hero');
+  set('lbl-groom-parents', singlePerson ? 'Pais / Família' : 'Pais do Noivo');
+  set('lbl-bride-parents', singlePerson ? 'Outros Familiares (opcional)' : 'Pais da Noiva');
+  set('lbl-invert-hint', singlePerson ? 'Nome adicional aparece primeiro' : 'Noiva aparece primeiro');
+  setPlaceholder('evt-groom-name', singlePerson ? 'Nome do Aniversariante' : 'Nome do Noivo / Aniversariante');
+  setPlaceholder('evt-bride-name', singlePerson ? 'Nome adicional (opcional)' : 'Nome da Noiva (opcional)');
+  setPlaceholder('evt-couplemsg-text', singlePerson
+    ? 'Ex: Hoje celebramos mais um ano de vida e queremos partilhar este momento contigo...'
+    : 'Ex: Cada um de vocês representa um capítulo especial da nossa história...');
+}
+
 // ===================== BIBLIOTECA DE IMAGENS =====================
 // Mostra todas as fotos já carregadas por esta conta (em todos os eventos),
 // para reaproveitar em vez de carregar de novo — poupa espaço no Supabase.

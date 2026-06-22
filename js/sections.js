@@ -41,6 +41,22 @@ const DEFAULT_MANUAL_ITEMS = [
   { icon: 'baby', text: 'Não levar\ncriança' }
 ];
 
+const DEFAULT_MANUAL_ITEMS_BIRTHDAY = [
+  { icon: 'users', text: 'Contamos com\na sua presença!' },
+  { icon: 'clock', text: 'Seja\npontual!' },
+  { icon: 'gift', text: 'Presentes são\nopcionais, mas bem-vindos!' },
+  { icon: 'camera', text: 'Faça fotos e Stories\ne marque-nos!' },
+  { icon: 'smile', text: 'Venha com\nmuita energia!' },
+  { icon: 'party-popper', text: 'Vamos celebrar\njuntos!' }
+];
+
+// Devolve a lista de itens padrão consoante o tipo de evento — chamar
+// sempre com o event_type quando disponível, em vez de usar a constante
+// directamente, para que aniversários não mostrem "noiva"/"casamento".
+function getDefaultManualItems(eventType) {
+  return eventType === 'birthday' ? DEFAULT_MANUAL_ITEMS_BIRTHDAY : DEFAULT_MANUAL_ITEMS;
+}
+
 const DEFAULT_SCHEDULE_ITEMS = [
   { icon: 'door-open',   time: '14h30', label: 'Chegada dos Convidados',   sub: 'Recepção e boas-vindas' },
   { icon: 'gem',        time: '15h00', label: 'Cerimónia',                sub: 'Troca de votos' },
@@ -589,9 +605,10 @@ function buildParentsSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
   if (invertNames) { [groomParents, brideParents] = [brideParents, groomParents]; }
   // Use inverted parents
   const _ev = { ...ev, groom_parents: groomParents, bride_parents: brideParents };
-  const groomSide = ev.side1_name || 'Família do Noivo';
-  const brideSide = ev.side2_name || 'Família da Noiva';
-  const blessingHeader = ev.invite_blessing || 'Com a bênção de Deus e de seus pais';
+  const singleP = ev.event_type === 'birthday' || ev.event_type === 'other';
+  const groomSide = ev.side1_name || (singleP ? 'Família' : 'Família do Noivo');
+  const brideSide = ev.side2_name || (singleP ? 'Outros Familiares' : 'Família da Noiva');
+  const blessingHeader = ev.invite_blessing || (singleP ? 'Com a bênção de Deus e da família' : 'Com a bênção de Deus e de seus pais');
   function renderCol(name, text) {
     if (!text || !text.trim()) return '';
     const rows = text.split('\n').filter(l=>l.trim()).map(l=>{
@@ -700,7 +717,7 @@ function buildGallerySection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
 
 function buildManualSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
   // Parse manual_items from event data (JSON string) or fall back to Store/defaults
-  let items = DEFAULT_MANUAL_ITEMS;
+  let items = getDefaultManualItems(ev.event_type);
   if (ev.manual_items) {
     try { items = JSON.parse(ev.manual_items); } catch(e) {}
   } else if (Store.eventManualItems) {
@@ -894,7 +911,10 @@ async function openManualEditor() {
     }
   }
 
-  if (!items) items = JSON.parse(JSON.stringify(DEFAULT_MANUAL_ITEMS));
+  if (!items) {
+    const evForType = eventId ? Store.events.find(e => e.id === eventId) : null;
+    items = JSON.parse(JSON.stringify(getDefaultManualItems(evForType && evForType.event_type)));
+  }
   const modal = document.createElement('div');
   modal.className = 'modal-overlay';
   modal.id = 'manual-editor-modal';
@@ -1000,7 +1020,9 @@ async function saveManualItems() {
   toast('Manual guardado com sucesso!');
 }
 function resetManualItems() {
-  window._manualEditorItems = JSON.parse(JSON.stringify(DEFAULT_MANUAL_ITEMS));
+  const eventId = Store.currentEventId || Store._intakeEventId;
+  const evForType = eventId ? Store.events.find(e => e.id === eventId) : null;
+  window._manualEditorItems = JSON.parse(JSON.stringify(getDefaultManualItems(evForType && evForType.event_type)));
   Store.eventManualItems = null;
   refreshManualEditorList();
 }
@@ -1359,10 +1381,13 @@ function buildDressGiftsSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
       <button type="button" class="dg-card-btn" onclick="openGuestDresscodeModal()">Ver Dress Code</button>
     </div>` : '';
 
+  const singlePerson = ev.event_type === 'birthday' || ev.event_type === 'other';
+  const giftsSub = singlePerson ? 'Escolhe um presente para oferecer' : 'Escolhe um presente para a noiva e o noivo';
+
   const giftsCard = showGiftsBtn ? `
     <div class="dg-card">
       <h4 class="dg-card-title">Sugestão de Presentes</h4>
-      <p class="dg-card-sub">Escolhe um presente para a noiva e o noivo</p>
+      <p class="dg-card-sub">${escapeHTML(giftsSub)}</p>
       <button type="button" class="dg-card-btn" onclick="openGuestGiftsModal()">Ver Presentes</button>
     </div>` : '';
 
@@ -1382,9 +1407,12 @@ function buildDressGiftsSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
 function _buildDresscodeContentHTML(ev) {
   const evColor = ev.event_color || '#007f9f';
   return `<div style="text-align:center">
+      ${ev.dresscode_image_url ? `
+        <img src="${ev.dresscode_image_url}" style="width:100%;max-width:220px;border-radius:0.85rem;object-fit:cover;aspect-ratio:1;margin:0 auto 0.85rem;display:block">
+      ` : `
       <div style="width:52px;height:52px;border-radius:50%;background:color-mix(in srgb,${evColor} 12%,white);display:flex;align-items:center;justify-content:center;margin:0 auto 0.75rem">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="${evColor}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.38 3.46 16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.57a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.57a2 2 0 0 0-1.34-2.23z"/></svg>
-      </div>
+      </div>`}
       ${ev.dresscode_text ? `<p style="font-size:1rem;font-weight:600;color:#1e293b;margin-bottom:0.5rem">${escapeHTML(ev.dresscode_text)}</p>` : ''}
       ${ev.dresscode_detail ? `<p style="font-size:0.85rem;color:#374151;line-height:1.6;max-width:420px;margin:0 auto 0.5rem">${escapeHTML(ev.dresscode_detail)}</p>` : ''}
       ${(() => {
@@ -1399,14 +1427,17 @@ function _buildDresscodeContentHTML(ev) {
 }
 
 // Mensagem dos Noivos — a heartfelt note from the couple to their guests
+// (ou "Mensagem para o Convidado de Honra" em aniversários/outros eventos)
 function buildCoupleMsgSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
   const evColor = ev.event_color || '#007f9f';
+  const singlePerson = ev.event_type === 'birthday' || ev.event_type === 'other';
+  const title = singlePerson ? 'Mensagem para os Convidados' : 'Mensagem dos Noivos';
   return _SD + `<div class="event-section">
     <div class="section-inner reveal" style="text-align:center">
       <div style="width:52px;height:52px;border-radius:50%;background:color-mix(in srgb,${evColor} 12%,white);display:flex;align-items:center;justify-content:center;margin:0 auto 0.75rem">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="${evColor}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
       </div>
-      <h3 class="section-title">Mensagem dos Noivos</h3>
+      <h3 class="section-title">${escapeHTML(title)}</h3>
       <p style="font-size:0.95rem;color:#374151;line-height:1.75;max-width:460px;margin:0 auto;white-space:pre-wrap">${escapeHTML(ev.couplemsg_text || '')}</p>
     </div>
   </div>`;

@@ -776,18 +776,15 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
           if (freshRows && freshRows[0]) {
             const idx = Store.events.findIndex(e => e.id === eventId);
             if (idx > -1) {
-              // ✅ CORREÇÃO: manual_items/schedule_items na tabela `events` são
-              // um valor congelado da criação do evento — a fonte de verdade
-              // real vive em event_visuals (gerida só pelos editores
-              // dedicados). Sem esta exclusão, este refresh genérico
-              // sobrescrevia silenciosamente em memória qualquer edição mais
-              // recente do manual/cronograma com esse valor antigo, fazendo
-              // parecer que as alterações "desapareceram" ao pré-visualizar
-              // como convidado pouco depois de guardar outra coisa no evento.
-              const preserved = {
-                manual_items: Store.events[idx].manual_items,
-                schedule_items: Store.events[idx].schedule_items
-              };
+              // ✅ CORREÇÃO: ver _visualsPreserveSnapshot em visuals.js —
+              // protege TODOS os campos vindos de event_visuals (galeria,
+              // manual, cronograma, dress code, etc.) de serem sobrescritos
+              // pelo valor congelado da tabela `events`. Sem isto, qualquer
+              // edição feita por um editor dedicado podia "voltar atrás"
+              // silenciosamente ao guardar outra coisa no formulário
+              // principal (foi o que aconteceu com fotos eliminadas da
+              // galeria, que pareciam reaparecer).
+              const preserved = _visualsPreserveSnapshot(Store.events[idx]);
               Store.events[idx] = { ...Store.events[idx], ...freshRows[0], ...preserved };
             }
           }
@@ -1780,7 +1777,7 @@ function _fillEditForm(ev) {
   { const psInp = document.getElementById('evt-parents-size'); const psLbl = document.getElementById('parents-size-label'); const psVal = ev.parents_size || '0.88'; if (psInp) psInp.value = psVal; if (psLbl) psLbl.textContent = psVal + 'rem'; }
   _setSwitch('sw-invert-names', _yesOrTrue(ev.invert_names));
   const evTypeEl = document.getElementById('evt-event-type');
-  if (evTypeEl) evTypeEl.value = ev.event_type || 'wedding';
+  if (evTypeEl) { evTypeEl.value = ev.event_type || 'wedding'; updateLabelsForEventType(evTypeEl.value); }
   const decorSideUrl = document.getElementById('evt-decor-side-url');
   if (decorSideUrl) decorSideUrl.value = ev.decor_side_url || '';
   const decorOrnUrl = document.getElementById('evt-decor-ornament-url');
@@ -3719,9 +3716,18 @@ async function deleteGalleryPhoto(eventId, urlToRemove) {
   const ev2 = Store.events.find(e => e.id === eventId);
   if (!ev2) return;
   const visuals = await loadEventVisuals(eventId);
-  const urls = (visuals.gallery_urls || '').split('|').filter(u => u && u !== urlToRemove);
-  await saveEventVisuals(eventId, { gallery_urls: urls.join('|') });
-  if (ev2) ev2.gallery_urls = urls.join('|');
+  const urls = (visuals.gallery_urls || ev2.gallery_urls || '').split('|').filter(u => u && u !== urlToRemove);
+  const newGalleryStr = urls.join('|') || null;
+  // ✅ CORREÇÃO: gallery_urls existe TANTO em event_visuals COMO em events
+  // (herança histórica). Só atualizar event_visuals deixava a cópia da
+  // tabela events congelada com a foto "eliminada" — e como o painel, ao
+  // recarregar a página, lê essa cópia antiga em vários sítios, a foto
+  // parecia reaparecer sozinha. Agora actualiza as duas, sempre.
+  await Promise.all([
+    saveEventVisuals(eventId, { gallery_urls: newGalleryStr }),
+    supabaseRequest(`events?id=eq.${eventId}`, 'PATCH', { gallery_urls: newGalleryStr }).catch(() => {})
+  ]);
+  ev2.gallery_urls = newGalleryStr;
   renderEventDetails();
   toast('Foto removida da galeria.');
 }
@@ -4074,11 +4080,11 @@ async function saveStdEditor() {
       document.getElementById('std-editor-modal')?.remove();
       try {
         const freshRows = await supabaseRequest(`events?id=eq.${eventId}&select=*`);
-        // ✅ Mesma correção do formulário principal: não deixar este refresh
-        // genérico sobrescrever manual_items/schedule_items com o valor
-        // congelado da tabela events — a fonte de verdade é event_visuals.
+        // ✅ Mesma correção do formulário principal (ver _visualsPreserveSnapshot
+        // em visuals.js) — protege TODOS os campos de event_visuals, não só
+        // manual_items/schedule_items.
         if (freshRows && freshRows[0] && ev) {
-          const preserved = { manual_items: ev.manual_items, schedule_items: ev.schedule_items };
+          const preserved = _visualsPreserveSnapshot(ev);
           Object.assign(ev, freshRows[0], preserved);
         }
       } catch(e) {}
@@ -4134,6 +4140,15 @@ async function openDressGiftsEditor() {
 #2D6A4F" oninput="updateDressCodeSwatches(this.value)">${escapeHTML(d.dresscode_colors || '')}</textarea>
         <label class="text-xs font-semibold text-gray-600 block mb-1">Detalhe adicional (opcional)</label>
         <textarea id="dg2-dresscode-detail" class="input-field text-sm" rows="2" placeholder="Ex: Pedimos gentilmente que os convidados optem por um traje elegante...">${escapeHTML(d.dresscode_detail || '')}</textarea>
+        <label class="text-xs font-semibold text-gray-600 block mt-2 mb-1">Foto de referência (opcional)</label>
+        <p class="text-xs text-gray-400 mb-2">Mostra aos convidados a cor/estilo exacto que tens em mente.</p>
+        <div id="dg2-dresscode-image-wrap" class="${d.dresscode_image_url ? '' : 'hidden'} relative mb-2" style="max-width:160px">
+          <img id="dg2-dresscode-image-preview" class="rounded-lg w-full" style="aspect-ratio:1;object-fit:cover" src="${d.dresscode_image_url || ''}">
+          <button type="button" onclick="document.getElementById('dg2-dresscode-image-url').value='';document.getElementById('dg2-dresscode-image-wrap').classList.add('hidden')" class="absolute top-1 right-1 bg-white rounded-full w-6 h-6 flex items-center justify-center shadow text-red-500 text-xs font-bold">✕</button>
+        </div>
+        <input type="hidden" id="dg2-dresscode-image-url" value="${d.dresscode_image_url || ''}">
+        <input type="file" id="dg2-dresscode-image-input" accept="image/*" class="input-field text-sm mb-1" onchange="handleDresscodeImageUpload(this)">
+        <button type="button" class="text-xs text-teal-600 font-semibold" onclick="openMediaLibraryPicker((url) => { document.getElementById('dg2-dresscode-image-url').value=url; document.getElementById('dg2-dresscode-image-preview').src=url; document.getElementById('dg2-dresscode-image-wrap').classList.remove('hidden'); })">📁 Escolher da Biblioteca</button>
       </div>
 
       <div class="flex items-center justify-between mb-1 pt-2" style="border-top:1px solid #f1f5f9">
@@ -4153,6 +4168,27 @@ async function openDressGiftsEditor() {
   lucide.createIcons();
 }
 
+async function handleDresscodeImageUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 4*1024*1024) { toast('Imagem muito grande. Máx. 4 MB.'); return; }
+  const eventId = Store.currentEventId;
+  const label = 'Foto de referência do Dress Code';
+  const applyUrl = (url) => {
+    document.getElementById('dg2-dresscode-image-url').value = url;
+    document.getElementById('dg2-dresscode-image-preview').src = url;
+    document.getElementById('dg2-dresscode-image-wrap').classList.remove('hidden');
+  };
+  const proceed = await _confirmIfDuplicatePhoto(file, eventId, label, applyUrl);
+  if (!proceed) { input.value = ''; return; }
+  toast('A carregar foto...');
+  try {
+    const url = await uploadImageToStorage(file, 'event-covers', label);
+    applyUrl(url);
+    toast('Foto carregada!');
+  } catch(e) { toast('Erro ao carregar a foto.'); }
+}
+
 async function saveDressGiftsEditor() {
   const eventId = Store.currentEventId;
   if (!eventId) { toast('Erro: evento não identificado.'); return; }
@@ -4163,6 +4199,7 @@ async function saveDressGiftsEditor() {
     dresscode_text: document.getElementById('dg2-dresscode-text')?.value?.trim() || null,
     dresscode_colors: document.getElementById('dg2-dresscode-colors')?.value?.trim() || null,
     dresscode_detail: document.getElementById('dg2-dresscode-detail')?.value?.trim() || null,
+    dresscode_image_url: document.getElementById('dg2-dresscode-image-url')?.value?.trim() || null,
   };
 
   toast('A guardar...');

@@ -1,6 +1,25 @@
-const VISUALS_FIELDS = 'event_id,show_dresscode,dresscode_text,dresscode_colors,dresscode_detail,show_dress_gifts,show_couplemsg,couplemsg_text,parents_size,bible_text_2,bible_ref_2,bible_size,event_color,event_type,invert_names,show_story,groom_name,bride_name,couple_size,show_couple,bg_url,bg_url_mobile,bg_url_desktop,bg_overlay,show_bible,bible_text,bible_ref,show_invite,invite_text,show_parents,groom_parents,bride_parents,show_gallery,gallery_urls,show_manual,manual_items,show_schedule,schedule_items,custom_font_family,section_order,story_text,music_url,music_title,iban_message,iban_number,iban_holder,iban_footer,show_venues,final_photo_url,show_final_photo,show_event_faq,event_faq_items,schedule_style,gallery_style,blessing_couple_size,date_style,manual_style,story_style,story_photo_url';
+const VISUALS_FIELDS = 'event_id,show_dresscode,dresscode_text,dresscode_colors,dresscode_detail,dresscode_image_url,show_dress_gifts,show_couplemsg,couplemsg_text,parents_size,bible_text_2,bible_ref_2,bible_size,event_color,event_type,invert_names,show_story,groom_name,bride_name,couple_size,show_couple,bg_url,bg_url_mobile,bg_url_desktop,bg_overlay,show_bible,bible_text,bible_ref,show_invite,invite_text,show_parents,groom_parents,bride_parents,show_gallery,gallery_urls,show_manual,manual_items,show_schedule,schedule_items,custom_font_family,section_order,story_text,music_url,music_title,iban_message,iban_number,iban_holder,iban_footer,show_venues,final_photo_url,show_final_photo,show_event_faq,event_faq_items,schedule_style,gallery_style,blessing_couple_size,date_style,manual_style,story_style,story_photo_url';
 // Todas as configurações visuais do evento ficam na tabela event_visuals
 // Nunca mais dependemos de colunas visuais na tabela events
+
+// ✅ Tira uma "fotografia" de TODOS os campos que vivem em event_visuals,
+// directamente do objecto em memória (não da base de dados). Usa-se antes
+// de qualquer refresh genérico de `events` (select=*) para depois reaplicar
+// estes valores por cima — porque a tabela `events` guarda uma cópia
+// congelada destes campos desde a criação do evento, e um refresh "cego"
+// sobrescrevia silenciosamente edições mais recentes feitas via
+// event_visuals (já vimos isto acontecer com manual_items, schedule_items,
+// e agora gallery_urls — esta função cobre TODOS os campos da lista de uma
+// vez, para esta classe de bug nunca mais voltar a aparecer por faltar
+// "mais um campo" na lista).
+function _visualsPreserveSnapshot(obj) {
+  const snap = {};
+  VISUALS_FIELDS.split(',').forEach(key => {
+    if (key === 'event_id') return;
+    if (obj && obj[key] !== undefined) snap[key] = obj[key];
+  });
+  return snap;
+}
 
 // In-memory cache: eventId → visuals object
 const _visualsCache = {};
