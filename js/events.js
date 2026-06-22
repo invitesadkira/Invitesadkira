@@ -1629,14 +1629,18 @@ function _fillEditForm(ev) {
 
   // Imagem de capa
   const coverImageURL = ev.cover_image || ev.cover || '';
+  const coverImg = document.getElementById('cover-img');
+  const coverPlaceholder = document.getElementById('cover-placeholder');
+  // ✅ CORREÇÃO: protegido com verificação de existência — antes, se por
+  // qualquer motivo estes elementos não estivessem disponíveis no momento
+  // exacto desta chamada, o erro travava TODO o resto desta função (Dress
+  // Code, Mensagem dos Noivos, Foto Final, etc. nunca chegavam a preencher).
   if (coverImageURL && coverImageURL.startsWith('http')) {
-    const coverImg = document.getElementById('cover-img');
-    coverImg.src = coverImageURL;
-    coverImg.classList.remove('hidden');
-    document.getElementById('cover-placeholder').classList.add('hidden');
+    if (coverImg) { coverImg.src = coverImageURL; coverImg.classList.remove('hidden'); }
+    if (coverPlaceholder) coverPlaceholder.classList.add('hidden');
   } else {
-    document.getElementById('cover-img').classList.add('hidden');
-    document.getElementById('cover-placeholder').classList.remove('hidden');
+    if (coverImg) coverImg.classList.add('hidden');
+    if (coverPlaceholder) coverPlaceholder.classList.remove('hidden');
   }
 
   // Música
@@ -1702,10 +1706,15 @@ function _fillEditForm(ev) {
   document.getElementById('evt-gallery-urls').value = ev.gallery_urls || '';
 
   _setSwitch('sw-manual', _yesOrTrue(ev.show_manual), 'manual-extra');
-  Store.eventManualItems = ev.manual_items ? JSON.parse(ev.manual_items) : null;
+  // ✅ CORREÇÃO: protegido com try/catch — um JSON inválido aqui travava
+  // tudo o que vinha depois nesta função (Dress Code, Mensagem dos Noivos,
+  // Foto Final, Local, etc. ficavam todos vazios sem nenhum aviso visível).
+  try { Store.eventManualItems = ev.manual_items ? JSON.parse(ev.manual_items) : null; }
+  catch(e) { console.error('Falha ao interpretar manual_items, a ignorar:', e); Store.eventManualItems = null; }
 
   _setSwitch('sw-schedule', _yesOrTrue(ev.show_schedule), 'schedule-extra');
-  Store.eventScheduleItems = ev.schedule_items ? JSON.parse(ev.schedule_items) : null;
+  try { Store.eventScheduleItems = ev.schedule_items ? JSON.parse(ev.schedule_items) : null; }
+  catch(e) { console.error('Falha ao interpretar schedule_items, a ignorar:', e); Store.eventScheduleItems = null; }
 
   // Section order
   Store.eventSectionOrder = ev.section_order ? JSON.parse(ev.section_order) : null;
@@ -1725,6 +1734,12 @@ function _fillEditForm(ev) {
   }
 
   // Decor
+  // ✅ Bloco protegido: do Dress Code até aos Locais, tudo dentro de um
+  // try/catch — assim, mesmo que apareça aqui um erro imprevisto no futuro,
+  // o botão "Guardar Alterações" no fim da função continua a ser religado
+  // correctamente (sem isto, um erro nesta zona deixava o botão a apontar
+  // para "criar evento novo" em vez de "guardar alterações").
+  try {
   _setSwitch('sw-decor', _yesOrTrue(ev.show_decor), 'decor-extra');
   _setSwitch('sw-dressgifts', ev.show_dress_gifts === undefined ? true : _yesOrTrue(ev.show_dress_gifts), 'dressgifts-extra');
   _setSwitch('sw-dresscode', _yesOrTrue(ev.show_dresscode), 'dresscode-extra');
@@ -1780,6 +1795,9 @@ function _fillEditForm(ev) {
     _vImg('ceremony', ev.venue_ceremony_image);
     _vImg('civil', ev.venue_civil_image);
     _vImg('reception', ev.venue_reception_image);
+  }
+  } catch (e) {
+    console.error('Erro ao preencher secções avançadas do formulário (Dress Code/Mensagem/Foto Final/Locais) — o resto do formulário continua a funcionar:', e);
   }
 
   lucide.createIcons();
