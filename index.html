@@ -14,7 +14,7 @@
   <script>tailwind.config = { theme: { extend: { colors: { teal: { 500: '#007f9f', 600: '#006b86' } } } } }</script>
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💌</text></svg>">
-  <link rel="stylesheet" href="css/main.css?v=1782128360">
+  <link rel="stylesheet" href="css/main.css?v=1782142953">
 </head>
 <body class="h-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
 
@@ -57,8 +57,6 @@
     </div>
 
     <div class="landing-hero">
-      <div class="landing-hero-glow"></div>
-
       <!-- Nav bar -->
       <nav id="landing-nav" class="landing-nav">
         <div class="landing-logo">
@@ -79,17 +77,38 @@
       </nav>
       <div class="landing-nav-overlay" id="landing-nav-overlay" onclick="closeLandingMenu()"></div>
 
-      <div class="landing-hero-inner">
-        <div class="landing-badge">Invites&nbsp;Web · Convites Digitais</div>
-        <h1 class="landing-h1">Fácil como partilhar<br><span class="landing-h1-accent">um link</span></h1>
-        <div class="landing-actions">
-          <button class="landing-btn-outline" onclick="Router.go('login')">Entrar</button>
+      <div class="landing-hero-grid">
+        <div class="landing-hero-copy">
+          <div class="landing-eyebrow-line">Casamentos · Noivados · Aniversários</div>
+          <h1 class="landing-h1">Convites digitais<br>para o teu grande dia</h1>
+          <p class="landing-sub">Cria, personaliza e partilha um convite à altura do momento — galeria, música, confirmação de presença e presentes, tudo num único link.</p>
+          <div class="landing-actions">
+            <button class="landing-btn-primary" onclick="document.getElementById('landing-packages-section').scrollIntoView({behavior:'smooth'})">
+              Ver Pacotes
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
+            </button>
+            <button class="landing-btn-outline" onclick="Router.go('login')">Entrar</button>
+          </div>
+          <div class="landing-trust-row">
+            <span>Pronto em 48h</span>
+            <span class="landing-trust-dot"></span>
+            <span>Suporte via WhatsApp</span>
+            <span class="landing-trust-dot"></span>
+            <span>Qualquer telemóvel</span>
+          </div>
         </div>
-        <div class="landing-search">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input id="home-search" type="text" placeholder="Já tens código do convite? Pesquisa aqui..." onkeydown="if(event.key==='Enter')searchEvent()">
-          <button onclick="searchEvent()">Abrir</button>
+
+        <div class="landing-hero-visual" aria-hidden="true">
+          <div class="invite-card invite-card--1"><span class="invite-seal">S&amp;T</span></div>
+          <div class="invite-card invite-card--2"><span class="invite-seal">A&amp;P</span></div>
+          <div class="invite-card invite-card--3"><span class="invite-seal">M&amp;J</span></div>
         </div>
+      </div>
+
+      <div class="landing-search">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input id="home-search" type="text" placeholder="Já tens código do convite? Pesquisa aqui..." onkeydown="if(event.key==='Enter')searchEvent()">
+        <button onclick="searchEvent()">Abrir</button>
       </div>
     </div>
 
@@ -1116,19 +1135,19 @@ para testemunhar o seu enlace matrimonial</textarea>
   </a>
 
   <!-- ===================== SCRIPTS (ordem importa) ===================== -->
-  <script src="js/config.js?v=1782128360"></script>
-  <script src="js/store.js?v=1782128360"></script>
-  <script src="js/visuals.js?v=1782128360"></script>
-  <script src="js/venues.js?v=1782128360"></script>
-  <script src="js/rsvp.js?v=1782128360"></script>
-  <script src="js/ui.js?v=1782128360"></script>
-  <script src="js/auth.js?v=1782128360"></script>
-  <script src="js/dashboard.js?v=1782128360"></script>
-  <script src="js/events.js?v=1782128360"></script>
-  <script src="js/guest.js?v=1782128360"></script>
-  <script src="js/sections.js?v=1782128360"></script>
-  <script src="js/admin.js?v=1782128360"></script>
-  <script src="js/router.js?v=1782128360"></script>
+  <script src="js/config.js?v=1782142953"></script>
+  <script src="js/store.js?v=1782142953"></script>
+  <script src="js/visuals.js?v=1782142953"></script>
+  <script src="js/venues.js?v=1782142953"></script>
+  <script src="js/rsvp.js?v=1782142953"></script>
+  <script src="js/ui.js?v=1782142953"></script>
+  <script src="js/auth.js?v=1782142953"></script>
+  <script src="js/dashboard.js?v=1782142953"></script>
+  <script src="js/events.js?v=1782142953"></script>
+  <script src="js/guest.js?v=1782142953"></script>
+  <script src="js/sections.js?v=1782142953"></script>
+  <script src="js/admin.js?v=1782142953"></script>
+  <script src="js/router.js?v=1782142953"></script>
 
 </body>
 </html>
