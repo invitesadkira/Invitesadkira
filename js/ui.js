@@ -33,14 +33,28 @@ function updateLabelsForEventType(type) {
 async function _gatherLegacyImagesForUser(userId) {
   const found = []; // {url, label}
   try {
-    const events = await supabaseRequest(`events?user_id=eq.${userId}&select=id,title,cover_image`);
+    // ✅ CORREÇÃO: os campos do Save the Date (std_cover_url, std_intro_*,
+    // std_scratch_photo_url) vivem na tabela `events`, não em
+    // `event_visuals` — pedi-los do sítio errado causava erro 400 em
+    // cada um deles, um a um.
+    const events = await supabaseRequest(`events?user_id=eq.${userId}&select=id,title,cover_image,std_cover_url,std_cover_mobile_url,std_cover_desktop_url,std_intro_photo_url,std_intro_photo_mobile_url,std_intro_photo_desktop_url,std_scratch_photo_url`);
     if (!events || !events.length) return found;
     const ids = events.map(e => `"${e.id}"`).join(',');
 
-    events.forEach(e => { if (e.cover_image) found.push({ url: e.cover_image, label: `Capa — ${e.title || e.id}` }); });
+    events.forEach(e => {
+      const evLabel = e.title || e.id;
+      if (e.cover_image) found.push({ url: e.cover_image, label: `Capa — ${evLabel}` });
+      if (e.std_cover_url) found.push({ url: e.std_cover_url, label: `Capa Save the Date — ${evLabel}` });
+      if (e.std_cover_mobile_url) found.push({ url: e.std_cover_mobile_url, label: `Capa STD (telemóvel) — ${evLabel}` });
+      if (e.std_cover_desktop_url) found.push({ url: e.std_cover_desktop_url, label: `Capa STD (computador) — ${evLabel}` });
+      if (e.std_intro_photo_url) found.push({ url: e.std_intro_photo_url, label: `Abertura STD — ${evLabel}` });
+      if (e.std_intro_photo_mobile_url) found.push({ url: e.std_intro_photo_mobile_url, label: `Abertura STD (telemóvel) — ${evLabel}` });
+      if (e.std_intro_photo_desktop_url) found.push({ url: e.std_intro_photo_desktop_url, label: `Abertura STD (computador) — ${evLabel}` });
+      if (e.std_scratch_photo_url) found.push({ url: e.std_scratch_photo_url, label: `Raspadinha STD — ${evLabel}` });
+    });
 
     const visualsRows = await supabaseRequest(
-      `event_visuals?event_id=in.(${ids})&select=event_id,gallery_urls,bg_url,bg_url_mobile,bg_url_desktop,final_photo_url,story_photo_url,std_cover_url,std_cover_mobile_url,std_cover_desktop_url,std_intro_photo_mobile_url,std_intro_photo_desktop_url,std_scratch_photo_url`
+      `event_visuals?event_id=in.(${ids})&select=event_id,gallery_urls,bg_url,bg_url_mobile,bg_url_desktop,final_photo_url,story_photo_url,dresscode_image_url`
     ).catch(() => []);
     (visualsRows || []).forEach(v => {
       const ev = events.find(e => e.id === v.event_id);
@@ -51,12 +65,7 @@ async function _gatherLegacyImagesForUser(userId) {
       if (v.bg_url_desktop) found.push({ url: v.bg_url_desktop, label: `Fundo (computador) — ${evLabel}` });
       if (v.final_photo_url) found.push({ url: v.final_photo_url, label: `Foto Final — ${evLabel}` });
       if (v.story_photo_url) found.push({ url: v.story_photo_url, label: `Nossa História — ${evLabel}` });
-      if (v.std_cover_url) found.push({ url: v.std_cover_url, label: `Capa Save the Date — ${evLabel}` });
-      if (v.std_cover_mobile_url) found.push({ url: v.std_cover_mobile_url, label: `Capa STD (telemóvel) — ${evLabel}` });
-      if (v.std_cover_desktop_url) found.push({ url: v.std_cover_desktop_url, label: `Capa STD (computador) — ${evLabel}` });
-      if (v.std_intro_photo_mobile_url) found.push({ url: v.std_intro_photo_mobile_url, label: `Abertura STD (telemóvel) — ${evLabel}` });
-      if (v.std_intro_photo_desktop_url) found.push({ url: v.std_intro_photo_desktop_url, label: `Abertura STD (computador) — ${evLabel}` });
-      if (v.std_scratch_photo_url) found.push({ url: v.std_scratch_photo_url, label: `Raspadinha STD — ${evLabel}` });
+      if (v.dresscode_image_url) found.push({ url: v.dresscode_image_url, label: `Dress Code — ${evLabel}` });
     });
 
     const venueRows = await supabaseRequest(

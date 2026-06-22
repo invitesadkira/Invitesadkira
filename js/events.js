@@ -3332,7 +3332,7 @@ async function openIntakeFormMain(eventId) {
   _pf('int-bride-parents', ev.bride_parents);
   _pf('int-date',          ev.date ? String(ev.date).split('T')[0] : '');
   _pf('int-time',          ev.time ? String(ev.time).substring(0,5) : '');
-  _pf('int-deadline',      ev.confirm_by_date ? String(ev.confirm_by_date).split('T')[0] : '');
+  _pf('int-deadline',      ev.confirm_by_date ? String(ev.confirm_by_date).split(/[T ]/)[0] : '');
   _pf('int-music',         ev.music_url);
   _pf('int-iban',          ev.iban_number);
   _pf('int-iban-holder',   ev.iban_holder);
@@ -3990,7 +3990,7 @@ async function openStdEditor() {
       </div>
       <div>
         <label class="text-xs font-semibold text-gray-600 block mb-1">Prazo de confirmação</label>
-        <input id="std2-deadline" type="date" class="input-field text-sm" value="${(d.confirm_by_date||'').split('T')[0]}">
+        <input id="std2-deadline" type="date" class="input-field text-sm" value="${(d.confirm_by_date||'').split(/[T ]/)[0]}">
       </div>
     </div>
 
@@ -4315,7 +4315,7 @@ async function _autoRenewExampleEventDates(ev, forceNow) {
   today.setHours(0, 0, 0, 0);
 
   const eventDate = ev.date ? new Date(ev.date.split('T')[0] + 'T00:00:00') : null;
-  const deadlineDate = ev.confirm_by_date ? new Date(ev.confirm_by_date.split('T')[0] + 'T00:00:00') : null;
+  const deadlineDate = ev.confirm_by_date ? new Date(ev.confirm_by_date.split(/[T ]/)[0] + 'T00:00:00') : null;
 
   const oneMonthMs = 30 * 24 * 60 * 60 * 1000;
   const needsRenewal =
