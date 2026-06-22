@@ -1253,6 +1253,40 @@ function openGuestGiftsModal() {
   lucide.createIcons();
 }
 
+// Modal próprio para pedir o nome do convidado — substitui o prompt() nativo
+// do browser, que aparecia no topo, mostrava o domínio do site em vez do
+// nome dos noivos, e não tinha estilo nenhum.
+function askGuestNameModal(coupleLabel) {
+  return new Promise((resolve) => {
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.style.zIndex = '10800';
+    modal.id = 'ask-guest-name-modal';
+    modal.innerHTML = `<div class="modal-content bg-white rounded-2xl shadow-lg p-6 max-w-sm w-full mx-4">
+      <h3 class="text-base font-bold text-gray-800 mb-1">${escapeHTML(coupleLabel || 'Escolher Presente')}</h3>
+      <p class="text-sm text-gray-500 mb-3">Para escolher este presente, diz-nos o teu nome:</p>
+      <input id="ask-guest-name-input" type="text" class="input-field" placeholder="O teu nome" autocomplete="off">
+      <div class="flex gap-2 mt-4">
+        <button id="ask-guest-name-ok" class="flex-1 btn-main">Confirmar</button>
+        <button id="ask-guest-name-cancel" class="btn-outline">Cancelar</button>
+      </div>
+    </div>`;
+    document.body.appendChild(modal);
+    const input = document.getElementById('ask-guest-name-input');
+    input.focus();
+
+    const finish = (value) => { modal.remove(); resolve(value); };
+    document.getElementById('ask-guest-name-ok').onclick = () => {
+      const v = input.value.trim();
+      if (!v) { input.style.borderColor = '#ef4444'; return; }
+      finish(v);
+    };
+    document.getElementById('ask-guest-name-cancel').onclick = () => finish(null);
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') document.getElementById('ask-guest-name-ok').click(); });
+    modal.onclick = (e) => { if (e.target === modal) finish(null); };
+  });
+}
+
 async function _selectGiftInModal(giftId, element) {
   const ev = Store.guestEventData || Store.events.find(e => e.id === Store.currentEventId);
   if (!ev) return;
@@ -1270,9 +1304,10 @@ async function _selectGiftInModal(giftId, element) {
 
   // ── Não sabemos ainda quem é o convidado: pedir o nome antes de continuar ──
   if (!guestName) {
-    const typed = prompt('Para escolher este presente, diz-nos o teu nome:');
-    if (!typed || !typed.trim()) return;
-    guestName = typed.trim();
+    const coupleLabel = ev.title || [ev.groom_name, ev.bride_name].filter(Boolean).join(' & ') || 'Escolher Presente';
+    const typed = await askGuestNameModal(coupleLabel);
+    if (!typed) return;
+    guestName = typed;
     if (modal) modal.dataset.knownName = guestName;
   }
 

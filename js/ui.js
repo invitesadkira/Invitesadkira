@@ -1,6 +1,59 @@
 // ===================== BIBLIOTECA DE IMAGENS =====================
 // Mostra todas as fotos já carregadas por esta conta (em todos os eventos),
 // para reaproveitar em vez de carregar de novo — poupa espaço no Supabase.
+// ✅ Mostra tanto as registadas na tabela media_library (uploads recentes)
+// como as "antigas" já usadas nos eventos antes desta funcionalidade
+// existir (capa, galeria, foto final, fundo, locais, Save the Date, etc.)
+// — senão, uma conta com muitas fotos já em uso aparecia como "vazia".
+async function _gatherLegacyImagesForUser(userId) {
+  const found = []; // {url, label}
+  try {
+    const events = await supabaseRequest(`events?user_id=eq.${userId}&select=id,title,cover_image`);
+    if (!events || !events.length) return found;
+    const ids = events.map(e => `"${e.id}"`).join(',');
+
+    events.forEach(e => { if (e.cover_image) found.push({ url: e.cover_image, label: `Capa — ${e.title || e.id}` }); });
+
+    const visualsRows = await supabaseRequest(
+      `event_visuals?event_id=in.(${ids})&select=event_id,gallery_urls,bg_url,bg_url_mobile,bg_url_desktop,final_photo_url,story_photo_url,std_cover_url,std_cover_mobile_url,std_cover_desktop_url,std_intro_photo_mobile_url,std_intro_photo_desktop_url,std_scratch_photo_url`
+    ).catch(() => []);
+    (visualsRows || []).forEach(v => {
+      const ev = events.find(e => e.id === v.event_id);
+      const evLabel = ev ? (ev.title || ev.id) : v.event_id;
+      if (v.gallery_urls) v.gallery_urls.split(/\n|\|/).map(u => u.trim()).filter(Boolean).forEach(u => found.push({ url: u, label: `Galeria — ${evLabel}` }));
+      if (v.bg_url) found.push({ url: v.bg_url, label: `Fundo — ${evLabel}` });
+      if (v.bg_url_mobile) found.push({ url: v.bg_url_mobile, label: `Fundo (telemóvel) — ${evLabel}` });
+      if (v.bg_url_desktop) found.push({ url: v.bg_url_desktop, label: `Fundo (computador) — ${evLabel}` });
+      if (v.final_photo_url) found.push({ url: v.final_photo_url, label: `Foto Final — ${evLabel}` });
+      if (v.story_photo_url) found.push({ url: v.story_photo_url, label: `Nossa História — ${evLabel}` });
+      if (v.std_cover_url) found.push({ url: v.std_cover_url, label: `Capa Save the Date — ${evLabel}` });
+      if (v.std_cover_mobile_url) found.push({ url: v.std_cover_mobile_url, label: `Capa STD (telemóvel) — ${evLabel}` });
+      if (v.std_cover_desktop_url) found.push({ url: v.std_cover_desktop_url, label: `Capa STD (computador) — ${evLabel}` });
+      if (v.std_intro_photo_mobile_url) found.push({ url: v.std_intro_photo_mobile_url, label: `Abertura STD (telemóvel) — ${evLabel}` });
+      if (v.std_intro_photo_desktop_url) found.push({ url: v.std_intro_photo_desktop_url, label: `Abertura STD (computador) — ${evLabel}` });
+      if (v.std_scratch_photo_url) found.push({ url: v.std_scratch_photo_url, label: `Raspadinha STD — ${evLabel}` });
+    });
+
+    const venueRows = await supabaseRequest(
+      `event_venues?event_id=in.(${ids})&select=event_id,venue_ceremony_image,venue_civil_image,venue_reception_image`
+    ).catch(() => []);
+    (venueRows || []).forEach(v => {
+      const ev = events.find(e => e.id === v.event_id);
+      const evLabel = ev ? (ev.title || ev.id) : v.event_id;
+      if (v.venue_ceremony_image) found.push({ url: v.venue_ceremony_image, label: `Local Cerimónia — ${evLabel}` });
+      if (v.venue_civil_image) found.push({ url: v.venue_civil_image, label: `Local Civil — ${evLabel}` });
+      if (v.venue_reception_image) found.push({ url: v.venue_reception_image, label: `Local Recepção — ${evLabel}` });
+    });
+  } catch(e) { console.warn('Falha ao reunir imagens antigas:', e); }
+  return found;
+}
+
+function _parseBucketAndPathFromUrl(url) {
+  // Espera o formato .../storage/v1/object/public/{bucket}/{path}
+  const m = url && url.match(/\/storage\/v1\/object\/public\/([^/]+)\/(.+)$/);
+  return m ? { bucket: m[1], path: m[2] } : { bucket: null, path: null };
+}
+
 async function openMediaLibraryPicker(applyUrlFn) {
   const userId = Store.currentUser?.id;
   if (!userId) { toast('Inicia sessão para ver a tua biblioteca.'); return; }
@@ -9,14 +62,24 @@ async function openMediaLibraryPicker(applyUrlFn) {
   modal.className = 'modal-overlay';
   modal.id = 'media-library-modal';
   modal.style.zIndex = '10700';
-  modal.innerHTML = `<div class="modal-content bg-white rounded-2xl p-5" style="max-width:560px;max-height:88vh;overflow-y:auto">
+  modal.innerHTML = `<div class="modal-content bg-white rounded-2xl p-5" style="max-width:620px;max-height:88vh;overflow-y:auto">
     <div class="flex items-center justify-between mb-1">
       <h3 class="text-base font-bold text-gray-800 flex items-center gap-2"><i data-lucide="images" class="w-5 h-5" style="color:#0ea5e9"></i> A Minha Biblioteca de Fotos</h3>
       <button onclick="this.closest('.modal-overlay').remove()" style="background:none;border:none;cursor:pointer;color:#9ca3af;padding:4px;line-height:0">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
     </div>
-    <p class="text-xs text-gray-500 mb-3">Todas as fotos que já carregaste em qualquer evento. Escolhe uma para reaproveitar, ou elimina as que já não precisas — isso liberta espaço.</p>
+    <p class="text-xs text-gray-500 mb-3">Clica numa foto para a reaproveitar. Marca várias com a caixinha para eliminar de uma vez — isso liberta espaço.</p>
+    <div id="media-library-toolbar" class="hidden items-center gap-2 mb-2" style="display:none">
+      <span id="media-library-selected-count" class="text-xs font-semibold text-gray-600">0 selecionadas</span>
+      <button class="text-xs font-semibold text-red-600 ml-auto" onclick="_deleteSelectedMediaLibraryItems()">🗑 Eliminar selecionadas</button>
+    </div>
+    <div class="flex items-center justify-between mb-2">
+      <label class="flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer">
+        <input type="checkbox" id="media-library-select-all" onchange="_toggleSelectAllMediaLibrary(this.checked)"> Seleccionar tudo
+      </label>
+      <button class="text-xs font-semibold text-red-600" onclick="_deleteAllMediaLibraryItems()">🗑 Eliminar tudo</button>
+    </div>
     <div id="media-library-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:0.6rem">
       <p style="grid-column:1/-1;text-align:center;color:#9ca3af;padding:1rem;font-size:0.85rem">A carregar...</p>
     </div>
@@ -25,10 +88,26 @@ async function openMediaLibraryPicker(applyUrlFn) {
   lucide.createIcons();
 
   window._mediaLibraryApplyFn = applyUrlFn;
+  window._mediaLibrarySelected = new Set();
 
   try {
-    const items = await supabaseRequest(`media_library?user_id=eq.${userId}&select=*&order=created_at.desc&limit=200`);
-    _renderMediaLibraryGrid(items || []);
+    const [tracked, legacy] = await Promise.all([
+      supabaseRequest(`media_library?user_id=eq.${userId}&select=*&order=created_at.desc&limit=300`).catch(() => []),
+      _gatherLegacyImagesForUser(userId)
+    ]);
+    // Junta as duas listas, sem repetir URLs (as "tracked" têm prioridade —
+    // já têm id/bucket/file_path prontos para eliminar).
+    const seen = new Set();
+    const merged = [];
+    (tracked || []).forEach(t => { if (t.url && !seen.has(t.url)) { seen.add(t.url); merged.push(t); } });
+    legacy.forEach(l => {
+      if (!l.url || seen.has(l.url)) return;
+      seen.add(l.url);
+      const { bucket, path } = _parseBucketAndPathFromUrl(l.url);
+      merged.push({ id: null, url: l.url, label: l.label, bucket, file_path: path, created_at: null });
+    });
+    window._mediaLibraryItems = merged;
+    _renderMediaLibraryGrid(merged);
   } catch(e) {
     document.getElementById('media-library-grid').innerHTML = '<p style="grid-column:1/-1;text-align:center;color:#ef4444;padding:1rem;font-size:0.85rem">Erro ao carregar a biblioteca.</p>';
   }
@@ -41,12 +120,34 @@ function _renderMediaLibraryGrid(items) {
     grid.innerHTML = '<p style="grid-column:1/-1;text-align:center;color:#9ca3af;padding:1.5rem;font-size:0.85rem">Ainda não tens fotos na biblioteca. As fotos que carregares vão aparecer aqui automaticamente.</p>';
     return;
   }
-  grid.innerHTML = items.map(item => `
+  grid.innerHTML = items.map((item, idx) => `
     <div style="position:relative;border-radius:0.6rem;overflow:hidden;border:1.5px solid #e5e7eb;aspect-ratio:1;background:#f8fafc;cursor:pointer" onclick="_useMediaLibraryItem('${item.url}')">
-      <img src="${item.url}" loading="lazy" style="width:100%;height:100%;object-fit:cover" onerror="this.parentElement.style.display='none'">
+      <input type="checkbox" class="media-lib-checkbox" data-idx="${idx}" onclick="event.stopPropagation();_toggleMediaLibrarySelection(${idx}, this.checked)" style="position:absolute;top:4px;left:4px;width:18px;height:18px;z-index:2;cursor:pointer">
+      <img src="${item.url}" loading="lazy" style="width:100%;height:100%;object-fit:cover" onerror="this.parentElement.style.opacity='0.35'">
       <span style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,0.7));color:#fff;font-size:0.6rem;padding:0.3rem 0.4rem;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHTML(item.label || 'Imagem')}</span>
-      <button onclick="event.stopPropagation();_deleteMediaLibraryItem('${item.id}','${item.bucket}','${item.file_path}')" title="Eliminar" style="position:absolute;top:3px;right:3px;width:22px;height:22px;border-radius:50%;background:rgba(239,68,68,0.92);color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:0.7rem;line-height:0">✕</button>
+      <button onclick="event.stopPropagation();_deleteMediaLibraryItem(${idx})" title="Eliminar" style="position:absolute;top:3px;right:3px;width:22px;height:22px;border-radius:50%;background:rgba(239,68,68,0.92);color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:0.7rem;line-height:0">✕</button>
     </div>`).join('');
+}
+
+function _toggleMediaLibrarySelection(idx, checked) {
+  if (checked) window._mediaLibrarySelected.add(idx); else window._mediaLibrarySelected.delete(idx);
+  const n = window._mediaLibrarySelected.size;
+  const toolbar = document.getElementById('media-library-toolbar');
+  if (toolbar) toolbar.style.display = n > 0 ? 'flex' : 'none';
+  const countEl = document.getElementById('media-library-selected-count');
+  if (countEl) countEl.textContent = n + ' selecionada' + (n === 1 ? '' : 's');
+}
+
+function _toggleSelectAllMediaLibrary(checked) {
+  const items = window._mediaLibraryItems || [];
+  window._mediaLibrarySelected = checked ? new Set(items.map((_, i) => i)) : new Set();
+  document.querySelectorAll('.media-lib-checkbox').forEach(cb => { cb.checked = checked; });
+  _toggleMediaLibrarySelection(-1, false); // só para recalcular a contagem/toolbar
+  const n = window._mediaLibrarySelected.size;
+  const toolbar = document.getElementById('media-library-toolbar');
+  if (toolbar) toolbar.style.display = n > 0 ? 'flex' : 'none';
+  const countEl = document.getElementById('media-library-selected-count');
+  if (countEl) countEl.textContent = n + ' selecionada' + (n === 1 ? '' : 's');
 }
 
 function _useMediaLibraryItem(url) {
@@ -55,23 +156,61 @@ function _useMediaLibraryItem(url) {
   toast('Foto seleccionada da biblioteca!');
 }
 
-async function _deleteMediaLibraryItem(id, bucket, filePath) {
-  if (!confirm('Eliminar esta foto da biblioteca e do armazenamento? Esta acção não pode ser desfeita. (Se esta foto ainda estiver a ser usada em algum convite, deixará de aparecer lá.)')) return;
-  try {
-    if (bucket && filePath) {
-      await fetch(`${SUPABASE_URL}/storage/v1/object/${bucket}/${filePath}`, {
-        method: 'DELETE',
-        headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
-      }).catch(() => {}); // mesmo que falhe a apagar do storage, continua a remover o registo
-    }
-    await supabaseRequest(`media_library?id=eq.${id}`, 'DELETE');
-    toast('Foto eliminada.');
-    const userId = Store.currentUser?.id;
-    const items = await supabaseRequest(`media_library?user_id=eq.${userId}&select=*&order=created_at.desc&limit=200`);
-    _renderMediaLibraryGrid(items || []);
-  } catch(e) {
-    toast('Erro ao eliminar a foto.');
+async function _deleteMediaLibraryItemsByList(items) {
+  let okCount = 0;
+  for (const item of items) {
+    try {
+      if (item.bucket && item.file_path) {
+        await fetch(`${SUPABASE_URL}/storage/v1/object/${item.bucket}/${item.file_path}`, {
+          method: 'DELETE',
+          headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
+        }).catch(() => {});
+      }
+      if (item.id) await supabaseRequest(`media_library?id=eq.${item.id}`, 'DELETE').catch(() => {});
+      okCount++;
+    } catch(e) {}
   }
+  return okCount;
+}
+
+async function _deleteMediaLibraryItem(idx) {
+  const item = (window._mediaLibraryItems || [])[idx];
+  if (!item) return;
+  if (!confirm(`Eliminar esta foto ("${item.label || 'Imagem'}") da biblioteca e do armazenamento?\n\nSe ainda estiver a ser usada em algum convite, deixará de aparecer lá.`)) return;
+  toast('A eliminar...');
+  await _deleteMediaLibraryItemsByList([item]);
+  toast('Foto eliminada.');
+  window._mediaLibraryItems.splice(idx, 1);
+  window._mediaLibrarySelected = new Set();
+  _renderMediaLibraryGrid(window._mediaLibraryItems);
+  document.getElementById('media-library-toolbar').style.display = 'none';
+}
+
+async function _deleteSelectedMediaLibraryItems() {
+  const idxs = Array.from(window._mediaLibrarySelected || []);
+  if (!idxs.length) return;
+  if (!confirm(`Eliminar ${idxs.length} foto(s) seleccionada(s) da biblioteca e do armazenamento? Esta acção não pode ser desfeita.`)) return;
+  toast('A eliminar ' + idxs.length + ' foto(s)...');
+  const items = idxs.map(i => window._mediaLibraryItems[i]).filter(Boolean);
+  await _deleteMediaLibraryItemsByList(items);
+  window._mediaLibraryItems = window._mediaLibraryItems.filter((_, i) => !idxs.includes(i));
+  window._mediaLibrarySelected = new Set();
+  _renderMediaLibraryGrid(window._mediaLibraryItems);
+  document.getElementById('media-library-toolbar').style.display = 'none';
+  toast('Fotos eliminadas.');
+}
+
+async function _deleteAllMediaLibraryItems() {
+  const items = window._mediaLibraryItems || [];
+  if (!items.length) return;
+  if (!confirm(`Eliminar TODAS as ${items.length} fotos da biblioteca e do armazenamento? Esta acção não pode ser desfeita e pode afectar convites que ainda usem estas fotos.`)) return;
+  toast('A eliminar tudo...');
+  await _deleteMediaLibraryItemsByList(items);
+  window._mediaLibraryItems = [];
+  window._mediaLibrarySelected = new Set();
+  _renderMediaLibraryGrid([]);
+  document.getElementById('media-library-toolbar').style.display = 'none';
+  toast('Biblioteca esvaziada.');
 }
 
 
