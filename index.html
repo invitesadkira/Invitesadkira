@@ -11,7 +11,7 @@
   <script>tailwind.config = { theme: { extend: { colors: { teal: { 500: '#007f9f', 600: '#006b86' } } } } }</script>
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💌</text></svg>">
-  <link rel="stylesheet" href="css/main.css?v=1782084325">
+  <link rel="stylesheet" href="css/main.css?v=1782105242">
 </head>
 <body class="h-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
 
@@ -407,9 +407,11 @@
       <h2 class="text-2xl font-bold text-gray-800 mb-5">Criar Evento</h2>
       <form onsubmit="handleCreateEvent(event)">
        <!-- Cover --> <label class="block text-sm font-semibold text-gray-600 mb-1">Imagem de Capa</label>
-       <div id="cover-preview" class="w-full h-40 rounded-xl bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center cursor-pointer mb-4 overflow-hidden hover:border-teal-400 transition" onclick="document.getElementById('cover-input').click()">
+       <div id="cover-preview" class="w-full h-40 rounded-xl bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center cursor-pointer mb-1 overflow-hidden hover:border-teal-400 transition" onclick="document.getElementById('cover-input').click()">
         <span id="cover-placeholder" class="text-gray-400 flex flex-col items-center"><i data-lucide="image" class="w-8 h-8 mb-1"></i><span class="text-sm">Carregar imagem</span></span> <img id="cover-img" class="hidden w-full h-full object-contain bg-white">
-       </div><input id="cover-input" type="file" accept="image/*" class="hidden" onchange="previewCover(this)"> <label class="block text-sm font-semibold text-gray-600 mb-1">Título do Evento</label> <input id="evt-title" class="input-field mb-3" placeholder="Ex: Casamento Ana &amp; Pedro" required>
+       </div>
+       <button type="button" class="text-xs text-teal-600 font-semibold mb-4" onclick="openMediaLibraryPicker((url) => { const img=document.getElementById('cover-img'); img.src=url; img.classList.remove('hidden'); document.getElementById('cover-placeholder').classList.add('hidden'); })">📁 Escolher da Biblioteca</button>
+       <input id="cover-input" type="file" accept="image/*" class="hidden" onchange="previewCover(this)"> <label class="block text-sm font-semibold text-gray-600 mb-1">Título do Evento</label> <input id="evt-title" class="input-field mb-3" placeholder="Ex: Casamento Ana &amp; Pedro" required>
        <div class="grid grid-cols-2 gap-3 mb-3">
         <div>
          <label class="block text-sm font-semibold text-gray-600 mb-1">Data</label> <input id="evt-date" type="date" class="input-field" required onchange="validateDeadlineDate();syncStdMirrorsFromMain()">
@@ -751,6 +753,7 @@ para testemunhar o seu enlace matrimonial</textarea>
          <p class="text-xs text-gray-500 mb-2">Adicione URLs de imagens (uma por linha) ou carregue ficheiros.</p>
          <textarea id="evt-gallery-urls" class="input-field text-sm" rows="4" placeholder="https://exemplo.com/foto1.jpg&#10;https://exemplo.com/foto2.jpg"></textarea>
          <button type="button" class="mt-2 text-xs text-teal-600 font-semibold" onclick="addGalleryImage()">+ Carregar imagem</button>
+         <button type="button" class="mt-2 ml-3 text-xs text-teal-600 font-semibold" onclick="openMediaLibraryPicker((url) => { const t=document.getElementById('evt-gallery-urls'); t.value = (t.value.trim() ? t.value.trim()+'\n' : '') + url; })">📁 Escolher da Biblioteca</button>
          <input id="gallery-file-input" type="file" accept="image/*" multiple class="hidden" onchange="handleGalleryUpload(this)">
          <label class="text-xs font-semibold text-gray-600 block mt-3 mb-1">Estilo visual</label>
          <select id="evt-gallery-style" class="input-field text-sm">
@@ -777,6 +780,7 @@ para testemunhar o seu enlace matrimonial</textarea>
         <p class="text-xs text-gray-400 -mt-1 mb-1">Aparece no final do convite para que a última coisa que o convidado veja seja uma foto dos noivos.</p>
         <div id="final-photo-extra" class="hidden pl-4 space-y-2">
          <input type="file" id="evt-final-photo-input" accept="image/*" class="input-field text-sm" onchange="handleFinalPhotoUpload(this)">
+         <button type="button" class="text-xs text-teal-600 font-semibold" onclick="openMediaLibraryPicker((url) => { document.getElementById('evt-final-photo-url').value=url; const p=document.getElementById('final-photo-preview'); if(p) p.src=url; document.getElementById('final-photo-preview-wrap')?.classList.remove('hidden'); })">📁 Escolher da Biblioteca</button>
          <input type="hidden" id="evt-final-photo-url">
          <div id="final-photo-preview-wrap" class="hidden relative mt-1" style="max-width:200px">
           <img id="final-photo-preview" class="rounded-lg max-h-32 object-cover w-full">
@@ -795,37 +799,8 @@ para testemunhar o seu enlace matrimonial</textarea>
          <button type="button" onclick="addEventFaqItem()" class="text-xs text-teal-600 font-semibold">+ Adicionar pergunta</button>
         </div>
 
-        <!-- Secção combinada: Dress Code + Sugestão de Presentes -->
-        <div class="flex items-center justify-between">
-         <span class="text-sm font-semibold text-gray-700">Secção "Dress Code + Presentes"</span>
-         <div id="sw-dressgifts" class="switch active" onclick="toggleSwitch(this, 'dressgifts-extra')"></div>
-        </div>
-        <div id="dressgifts-extra" class="pl-4 space-y-3">
-         <p class="text-xs text-gray-500 leading-relaxed">Mostra 2 botões no convite — um abre o Dress Code, o outro abre a lista de presentes para o convidado escolher (sem precisar de confirmar presença primeiro). Desliga um botão individualmente abaixo se só quiseres mostrar o outro; a secção esconde-se sozinha se desligares os dois.</p>
-
-         <!-- Dress Code -->
-         <div class="flex items-center justify-between">
-          <span class="text-sm font-semibold text-gray-700">Botão: Dress Code</span>
-          <div id="sw-dresscode" class="switch active" onclick="toggleSwitch(this, 'dresscode-extra')"></div>
-         </div>
-         <div id="dresscode-extra" class="pl-4 space-y-2">
-          <input id="evt-dresscode-text" class="input-field text-sm" placeholder="Ex: Traje social ou Roupa a rigor">
-          <label class="text-xs text-gray-500 mt-1 block">Paleta de cores (códigos HEX, um por linha, máx. 4)</label>
-          <div id="evt-dresscode-swatches" style="display:flex;gap:0.5rem;margin-bottom:0.4rem;flex-wrap:wrap"></div>
-          <textarea id="evt-dresscode-colors" class="input-field text-sm mb-2" rows="4" placeholder="#FFFFFF
-#C9A84C
-#2D6A4F
-#1A1A2E" oninput="updateDressCodeSwatches(this.value)"></textarea>
-          <label class="text-xs text-gray-500 mt-1 block">Detalhe adicional (opcional)</label>
-          <textarea id="evt-dresscode-detail" class="input-field text-sm" rows="2" placeholder="Ex: Pedimos gentilmente que os convidados optem por um traje elegante..."></textarea>
-         </div>
-
-         <!-- Sugestão de Presentes (botão) -->
-         <div class="flex items-center justify-between pt-2 border-t border-gray-100">
-          <span class="text-sm font-semibold text-gray-700">Botão: Sugestão de Presentes</span>
-          <span class="text-xs text-gray-400 text-right" style="max-width:140px">Segue a opção "Permitir Presentes" mais acima</span>
-         </div>
-        </div>
+        <!-- Dress Code + Sugestão de Presentes: agora geridos numa aba própria
+             (botão "Dress Code + Presentes" junto ao "Save the Date"). -->
 
         <div class="flex items-center justify-between">
          <span class="text-sm font-semibold text-gray-700">Manual do Bom Convidado</span>
@@ -1006,7 +981,7 @@ para testemunhar o seu enlace matrimonial</textarea>
        </div>
        <div class="flex flex-wrap gap-2 mb-6">
         <button class="btn-outline text-sm" id="btn-intake-link" onclick="showIntakeLink(Store.currentEventId)" style="display:none"><span class="flex items-center gap-1"><i data-lucide="link" class="w-4 h-4"></i> Link Cliente</span></button>
-        <button class="btn-outline text-sm" onclick="viewAsGuest()"> <span class="flex items-center gap-1"><i data-lucide="eye" class="w-4 h-4"></i> Ver como Convidado</span> </button> <button class="btn-outline text-sm" onclick="downloadGuestListCSV()"> <span class="flex items-center gap-1"><i data-lucide="users" class="w-4 h-4"></i> Exportar Lista</span> </button> <button id="btn-manage-intake" class="btn-outline text-sm hidden" onclick="openIntakeManager(Store.currentEventId)"> <span class="flex items-center gap-1"><i data-lucide="link" class="w-4 h-4"></i> Links Cliente</span> </button> <button class="btn-outline text-sm" onclick="downloadPDF()"> <span class="flex items-center gap-1"><i data-lucide="download" class="w-4 h-4"></i> Baixar PDF</span> </button> <button id="btn-download-gifts-pdf" class="btn-outline text-sm hidden" onclick="downloadGiftsPDF()"> <span class="flex items-center gap-1"><i data-lucide="download" class="w-4 h-4"></i> Baixar Presentes PDF</span> </button> <button id="btn-manage-gifts" class="btn-outline text-sm hidden" onclick="manageGifts()"> <span class="flex items-center gap-1"><i data-lucide="gift" class="w-4 h-4"></i> Editar Presentes</span> </button> <button id="btn-upload-gifts" class="btn-outline text-sm hidden" onclick="showUploadGiftsListModal()"> <span class="flex items-center gap-1"><i data-lucide="upload" class="w-4 h-4"></i> Carregar Presentes</span> </button> <button class="btn-outline text-sm" onclick="editEventURL(Store.currentEventId)"> <span class="flex items-center gap-1"><i data-lucide="link" class="w-4 h-4"></i> Trocar Código</span> </button> <button class="btn-outline text-sm" onclick="editEventWithLockCheck()"> <span class="flex items-center gap-1"><i data-lucide="pencil" class="w-4 h-4"></i> Editar</span> </button> <button class="btn-outline text-sm" style="background:#fef3c7;border-color:#fbbf24" onclick="openStdEditor()"> <span class="flex items-center gap-1"><i data-lucide="heart" class="w-4 h-4"></i> Save the Date</span> </button> <button id="btn-example-event" class="btn-outline text-sm hidden" style="background:#ede9fe;border-color:#a78bfa" onclick="adminToggleExampleEvent()"> <span class="flex items-center gap-1"><i data-lucide="star" class="w-4 h-4"></i> <span id="btn-example-event-label">Marcar como Exemplo</span></span> </button> <button id="btn-delete-event" class="bg-red-500 hover:bg-red-600 text-white text-sm rounded-lg py-2 px-3 font-semibold transition hidden" onclick="deleteEventModal()"> <span class="flex items-center gap-1"><i data-lucide="trash-2" class="w-4 h-4"></i> Eliminar</span> </button>
+        <button class="btn-outline text-sm" onclick="viewAsGuest()"> <span class="flex items-center gap-1"><i data-lucide="eye" class="w-4 h-4"></i> Ver como Convidado</span> </button> <button class="btn-outline text-sm" onclick="downloadGuestListCSV()"> <span class="flex items-center gap-1"><i data-lucide="users" class="w-4 h-4"></i> Exportar Lista</span> </button> <button id="btn-manage-intake" class="btn-outline text-sm hidden" onclick="openIntakeManager(Store.currentEventId)"> <span class="flex items-center gap-1"><i data-lucide="link" class="w-4 h-4"></i> Links Cliente</span> </button> <button class="btn-outline text-sm" onclick="downloadPDF()"> <span class="flex items-center gap-1"><i data-lucide="download" class="w-4 h-4"></i> Baixar PDF</span> </button> <button id="btn-download-gifts-pdf" class="btn-outline text-sm hidden" onclick="downloadGiftsPDF()"> <span class="flex items-center gap-1"><i data-lucide="download" class="w-4 h-4"></i> Baixar Presentes PDF</span> </button> <button id="btn-manage-gifts" class="btn-outline text-sm hidden" onclick="manageGifts()"> <span class="flex items-center gap-1"><i data-lucide="gift" class="w-4 h-4"></i> Editar Presentes</span> </button> <button id="btn-upload-gifts" class="btn-outline text-sm hidden" onclick="showUploadGiftsListModal()"> <span class="flex items-center gap-1"><i data-lucide="upload" class="w-4 h-4"></i> Carregar Presentes</span> </button> <button class="btn-outline text-sm" onclick="editEventURL(Store.currentEventId)"> <span class="flex items-center gap-1"><i data-lucide="link" class="w-4 h-4"></i> Trocar Código</span> </button> <button class="btn-outline text-sm" onclick="editEventWithLockCheck()"> <span class="flex items-center gap-1"><i data-lucide="pencil" class="w-4 h-4"></i> Editar</span> </button> <button class="btn-outline text-sm" style="background:#fef3c7;border-color:#fbbf24" onclick="openStdEditor()"> <span class="flex items-center gap-1"><i data-lucide="heart" class="w-4 h-4"></i> Save the Date</span> </button> <button class="btn-outline text-sm" style="background:#e0f2fe;border-color:#7dd3fc" onclick="openDressGiftsEditor()"> <span class="flex items-center gap-1"><i data-lucide="shirt" class="w-4 h-4"></i> Dress Code + Presentes</span> </button> <button id="btn-example-event" class="btn-outline text-sm hidden" style="background:#ede9fe;border-color:#a78bfa" onclick="adminToggleExampleEvent()"> <span class="flex items-center gap-1"><i data-lucide="star" class="w-4 h-4"></i> <span id="btn-example-event-label">Marcar como Exemplo</span></span> </button> <button id="btn-delete-event" class="bg-red-500 hover:bg-red-600 text-white text-sm rounded-lg py-2 px-3 font-semibold transition hidden" onclick="deleteEventModal()"> <span class="flex items-center gap-1"><i data-lucide="trash-2" class="w-4 h-4"></i> Eliminar</span> </button>
        </div><!-- Stats -->
        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6" id="detail-stats"></div><!-- Confirmations List -->
        <h3 class="font-bold text-gray-700 mb-3">Confirmações</h3>
@@ -1269,19 +1244,19 @@ para testemunhar o seu enlace matrimonial</textarea>
   </a>
 
   <!-- ===================== SCRIPTS (ordem importa) ===================== -->
-  <script src="js/config.js?v=1782084325"></script>
-  <script src="js/store.js?v=1782084325"></script>
-  <script src="js/visuals.js?v=1782084325"></script>
-  <script src="js/venues.js?v=1782084325"></script>
-  <script src="js/rsvp.js?v=1782084325"></script>
-  <script src="js/ui.js?v=1782084325"></script>
-  <script src="js/auth.js?v=1782084325"></script>
-  <script src="js/dashboard.js?v=1782084325"></script>
-  <script src="js/events.js?v=1782084325"></script>
-  <script src="js/guest.js?v=1782084325"></script>
-  <script src="js/sections.js?v=1782084325"></script>
-  <script src="js/admin.js?v=1782084325"></script>
-  <script src="js/router.js?v=1782084325"></script>
+  <script src="js/config.js?v=1782105242"></script>
+  <script src="js/store.js?v=1782105242"></script>
+  <script src="js/visuals.js?v=1782105242"></script>
+  <script src="js/venues.js?v=1782105242"></script>
+  <script src="js/rsvp.js?v=1782105242"></script>
+  <script src="js/ui.js?v=1782105242"></script>
+  <script src="js/auth.js?v=1782105242"></script>
+  <script src="js/dashboard.js?v=1782105242"></script>
+  <script src="js/events.js?v=1782105242"></script>
+  <script src="js/guest.js?v=1782105242"></script>
+  <script src="js/sections.js?v=1782105242"></script>
+  <script src="js/admin.js?v=1782105242"></script>
+  <script src="js/router.js?v=1782105242"></script>
 
 </body>
 </html>

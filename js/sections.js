@@ -1343,37 +1343,34 @@ function buildVenueSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
   </div>`;
 }
 
-// ── DRESS CODE + SUGESTÃO DE PRESENTES (secção combinada com 2 botões) ──
-// Cada botão abre uma tela própria (modal) só quando o convidado toca nele —
-// não obriga a confirmar presença primeiro para ver/escolher um presente.
+// ── DRESS CODE + SUGESTÃO DE PRESENTES (secção combinada com 2 cartões) ──
+// Cada cartão tem título próprio + botão que abre uma tela (modal) só
+// quando o convidado toca — não obriga a confirmar presença primeiro.
 function buildDressGiftsSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
-  const evColor = ev.event_color || '#007f9f';
   const showDressBtn = _yesOrTrue(ev.show_dresscode) && !!ev.dresscode_text;
   const showGiftsBtn = !!ev.allowGifts && Array.isArray(ev.gifts) && ev.gifts.length > 0;
 
   if (!showDressBtn && !showGiftsBtn) return ''; // nada para mostrar — secção desaparece sozinha
 
-  const dressBtn = showDressBtn ? `
-    <button type="button" class="dg-btn" onclick="openGuestDresscodeModal()">
-      <span class="dg-btn-icon" style="background:color-mix(in srgb,${evColor} 14%,white)">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="${evColor}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20.38 3.46 16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.57a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.57a2 2 0 0 0-1.34-2.23z"/></svg>
-      </span>
-      <span class="dg-btn-label">Dress Code</span>
-    </button>` : '';
+  const dressCard = showDressBtn ? `
+    <div class="dg-card">
+      <h4 class="dg-card-title">Dress Code</h4>
+      <p class="dg-card-sub">Qual o traje pedido para o evento</p>
+      <button type="button" class="dg-card-btn" onclick="openGuestDresscodeModal()">Ver Dress Code</button>
+    </div>` : '';
 
-  const giftsBtn = showGiftsBtn ? `
-    <button type="button" class="dg-btn" onclick="openGuestGiftsModal()">
-      <span class="dg-btn-icon" style="background:color-mix(in srgb,${evColor} 14%,white)">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="${evColor}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>
-      </span>
-      <span class="dg-btn-label">Sugestão de Presentes</span>
-    </button>` : '';
+  const giftsCard = showGiftsBtn ? `
+    <div class="dg-card">
+      <h4 class="dg-card-title">Sugestão de Presentes</h4>
+      <p class="dg-card-sub">Escolhe um presente para a noiva e o noivo</p>
+      <button type="button" class="dg-card-btn" onclick="openGuestGiftsModal()">Ver Presentes</button>
+    </div>` : '';
 
   return _SD + `<div class="event-section">
     <div class="section-inner reveal">
       <h3 class="section-title" style="text-align:center">Informações Úteis</h3>
       <div class="dg-buttons-grid" style="grid-template-columns:${(showDressBtn && showGiftsBtn) ? 'repeat(2,1fr)' : '1fr'}">
-        ${dressBtn}${giftsBtn}
+        ${dressCard}${giftsCard}
       </div>
     </div>
   </div>`;

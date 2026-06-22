@@ -128,16 +128,26 @@ async function supabaseRequest(endpoint, method = 'GET', body = null) {
       const text = await response.text();
       console.error(`❌ Supabase ${response.status} em ${method} ${endpoint}:`, text);
 
-      // ── PGRST204: unknown column ──────────────────────────────────────────
+      // ── PGRST204 / 42703: unknown column ────────────────────────────────────
+      // ✅ CORREÇÃO: esta condição só reconhecia a frase específica do
+      // PostgREST ("schema cache"). O erro puro do Postgres (código 42703,
+      // ex: "column event_visuals.show_dress_gifts does not exist") não
+      // contém essa frase — por isso esta secção inteira era ignorada, e UMA
+      // coluna em falta conseguia bloquear TODOS os pedidos a uma tabela de
+      // uma só vez, em vez de ser simplesmente removida e repetida sem ela.
       if (response.status === 400 &&
-          (text.includes('PGRST204') || text.includes('does not exist in the schema cache') || text.includes('schema cache'))) {
+          (text.includes('PGRST204') || text.includes('does not exist in the schema cache') ||
+           text.includes('schema cache') || text.includes('"42703"') || text.includes('does not exist'))) {
 
-        // Try multiple known PostgREST error message shapes, in order of likelihood
+        // Try multiple known PostgREST/Postgres error message shapes, in order of likelihood
         const colMatch =
           text.match(/'([^']+)' column of '[^']+' in the schema cache/) ||
           text.match(/"([^"]+)" column of "[^"]+" in the schema cache/) ||
           text.match(/Could not find the '([^']+)' column/) ||
-          text.match(/column "([^"]+)" does not exist/i);
+          text.match(/column "([^"]+)" does not exist/i) ||
+          // ✅ NOVO: cobre "column tabela.coluna does not exist" (sem aspas,
+          // erro Postgres 42703 puro) — faltava exactamente este formato.
+          text.match(/column\s+(?:[a-zA-Z0-9_]+\.)?([a-zA-Z0-9_]+)\s+does not exist/i);
         if (colMatch) {
           const badCol = colMatch[1];
           console.warn(`Coluna desconhecida: "${badCol}". A tentar sem ela...`);

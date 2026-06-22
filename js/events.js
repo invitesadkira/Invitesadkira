@@ -118,7 +118,13 @@ async function handleCreateEvent(e) {
   
   toast('Preparando imagem...');
   
-  if (hasCover) {
+  if (hasCover && coverImg.src && coverImg.src.startsWith('http')) {
+    // ✅ Já é um URL existente (ex: escolhido da Biblioteca de Fotos) — não
+    // faz sentido reenviar/duplicar, usa directamente.
+    toast('A criar evento...');
+    submitBtn.textContent = 'Criando evento...';
+    saveEventWithCover(eventId, title, date, time, deadlineWithTime, coverImg.src, allowComp, maxComp, allowGifts, allowKids, maxKids, allowSides, side1Name, side2Name, allowMessages, showGuestMessages, allowMusic ? musicUrl : null, musicTitle, ibanMessage, ibanNumber, ibanHolder, ibanFooter, {showCouple,groomName,brideName,coupleSize,bgUrl,bgUrlMobile,bgUrlDesktop,bgOverlay,showBible,bibleText,bibleRef,bibleText2,bibleRef2,bibleSize,showInvite,inviteText,showParents,groomPar,bridePar,showGallery,galleryUrls,showManual,manualItems,showSchedule,schedItems,customFont,sectionOrder:Store.eventSectionOrder,storyText:document.getElementById('evt-story-text')?.value.trim()||null,inviteBlessing:document.getElementById('evt-invite-blessing')?.value.trim()||null,eventColor:document.getElementById('evt-event-color')?.value.trim()||null}, submitBtn, originalText);
+  } else if (hasCover) {
     // Mostrar progresso
     submitBtn.textContent = 'Enviando imagem...';
     
@@ -813,8 +819,9 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
           decor_side_url: document.getElementById('evt-decor-side-url')?.value || null,
           decor_ornament_url: document.getElementById('evt-decor-ornament-url')?.value || null,
           show_decor:    document.getElementById('sw-decor')?.classList.contains('active') ? 'yes' : 'no',
-          show_dresscode: document.getElementById('sw-dresscode')?.classList.contains('active') ? 'yes' : 'no',
-          show_dress_gifts: document.getElementById('sw-dressgifts')?.classList.contains('active') ? 'yes' : 'no',
+          // show_dresscode / show_dress_gifts: NUNCA gravados aqui — geridos
+          // exclusivamente por openDressGiftsEditor()/saveDressGiftsEditor(),
+          // que já existem nesta altura na tabela event_visuals.
           show_couplemsg: document.getElementById('sw-couplemsg')?.classList.contains('active') ? 'yes' : 'no',
           couplemsg_text: document.getElementById('evt-couplemsg-text')?.value?.trim() || null,
           show_final_photo: document.getElementById('sw-final-photo')?.classList.contains('active') ? 'yes' : 'no',
@@ -1741,8 +1748,6 @@ function _fillEditForm(ev) {
   // para "criar evento novo" em vez de "guardar alterações").
   try {
   _setSwitch('sw-decor', _yesOrTrue(ev.show_decor), 'decor-extra');
-  _setSwitch('sw-dressgifts', ev.show_dress_gifts === undefined ? true : _yesOrTrue(ev.show_dress_gifts), 'dressgifts-extra');
-  _setSwitch('sw-dresscode', _yesOrTrue(ev.show_dresscode), 'dresscode-extra');
   _setSwitch('sw-couplemsg', _yesOrTrue(ev.show_couplemsg), 'couplemsg-extra');
   { const ct = document.getElementById('evt-couplemsg-text'); if(ct) ct.value = ev.couplemsg_text || ''; }
   _setSwitch('sw-final-photo', _yesOrTrue(ev.show_final_photo), 'final-photo-extra');
@@ -1762,10 +1767,6 @@ function _fillEditForm(ev) {
   { const spUrl=document.getElementById('evt-story-photo-url'); const spPrev=document.getElementById('story-photo-preview'); const spWrap=document.getElementById('story-photo-preview-wrap');
     if(ev.story_photo_url){if(spUrl)spUrl.value=ev.story_photo_url;if(spPrev)spPrev.src=ev.story_photo_url;spWrap?.classList.remove('hidden');} }
   { const psInp = document.getElementById('evt-parents-size'); const psLbl = document.getElementById('parents-size-label'); const psVal = ev.parents_size || '0.88'; if (psInp) psInp.value = psVal; if (psLbl) psLbl.textContent = psVal + 'rem'; }
-  const _svDC = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
-  _svDC('evt-dresscode-text',   ev.dresscode_text);
-  _svDC('evt-dresscode-colors', ev.dresscode_colors);
-  _svDC('evt-dresscode-detail', ev.dresscode_detail);
   _setSwitch('sw-invert-names', _yesOrTrue(ev.invert_names));
   const evTypeEl = document.getElementById('evt-event-type');
   if (evTypeEl) evTypeEl.value = ev.event_type || 'wedding';
@@ -4005,15 +4006,18 @@ async function handleStd2CoverUpload(input, variant) {
   if (file.size > 5*1024*1024) { toast('Imagem muito grande. Máx. 5 MB.'); return; }
   const eventId = Store.currentEventId;
   const label = variant === 'desktop' ? 'Foto de capa do Save the Date (computador)' : 'Foto de capa do Save the Date (telemóvel)';
-  const proceed = await _confirmIfDuplicatePhoto(file, eventId, label);
-  if (!proceed) { input.value = ''; return; }
-  toast('A carregar foto...');
-  try {
-    const url = await uploadImageToStorage(file, 'event-covers');
+  const applyUrl = (url) => {
     document.getElementById(`std2-cover-url-${variant}`).value = url;
     const prev = document.getElementById(`std2-cover-preview-${variant}`);
     if (prev) prev.src = url;
     document.getElementById(`std2-cover-preview-${variant}-wrap`)?.classList.remove('hidden');
+  };
+  const proceed = await _confirmIfDuplicatePhoto(file, eventId, label, applyUrl);
+  if (!proceed) { input.value = ''; return; }
+  toast('A carregar foto...');
+  try {
+    const url = await uploadImageToStorage(file, 'event-covers', label);
+    applyUrl(url);
     toast('Foto carregada!');
   } catch(e) { toast('Erro ao carregar a foto.'); }
 }
@@ -4067,6 +4071,96 @@ async function saveStdEditor() {
     }
   } catch(e) {
     console.error('Erro ao guardar Save the Date:', e);
+    toast('Erro ao guardar. Verifica a consola.');
+  }
+}
+
+// ===================== ABA PRÓPRIA: DRESS CODE + SUGESTÃO DE PRESENTES =====================
+async function openDressGiftsEditor() {
+  const eventId = Store.currentEventId;
+  const ev = Store.events.find(e => e.id === eventId);
+  if (!ev) { toast('Evento não encontrado.'); return; }
+
+  toast('A carregar...');
+  let visuals;
+  try { visuals = await loadEventVisuals(eventId); } catch(e) { visuals = {}; }
+  const d = (visuals && Object.keys(visuals).length > 1) ? visuals : ev;
+
+  const allowGifts = !!(ev.allowGifts ?? (String(ev.allow_gifts).toLowerCase() === 'yes'));
+
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.id = 'dressgifts-editor-modal';
+  modal.style.zIndex = '10600';
+  modal.innerHTML = `<div class="modal-content bg-white rounded-2xl p-5" style="max-width:480px;max-height:88vh;overflow-y:auto">
+    <h3 class="text-base font-bold mb-1 flex items-center gap-2"><i data-lucide="shirt" class="w-5 h-5" style="color:#0ea5e9"></i> Dress Code + Presentes</h3>
+    <p class="text-xs text-gray-500 mb-4">A secção aparece no convite com 2 botões — um abre o Dress Code, o outro abre a lista de presentes. Guardar aqui não afecta o resto do convite.</p>
+
+    <div class="flex items-center justify-between mb-3 pb-3" style="border-bottom:1px solid #e5e7eb">
+      <span class="text-sm font-semibold text-gray-700">Mostrar esta secção no convite</span>
+      <div id="dg2-sw-section" class="switch ${d.show_dress_gifts === undefined || _yesOrTrue(d.show_dress_gifts) ? 'active' : ''}" onclick="toggleSwitch(this,'dg2-section-extra')"></div>
+    </div>
+
+    <div id="dg2-section-extra" class="${(d.show_dress_gifts === undefined || _yesOrTrue(d.show_dress_gifts)) ? '' : 'hidden'}">
+
+      <div class="flex items-center justify-between mb-2">
+        <span class="text-sm font-semibold text-gray-700">Botão: Dress Code</span>
+        <div id="dg2-sw-dresscode" class="switch ${_yesOrTrue(d.show_dresscode) ? 'active' : ''}" onclick="toggleSwitch(this,'dg2-dresscode-extra')"></div>
+      </div>
+      <div id="dg2-dresscode-extra" class="${_yesOrTrue(d.show_dresscode) ? '' : 'hidden'} pl-1 mb-4">
+        <label class="text-xs font-semibold text-gray-600 block mb-1">Traje</label>
+        <input id="dg2-dresscode-text" class="input-field text-sm mb-2" placeholder="Ex: Traje social ou Roupa a rigor" value="${escapeHTML(d.dresscode_text || '')}">
+        <label class="text-xs font-semibold text-gray-600 block mb-1">Paleta de cores (HEX, máx. 4)</label>
+        <div id="evt-dresscode-swatches" style="display:flex;gap:0.5rem;margin-bottom:0.4rem;flex-wrap:wrap"></div>
+        <textarea id="dg2-dresscode-colors" class="input-field text-sm mb-2" rows="3" placeholder="#FFFFFF
+#C9A84C
+#2D6A4F" oninput="updateDressCodeSwatches(this.value)">${escapeHTML(d.dresscode_colors || '')}</textarea>
+        <label class="text-xs font-semibold text-gray-600 block mb-1">Detalhe adicional (opcional)</label>
+        <textarea id="dg2-dresscode-detail" class="input-field text-sm" rows="2" placeholder="Ex: Pedimos gentilmente que os convidados optem por um traje elegante...">${escapeHTML(d.dresscode_detail || '')}</textarea>
+      </div>
+
+      <div class="flex items-center justify-between mb-1 pt-2" style="border-top:1px solid #f1f5f9">
+        <span class="text-sm font-semibold text-gray-700">Botão: Sugestão de Presentes</span>
+        <span class="text-xs font-semibold ${allowGifts ? 'text-green-600' : 'text-gray-400'}">${allowGifts ? '✓ Activo' : '✗ Desligado'}</span>
+      </div>
+      <p class="text-xs text-gray-400 mb-3">Segue a opção "Permitir Presentes" do formulário principal do evento — ${allowGifts ? 'está activa, o botão aparece.' : 'está desligada, o botão não aparece. Liga "Permitir Presentes" no formulário principal para activar.'}</p>
+    </div>
+
+    <div class="flex gap-2 mt-2">
+      <button class="flex-1 btn-main text-sm" onclick="saveDressGiftsEditor()">Guardar</button>
+      <button class="btn-outline text-sm" onclick="this.closest('.modal-overlay').remove()">Cancelar</button>
+    </div>
+  </div>`;
+  document.body.appendChild(modal);
+  updateDressCodeSwatches(d.dresscode_colors || '');
+  lucide.createIcons();
+}
+
+async function saveDressGiftsEditor() {
+  const eventId = Store.currentEventId;
+  if (!eventId) { toast('Erro: evento não identificado.'); return; }
+
+  const payload = {
+    show_dress_gifts: document.getElementById('dg2-sw-section')?.classList.contains('active') ? 'yes' : 'no',
+    show_dresscode: document.getElementById('dg2-sw-dresscode')?.classList.contains('active') ? 'yes' : 'no',
+    dresscode_text: document.getElementById('dg2-dresscode-text')?.value?.trim() || null,
+    dresscode_colors: document.getElementById('dg2-dresscode-colors')?.value?.trim() || null,
+    dresscode_detail: document.getElementById('dg2-dresscode-detail')?.value?.trim() || null,
+  };
+
+  toast('A guardar...');
+  try {
+    const ok = await saveEventVisuals(eventId, payload);
+    if (ok) {
+      toast('Dress Code + Presentes guardado!');
+      const ev = Store.events.find(e => e.id === eventId);
+      if (ev) Object.assign(ev, payload);
+      document.getElementById('dressgifts-editor-modal')?.remove();
+    } else {
+      toast('Erro ao guardar. Verifica a consola.');
+    }
+  } catch(e) {
+    console.error('Erro ao guardar Dress Code + Presentes:', e);
     toast('Erro ao guardar. Verifica a consola.');
   }
 }

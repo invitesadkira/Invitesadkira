@@ -2129,17 +2129,21 @@ async function handleBgUpload(input, variant) {
   if (file.size > 8 * 1024 * 1024) { toast('Imagem de fundo muito grande. Máx. 8 MB.'); return; }
   const eventId = Store.currentEventId || Store._intakeEventId;
   const label = variant === 'desktop' ? 'Foto de fundo do convite (computador)' : 'Foto de fundo do convite (telemóvel)';
-  const proceed = await _confirmIfDuplicatePhoto(file, eventId, label);
-  if (!proceed) { input.value = ''; return; }
-  const area = document.getElementById(`bg-upload-area-${variant}`);
-  if (area) area.innerHTML = '<span class="text-xs text-teal-600 font-semibold">A carregar...</span>';
-  try {
-    const url = await uploadImageToStorage(file, 'event-covers');
+  const applyUrl = (url) => {
     document.getElementById(`evt-bg-url-${variant}`).value = url;
     const prev = document.getElementById(`bg-preview-${variant}`);
     if (prev) prev.src = url;
     document.getElementById(`bg-preview-${variant}-wrap`)?.classList.remove('hidden');
-    if (area) area.innerHTML = `<span class="text-xs text-teal-600 font-semibold">Imagem carregada</span>`;
+    const a = document.getElementById(`bg-upload-area-${variant}`);
+    if (a) a.innerHTML = `<span class="text-xs text-teal-600 font-semibold">Imagem carregada</span>`;
+  };
+  const proceed = await _confirmIfDuplicatePhoto(file, eventId, label, applyUrl);
+  if (!proceed) { input.value = ''; return; }
+  const area = document.getElementById(`bg-upload-area-${variant}`);
+  if (area) area.innerHTML = '<span class="text-xs text-teal-600 font-semibold">A carregar...</span>';
+  try {
+    const url = await uploadImageToStorage(file, 'event-covers', label);
+    applyUrl(url);
     toast('Imagem de fundo carregada!');
   } catch(e) {
     toast('Erro ao carregar imagem de fundo.');
@@ -2170,30 +2174,42 @@ async function _hashFile(file) {
 // Verifica se este ficheiro já foi carregado antes para este evento. Se sim,
 // pergunta ao utilizador se quer substituir mesmo assim. Devolve `true` se
 // deve continuar com o upload, `false` se o utilizador cancelou.
-async function _confirmIfDuplicatePhoto(file, eventId, fieldLabel) {
-  if (!eventId) return true; // sem evento identificado, não há registo para comparar
+// Verifica se este ficheiro já foi carregado antes por esta conta (em
+// QUALQUER evento, não só o actual) — consulta a biblioteca persistente em
+// Supabase, não memória local, por isso funciona mesmo dias depois.
+// Se houver uma foto igual e o utilizador escolher reaproveitar, aplica o
+// URL existente via `applyUrlFn` e devolve false (não prosseguir com upload
+// novo). Devolve true se deve prosseguir com um upload normal.
+async function _confirmIfDuplicatePhoto(file, eventId, fieldLabel, applyUrlFn) {
+  const userId = Store.currentUser?.id;
+  if (!userId) return true; // sem conta identificada, não há biblioteca para comparar
   try {
     const hash = await _hashFile(file);
-    if (!Store._photoHashRegistry) Store._photoHashRegistry = {};
-    if (!Store._photoHashRegistry[eventId]) Store._photoHashRegistry[eventId] = {};
-    const registry = Store._photoHashRegistry[eventId];
-
-    if (registry[hash]) {
-      const previousLabel = registry[hash];
-      const proceed = confirm(
-        `Esta foto já foi carregada antes para "${previousLabel}" neste evento.\n\nGostarias de usá-la também aqui (${fieldLabel}), ou preferes escolher uma foto diferente?\n\nOK = usar mesmo assim\nCancelar = escolher outra foto`
+    const matches = await supabaseRequest(
+      `media_library?user_id=eq.${userId}&file_hash=eq.${hash}&select=url,label,created_at&order=created_at.desc&limit=1`
+    );
+    const match = matches && matches[0];
+    if (match) {
+      const usedWhen = match.created_at ? new Date(match.created_at).toLocaleDateString('pt-PT') : '';
+      const reuse = confirm(
+        `Esta foto já está na tua biblioteca (usada em "${match.label || 'outro local'}"${usedWhen ? ', em ' + usedWhen : ''}).\n\n` +
+        `OK = reaproveitar essa foto (não ocupa espaço novo)\nCancelar = carregar como uma cópia nova`
       );
-      if (!proceed) return false;
+      if (reuse) {
+        if (applyUrlFn) applyUrlFn(match.url);
+        toast('Foto reaproveitada da biblioteca!');
+        return false; // já aplicado — não prosseguir com upload
+      }
+      // segue para upload normal (cópia nova, intencional)
     }
-    registry[hash] = fieldLabel;
   } catch(e) {
-    console.warn('Falha ao verificar duplicado (hash):', e);
-    // Em caso de erro a calcular o hash, não bloquear o upload — apenas seguir sem a verificação
+    console.warn('Falha ao verificar duplicado na biblioteca:', e);
+    // Em caso de erro, não bloquear o upload — apenas seguir sem a verificação
   }
   return true;
 }
 
-async function uploadImageToStorage(file, bucket) {
+async function uploadImageToStorage(file, bucket, label) {
   const ext = file.name.split('.').pop().toLowerCase();
   const fileName = `img_${Date.now()}_${Math.random().toString(36).slice(2,8)}.${ext}`;
   const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${bucket}/${fileName}`, {
@@ -2202,7 +2218,25 @@ async function uploadImageToStorage(file, bucket) {
     body: file
   });
   if (!res.ok) throw new Error(await res.text());
-  return `${SUPABASE_URL}/storage/v1/object/public/${bucket}/${fileName}`;
+  const url = `${SUPABASE_URL}/storage/v1/object/public/${bucket}/${fileName}`;
+
+  // ✅ Regista esta imagem na biblioteca pessoal (para detetar duplicados e
+  // permitir reaproveitar mais tarde, em vez de carregar de novo e gastar
+  // espaço — o plano grátis do Supabase só tem 1GB).
+  try {
+    const userId = Store.currentUser?.id;
+    if (userId) {
+      const hash = await _hashFile(file).catch(() => null);
+      await supabaseRequest('media_library', 'POST', {
+        user_id: userId,
+        event_id: Store.currentEventId || Store._intakeEventId || null,
+        url, file_hash: hash, label: label || null,
+        bucket, file_path: fileName, size_bytes: file.size || null
+      });
+    }
+  } catch(e) { console.warn('Não foi possível registar na biblioteca de imagens:', e); }
+
+  return url;
 }
 
 
@@ -2215,16 +2249,21 @@ async function handleGalleryUpload(input) {
   if (!files.length) return;
   const urlInput = document.getElementById('evt-gallery-urls');
   const existing = urlInput.value.trim();
-  toast('A carregar ' + files.length + ' imagem(ns)...');
+  const eventId = Store.currentEventId || Store._intakeEventId;
+  toast('A verificar ' + files.length + ' imagem(ns)...');
   const urls = [];
   for (const file of files) {
+    let reusedUrl = null;
+    const proceed = await _confirmIfDuplicatePhoto(file, eventId, 'Galeria de Fotos', (url) => { reusedUrl = url; });
+    if (reusedUrl) { urls.push(reusedUrl); continue; } // reaproveitada — não conta para upload novo
+    if (!proceed) continue; // utilizador cancelou esta foto especificamente
     try {
-      const url = await uploadImageToStorage(file, 'event-covers');
+      const url = await uploadImageToStorage(file, 'event-covers', 'Galeria de Fotos');
       urls.push(url);
     } catch(e) { toast('Erro a carregar: ' + file.name); }
   }
   urlInput.value = (existing ? existing + '\n' : '') + urls.join('\n');
-  toast(urls.length + ' imagem(ns) carregada(s)!');
+  toast(urls.length + ' imagem(ns) adicionada(s)!');
   input.value = '';
 }
 

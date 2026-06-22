@@ -1,4 +1,80 @@
-// ===================== TOAST =====================
+// ===================== BIBLIOTECA DE IMAGENS =====================
+// Mostra todas as fotos já carregadas por esta conta (em todos os eventos),
+// para reaproveitar em vez de carregar de novo — poupa espaço no Supabase.
+async function openMediaLibraryPicker(applyUrlFn) {
+  const userId = Store.currentUser?.id;
+  if (!userId) { toast('Inicia sessão para ver a tua biblioteca.'); return; }
+
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.id = 'media-library-modal';
+  modal.style.zIndex = '10700';
+  modal.innerHTML = `<div class="modal-content bg-white rounded-2xl p-5" style="max-width:560px;max-height:88vh;overflow-y:auto">
+    <div class="flex items-center justify-between mb-1">
+      <h3 class="text-base font-bold text-gray-800 flex items-center gap-2"><i data-lucide="images" class="w-5 h-5" style="color:#0ea5e9"></i> A Minha Biblioteca de Fotos</h3>
+      <button onclick="this.closest('.modal-overlay').remove()" style="background:none;border:none;cursor:pointer;color:#9ca3af;padding:4px;line-height:0">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <p class="text-xs text-gray-500 mb-3">Todas as fotos que já carregaste em qualquer evento. Escolhe uma para reaproveitar, ou elimina as que já não precisas — isso liberta espaço.</p>
+    <div id="media-library-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:0.6rem">
+      <p style="grid-column:1/-1;text-align:center;color:#9ca3af;padding:1rem;font-size:0.85rem">A carregar...</p>
+    </div>
+  </div>`;
+  document.body.appendChild(modal);
+  lucide.createIcons();
+
+  window._mediaLibraryApplyFn = applyUrlFn;
+
+  try {
+    const items = await supabaseRequest(`media_library?user_id=eq.${userId}&select=*&order=created_at.desc&limit=200`);
+    _renderMediaLibraryGrid(items || []);
+  } catch(e) {
+    document.getElementById('media-library-grid').innerHTML = '<p style="grid-column:1/-1;text-align:center;color:#ef4444;padding:1rem;font-size:0.85rem">Erro ao carregar a biblioteca.</p>';
+  }
+}
+
+function _renderMediaLibraryGrid(items) {
+  const grid = document.getElementById('media-library-grid');
+  if (!grid) return;
+  if (!items.length) {
+    grid.innerHTML = '<p style="grid-column:1/-1;text-align:center;color:#9ca3af;padding:1.5rem;font-size:0.85rem">Ainda não tens fotos na biblioteca. As fotos que carregares vão aparecer aqui automaticamente.</p>';
+    return;
+  }
+  grid.innerHTML = items.map(item => `
+    <div style="position:relative;border-radius:0.6rem;overflow:hidden;border:1.5px solid #e5e7eb;aspect-ratio:1;background:#f8fafc;cursor:pointer" onclick="_useMediaLibraryItem('${item.url}')">
+      <img src="${item.url}" loading="lazy" style="width:100%;height:100%;object-fit:cover" onerror="this.parentElement.style.display='none'">
+      <span style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,0.7));color:#fff;font-size:0.6rem;padding:0.3rem 0.4rem;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHTML(item.label || 'Imagem')}</span>
+      <button onclick="event.stopPropagation();_deleteMediaLibraryItem('${item.id}','${item.bucket}','${item.file_path}')" title="Eliminar" style="position:absolute;top:3px;right:3px;width:22px;height:22px;border-radius:50%;background:rgba(239,68,68,0.92);color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:0.7rem;line-height:0">✕</button>
+    </div>`).join('');
+}
+
+function _useMediaLibraryItem(url) {
+  if (window._mediaLibraryApplyFn) window._mediaLibraryApplyFn(url);
+  document.getElementById('media-library-modal')?.remove();
+  toast('Foto seleccionada da biblioteca!');
+}
+
+async function _deleteMediaLibraryItem(id, bucket, filePath) {
+  if (!confirm('Eliminar esta foto da biblioteca e do armazenamento? Esta acção não pode ser desfeita. (Se esta foto ainda estiver a ser usada em algum convite, deixará de aparecer lá.)')) return;
+  try {
+    if (bucket && filePath) {
+      await fetch(`${SUPABASE_URL}/storage/v1/object/${bucket}/${filePath}`, {
+        method: 'DELETE',
+        headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
+      }).catch(() => {}); // mesmo que falhe a apagar do storage, continua a remover o registo
+    }
+    await supabaseRequest(`media_library?id=eq.${id}`, 'DELETE');
+    toast('Foto eliminada.');
+    const userId = Store.currentUser?.id;
+    const items = await supabaseRequest(`media_library?user_id=eq.${userId}&select=*&order=created_at.desc&limit=200`);
+    _renderMediaLibraryGrid(items || []);
+  } catch(e) {
+    toast('Erro ao eliminar a foto.');
+  }
+}
+
+
 function toast(msg) {
   const t = document.createElement('div');
   t.className = 'toast-msg';
@@ -46,9 +122,18 @@ function toggleSwitch(el, extraId) {
   }
 }
 
-function previewCover(input) {
+async function previewCover(input) {
   const file = input.files[0];
   if (!file) return;
+  const eventId = Store.currentEventId || Store._intakeEventId;
+  const applyUrl = (url) => {
+    const img = document.getElementById('cover-img');
+    img.src = url; // URL existente — a gravação já trata "http" como "não re-enviar"
+    img.classList.remove('hidden');
+    document.getElementById('cover-placeholder').classList.add('hidden');
+  };
+  const proceed = await _confirmIfDuplicatePhoto(file, eventId, 'Foto de Capa', applyUrl);
+  if (!proceed) { input.value = ''; return; }
   const reader = new FileReader();
   reader.onload = e => {
     const img = document.getElementById('cover-img');
@@ -897,17 +982,21 @@ async function handleStdIntroPhotoUpload(input, variant) {
   if (file.size > 4 * 1024 * 1024) { toast('Imagem muito grande. Máx. 4 MB.'); return; }
   const eventId = Store.currentEventId || Store._intakeEventId;
   const label = variant === 'desktop' ? 'Foto de abertura (computador)' : 'Foto de abertura (telemóvel)';
-  const proceed = await _confirmIfDuplicatePhoto(file, eventId, label);
+  const applyUrl = (url) => {
+    document.getElementById(`evt-std-intro-photo-${variant}-url`).value = url;
+    const prev = document.getElementById(`std-intro-photo-${variant}-preview`);
+    if (prev) prev.src = url;
+    document.getElementById(`std-intro-photo-${variant}-preview-wrap`)?.classList.remove('hidden');
+  };
+  const proceed = await _confirmIfDuplicatePhoto(file, eventId, label, applyUrl);
   if (!proceed) { input.value = ''; return; }
   const prevWrap = document.getElementById(`std-intro-photo-${variant}-preview-wrap`);
   const prev = document.getElementById(`std-intro-photo-${variant}-preview`);
   if (prevWrap) prevWrap.classList.add('hidden');
   toast('A carregar foto...');
   try {
-    const url = await uploadImageToStorage(file, 'event-covers');
-    document.getElementById(`evt-std-intro-photo-${variant}-url`).value = url;
-    if (prev) prev.src = url;
-    if (prevWrap) prevWrap.classList.remove('hidden');
+    const url = await uploadImageToStorage(file, 'event-covers', label);
+    applyUrl(url);
     toast('Foto de abertura carregada!');
   } catch(e) {
     toast('Erro ao carregar a foto.');
@@ -954,15 +1043,19 @@ async function handleStdCoverUpload(input) {
   if (!file) return;
   if (file.size > 5*1024*1024) { toast('Imagem muito grande. Máx. 5 MB.'); return; }
   const eventId = Store.currentEventId || Store._intakeEventId;
-  const proceed = await _confirmIfDuplicatePhoto(file, eventId, 'Foto de capa do Save the Date');
-  if (!proceed) { input.value = ''; return; }
-  toast('A carregar foto de capa...');
-  try {
-    const url = await uploadImageToStorage(file, 'event-covers');
+  const label = 'Foto de capa do Save the Date';
+  const applyUrl = (url) => {
     document.getElementById('evt-std-cover-url').value = url;
     const prev = document.getElementById('std-cover-preview');
     if (prev) prev.src = url;
     document.getElementById('std-cover-preview-wrap')?.classList.remove('hidden');
+  };
+  const proceed = await _confirmIfDuplicatePhoto(file, eventId, label, applyUrl);
+  if (!proceed) { input.value = ''; return; }
+  toast('A carregar foto de capa...');
+  try {
+    const url = await uploadImageToStorage(file, 'event-covers', label);
+    applyUrl(url);
     toast('Foto de capa do Save the Date carregada!');
   } catch(e) { toast('Erro ao carregar a foto.'); }
 }
@@ -979,15 +1072,19 @@ async function handleFinalPhotoUpload(input) {
   if (!file) return;
   if (file.size > 5*1024*1024) { toast('Imagem muito grande. Máx. 5 MB.'); return; }
   const eventId = Store.currentEventId || Store._intakeEventId;
-  const proceed = await _confirmIfDuplicatePhoto(file, eventId, 'Foto final dos noivos');
-  if (!proceed) { input.value = ''; return; }
-  toast('A carregar foto final...');
-  try {
-    const url = await uploadImageToStorage(file, 'event-covers');
+  const label = 'Foto final dos noivos';
+  const applyUrl = (url) => {
     document.getElementById('evt-final-photo-url').value = url;
     const prev = document.getElementById('final-photo-preview');
     if (prev) prev.src = url;
     document.getElementById('final-photo-preview-wrap')?.classList.remove('hidden');
+  };
+  const proceed = await _confirmIfDuplicatePhoto(file, eventId, label, applyUrl);
+  if (!proceed) { input.value = ''; return; }
+  toast('A carregar foto final...');
+  try {
+    const url = await uploadImageToStorage(file, 'event-covers', label);
+    applyUrl(url);
     toast('Foto final dos noivos carregada!');
   } catch(e) { toast('Erro ao carregar a foto.'); }
 }
@@ -1004,15 +1101,19 @@ async function handleVenueImageUpload(input, venueKey) {
   if (!file) return;
   if (file.size > 4*1024*1024) { toast('Imagem muito grande. Máx. 4 MB.'); return; }
   const eventId = Store.currentEventId || Store._intakeEventId;
-  const proceed = await _confirmIfDuplicatePhoto(file, eventId, `Foto do local (${venueKey})`);
-  if (!proceed) { input.value = ''; return; }
-  toast('A carregar foto do local...');
-  try {
-    const url = await uploadImageToStorage(file, 'event-covers');
+  const label = `Foto do local (${venueKey})`;
+  const applyUrl = (url) => {
     document.getElementById(`evt-venue-${venueKey}-image`).value = url;
     const prev = document.getElementById(`venue-${venueKey}-image-preview`);
     if (prev) prev.src = url;
     document.getElementById(`venue-${venueKey}-image-wrap`)?.classList.remove('hidden');
+  };
+  const proceed = await _confirmIfDuplicatePhoto(file, eventId, label, applyUrl);
+  if (!proceed) { input.value = ''; return; }
+  toast('A carregar foto do local...');
+  try {
+    const url = await uploadImageToStorage(file, 'event-covers', label);
+    applyUrl(url);
     toast('Foto do local carregada!');
   } catch(e) { toast('Erro ao carregar a foto.'); }
 }
@@ -1029,15 +1130,19 @@ async function handleStoryPhotoUpload(input) {
   if (!file) return;
   if (file.size > 5*1024*1024) { toast('Imagem muito grande. Máx. 5 MB.'); return; }
   const eventId = Store.currentEventId || Store._intakeEventId;
-  const proceed = await _confirmIfDuplicatePhoto(file, eventId, 'Foto da Nossa História');
-  if (!proceed) { input.value = ''; return; }
-  toast('A carregar foto...');
-  try {
-    const url = await uploadImageToStorage(file, 'event-covers');
+  const label = 'Foto da Nossa História';
+  const applyUrl = (url) => {
     document.getElementById('evt-story-photo-url').value = url;
     const prev = document.getElementById('story-photo-preview');
     if (prev) prev.src = url;
     document.getElementById('story-photo-preview-wrap')?.classList.remove('hidden');
+  };
+  const proceed = await _confirmIfDuplicatePhoto(file, eventId, label, applyUrl);
+  if (!proceed) { input.value = ''; return; }
+  toast('A carregar foto...');
+  try {
+    const url = await uploadImageToStorage(file, 'event-covers', label);
+    applyUrl(url);
     toast('Foto carregada!');
   } catch(e) { toast('Erro ao carregar a foto.'); }
 }

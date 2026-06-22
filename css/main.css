@@ -271,18 +271,23 @@ html, body { height: 100%; margin: 0; width: 100%; overflow-x: hidden; }
 @media(min-width:480px) { .manual-grid { grid-template-columns: repeat(3, 1fr); } }
 @media(min-width:640px) { .manual-grid { grid-template-columns: repeat(4, 1fr); } }
 
-/* ── Dress Code + Sugestão de Presentes: secção de 2 botões ── */
+/* ── Dress Code + Sugestão de Presentes: secção de 2 cartões com título ── */
 .dg-buttons-grid { display: grid; gap: 1rem; max-width: 480px; margin: 0 auto; }
-.dg-btn {
-  display: flex; flex-direction: column; align-items: center; gap: 0.6rem;
+.dg-card {
+  display: flex; flex-direction: column; align-items: center; text-align: center; gap: 0.4rem;
   background: #fff; border: 1.5px solid #e5e7eb; border-radius: 1.1rem;
-  padding: 1.5rem 1rem; cursor: pointer; font-family: inherit;
-  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+  padding: 1.5rem 1.1rem; transition: transform 0.2s, box-shadow 0.2s;
 }
-.dg-btn:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,0.08); border-color: var(--ev-color, #007f9f); }
-.dg-btn:active { transform: translateY(0); }
-.dg-btn-icon { width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
-.dg-btn-label { font-size: 0.85rem; font-weight: 700; color: #1e293b; text-align: center; }
+.dg-card:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,0.08); }
+.dg-card-title { font-size: 0.95rem; font-weight: 800; color: #1e293b; margin: 0; }
+.dg-card-sub { font-size: 0.74rem; color: #6b7280; line-height: 1.4; margin: 0 0 0.4rem; }
+.dg-card-btn {
+  background: var(--ev-color, #007f9f); color: #fff; border: none; border-radius: 999px;
+  padding: 0.55rem 1.2rem; font-size: 0.8rem; font-weight: 700; cursor: pointer;
+  font-family: inherit; transition: filter 0.2s, transform 0.2s; width: 100%;
+}
+.dg-card-btn:hover { filter: brightness(0.92); }
+.dg-card-btn:active { transform: scale(0.98); }
 .manual-item { display: flex; flex-direction: column; align-items: center; background: #fff; border-radius: 1rem; padding: 1rem 0.5rem; border: 1.5px solid #e5e7eb; text-align: center; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
 .manual-item .mi-icon { width: 48px; height: 48px; background: color-mix(in srgb, var(--ev-color) 12%, white); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 0.5rem; }
 .manual-item .mi-icon svg, .manual-item .mi-icon i { width: 26px; height: 26px; color: var(--ev-color); }
