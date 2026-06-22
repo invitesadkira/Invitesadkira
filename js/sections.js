@@ -1538,10 +1538,10 @@ function buildEventFaqSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
   return _SD + `<div class="event-section" style="background:#fdfaf6">
     <div class="section-inner reveal">
       <p style="text-align:center;font-size:0.7rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--ev-color);font-weight:700;margin-bottom:1.5rem">Perguntas Frequentes</p>
-      <div style="display:flex;flex-direction:column;gap:0.75rem;max-width:480px;margin:0 auto">
+      <div id="event-faq-accordion" style="display:flex;flex-direction:column;gap:0.75rem;max-width:480px;margin:0 auto">
         ${items.map((it, i) => `
-        <div style="background:#fff;border-radius:0.75rem;border:1px solid #e5e7eb;overflow:hidden">
-          <button type="button" onclick="this.parentElement.querySelector('.faq-answer').classList.toggle('hidden');this.querySelector('.faq-chevron').style.transform=this.parentElement.querySelector('.faq-answer').classList.contains('hidden')?'rotate(0deg)':'rotate(180deg)'" style="width:100%;text-align:left;padding:0.85rem 1rem;background:none;border:none;display:flex;justify-content:space-between;align-items:center;cursor:pointer;font-family:inherit">
+        <div class="event-faq-block" style="background:#fff;border-radius:0.75rem;border:1px solid #e5e7eb;overflow:hidden">
+          <button type="button" onclick="_toggleEventFaqAnswer(this)" style="width:100%;text-align:left;padding:0.85rem 1rem;background:none;border:none;display:flex;justify-content:space-between;align-items:center;cursor:pointer;font-family:inherit">
             <span style="font-size:0.88rem;font-weight:700;color:#1e293b">${escapeHTML(it.q || '')}</span>
             <svg class="faq-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--ev-color)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-left:0.5rem;transition:transform 0.2s"><polyline points="6 9 12 15 18 9"/></svg>
           </button>
@@ -1550,6 +1550,31 @@ function buildEventFaqSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
       </div>
     </div>
   </div>`;
+}
+
+// Acordeão: abrir uma pergunta fecha automaticamente qualquer outra que
+// estivesse aberta na mesma secção (tanto no convite como no site comercial).
+function _toggleEventFaqAnswer(btn) {
+  const block = btn.parentElement;
+  const answer = block.querySelector('.faq-answer');
+  const chevron = btn.querySelector('.faq-chevron');
+  const willOpen = answer.classList.contains('hidden');
+
+  const accordion = block.closest('#event-faq-accordion');
+  if (accordion) {
+    accordion.querySelectorAll('.event-faq-block').forEach(otherBlock => {
+      if (otherBlock === block) return;
+      const otherAnswer = otherBlock.querySelector('.faq-answer');
+      const otherChevron = otherBlock.querySelector('.faq-chevron');
+      if (otherAnswer && !otherAnswer.classList.contains('hidden')) {
+        otherAnswer.classList.add('hidden');
+        if (otherChevron) otherChevron.style.transform = 'rotate(0deg)';
+      }
+    });
+  }
+
+  answer.classList.toggle('hidden', !willOpen);
+  if (chevron) chevron.style.transform = willOpen ? 'rotate(180deg)' : 'rotate(0deg)';
 }
 
 // ── Initialise any pending 3D gallery carousels after their HTML has been

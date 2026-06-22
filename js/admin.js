@@ -2394,7 +2394,13 @@ async function renderFAQ(container) {
 
 function toggleFaqItem(id) {
   const el = document.getElementById('faq-' + id);
-  if (el) el.classList.toggle('open');
+  if (!el) return;
+  const willOpen = !el.classList.contains('open');
+  const container = el.closest('#faq-container') || el.parentElement;
+  if (container) {
+    container.querySelectorAll('.faq-item.open').forEach(item => { if (item !== el) item.classList.remove('open'); });
+  }
+  el.classList.toggle('open', willOpen);
 }
 
 async function openFaqEditor() {

@@ -1338,6 +1338,11 @@ function downloadGiftsPDF() {
     jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
   };
 
+  if (typeof html2pdf === 'undefined') {
+    toast('A biblioteca de PDF não carregou. Verifica a tua ligação à internet e tenta novamente.');
+    return;
+  }
+
   html2pdf().set(opt).from(element).save();
   toast('PDF de presentes gerado com sucesso!');
 }
@@ -1387,9 +1392,94 @@ function downloadPDF() {
     return header + body;
   });
 
-  const JsPDF = window.jspdf && window.jspdf.jsPDF;
-  if (!JsPDF) {
-    // Fallback: download as .txt when jsPDF library isn't loaded
+  // ── Resumo (mesmo estilo da lista de presentes) ──
+  const totalCompanions = confirmed.reduce((sum, c) => sum + (c.companions || []).length, 0);
+  const totalKids = confirmed.reduce((sum, c) => sum + (c.kids || []).length, 0);
+  const totalPeople = confirmed.length + totalCompanions + totalKids;
+
+  let htmlContent = `
+    <!DOCTYPE html>
+    <html lang="pt">
+    <head>
+      <meta charset="UTF-8">
+      <title>Lista de Confirmações</title>
+      <style>
+        * { font-family: 'Quicksand', Arial, sans-serif; }
+        body { margin: 0; padding: 20px; background: white; color: #333; }
+        .header { text-align: center; margin-bottom: 30px; border-bottom: 3px solid #007f9f; padding-bottom: 20px; }
+        .header h1 { margin: 0 0 5px 0; color: #007f9f; font-size: 28px; }
+        .header p { margin: 5px 0; color: #666; font-size: 14px; }
+        .summary { background: #f0f9fb; border-left: 4px solid #007f9f; padding: 15px; margin-bottom: 30px; border-radius: 4px; }
+        .summary-item { display: inline-block; margin-right: 30px; }
+        .summary-item strong { color: #007f9f; }
+        .category { margin-bottom: 30px; page-break-inside: avoid; }
+        .category-header { background: #007f9f; color: white; padding: 10px 15px; border-radius: 4px 4px 0 0; font-weight: bold; font-size: 16px; }
+        .guest-list { border: 1px solid #ddd; border-top: none; border-radius: 0 0 4px 4px; }
+        .guest-item { padding: 11px 15px; border-bottom: 1px solid #eee; display: flex; align-items: center; gap: 10px; }
+        .guest-item:last-child { border-bottom: none; }
+        .guest-num { width: 22px; height: 22px; border-radius: 50%; background: #007f9f; color: #fff; font-size: 11px; font-weight: bold; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .guest-check { color: #10b981; font-weight: bold; flex-shrink: 0; }
+        .guest-name { flex: 1; font-weight: 500; }
+        .empty-note { padding: 14px 15px; color: #999; font-size: 13px; font-style: italic; }
+        .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; text-align: center; color: #999; font-size: 12px; }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <h1>Lista de Confirmações</h1>
+        <p><strong>${escapeHTML(ev.title || '')}</strong></p>
+        <p>${formatDate(ev.date)} às ${escapeHTML(ev.time || '')}</p>
+        <p style="font-size: 12px; color: #999;">Relatório gerado em ${generatedAt}</p>
+      </div>
+      <div class="summary">
+        <div class="summary-item"><strong>${confirmed.length}</strong> Confirmados</div>
+        <div class="summary-item"><strong>${totalCompanions}</strong> Acompanhantes</div>
+        <div class="summary-item"><strong>${totalKids}</strong> Crianças</div>
+        <div class="summary-item"><strong>${totalPeople}</strong> Total de Pessoas</div>
+      </div>
+  `;
+
+  sections.forEach(section => {
+    htmlContent += `<div class="category">`;
+    if (section.title) htmlContent += `<div class="category-header">${escapeHTML(section.title)}</div>`;
+    htmlContent += `<div class="guest-list">`;
+    if (section.lines.length) {
+      section.lines.forEach((line, i) => {
+        const safeLine = escapeHTML(line.replace(/^\d+\.\s*/, ''));
+        htmlContent += `<div class="guest-item">
+          ${enumerated ? `<span class="guest-num">${i + 1}</span>` : `<span class="guest-check">✓</span>`}
+          <span class="guest-name">${safeLine}</span>
+        </div>`;
+      });
+    } else {
+      htmlContent += `<div class="empty-note">Nenhum convidado confirmado nesta lista.</div>`;
+    }
+    htmlContent += `</div></div>`;
+  });
+
+  htmlContent += `
+      <div class="footer">
+        <p>Evento: ${escapeHTML(ev.title || '')}</p>
+        <p>© Created By AdKira 2026</p>
+      </div>
+    </body>
+    </html>
+  `;
+
+  const element = document.createElement('div');
+  element.innerHTML = htmlContent;
+
+  const opt = {
+    margin: 10,
+    filename: `${(ev.title || 'Convidados').replace(/\s+/g, '_')}_convidados_${new Date().toISOString().split('T')[0]}.pdf`,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2 },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  };
+
+  if (typeof html2pdf === 'undefined') {
+    // Salvaguarda: se a biblioteca não tiver carregado por algum motivo
+    // (ex: sem internet num instante), continua a funcionar como texto.
     const text = `${ev.title}\nGerado em: ${generatedAt}\n\n${textSections.join('\n\n')}`;
     const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
@@ -1398,57 +1488,12 @@ function downloadPDF() {
     a.download = `${(ev.title || 'Convidados').replace(/\s+/g, '_')}_convidados_${new Date().toISOString().split('T')[0]}.txt`;
     a.click();
     URL.revokeObjectURL(url);
-    toast('Lista exportada como texto (.txt). Para PDF, a biblioteca jsPDF é necessária.');
+    toast('Não foi possível gerar o PDF agora — lista exportada como texto.');
     return;
   }
 
-  const doc = new JsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
-  const margin = 18;
-  const pageWidth = doc.internal.pageSize.getWidth();
-  const pageHeight = doc.internal.pageSize.getHeight();
-  let y = 20;
-
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(16);
-  doc.text(ev.title || 'Evento', margin, y);
-  y += 8;
-
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(10);
-  doc.text('Gerado em: ' + generatedAt, margin, y);
-  y += 12;
-
-  doc.setFontSize(12);
-  sections.forEach((section, sectionIndex) => {
-    if (sectionIndex > 0) y += 4;
-
-    if (section.title) {
-      if (y > pageHeight - 24) {
-        doc.addPage();
-        y = 20;
-      }
-      doc.setFont('helvetica', 'bold');
-      doc.text(section.title, margin, y);
-      y += 8;
-      doc.setFont('helvetica', 'normal');
-    }
-
-    const sectionLines = section.lines.length ? section.lines : ['Nenhum convidado confirmado nesta lista.'];
-    sectionLines.forEach(line => {
-      const wrapped = doc.splitTextToSize(line, pageWidth - margin * 2);
-      wrapped.forEach(part => {
-        if (y > pageHeight - 18) {
-          doc.addPage();
-          y = 20;
-        }
-        doc.text(part, margin, y);
-        y += 7;
-      });
-    });
-  });
-
-  doc.save(`${ev.title.replace(/\s+/g, '_')}_convidados_${new Date().toISOString().split('T')[0]}.pdf`);
-  toast('PDF de convidados gerado.');
+  html2pdf().set(opt).from(element).save();
+  toast('PDF de confirmações gerado com sucesso!');
 }
 function manageGifts() { Router.go('gifts'); }
 
