@@ -157,12 +157,17 @@ async function supabaseRequest(endpoint, method = 'GET', body = null) {
             delete cleanBody[badCol];
             return supabaseRequest(endpoint, method, cleanBody);
           } else {
-            // Strip the bad column from select= — use simple string replace (no lookbehind)
+            // Strip the bad column from select= — use simple string replace (no lookbehind).
+            // ✅ CORREÇÃO: o ")" tem de ser reconhecido como fim de lista tal
+            // como "," e "&" — senão, uma coluna que seja a ÚLTIMA dentro de
+            // um sub-select aninhado (ex: gifts(...,image_url)) nunca era
+            // removida, e o pedido inteiro continuava a falhar para sempre.
             let clean = endpoint;
-            clean = clean.replace(new RegExp(`,${badCol}(?=[,&]|$)`, 'g'), '');
+            clean = clean.replace(new RegExp(`,${badCol}(?=[,&)]|$)`, 'g'), '');
+            clean = clean.replace(new RegExp(`(\\()${badCol},`, 'g'), '$1');
             clean = clean.replace(new RegExp(`${badCol},`, 'g'), '');
-            clean = clean.replace(new RegExp(`(select=)${badCol}(?=[,&]|$)`, 'g'), '$1');
-            clean = clean.replace(/,+/g, ',').replace(/select=,/g, 'select=').replace(/,(?=&|$)/g, '');
+            clean = clean.replace(new RegExp(`(select=)${badCol}(?=[,&)]|$)`, 'g'), '$1');
+            clean = clean.replace(/,+/g, ',').replace(/select=,/g, 'select=').replace(/,(?=&|$)/g, '').replace(/,\)/g, ')').replace(/\(,/g, '(');
             if (clean !== endpoint) return supabaseRequest(clean, method, body);
           }
         }

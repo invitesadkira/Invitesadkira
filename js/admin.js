@@ -3482,6 +3482,39 @@ async function renderAdminBusinessOverview() {
         ${overdue.length > 4 ? `<p style="font-size:0.72rem;color:#9ca3af;margin-top:0.4rem">+ ${overdue.length - 4} outra(s) — ver em "Encomendas"</p>` : ''}
       </div>` : ''}
   `;
+
+  // ── Bloqueio global de edição (todas as contas de uma vez) ──
+  try {
+    const lockRows = await supabaseRequest('site_config?key=eq.global_edit_lock&select=value&limit=1');
+    const isLocked = lockRows && lockRows[0] && lockRows[0].value === 'yes';
+    el.innerHTML += `
+      <div style="background:${isLocked ? '#fef2f2' : '#f8fafc'};border:1.5px solid ${isLocked ? '#fecaca' : '#e5e7eb'};border-radius:0.85rem;padding:0.9rem 1rem;margin-top:0.75rem;display:flex;align-items:center;justify-content:space-between;gap:0.75rem">
+        <div>
+          <p style="font-size:0.82rem;font-weight:800;color:${isLocked ? '#b91c1c' : '#374151'};margin:0">🔒 Bloqueio de edição — todas as contas</p>
+          <p style="font-size:0.72rem;color:#6b7280;margin:0.2rem 0 0">${isLocked ? 'Ligado: nenhum organizador (exceto admin) pode editar eventos, Save the Date ou Dress Code + Presentes agora.' : 'Desligado: cada conta segue a sua própria regra (ver "Bloquear Edição" individual em Contas).'}</p>
+        </div>
+        <button onclick="adminToggleGlobalEditLock(${isLocked})" style="flex-shrink:0;background:${isLocked ? '#16a34a' : '#dc2626'};color:#fff;border:none;border-radius:0.5rem;padding:0.5rem 0.9rem;font-size:0.75rem;font-weight:700;cursor:pointer">${isLocked ? 'Desbloquear Todos' : 'Bloquear Todos'}</button>
+      </div>`;
+  } catch(e) {}
+}
+
+async function adminToggleGlobalEditLock(currentlyLocked) {
+  const newValue = currentlyLocked ? 'no' : 'yes';
+  const verb = currentlyLocked ? 'desbloquear a edição para todas as contas' : 'BLOQUEAR a edição de eventos, Save the Date e Dress Code + Presentes para TODAS as contas (excepto admin)';
+  if (!confirm(`Tens a certeza que queres ${verb}?`)) return;
+  toast('A actualizar...');
+  try {
+    const existing = await supabaseRequest('site_config?key=eq.global_edit_lock&select=key');
+    if (existing && existing.length) {
+      await supabaseRequest('site_config?key=eq.global_edit_lock', 'PATCH', { value: newValue });
+    } else {
+      await supabaseRequest('site_config', 'POST', { key: 'global_edit_lock', value: newValue });
+    }
+    toast(currentlyLocked ? 'Edição desbloqueada para todos.' : 'Edição bloqueada para todos.');
+    renderAdminBusinessOverview();
+  } catch(e) {
+    toast('Erro ao actualizar. Tenta novamente.');
+  }
 }
 
 

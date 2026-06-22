@@ -1455,21 +1455,31 @@ function downloadPDF() {
 }
 function manageGifts() { Router.go('gifts'); }
 
-// ── Edit with lock check: respects edit_locked flag, but admin impersonating
-// a user always bypasses the lock (they're doing it to help the client).
-function editEventWithLockCheck() {
-  // Admin always allowed — either direct admin login or impersonating as admin
+// ── Edit with lock check: respects edit_locked flag (por conta) e
+// global_edit_lock (todas as contas) — admin/impersonação sempre passa,
+// porque está a ajudar o cliente.
+async function _checkEditingAllowed() {
   const isAdminSession = Store.currentUser?.role === 'admin' || Store.adminModeActive;
-  if (isAdminSession) {
-    editEvent();
-    return;
-  }
-  // Check if this user's account has editing locked by the admin
-  const user = Store.currentUser;
-  if (user && user.edit_locked === true) {
+  if (isAdminSession) return true;
+
+  if (Store.currentUser && Store.currentUser.edit_locked === true) {
     toast('A edição está temporariamente bloqueada. Contacta a AdKira para mais informações.', 4000);
-    return;
+    return false;
   }
+
+  try {
+    const rows = await supabaseRequest('site_config?key=eq.global_edit_lock&select=value&limit=1');
+    if (rows && rows[0] && rows[0].value === 'yes') {
+      toast('A edição de eventos está temporariamente desligada para manutenção. Tenta novamente mais tarde.', 5000);
+      return false;
+    }
+  } catch(e) { /* em caso de erro, não bloquear por causa disto */ }
+
+  return true;
+}
+
+async function editEventWithLockCheck() {
+  if (!(await _checkEditingAllowed())) return;
   editEvent();
 }
 
@@ -3897,6 +3907,7 @@ function removeEventFaqItem(idx) {
 // de TUDO, incluindo o Save the Date. Isolar isto num PATCH próprio elimina
 // esse risco por completo: este editor só toca nos campos do Save the Date.
 async function openStdEditor() {
+  if (!(await _checkEditingAllowed())) return;
   const eventId = Store.currentEventId;
   const ev = Store.events.find(e => e.id === eventId);
   if (!ev) { toast('Evento não encontrado.'); return; }
@@ -4082,6 +4093,7 @@ async function saveStdEditor() {
 
 // ===================== ABA PRÓPRIA: DRESS CODE + SUGESTÃO DE PRESENTES =====================
 async function openDressGiftsEditor() {
+  if (!(await _checkEditingAllowed())) return;
   const eventId = Store.currentEventId;
   const ev = Store.events.find(e => e.id === eventId);
   if (!ev) { toast('Evento não encontrado.'); return; }
