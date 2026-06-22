@@ -671,6 +671,20 @@ html, body { height: 100%; margin: 0; width: 100%; overflow-x: hidden; }
 .landing-nav-toggle.open span:nth-child(2) { opacity: 0; }
 .landing-nav-toggle.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
 
+/* ── Cabeçalho simples das sub-páginas (Preços, FAQ) ── */
+.landing-subpage-nav {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1.1rem clamp(1.25rem, 4vw, 2.5rem); padding-top: max(1.1rem, env(safe-area-inset-top));
+  border-bottom: 1px solid var(--lp-border); background: #fff;
+}
+#screen-pricing, #screen-faq { background: #fff; min-height: 100%; }
+.landing-subpage-back {
+  display: flex; align-items: center; gap: 0.4rem; background: none; border: none;
+  color: var(--lp-muted); font-weight: 700; font-size: 0.88rem; cursor: pointer; padding: 0.4rem 0.6rem 0.4rem 0;
+  transition: color 0.2s;
+}
+.landing-subpage-back:hover { color: var(--lp-teal); }
+
 @media (max-width: 860px) {
   .landing-hero-grid { grid-template-columns: 1fr; text-align: center; }
   .landing-hero-copy { text-align: center; }
@@ -909,12 +923,13 @@ html, body { height: 100%; margin: 0; width: 100%; overflow-x: hidden; }
 @media (max-width: 768px) {
   .landing-nav-toggle { display: flex; }
   .landing-nav-links {
-    position: fixed; top: 0; right: 0; height: 100%; width: min(78vw, 320px);
+    position: fixed; top: 0; right: 0; height: 100vh; width: min(78vw, 320px);
     background: #fff;
     flex-direction: column; align-items: stretch; justify-content: flex-start;
     padding: calc(4.5rem + env(safe-area-inset-top)) 1.5rem 2rem;
     gap: 0.3rem; transform: translateX(100%); transition: transform 0.32s ease;
     box-shadow: -10px 0 40px rgba(10,22,40,0.18); z-index: 49;
+    overflow-y: auto;
   }
   .landing-nav-links.open { transform: translateX(0); }
   .landing-nav-link { color: var(--lp-ink); padding: 0.85rem 0.5rem; font-size: 0.95rem; border-bottom: 1px solid var(--lp-border); border-radius: 0; }

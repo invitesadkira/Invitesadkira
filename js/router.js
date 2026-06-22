@@ -13,7 +13,7 @@ const Router = {
       if (inner) { inner.style.animation = 'none'; inner.offsetHeight; inner.style.animation = ''; }
     }
     // Mostrar/ocultar topbar consoante ecrã
-    const publicScreens = ['home','register','login','guest','gift-confirmed','not-found'];
+    const publicScreens = ['home','register','login','guest','gift-confirmed','not-found','pricing','faq'];
     if (publicScreens.includes(screen)) {
       hideTopbar();
     } else if (Store.currentUser) {
@@ -25,6 +25,21 @@ const Router = {
       if (typeof loadCurrentDemoEvent !== 'undefined') loadCurrentDemoEvent();
       if (typeof loadAvailableFonts !== 'undefined') loadAvailableFonts();
       if (typeof checkAndRenewDemoEvent !== 'undefined') checkAndRenewDemoEvent();
+    }
+    if (screen === 'pricing') {
+      if (typeof renderLandingPackages !== 'undefined') renderLandingPackages();
+      supabaseRequest('site_config?key=eq.packages_delivery_text&select=value&limit=1').then(rows => {
+        if (rows && rows[0] && rows[0].value) {
+          const el = document.getElementById('packages-delivery-text');
+          if (el) el.innerHTML = rows[0].value;
+        }
+      }).catch(() => {});
+    }
+    if (screen === 'faq') {
+      const faqContainer = document.getElementById('faq-container');
+      if (faqContainer && typeof renderFAQ !== 'undefined') renderFAQ(faqContainer);
+      const faqEditBtn = document.getElementById('faq-edit-btn');
+      if (faqEditBtn) faqEditBtn.classList.toggle('hidden', !Store.currentUser || Store.currentUser.role !== 'admin');
     }
     if (screen === 'home') {
       const faqContainer = document.getElementById('faq-container');

@@ -14,7 +14,7 @@
   <script>tailwind.config = { theme: { extend: { colors: { teal: { 500: '#007f9f', 600: '#006b86' } } } } }</script>
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💌</text></svg>">
-  <link rel="stylesheet" href="css/main.css?v=1782161172">
+  <link rel="stylesheet" href="css/main.css?v=1782164396">
 </head>
 <body class="h-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
 
@@ -66,8 +66,8 @@
 
         <div class="landing-nav-links" id="landing-nav-links">
           <a href="#" class="landing-nav-link" onclick="closeLandingMenu();document.querySelector('.landing-hero').scrollIntoView({behavior:'smooth'});return false">Início</a>
-          <a href="#" class="landing-nav-link" onclick="closeLandingMenu();document.getElementById('landing-packages-section').scrollIntoView({behavior:'smooth'});return false">Preços</a>
-          <a href="#" class="landing-nav-link" onclick="closeLandingMenu();document.getElementById('landing-faq-section').scrollIntoView({behavior:'smooth'});return false">FAQ</a>
+          <a href="#" class="landing-nav-link" onclick="closeLandingMenu();Router.go('pricing');return false">Preços</a>
+          <a href="#" class="landing-nav-link" onclick="closeLandingMenu();Router.go('faq');return false">FAQ</a>
           <button class="landing-nav-cta" onclick="closeLandingMenu();Router.go('login')">Entrar</button>
         </div>
 
@@ -83,7 +83,7 @@
           <h1 class="landing-h1">Convites digitais<br>para o teu grande dia</h1>
           <p class="landing-sub">Cria, personaliza e partilha um convite à altura do momento — galeria, música, confirmação de presença e presentes, tudo num único link.</p>
           <div class="landing-actions">
-            <button class="landing-btn-primary" onclick="document.getElementById('landing-packages-section').scrollIntoView({behavior:'smooth'})">
+            <button class="landing-btn-primary" onclick="Router.go('pricing')">
               Ver Pacotes
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
             </button>
@@ -113,19 +113,6 @@
       </div>
     </div>
 
-    <!-- ── PACOTES ── -->
-    <div class="landing-section" id="landing-packages-section">
-      <div class="landing-eyebrow">Preços</div>
-      <h2 class="landing-section-title">Escolhe o teu Pacote</h2>
-      <p class="landing-section-sub">Pagamento único, activação imediata após comprovativo.</p>
-      <div class="landing-packages" id="landing-packages-grid">
-        <!-- Populated by renderLandingPackages() from Supabase -->
-        <div class="lp-card"><div class="lp-badge" style="background:#e0f2fe;color:#0369a1">Básico</div><div class="lp-detail">60–66 convites digitais</div><div class="lp-price">99 999 Kz</div><button class="lp-btn" onclick="startPackageOrder('Básico','99 999 Kz')">Encomendar</button></div>
-        <div class="lp-card lp-featured"><div class="lp-badge" style="background:#fef3c7;color:#92400e">Popular</div><div class="lp-detail">126–136 convites digitais</div><div class="lp-price">159 999 Kz</div><button class="lp-btn" onclick="startPackageOrder('Popular','159 999 Kz')">Encomendar</button></div>
-        <div class="lp-card"><div class="lp-badge" style="background:#e0fdf4;color:#065f46">Premium</div><div class="lp-detail">166–176 convites digitais</div><div class="lp-price">219 999 Kz</div><button class="lp-btn" onclick="startPackageOrder('Premium','219 999 Kz')">Encomendar</button></div>
-      </div>
-    </div>
-
     <!-- ── DEMO AO VIVO ── -->
     <div class="landing-section" id="landing-demo-section">
       <div class="landing-eyebrow">Exemplos</div>
@@ -133,18 +120,6 @@
       <p class="landing-section-sub">Exemplos reais — toque para abrir e explorar como um convidado faria.</p>
       <div class="landing-demo-grid" id="landing-demo-grid">
         <!-- Populated by renderLandingDemos() from Supabase site_config 'demo_events' -->
-      </div>
-    </div>
-
-    <!-- ── FAQ ── -->
-    <div class="landing-section landing-section--alt" id="landing-faq-section">
-      <div class="landing-eyebrow">Ajuda</div>
-      <h2 class="landing-section-title">Perguntas Frequentes</h2>
-      <div id="faq-container" class="faq-list">
-        <!-- preenchido pelo JS com FAQ do admin ou padrão -->
-      </div>
-      <div id="faq-edit-btn" class="hidden landing-center" style="margin-top:1rem">
-        <button class="landing-btn-outline-dark text-sm" onclick="openFaqEditor()">Editar FAQ</button>
       </div>
     </div>
 
@@ -192,7 +167,61 @@
     </footer>
 
   </div>
-</section><!-- ========== SCREEN: REGISTER ========== -->
+</section>
+
+<!-- ========== SCREEN: PREÇOS (própria, fora da página inicial) ========== -->
+<section id="screen-pricing" class="page-section hidden landing-page">
+  <div class="page-transition">
+    <nav class="landing-subpage-nav">
+      <button class="landing-subpage-back" onclick="Router.go('home')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+        Voltar
+      </button>
+      <div class="landing-logo">
+        <span class="landing-logo-mark">IW</span>
+        <span class="landing-logo-text">Invites Web</span>
+      </div>
+    </nav>
+    <div class="landing-section" id="landing-packages-section" style="padding-top:clamp(2rem,5vw,3rem)">
+      <div class="landing-eyebrow">Preços</div>
+      <h2 class="landing-section-title">Escolhe o teu Pacote</h2>
+      <p class="landing-section-sub">Pagamento único, activação imediata após comprovativo.</p>
+      <div class="landing-packages" id="landing-packages-grid">
+        <!-- Populated by renderLandingPackages() from Supabase -->
+        <div class="lp-card"><div class="lp-badge" style="background:#e0f2fe;color:#0369a1">Básico</div><div class="lp-detail">60–66 convites digitais</div><div class="lp-price">99 999 Kz</div><button class="lp-btn" onclick="startPackageOrder('Básico','99 999 Kz')">Encomendar</button></div>
+        <div class="lp-card lp-featured"><div class="lp-badge" style="background:#fef3c7;color:#92400e">Popular</div><div class="lp-detail">126–136 convites digitais</div><div class="lp-price">159 999 Kz</div><button class="lp-btn" onclick="startPackageOrder('Popular','159 999 Kz')">Encomendar</button></div>
+        <div class="lp-card"><div class="lp-badge" style="background:#e0fdf4;color:#065f46">Premium</div><div class="lp-detail">166–176 convites digitais</div><div class="lp-price">219 999 Kz</div><button class="lp-btn" onclick="startPackageOrder('Premium','219 999 Kz')">Encomendar</button></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== SCREEN: FAQ (própria, fora da página inicial) ========== -->
+<section id="screen-faq" class="page-section hidden landing-page">
+  <div class="page-transition">
+    <nav class="landing-subpage-nav">
+      <button class="landing-subpage-back" onclick="Router.go('home')">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+        Voltar
+      </button>
+      <div class="landing-logo">
+        <span class="landing-logo-mark">IW</span>
+        <span class="landing-logo-text">Invites Web</span>
+      </div>
+    </nav>
+    <div class="landing-section" id="landing-faq-section" style="padding-top:clamp(2rem,5vw,3rem)">
+      <div class="landing-eyebrow">Ajuda</div>
+      <h2 class="landing-section-title">Perguntas Frequentes</h2>
+      <div id="faq-container" class="faq-list">
+        <!-- preenchido pelo JS com FAQ do admin ou padrão -->
+      </div>
+      <div id="faq-edit-btn" class="hidden landing-center" style="margin-top:1rem">
+        <button class="landing-btn-outline-dark text-sm" onclick="openFaqEditor()">Editar FAQ</button>
+      </div>
+    </div>
+  </div>
+</section>
+<!-- ========== SCREEN: REGISTER ========== -->
    <section id="screen-register" class="page-section hidden">
     <div class="page-transition flex flex-col items-center justify-center min-h-full px-4 py-10">
      <div class="w-full max-w-md">
@@ -1138,19 +1167,19 @@ para testemunhar o seu enlace matrimonial</textarea>
   </a>
 
   <!-- ===================== SCRIPTS (ordem importa) ===================== -->
-  <script src="js/config.js?v=1782161172"></script>
-  <script src="js/store.js?v=1782161172"></script>
-  <script src="js/visuals.js?v=1782161172"></script>
-  <script src="js/venues.js?v=1782161172"></script>
-  <script src="js/rsvp.js?v=1782161172"></script>
-  <script src="js/ui.js?v=1782161172"></script>
-  <script src="js/auth.js?v=1782161172"></script>
-  <script src="js/dashboard.js?v=1782161172"></script>
-  <script src="js/events.js?v=1782161172"></script>
-  <script src="js/guest.js?v=1782161172"></script>
-  <script src="js/sections.js?v=1782161172"></script>
-  <script src="js/admin.js?v=1782161172"></script>
-  <script src="js/router.js?v=1782161172"></script>
+  <script src="js/config.js?v=1782164396"></script>
+  <script src="js/store.js?v=1782164396"></script>
+  <script src="js/visuals.js?v=1782164396"></script>
+  <script src="js/venues.js?v=1782164396"></script>
+  <script src="js/rsvp.js?v=1782164396"></script>
+  <script src="js/ui.js?v=1782164396"></script>
+  <script src="js/auth.js?v=1782164396"></script>
+  <script src="js/dashboard.js?v=1782164396"></script>
+  <script src="js/events.js?v=1782164396"></script>
+  <script src="js/guest.js?v=1782164396"></script>
+  <script src="js/sections.js?v=1782164396"></script>
+  <script src="js/admin.js?v=1782164396"></script>
+  <script src="js/router.js?v=1782164396"></script>
 
 </body>
 </html>
