@@ -853,7 +853,7 @@ function buildGallerySection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
   if (style === 'carousel') {
     const galId = 'gal3d_' + Math.random().toString(36).substring(2, 8);
     const slides = urls.map((u, i) => `<div class="g3d-slide" data-idx="${i}" style="background-image:url('${u}')"></div>`).join('');
-    const dots = urls.map((_, i) => `<span class="g3d-dot" data-idx="${i}" style="background:${i===0?evColor:'#d1d5db'}"></span>`).join('');
+    const dots = urls.map((_, i) => `<span class="g3d-dot ${i===0?'active':''}" data-idx="${i}" style="background:${i===0?evColor:'#d1d5db'}"></span>`).join('');
     // NOTE: <script> tags inserted via innerHTML never execute in browsers —
     // so the carousel's behaviour must be initialised by a real JS function
     // called AFTER the HTML lands in the DOM (see initGalleryCarousels(),
@@ -864,7 +864,12 @@ function buildGallerySection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
       <div class="section-inner">
         <h3 class="section-title reveal" style="text-align:center">Nossos Momentos</h3>
         <div id="${galId}" class="g3d-wrap reveal">
+          <div class="g3d-backdrop" style="background-image:url('${urls[0]}')"></div>
           <div class="g3d-track">${slides}</div>
+          ${urls.length > 1 ? `
+          <button class="g3d-arrow prev" aria-label="Anterior"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1e293b" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+          <button class="g3d-arrow next" aria-label="Seguinte"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1e293b" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+          <span class="g3d-counter">1 / ${urls.length}</span>` : ''}
         </div>
         <div class="g3d-dots">${dots}</div>
       </div>
@@ -1765,43 +1770,97 @@ function initGalleryCarousels() {
     const wrap = document.getElementById(id);
     if (!wrap) return;
     const slides = wrap.querySelectorAll('.g3d-slide');
+    const backdrop = wrap.querySelector('.g3d-backdrop');
+    const counter = wrap.querySelector('.g3d-counter');
+    const prevBtn = wrap.querySelector('.g3d-arrow.prev');
+    const nextBtn = wrap.querySelector('.g3d-arrow.next');
     const dotsWrap = wrap.parentElement.querySelector('.g3d-dots');
     const dots = dotsWrap ? dotsWrap.querySelectorAll('.g3d-dot') : [];
     let idx = 0;
+
+    // ── Posicionamento com perspectiva 3D real (rotação + profundidade) ──
     function render() {
       slides.forEach((s, i) => {
         const offset = i - idx;
-        s.style.transform = `translateX(${offset * 78}%) scale(${offset === 0 ? 1 : 0.78})`;
-        s.style.zIndex = offset === 0 ? 3 : 1;
-        s.style.opacity = Math.abs(offset) > 1 ? 0 : (offset === 0 ? 1 : 0.55);
-        s.style.filter = offset === 0 ? 'none' : 'blur(1px)';
+        const abs = Math.abs(offset);
+        const dir = Math.sign(offset);
+        if (abs > 2) {
+          s.style.opacity = 0;
+          s.style.transform = `translateX(${dir * 120}%) rotateY(0deg) translateZ(-300px) scale(0.5)`;
+          s.style.pointerEvents = 'none';
+          return;
+        }
+        const translateX = offset === 0 ? 0 : dir * (40 + abs * 22);
+        const rotateY = offset === 0 ? 0 : dir * -32;
+        const translateZ = offset === 0 ? 0 : -90 * abs;
+        const scale = offset === 0 ? 1 : 1 - abs * 0.16;
+        const opacity = offset === 0 ? 1 : (abs === 1 ? 0.82 : 0.45);
+        s.style.transform = `translateX(${translateX}%) rotateY(${rotateY}deg) translateZ(${translateZ}px) scale(${scale})`;
+        s.style.opacity = opacity;
+        s.style.zIndex = 10 - abs;
+        s.style.setProperty('--g3d-shade', offset === 0 ? '0' : '0.55');
+        s.style.pointerEvents = 'auto';
       });
-      dots.forEach((d, i) => { d.style.background = i === idx ? color : '#d1d5db'; });
+      dots.forEach((d, i) => {
+        d.classList.toggle('active', i === idx);
+        d.style.background = i === idx ? color : '#d1d5db';
+      });
+      if (backdrop) backdrop.style.backgroundImage = slides[idx]?.style.backgroundImage || '';
+      if (counter) counter.textContent = `${idx + 1} / ${slides.length}`;
+      if (prevBtn) prevBtn.style.opacity = idx === 0 ? '0.35' : '1';
+      if (nextBtn) nextBtn.style.opacity = idx === slides.length - 1 ? '0.35' : '1';
+    }
+    function go(newIdx) {
+      idx = Math.max(0, Math.min(slides.length - 1, newIdx));
+      render();
     }
     render();
-    let startX = null;
-    wrap.addEventListener('touchstart', (e) => { startX = e.touches[0].clientX; }, { passive: true });
-    wrap.addEventListener('touchend', (e) => {
+
+    // ── Arrastar: touch (telemóvel) e rato (computador) ──
+    let startX = null, dragging = false;
+    const onDragStart = (x) => { startX = x; dragging = true; };
+    const onDragEnd = (x) => {
       if (startX === null) return;
-      const dx = e.changedTouches[0].clientX - startX;
-      if (dx > 40 && idx > 0) idx--;
-      else if (dx < -40 && idx < slides.length - 1) idx++;
-      startX = null; render();
-    }, { passive: true });
-    // Clicking the centered slide opens the lightbox (full view);
-    // clicking a side-peek slide navigates the carousel to it instead.
+      const dx = x - startX;
+      if (dx > 40) go(idx - 1);
+      else if (dx < -40) go(idx + 1);
+      startX = null; dragging = false;
+    };
+    wrap.addEventListener('touchstart', (e) => onDragStart(e.touches[0].clientX), { passive: true });
+    wrap.addEventListener('touchend', (e) => onDragEnd(e.changedTouches[0].clientX), { passive: true });
+    wrap.addEventListener('mousedown', (e) => { e.preventDefault(); onDragStart(e.clientX); });
+    window.addEventListener('mouseup', (e) => { if (dragging) onDragEnd(e.clientX); });
+    wrap.style.cursor = 'grab';
+
+    // ── Setas de navegação ──
+    if (prevBtn) prevBtn.onclick = (e) => { e.stopPropagation(); go(idx - 1); };
+    if (nextBtn) nextBtn.onclick = (e) => { e.stopPropagation(); go(idx + 1); };
+
+    // ── Teclado (quando o carrossel está visível) ──
+    const keyHandler = (e) => {
+      const rect = wrap.getBoundingClientRect();
+      const inView = rect.top < window.innerHeight && rect.bottom > 0;
+      if (!inView) return;
+      if (e.key === 'ArrowLeft') go(idx - 1);
+      else if (e.key === 'ArrowRight') go(idx + 1);
+    };
+    window.addEventListener('keydown', keyHandler);
+
+    // Clicar na imagem centrada abre o lightbox; clicar numa imagem lateral
+    // navega o carrossel até ela.
     slides.forEach((s, i) => {
       s.style.cursor = 'pointer';
       s.addEventListener('click', () => {
+        if (dragging) return;
         if (i === idx) {
           const url = s.style.backgroundImage.slice(5, -2); // strip url("...")
           if (typeof openLightbox === 'function') openLightbox(url);
         } else {
-          idx = i; render();
+          go(i);
         }
       });
     });
-    dots.forEach((d, i) => { d.onclick = () => { idx = i; render(); }; });
+    dots.forEach((d, i) => { d.onclick = () => go(i); });
   });
   window._pendingCarousels = [];
 }

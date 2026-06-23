@@ -1197,16 +1197,45 @@ html, body { height: 100%; margin: 0; width: 100%; overflow-x: hidden; }
 @keyframes stdSpin { to { transform: rotate(360deg); } }
 
 /* ── Gallery: 3D Carousel style ── */
-.g3d-wrap { position: relative; width: 100%; height: 320px; overflow: hidden; }
-.g3d-track { position: relative; width: 100%; height: 100%; }
-.g3d-slide {
-  position: absolute; top: 0; left: 50%; width: 70%; height: 100%;
-  margin-left: -35%; border-radius: 1.25rem; background-size: cover; background-position: center;
-  box-shadow: 0 12px 32px rgba(0,0,0,0.18);
-  transition: transform 0.4s ease, opacity 0.4s ease, filter 0.4s ease;
+.g3d-wrap { position: relative; width: 100%; height: 360px; overflow: hidden; perspective: 1200px; }
+.g3d-backdrop {
+  position: absolute; inset: -10%; background-size: cover; background-position: center;
+  filter: blur(28px) brightness(0.75) saturate(1.2); transform: scale(1.15);
+  transition: background-image 0.5s ease; z-index: 0;
 }
-.g3d-dots { display: flex; justify-content: center; gap: 0.4rem; margin-top: 1rem; }
-.g3d-dot { width: 7px; height: 7px; border-radius: 50%; transition: background 0.2s; cursor: pointer; }
+.g3d-backdrop::after { content: ''; position: absolute; inset: 0; background: rgba(0,0,0,0.18); }
+.g3d-track { position: relative; width: 100%; height: 100%; transform-style: preserve-3d; z-index: 1; }
+.g3d-slide {
+  position: absolute; top: 0; left: 50%; width: 64%; height: 100%;
+  margin-left: -32%; border-radius: 1.25rem; background-size: cover; background-position: center;
+  box-shadow: 0 20px 45px rgba(0,0,0,0.35);
+  transition: transform 0.55s cubic-bezier(.22,1,.36,1), opacity 0.55s ease, filter 0.55s ease;
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+}
+.g3d-slide::after {
+  content: ''; position: absolute; inset: 0; border-radius: inherit;
+  background: linear-gradient(to top, rgba(0,0,0,0.25), transparent 40%);
+  opacity: var(--g3d-shade, 0); transition: opacity 0.55s ease;
+}
+.g3d-dots { display: flex; justify-content: center; gap: 0.4rem; margin-top: 1rem; position: relative; z-index: 2; }
+.g3d-dot { width: 7px; height: 7px; border-radius: 50%; transition: background 0.2s, transform 0.2s; cursor: pointer; }
+.g3d-dot.active { transform: scale(1.4); }
+.g3d-arrow {
+  position: absolute; top: 50%; transform: translateY(-50%); z-index: 4;
+  width: 38px; height: 38px; border-radius: 50%; background: rgba(255,255,255,0.92);
+  display: flex; align-items: center; justify-content: center; cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.25); border: none; transition: transform 0.2s, background 0.2s;
+}
+.g3d-arrow:hover { background: #fff; transform: translateY(-50%) scale(1.08); }
+.g3d-arrow:active { transform: translateY(-50%) scale(0.95); }
+.g3d-arrow.prev { left: 0.6rem; }
+.g3d-arrow.next { right: 0.6rem; }
+.g3d-counter {
+  position: absolute; top: 0.7rem; right: 0.9rem; z-index: 3;
+  background: rgba(0,0,0,0.45); color: #fff; font-size: 0.68rem; font-weight: 700;
+  padding: 0.2rem 0.55rem; border-radius: 999px; backdrop-filter: blur(4px);
+}
 
 /* ── Gallery: Masonry style ── */
 .gmasonry-grid {
