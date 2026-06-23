@@ -70,6 +70,131 @@ const DEFAULT_SCHEDULE_ITEMS = [
 Store.eventManualItems   = null;  // null = use defaults
 Store.eventScheduleItems = null;
 
+// ===================== MODELO SIMPLES: 1 SÓ BLOCO CONTÍNUO =====================
+// Alternativa ao sistema normal de secções — pensado para quem quer algo
+// "simples mas lindo": uma única página que flui sem divisores nem cartões
+// separados, na sequência: capa com degradê → texto bíblico → bênção →
+// nomes → convite → data/hora → local → confirmar presença → local +
+// cronograma. Activa-se com invite_layout = 'simple'.
+function buildSimpleInviteTemplate(ev) {
+  const evColor = ev.event_color || '#007f9f';
+  const isSingle = ev.event_type === 'birthday' || ev.event_type === 'other';
+
+  // Nome do convidado, se já soubermos quem é (mesma lógica usada no resto do site)
+  let guestName = null;
+  if (Store._lockedGuestName) guestName = Store._lockedGuestName;
+  if (!guestName) {
+    const confirmed = rsvpCheckConfirmed(ev.id || Store.currentEventId);
+    if (confirmed && confirmed.attending === true && confirmed.name) guestName = confirmed.name;
+  }
+
+  const coupleNames = isSingle
+    ? escapeHTML(ev.groom_name || ev.title || '')
+    : [ev.groom_name, ev.bride_name].filter(Boolean).map(escapeHTML).join(' & ');
+
+  const eventNoun = isSingle ? 'celebração' : 'celebração do seu Casamento';
+  const inviteLine = guestName
+    ? `Convidam <strong>${escapeHTML(guestName)}</strong> para a ${eventNoun}`
+    : `Convidam para a ${eventNoun}`;
+
+  // Data por extenso (ex: 15 de Agosto de 2026)
+  const MONTHS = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  let longDate = '';
+  if (ev.date) {
+    const [y,m,d] = ev.date.split('-');
+    longDate = `${parseInt(d,10)} de ${MONTHS[parseInt(m,10)-1]} de ${y}`;
+  }
+
+  const bibleBlock = ev.bible_text ? `
+    <div style="max-width:480px;margin:0 auto;text-align:center;padding:0 1.5rem">
+      ${ev.bible_text.split('\n').filter(Boolean).map(l => `<p style="font-style:italic;color:#4b5563;font-size:0.95rem;line-height:1.8;margin:0 0 0.4rem">${escapeHTML(l)}</p>`).join('')}
+      ${ev.bible_ref ? `<p style="font-size:0.78rem;color:${evColor};font-weight:700;margin-top:0.5rem">${escapeHTML(ev.bible_ref)}</p>` : ''}
+    </div>` : '';
+
+  const blessingLine = !isSingle ? `
+    <p style="text-align:center;font-size:0.7rem;letter-spacing:0.14em;text-transform:uppercase;font-weight:700;color:${evColor};margin:2rem 0 0.5rem">Com a bênção de Deus e seus pais</p>
+  ` : '';
+
+  // Primeiro local (cerimónia, ou recepção se não houver cerimónia definida)
+  const venue1Label = ev.venue_ceremony ? 'Cerimónia' : (ev.venue_reception ? 'Local' : '');
+  const venue1Name  = ev.venue_ceremony || ev.venue_reception || '';
+  const venue1Maps  = ev.venue_ceremony ? ev.venue_ceremony_maps : ev.venue_reception_maps;
+
+  // Segundo local (recepção, se diferente do primeiro)
+  const hasSecondVenue = ev.venue_ceremony && ev.venue_reception;
+  const venue2Name = hasSecondVenue ? ev.venue_reception : '';
+  const venue2Maps = hasSecondVenue ? ev.venue_reception_maps : '';
+
+  let scheduleItems = [];
+  if (ev.schedule_items) { try { scheduleItems = JSON.parse(ev.schedule_items); } catch(e) {} }
+
+  // Flor de canto sobre a capa — pedido explicitamente para este modelo
+  const decorOn = _yesOrTrue(ev.show_decor);
+  const decorSide = ev.decor_top_position === 'right' ? 'right:0.75rem' : 'left:0.75rem';
+  const decorHtml = (decorOn && ev.decor_top_url)
+    ? `<div style="position:absolute;top:0.75rem;${decorSide};width:clamp(100px,20vw,170px);height:clamp(100px,20vw,170px);background-image:url('${ev.decor_top_url}');background-size:contain;background-repeat:no-repeat;background-position:top ${ev.decor_top_position === 'right' ? 'right' : 'left'};pointer-events:none;z-index:1"></div>`
+    : '';
+
+  return `
+    <div class="simple-invite" style="background:#fff;max-width:560px;margin:0 auto">
+      <!-- 1. Capa com degradê branco por baixo -->
+      <div style="position:relative;width:100%;height:62vh;min-height:340px;max-height:560px;overflow:hidden">
+        ${ev.cover_image ? `<img src="${ev.cover_image}" style="width:100%;height:100%;object-fit:cover">` : `<div style="width:100%;height:100%;background:linear-gradient(135deg,${evColor},#1a1a2e)"></div>`}
+        <div style="position:absolute;inset:0;background:linear-gradient(to bottom, transparent 55%, #fff 98%)"></div>
+        ${decorHtml}
+      </div>
+
+      <!-- 2. Texto bíblico -->
+      ${bibleBlock}
+
+      <!-- 3. Com a bênção de Deus e seus pais -->
+      ${blessingLine}
+
+      <!-- 4. Nomes do casal -->
+      <h1 style="text-align:center;font-family:'Playfair Display',serif;font-style:italic;font-size:clamp(2.2rem,8vw,3.2rem);color:#1e293b;margin:0.25rem 0 1rem">${coupleNames}</h1>
+
+      <!-- 5. Convidam ___ para a celebração -->
+      <p style="text-align:center;font-size:0.98rem;color:#374151;line-height:1.7;max-width:380px;margin:0 auto 2.5rem;padding:0 1.5rem">${inviteLine}</p>
+
+      <!-- 6. Data e horário -->
+      <div style="text-align:center;margin-bottom:2.5rem">
+        <p style="font-size:1.3rem;font-weight:800;color:${evColor};margin:0">${escapeHTML(longDate)}</p>
+        ${ev.time ? `<p style="font-size:0.95rem;color:#6b7280;margin:0.2rem 0 0">às ${escapeHTML(ev.time)}</p>` : ''}
+      </div>
+
+      <!-- 7. Local do evento -->
+      ${venue1Name ? `
+      <div style="text-align:center;margin-bottom:2.5rem;padding:0 1.5rem">
+        ${venue1Label ? `<p style="font-size:0.68rem;letter-spacing:0.12em;text-transform:uppercase;font-weight:700;color:${evColor};margin:0 0 0.3rem">${venue1Label}</p>` : ''}
+        <p style="font-size:1rem;font-weight:700;color:#1e293b;margin:0">${escapeHTML(venue1Name)}</p>
+        ${venue1Maps ? `<a href="${escapeHTML(venue1Maps)}" target="_blank" style="font-size:0.8rem;color:${evColor};font-weight:600;text-decoration:underline">Ver no mapa</a>` : ''}
+      </div>` : ''}
+
+      <!-- 8. Confirmar presença -->
+      <div style="text-align:center;margin-bottom:3rem">
+        <button onclick="openRsvpDrawer()" style="background:${evColor};color:#fff;border:none;border-radius:999px;padding:0.9rem 2.6rem;font-weight:800;font-size:0.95rem;cursor:pointer;font-family:inherit;box-shadow:0 8px 24px rgba(0,0,0,0.18)">Confirmar Presença</button>
+      </div>
+
+      <!-- 9. Local do evento (recepção, se diferente) + cronograma do dia -->
+      ${venue2Name ? `
+      <div style="text-align:center;margin-bottom:2.5rem;padding:0 1.5rem">
+        <p style="font-size:0.68rem;letter-spacing:0.12em;text-transform:uppercase;font-weight:700;color:${evColor};margin:0 0 0.3rem">Recepção</p>
+        <p style="font-size:1rem;font-weight:700;color:#1e293b;margin:0">${escapeHTML(venue2Name)}</p>
+        ${venue2Maps ? `<a href="${escapeHTML(venue2Maps)}" target="_blank" style="font-size:0.8rem;color:${evColor};font-weight:600;text-decoration:underline">Ver no mapa</a>` : ''}
+      </div>` : ''}
+
+      ${scheduleItems.length ? `
+      <div style="max-width:340px;margin:0 auto 3.5rem;padding:0 1.5rem">
+        <p style="text-align:center;font-size:0.68rem;letter-spacing:0.12em;text-transform:uppercase;font-weight:700;color:${evColor};margin:0 0 1.25rem">Cronograma do Dia</p>
+        ${scheduleItems.map(it => `
+          <div style="display:flex;align-items:baseline;gap:0.9rem;margin-bottom:0.85rem">
+            <span style="flex-shrink:0;font-weight:800;font-size:0.85rem;color:${evColor};width:58px">${escapeHTML(it.time || '')}</span>
+            <span style="font-size:0.88rem;color:#374151;font-weight:600">${escapeHTML(it.label || '')}</span>
+          </div>`).join('')}
+      </div>` : ''}
+    </div>`;
+}
+
 async function renderGuestSections(eventData) {
   // Load venues from dedicated table
   try {
@@ -81,6 +206,20 @@ async function renderGuestSections(eventData) {
   const container = document.getElementById('guest-sections-container');
   if (!container) return;
   if (!eventData) { container.innerHTML = ''; return; }
+
+  // ✅ Modelo "1 só bloco" — substitui TODO o sistema normal de secções por
+  // um fluxo único e contínuo, na ordem exacta pedida (capa → bíblia →
+  // bênção → nomes → convite → data → local → RSVP → local + cronograma).
+  // Tem a sua própria capa (com degradê), por isso escondemos a hero normal.
+  const heroBlock = document.getElementById('guest-hero');
+  if (eventData.invite_layout === 'simple') {
+    if (heroBlock) heroBlock.style.display = 'none';
+    container.innerHTML = buildSimpleInviteTemplate(eventData);
+    lucide.createIcons();
+    return;
+  } else if (heroBlock) {
+    heroBlock.style.display = '';
+  }
 
   // ── Personalize the invite text with the confirmed guest's name ──────────
   // Only active when the organiser has enabled "Mostrar nome do convidado no
@@ -1412,7 +1551,10 @@ function buildDressGiftsSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
     <div class="dg-card">
       <h4 class="dg-card-title">Dress Code</h4>
       <p class="dg-card-sub">Qual o traje pedido para o evento</p>
-      <button type="button" class="dg-card-btn" onclick="openGuestDresscodeModal()">Ver Dress Code</button>
+      <button type="button" class="dg-card-btn" onclick="openGuestDresscodeModal()">
+        <span class="action-btn-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.38 3.46 16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.57a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.57a2 2 0 0 0-1.34-2.23z"/></svg></span>
+        <span class="action-btn-label">Ver Dress Code</span>
+      </button>
     </div>` : '';
 
   const singlePerson = ev.event_type === 'birthday' || ev.event_type === 'other';
@@ -1422,7 +1564,10 @@ function buildDressGiftsSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
     <div class="dg-card">
       <h4 class="dg-card-title">Sugestão de Presentes</h4>
       <p class="dg-card-sub">${escapeHTML(giftsSub)}</p>
-      <button type="button" class="dg-card-btn" onclick="openGuestGiftsModal()">Ver Presentes</button>
+      <button type="button" class="dg-card-btn" onclick="openGuestGiftsModal()">
+        <span class="action-btn-icon"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg></span>
+        <span class="action-btn-label">Ver Presentes</span>
+      </button>
     </div>` : '';
 
   return _SD + `<div class="event-section">

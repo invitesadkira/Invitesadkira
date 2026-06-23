@@ -14,7 +14,7 @@
   <script>tailwind.config = { theme: { extend: { colors: { teal: { 500: '#007f9f', 600: '#006b86' } } } } }</script>
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💌</text></svg>">
-  <link rel="stylesheet" href="css/main.css?v=1782192905">
+  <link rel="stylesheet" href="css/main.css?v=1782196807">
 </head>
 <body class="h-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
 
@@ -512,6 +512,16 @@ A vossa presença neste dia tão especial é, para nós, o maior presente. No en
          </select>
         </div>
 
+        <!-- Estilo do Convite -->
+        <div>
+         <label class="block text-sm font-semibold text-gray-700 mb-1">Estilo do Convite</label>
+         <select id="evt-invite-layout" class="input-field">
+          <option value="sections">Completo (secções configuráveis)</option>
+          <option value="simple">Simples (1 só bloco, fluxo contínuo)</option>
+         </select>
+         <p class="text-xs text-gray-400 mt-1">"Simples" mostra tudo numa só página contínua: capa, texto bíblico, nomes, convite, data, local, confirmação e cronograma — sem secções separadas. As flores de decoração ficam especialmente bem com este estilo.</p>
+        </div>
+
         <div class="flex items-center justify-between">
          <span id="lbl-couple-names" class="text-sm font-semibold text-gray-700">Nomes dos Noivos no Hero</span>
          <div id="sw-couple" class="switch active" onclick="toggleSwitch(this, 'couple-extra')"></div>
@@ -986,8 +996,8 @@ para testemunhar o seu enlace matrimonial</textarea>
        <div class="rsvp-cta-box"><div class="n" id="rdl-secs">--</div><div class="l">Seg</div></div>
       </div>
       <button class="rsvp-cta-btn" onclick="openRsvpDrawer()">
-       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-       Confirmar Presença
+       <span class="action-btn-icon"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+       <span class="action-btn-label">Confirmar Presença</span>
       </button>
      </div>
     </div>
@@ -1181,19 +1191,19 @@ para testemunhar o seu enlace matrimonial</textarea>
   </a>
 
   <!-- ===================== SCRIPTS (ordem importa) ===================== -->
-  <script src="js/config.js?v=1782192905"></script>
-  <script src="js/store.js?v=1782192905"></script>
-  <script src="js/visuals.js?v=1782192905"></script>
-  <script src="js/venues.js?v=1782192905"></script>
-  <script src="js/rsvp.js?v=1782192905"></script>
-  <script src="js/ui.js?v=1782192905"></script>
-  <script src="js/auth.js?v=1782192905"></script>
-  <script src="js/dashboard.js?v=1782192905"></script>
-  <script src="js/events.js?v=1782192905"></script>
-  <script src="js/guest.js?v=1782192905"></script>
-  <script src="js/sections.js?v=1782192905"></script>
-  <script src="js/admin.js?v=1782192905"></script>
-  <script src="js/router.js?v=1782192905"></script>
+  <script src="js/config.js?v=1782196807"></script>
+  <script src="js/store.js?v=1782196807"></script>
+  <script src="js/visuals.js?v=1782196807"></script>
+  <script src="js/venues.js?v=1782196807"></script>
+  <script src="js/rsvp.js?v=1782196807"></script>
+  <script src="js/ui.js?v=1782196807"></script>
+  <script src="js/auth.js?v=1782196807"></script>
+  <script src="js/dashboard.js?v=1782196807"></script>
+  <script src="js/events.js?v=1782196807"></script>
+  <script src="js/guest.js?v=1782196807"></script>
+  <script src="js/sections.js?v=1782196807"></script>
+  <script src="js/admin.js?v=1782196807"></script>
+  <script src="js/router.js?v=1782196807"></script>
 
 </body>
 </html>

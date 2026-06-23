@@ -123,7 +123,7 @@ async function handleCreateEvent(e) {
     // faz sentido reenviar/duplicar, usa directamente.
     toast('A criar evento...');
     submitBtn.textContent = 'Criando evento...';
-    saveEventWithCover(eventId, title, date, time, deadlineWithTime, coverImg.src, allowComp, maxComp, allowGifts, allowKids, maxKids, allowSides, side1Name, side2Name, allowMessages, showGuestMessages, allowMusic ? musicUrl : null, musicTitle, ibanMessage, ibanNumber, ibanHolder, ibanFooter, {showCouple,groomName,brideName,coupleSize,bgUrl,bgUrlMobile,bgUrlDesktop,bgOverlay,showBible,bibleText,bibleRef,bibleText2,bibleRef2,bibleSize,showInvite,inviteText,showParents,groomPar,bridePar,showGallery,galleryUrls,showManual,manualItems,showSchedule,schedItems,customFont,sectionOrder:Store.eventSectionOrder,storyText:document.getElementById('evt-story-text')?.value.trim()||null,inviteBlessing:document.getElementById('evt-invite-blessing')?.value.trim()||null,eventColor:document.getElementById('evt-event-color')?.value.trim()||null,buttonStyle:document.getElementById('evt-button-style')?.value||'rounded'}, submitBtn, originalText);
+    saveEventWithCover(eventId, title, date, time, deadlineWithTime, coverImg.src, allowComp, maxComp, allowGifts, allowKids, maxKids, allowSides, side1Name, side2Name, allowMessages, showGuestMessages, allowMusic ? musicUrl : null, musicTitle, ibanMessage, ibanNumber, ibanHolder, ibanFooter, {showCouple,groomName,brideName,coupleSize,bgUrl,bgUrlMobile,bgUrlDesktop,bgOverlay,showBible,bibleText,bibleRef,bibleText2,bibleRef2,bibleSize,showInvite,inviteText,showParents,groomPar,bridePar,showGallery,galleryUrls,showManual,manualItems,showSchedule,schedItems,customFont,sectionOrder:Store.eventSectionOrder,storyText:document.getElementById('evt-story-text')?.value.trim()||null,inviteBlessing:document.getElementById('evt-invite-blessing')?.value.trim()||null,eventColor:document.getElementById('evt-event-color')?.value.trim()||null,buttonStyle:document.getElementById('evt-button-style')?.value||'rounded',inviteLayout:document.getElementById('evt-invite-layout')?.value||'sections'}, submitBtn, originalText);
   } else if (hasCover) {
     // Mostrar progresso
     submitBtn.textContent = 'Enviando imagem...';
@@ -133,15 +133,15 @@ async function handleCreateEvent(e) {
       toast('Imagem recebida, criando evento...');
       submitBtn.textContent = 'Criando evento...';
       // Agora criar evento com URL da imagem no Supabase
-      saveEventWithCover(eventId, title, date, time, deadlineWithTime, coverImageURL, allowComp, maxComp, allowGifts, allowKids, maxKids, allowSides, side1Name, side2Name, allowMessages, showGuestMessages, allowMusic ? musicUrl : null, musicTitle, ibanMessage, ibanNumber, ibanHolder, ibanFooter, {showCouple,groomName,brideName,coupleSize,bgUrl,bgUrlMobile,bgUrlDesktop,bgOverlay,showBible,bibleText,bibleRef,bibleText2,bibleRef2,bibleSize,showInvite,inviteText,showParents,groomPar,bridePar,showGallery,galleryUrls,showManual,manualItems,showSchedule,schedItems,customFont,sectionOrder:Store.eventSectionOrder,storyText:document.getElementById('evt-story-text')?.value.trim()||null,inviteBlessing:document.getElementById('evt-invite-blessing')?.value.trim()||null,eventColor:document.getElementById('evt-event-color')?.value.trim()||null,buttonStyle:document.getElementById('evt-button-style')?.value||'rounded'}, submitBtn, originalText);
+      saveEventWithCover(eventId, title, date, time, deadlineWithTime, coverImageURL, allowComp, maxComp, allowGifts, allowKids, maxKids, allowSides, side1Name, side2Name, allowMessages, showGuestMessages, allowMusic ? musicUrl : null, musicTitle, ibanMessage, ibanNumber, ibanHolder, ibanFooter, {showCouple,groomName,brideName,coupleSize,bgUrl,bgUrlMobile,bgUrlDesktop,bgOverlay,showBible,bibleText,bibleRef,bibleText2,bibleRef2,bibleSize,showInvite,inviteText,showParents,groomPar,bridePar,showGallery,galleryUrls,showManual,manualItems,showSchedule,schedItems,customFont,sectionOrder:Store.eventSectionOrder,storyText:document.getElementById('evt-story-text')?.value.trim()||null,inviteBlessing:document.getElementById('evt-invite-blessing')?.value.trim()||null,eventColor:document.getElementById('evt-event-color')?.value.trim()||null,buttonStyle:document.getElementById('evt-button-style')?.value||'rounded',inviteLayout:document.getElementById('evt-invite-layout')?.value||'sections'}, submitBtn, originalText);
     }).catch(error => {
       console.error('❌ ERRO upload imagem:', error);
       toast('Erro ao fazer upload da imagem. Criando evento sem capa...');
       submitBtn.textContent = 'Criando evento...';
-      saveEventWithCover(eventId, title, date, time, deadlineWithTime, null, allowComp, maxComp, allowGifts, allowKids, maxKids, allowSides, side1Name, side2Name, allowMessages, showGuestMessages, allowMusic ? musicUrl : null, musicTitle, ibanMessage, ibanNumber, ibanHolder, ibanFooter, {showCouple,groomName,brideName,coupleSize,bgUrl,bgUrlMobile,bgUrlDesktop,bgOverlay,showBible,bibleText,bibleRef,bibleText2,bibleRef2,bibleSize,showInvite,inviteText,showParents,groomPar,bridePar,showGallery,galleryUrls,showManual,manualItems,showSchedule,schedItems,customFont,sectionOrder:Store.eventSectionOrder,storyText:document.getElementById('evt-story-text')?.value.trim()||null,inviteBlessing:document.getElementById('evt-invite-blessing')?.value.trim()||null,eventColor:document.getElementById('evt-event-color')?.value.trim()||null,buttonStyle:document.getElementById('evt-button-style')?.value||'rounded'}, submitBtn, originalText);
+      saveEventWithCover(eventId, title, date, time, deadlineWithTime, null, allowComp, maxComp, allowGifts, allowKids, maxKids, allowSides, side1Name, side2Name, allowMessages, showGuestMessages, allowMusic ? musicUrl : null, musicTitle, ibanMessage, ibanNumber, ibanHolder, ibanFooter, {showCouple,groomName,brideName,coupleSize,bgUrl,bgUrlMobile,bgUrlDesktop,bgOverlay,showBible,bibleText,bibleRef,bibleText2,bibleRef2,bibleSize,showInvite,inviteText,showParents,groomPar,bridePar,showGallery,galleryUrls,showManual,manualItems,showSchedule,schedItems,customFont,sectionOrder:Store.eventSectionOrder,storyText:document.getElementById('evt-story-text')?.value.trim()||null,inviteBlessing:document.getElementById('evt-invite-blessing')?.value.trim()||null,eventColor:document.getElementById('evt-event-color')?.value.trim()||null,buttonStyle:document.getElementById('evt-button-style')?.value||'rounded',inviteLayout:document.getElementById('evt-invite-layout')?.value||'sections'}, submitBtn, originalText);
     });
   } else {
-    saveEventWithCover(eventId, title, date, time, deadlineWithTime, null, allowComp, maxComp, allowGifts, allowKids, maxKids, allowSides, side1Name, side2Name, allowMessages, showGuestMessages, allowMusic ? musicUrl : null, musicTitle, ibanMessage, ibanNumber, ibanHolder, ibanFooter, {showCouple,groomName,brideName,coupleSize,bgUrl,bgUrlMobile,bgUrlDesktop,bgOverlay,showBible,bibleText,bibleRef,bibleText2,bibleRef2,bibleSize,showInvite,inviteText,showParents,groomPar,bridePar,showGallery,galleryUrls,showManual,manualItems,showSchedule,schedItems,customFont,sectionOrder:Store.eventSectionOrder,storyText:document.getElementById('evt-story-text')?.value.trim()||null,inviteBlessing:document.getElementById('evt-invite-blessing')?.value.trim()||null,eventColor:document.getElementById('evt-event-color')?.value.trim()||null,buttonStyle:document.getElementById('evt-button-style')?.value||'rounded'}, submitBtn, originalText);
+    saveEventWithCover(eventId, title, date, time, deadlineWithTime, null, allowComp, maxComp, allowGifts, allowKids, maxKids, allowSides, side1Name, side2Name, allowMessages, showGuestMessages, allowMusic ? musicUrl : null, musicTitle, ibanMessage, ibanNumber, ibanHolder, ibanFooter, {showCouple,groomName,brideName,coupleSize,bgUrl,bgUrlMobile,bgUrlDesktop,bgOverlay,showBible,bibleText,bibleRef,bibleText2,bibleRef2,bibleSize,showInvite,inviteText,showParents,groomPar,bridePar,showGallery,galleryUrls,showManual,manualItems,showSchedule,schedItems,customFont,sectionOrder:Store.eventSectionOrder,storyText:document.getElementById('evt-story-text')?.value.trim()||null,inviteBlessing:document.getElementById('evt-invite-blessing')?.value.trim()||null,eventColor:document.getElementById('evt-event-color')?.value.trim()||null,buttonStyle:document.getElementById('evt-button-style')?.value||'rounded',inviteLayout:document.getElementById('evt-invite-layout')?.value||'sections'}, submitBtn, originalText);
   }
 }
 
@@ -317,6 +317,7 @@ function saveEventWithCover(eventId, title, date, time, deadline, coverImageURL,
     invite_blessing: v.inviteBlessing || null,
     event_color: v.eventColor || null,
     button_style: v.buttonStyle || 'rounded',
+    invite_layout: v.inviteLayout || 'sections',
     decor_side_url: document.getElementById('evt-decor-side-url')?.value || null,
     decor_ornament_url: document.getElementById('evt-decor-ornament-url')?.value || null,
     decor_top_url: document.getElementById('evt-decor-top-url')?.value || null,
@@ -396,6 +397,7 @@ function saveEventWithCover(eventId, title, date, time, deadline, coverImageURL,
         custom_font_family: v.customFont || null,
         event_color: v.eventColor || null,
     button_style: v.buttonStyle || 'rounded',
+    invite_layout: v.inviteLayout || 'sections',
         section_order: v.sectionOrder ? JSON.stringify(v.sectionOrder) : null,
         confirmations: [],
         gifts: []
@@ -421,6 +423,7 @@ function saveEventWithCover(eventId, title, date, time, deadline, coverImageURL,
           custom_font_family: v.customFont || null,
         event_color: v.eventColor || null,
     button_style: v.buttonStyle || 'rounded',
+    invite_layout: v.inviteLayout || 'sections',
           section_order: v.sectionOrder ? JSON.stringify(v.sectionOrder) : null,
           story_text: v.storyText || null,
           invite_blessing: v.inviteBlessing || null
@@ -431,6 +434,7 @@ function saveEventWithCover(eventId, title, date, time, deadline, coverImageURL,
       const _visPayload = {
         event_color: v.eventColor || null,
     button_style: v.buttonStyle || 'rounded',
+    invite_layout: v.inviteLayout || 'sections',
         groom_name: v.groomName || null, bride_name: v.brideName || null,
         couple_size: v.coupleSize || 2.4, show_couple: v.showCouple ? 'yes' : 'no',
         bg_url: v.bgUrl || null, bg_url_mobile: v.bgUrlMobile || null, bg_url_desktop: v.bgUrlDesktop || null, bg_overlay: v.bgOverlay !== undefined ? v.bgOverlay : 35,
@@ -738,7 +742,8 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
     story_text: document.getElementById('evt-story-text')?.value.trim() || null,
     invite_blessing: document.getElementById('evt-invite-blessing')?.value.trim() || null,
     event_color: document.getElementById('evt-event-color')?.value.trim() || null,
-    button_style: document.getElementById('evt-button-style')?.value || 'rounded'
+    button_style: document.getElementById('evt-button-style')?.value || 'rounded',
+    invite_layout: document.getElementById('evt-invite-layout')?.value || 'sections'
   }).then(result => {
     dlog('✅ Resposta do Supabase:', result);
     
@@ -818,6 +823,7 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
         saveEventVisuals(eventId, {
           event_color: document.getElementById('evt-event-color')?.value?.trim() || null,
           button_style: document.getElementById('evt-button-style')?.value || 'rounded',
+          invite_layout: document.getElementById('evt-invite-layout')?.value || 'sections',
           groom_name: newGroomName, bride_name: newBrideName, couple_size: newCoupleSize,
           show_couple: newShowCouple ? 'yes' : 'no',
           bg_url: newBgUrl, bg_url_mobile: newBgUrlMobile, bg_url_desktop: newBgUrlDesktop, bg_overlay: newBgOverlay,
@@ -1811,6 +1817,8 @@ function _fillEditForm(ev) {
   if (colHexEl) colHexEl.value = ev.event_color || '#007f9f';
   const btnStyleEl = document.getElementById('evt-button-style');
   if (btnStyleEl) btnStyleEl.value = ev.button_style === 'round' ? 'round' : 'rounded';
+  const layoutEl = document.getElementById('evt-invite-layout');
+  if (layoutEl) layoutEl.value = ev.invite_layout === 'simple' ? 'simple' : 'sections';
   _setSwitch('sw-story', _yesOrTrue(ev.show_story) || (ev.story_text ? true : false), 'story-extra');
   // Restore saved section order into Store.eventSectionOrder
   if (ev.section_order) {
