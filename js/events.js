@@ -316,8 +316,6 @@ function saveEventWithCover(eventId, title, date, time, deadline, coverImageURL,
     story_text: v.storyText || null,
     invite_blessing: v.inviteBlessing || null,
     event_color: v.eventColor || null,
-    button_style: v.buttonStyle || 'rounded',
-    invite_layout: v.inviteLayout || 'sections',
     decor_side_url: document.getElementById('evt-decor-side-url')?.value || null,
     decor_ornament_url: document.getElementById('evt-decor-ornament-url')?.value || null,
     decor_top_url: document.getElementById('evt-decor-top-url')?.value || null,
@@ -396,8 +394,6 @@ function saveEventWithCover(eventId, title, date, time, deadline, coverImageURL,
         schedule_items: v.schedItems || null,
         custom_font_family: v.customFont || null,
         event_color: v.eventColor || null,
-    button_style: v.buttonStyle || 'rounded',
-    invite_layout: v.inviteLayout || 'sections',
         section_order: v.sectionOrder ? JSON.stringify(v.sectionOrder) : null,
         confirmations: [],
         gifts: []
@@ -422,8 +418,6 @@ function saveEventWithCover(eventId, title, date, time, deadline, coverImageURL,
           show_schedule: v.showSchedule ? 'yes' : 'no', schedule_items: v.schedItems || null,
           custom_font_family: v.customFont || null,
         event_color: v.eventColor || null,
-    button_style: v.buttonStyle || 'rounded',
-    invite_layout: v.inviteLayout || 'sections',
           section_order: v.sectionOrder ? JSON.stringify(v.sectionOrder) : null,
           story_text: v.storyText || null,
           invite_blessing: v.inviteBlessing || null
@@ -433,8 +427,6 @@ function saveEventWithCover(eventId, title, date, time, deadline, coverImageURL,
       // Save visual settings to event_visuals table
       const _visPayload = {
         event_color: v.eventColor || null,
-    button_style: v.buttonStyle || 'rounded',
-    invite_layout: v.inviteLayout || 'sections',
         groom_name: v.groomName || null, bride_name: v.brideName || null,
         couple_size: v.coupleSize || 2.4, show_couple: v.showCouple ? 'yes' : 'no',
         bg_url: v.bgUrl || null, bg_url_mobile: v.bgUrlMobile || null, bg_url_desktop: v.bgUrlDesktop || null, bg_overlay: v.bgOverlay !== undefined ? v.bgOverlay : 35,
@@ -457,6 +449,8 @@ function saveEventWithCover(eventId, title, date, time, deadline, coverImageURL,
       _visPayload.show_story   = document.getElementById('sw-story')?.classList.contains('active') ? 'yes' : 'no';
       _visPayload.invert_names = document.getElementById('sw-invert-names')?.classList.contains('active') ? 'yes' : 'no';
       _visPayload.event_type   = document.getElementById('evt-event-type')?.value || 'wedding';
+      _visPayload.button_style = document.getElementById('evt-button-style')?.value || 'rounded';
+      _visPayload.invite_layout = document.getElementById('evt-invite-layout')?.value || 'sections';
       if (typeof saveEventVisuals !== 'undefined') saveEventVisuals(eventId, _visPayload);
 
       // Save venue/location fields to the DEDICATED event_venues table
@@ -741,9 +735,10 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
     section_order: Store.eventSectionOrder ? JSON.stringify(Store.eventSectionOrder) : null,
     story_text: document.getElementById('evt-story-text')?.value.trim() || null,
     invite_blessing: document.getElementById('evt-invite-blessing')?.value.trim() || null,
-    event_color: document.getElementById('evt-event-color')?.value.trim() || null,
-    button_style: document.getElementById('evt-button-style')?.value || 'rounded',
-    invite_layout: document.getElementById('evt-invite-layout')?.value || 'sections'
+    event_color: document.getElementById('evt-event-color')?.value.trim() || null
+    // button_style/invite_layout REMOVIDOS deste PATCH: vivem em
+    // event_visuals (nunca em events) — já são gravados correctamente mais
+    // abaixo, na chamada a saveEventVisuals().
   }).then(result => {
     dlog('✅ Resposta do Supabase:', result);
     

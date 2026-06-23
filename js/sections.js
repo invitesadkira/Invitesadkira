@@ -832,8 +832,8 @@ function buildIbanSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
         <div class="bg-gray-50 rounded-lg px-3 py-2 mt-3 mb-1 border border-teal-100"><p class="text-xs text-gray-400 mb-0.5">IBAN</p><p class="iban-value" style="text-align:center;word-break:break-all;margin:0.25rem 0">${escapeHTML(ev.iban_number)}</p></div>
         ${ev.iban_holder ? `<div class="bg-gray-50 rounded-lg px-3 py-2 mb-2 border border-teal-100"><p class="text-xs text-gray-400 mb-0.5">Titular</p><p class="text-sm font-semibold text-gray-700">${escapeHTML(ev.iban_holder)}</p></div>` : ''}
         <button class="iban-copy-btn" id="iban-copy-btn" onclick="copyIban('${escapeHTML(ev.iban_number)}')">
-          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-          Copiar IBAN
+          <span class="action-btn-icon"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></span>
+          <span class="action-btn-label">Copiar IBAN</span>
         </button>
         ${ev.iban_footer ? `<p class="text-xs text-gray-400 mt-3 text-right italic">${escapeHTML(ev.iban_footer)}</p>` : ''}
       </div>
@@ -1524,9 +1524,9 @@ function buildVenueSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
         </div>` : ''}
         <div style="font-size:0.7rem;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;color:${evColor};margin-bottom:0.25rem">${escapeHTML(v.title)}</div>
         <div style="font-weight:700;color:#1e293b;font-size:0.9rem;margin-bottom:0.5rem">${escapeHTML(v.name)}</div>
-        ${v.maps ? `<a href="${v.maps}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:0.35rem;background:${evColor};color:#fff;font-size:0.72rem;font-weight:700;padding:0.35rem 0.85rem;border-radius:999px;text-decoration:none">
-          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-          Ver no Mapa</a>` : ''}
+        ${v.maps ? `<a href="${v.maps}" target="_blank" rel="noopener" class="venue-map-btn" style="display:inline-flex;align-items:center;gap:0.35rem;background:${evColor};color:#fff;font-size:0.72rem;font-weight:700;padding:0.35rem 0.85rem;border-radius:999px;text-decoration:none">
+          <span class="action-btn-icon"><svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></span>
+          <span class="action-btn-label">Ver no Mapa</span></a>` : ''}
       </div>
     </div>`).join('');
 

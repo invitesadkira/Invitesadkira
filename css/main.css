@@ -25,21 +25,32 @@ html, body { height: 100%; margin: 0; width: 100%; overflow-x: hidden; }
 
 /* ── Estilo "Redondo": ícone vira um círculo, com o nome do botão por baixo ── */
 #screen-guest.guest-buttons-round .rsvp-cta-btn,
-#screen-guest.guest-buttons-round .dg-card-btn {
+#screen-guest.guest-buttons-round .dg-card-btn,
+#screen-guest.guest-buttons-round .venue-map-btn,
+#screen-guest.guest-buttons-round .iban-copy-btn {
   display: flex; align-items: center; justify-content: center;
   flex-direction: column; gap: 0.5rem;
   background: transparent !important; box-shadow: none !important; border: none !important;
-  padding: 0 !important; width: auto !important;
+  padding: 0 !important; width: auto !important; text-decoration: none !important;
 }
-#screen-guest.guest-buttons-round .dg-card-btn { margin: 0 auto; }
+#screen-guest.guest-buttons-round .dg-card-btn,
+#screen-guest.guest-buttons-round .venue-map-btn,
+#screen-guest.guest-buttons-round .iban-copy-btn { margin: 0 auto; }
 #screen-guest.guest-buttons-round .action-btn-icon {
   width: 64px; height: 64px; border-radius: 50%; background: #fff;
   color: var(--ev-color, #007f9f); box-shadow: 0 6px 18px rgba(0,0,0,0.18);
 }
 #screen-guest.guest-buttons-round .action-btn-icon svg { width: 24px; height: 24px; }
 #screen-guest.guest-buttons-round .rsvp-cta-btn .action-btn-label { color: #fff; font-size: 0.82rem; font-weight: 700; }
-#screen-guest.guest-buttons-round .dg-card-btn .action-btn-icon { background: var(--ev-color, #007f9f); color: #fff; }
-#screen-guest.guest-buttons-round .dg-card-btn .action-btn-label { color: var(--ev-color, #007f9f); font-size: 0.82rem; font-weight: 700; }
+#screen-guest.guest-buttons-round .dg-card-btn .action-btn-icon,
+#screen-guest.guest-buttons-round .venue-map-btn .action-btn-icon,
+#screen-guest.guest-buttons-round .iban-copy-btn .action-btn-icon { background: var(--ev-color, #007f9f); color: #fff; width: 48px; height: 48px; }
+#screen-guest.guest-buttons-round .dg-card-btn .action-btn-icon svg,
+#screen-guest.guest-buttons-round .venue-map-btn .action-btn-icon svg,
+#screen-guest.guest-buttons-round .iban-copy-btn .action-btn-icon svg { width: 20px; height: 20px; }
+#screen-guest.guest-buttons-round .dg-card-btn .action-btn-label,
+#screen-guest.guest-buttons-round .venue-map-btn .action-btn-label,
+#screen-guest.guest-buttons-round .iban-copy-btn .action-btn-label { color: var(--ev-color, #007f9f); font-size: 0.78rem; font-weight: 700; }
 .btn-outline {
   border: 2px solid #007f9f; color: #007f9f; border-radius: 0.75rem;
   padding: 0.6rem 1.5rem; font-weight: 600; transition: all 0.2s; background: transparent;
