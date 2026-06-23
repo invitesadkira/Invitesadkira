@@ -864,7 +864,6 @@ function buildGallerySection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
       <div class="section-inner">
         <h3 class="section-title reveal" style="text-align:center">Nossos Momentos</h3>
         <div id="${galId}" class="g3d-wrap reveal">
-          <div class="g3d-backdrop" style="background-image:url('${urls[0]}')"></div>
           <div class="g3d-track">${slides}</div>
           ${urls.length > 1 ? `
           <button class="g3d-arrow prev" aria-label="Anterior"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1e293b" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
@@ -1770,7 +1769,6 @@ function initGalleryCarousels() {
     const wrap = document.getElementById(id);
     if (!wrap) return;
     const slides = wrap.querySelectorAll('.g3d-slide');
-    const backdrop = wrap.querySelector('.g3d-backdrop');
     const counter = wrap.querySelector('.g3d-counter');
     const prevBtn = wrap.querySelector('.g3d-arrow.prev');
     const nextBtn = wrap.querySelector('.g3d-arrow.next');
@@ -1805,7 +1803,6 @@ function initGalleryCarousels() {
         d.classList.toggle('active', i === idx);
         d.style.background = i === idx ? color : '#d1d5db';
       });
-      if (backdrop) backdrop.style.backgroundImage = slides[idx]?.style.backgroundImage || '';
       if (counter) counter.textContent = `${idx + 1} / ${slides.length}`;
       if (prevBtn) prevBtn.style.opacity = idx === 0 ? '0.35' : '1';
       if (nextBtn) nextBtn.style.opacity = idx === slides.length - 1 ? '0.35' : '1';
