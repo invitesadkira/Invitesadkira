@@ -14,9 +14,9 @@
   <script>tailwind.config = { theme: { extend: { colors: { teal: { 500: '#007f9f', 600: '#006b86' } } } } }</script>
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💌</text></svg>">
-  <link rel="stylesheet" href="css/main.css?v=1782192166">
+  <link rel="stylesheet" href="css/main.css?v=1782192905">
 </head>
-<body class="h-full" style="background:#f7f5f1">
+<body class="h-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
 
 <!-- ===== TOPBAR (hambúrguer) ===== -->
   <div id="app-topbar">
@@ -290,9 +290,9 @@
    </section><!-- ========== SCREEN: CREATE EVENT ========== -->
    <section id="screen-create-event" class="page-section hidden">
     <div class="page-transition w-full px-4 sm:px-6 lg:px-10 py-8 max-w-2xl mx-auto">
-     <button class="flex items-center gap-1 text-teal-500 font-semibold mb-4 hover:text-teal-600 transition" onclick="Router.go('dashboard')"> <i data-lucide="arrow-left" class="w-5 h-5"></i> Voltar </button>
-     <div class="bg-white rounded-2xl shadow-md p-6">
-      <h2 class="text-2xl font-bold text-gray-800 mb-5">Criar Evento</h2>
+     <button class="flex items-center gap-1 font-semibold mb-4 transition" style="color:var(--app-teal)" onclick="Router.go('dashboard')"> <i data-lucide="arrow-left" class="w-5 h-5"></i> Voltar </button>
+     <div style="background:var(--app-card);border-radius:var(--app-radius);box-shadow:var(--app-shadow);border:1px solid var(--app-border)" class="p-6">
+      <h2 class="text-2xl font-bold mb-5" style="color:var(--app-ink)">Criar Evento</h2>
       <form onsubmit="handleCreateEvent(event)">
        <!-- Cover --> <label class="block text-sm font-semibold text-gray-600 mb-1">Imagem de Capa</label>
        <div id="cover-preview" class="w-full h-40 rounded-xl bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center cursor-pointer mb-1 overflow-hidden hover:border-teal-400 transition" onclick="document.getElementById('cover-input').click()">
@@ -893,14 +893,14 @@ para testemunhar o seu enlace matrimonial</textarea>
    </section><!-- ========== SCREEN: EVENT DETAILS ========== -->
    <section id="screen-event-details" class="page-section hidden">
     <div class="page-transition w-full px-4 sm:px-6 lg:px-10 py-8">
-     <button class="flex items-center gap-1 text-teal-500 font-semibold mb-4 hover:text-teal-600 transition" onclick="Router.go('dashboard')"> <i data-lucide="arrow-left" class="w-5 h-5"></i> Voltar </button>
-     <div class="bg-white rounded-2xl shadow-md overflow-hidden">
-      <div id="detail-cover" class="w-full h-48 bg-gradient-to-r from-teal-500 to-blue-400 flex items-center justify-center">
-       <i data-lucide="calendar-heart" class="w-16 h-16 text-white/60"></i>
+     <button class="flex items-center gap-1 font-semibold mb-4 transition" style="color:var(--app-teal)" onclick="Router.go('dashboard')"> <i data-lucide="arrow-left" class="w-5 h-5"></i> Voltar </button>
+     <div style="background:var(--app-card);border-radius:var(--app-radius);box-shadow:var(--app-shadow);border:1px solid var(--app-border)" class="overflow-hidden">
+      <div id="detail-cover" class="w-full h-48 flex items-center justify-center" style="background:linear-gradient(135deg,var(--app-gold-light),var(--app-gold))">
+       <i data-lucide="calendar-heart" class="w-16 h-16 text-white/70"></i>
       </div>
       <div class="p-6">
-       <h2 id="detail-title" class="text-2xl font-bold text-gray-800 mb-1"></h2>
-       <p id="detail-date" class="text-gray-500 mb-4"></p><label class="text-xs font-semibold text-gray-500">Link do Evento</label>
+       <h2 id="detail-title" class="text-2xl font-bold mb-1" style="color:var(--app-ink)"></h2>
+       <p id="detail-date" class="mb-4" style="color:var(--app-muted)"></p><label class="text-xs font-semibold" style="color:var(--app-muted)">Link do Evento</label>
        <div class="flex gap-2 mb-4">
         <input id="detail-link" class="input-field text-sm" readonly> <button class="btn-main px-3 text-sm flex-shrink-0" onclick="copyEventLink()"> <i data-lucide="copy" class="w-4 h-4"></i> </button>
        </div>
@@ -1046,8 +1046,8 @@ para testemunhar o seu enlace matrimonial</textarea>
       <!-- JS preenche -->
      </div>
      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6" id="admin-stats"></div>
-     <h3 class="font-bold text-gray-700 mb-3">Contas Registradas</h3>
-     <div class="bg-white rounded-xl shadow-sm p-4 mb-6">
+     <h3 class="font-bold mb-3" style="color:var(--app-ink)">Contas Registradas</h3>
+     <div style="background:var(--app-card);border-radius:var(--app-radius);box-shadow:var(--app-shadow);border:1px solid var(--app-border)" class="p-4 mb-6">
       <div class="flex gap-2"><input id="admin-search-input" type="text" class="input-field text-sm flex-1" placeholder="Pesquisar por telefone/username..." onkeyup="filterAdminAccounts()"> <button class="btn-main px-4 text-sm" onclick="clearAdminSearch()">Limpar</button>
       </div>
      </div>
@@ -1181,19 +1181,19 @@ para testemunhar o seu enlace matrimonial</textarea>
   </a>
 
   <!-- ===================== SCRIPTS (ordem importa) ===================== -->
-  <script src="js/config.js?v=1782192166"></script>
-  <script src="js/store.js?v=1782192166"></script>
-  <script src="js/visuals.js?v=1782192166"></script>
-  <script src="js/venues.js?v=1782192166"></script>
-  <script src="js/rsvp.js?v=1782192166"></script>
-  <script src="js/ui.js?v=1782192166"></script>
-  <script src="js/auth.js?v=1782192166"></script>
-  <script src="js/dashboard.js?v=1782192166"></script>
-  <script src="js/events.js?v=1782192166"></script>
-  <script src="js/guest.js?v=1782192166"></script>
-  <script src="js/sections.js?v=1782192166"></script>
-  <script src="js/admin.js?v=1782192166"></script>
-  <script src="js/router.js?v=1782192166"></script>
+  <script src="js/config.js?v=1782192905"></script>
+  <script src="js/store.js?v=1782192905"></script>
+  <script src="js/visuals.js?v=1782192905"></script>
+  <script src="js/venues.js?v=1782192905"></script>
+  <script src="js/rsvp.js?v=1782192905"></script>
+  <script src="js/ui.js?v=1782192905"></script>
+  <script src="js/auth.js?v=1782192905"></script>
+  <script src="js/dashboard.js?v=1782192905"></script>
+  <script src="js/events.js?v=1782192905"></script>
+  <script src="js/guest.js?v=1782192905"></script>
+  <script src="js/sections.js?v=1782192905"></script>
+  <script src="js/admin.js?v=1782192905"></script>
+  <script src="js/router.js?v=1782192905"></script>
 
 </body>
 </html>

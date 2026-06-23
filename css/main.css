@@ -163,17 +163,17 @@ html, body { height: 100%; margin: 0; width: 100%; overflow-x: hidden; }
 
 :root {
   --app-teal: #007f9f;
-  --app-teal-deep: #045469;
-  --app-gold: #c9a84c;
-  --app-gold-light: #e3c878;
-  --app-ink: #2a2520;
-  --app-muted: #7c7468;
-  --app-border: #e9e4da;
-  --app-bg: #f7f5f1;
-  --app-card: #fffdf9;
+  --app-teal-deep: #0d9488;
+  --app-gold: #007f9f;
+  --app-gold-light: #0099bb;
+  --app-ink: #1f2937;
+  --app-muted: #9ca3af;
+  --app-border: #e5e7eb;
+  --app-bg: #f9fafb;
+  --app-card: #fff;
   --app-radius: 18px;
-  --app-shadow: 0 2px 14px rgba(60,50,30,0.07);
-  --app-shadow-hover: 0 10px 28px rgba(60,50,30,0.12);
+  --app-shadow: 0 2px 14px rgba(0,0,0,0.06);
+  --app-shadow-hover: 0 10px 28px rgba(0,0,0,0.10);
 }
 
 /* Quick-action grid */

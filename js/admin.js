@@ -86,17 +86,17 @@ function renderAdmin() {
   const pending = nonAdminUsers.filter(u => u.status === 'pending').length;
 
   const stats = [
-    { label: 'Total Contas', value: nonAdminUsers.length, icon: 'users' },
-    { label: 'Ativas', value: active, icon: 'check-circle' },
-    { label: 'Pendentes', value: pending, icon: 'clock' },
-    { label: 'Total Eventos', value: Store.events.length, icon: 'calendar' }
+    { label: 'Total Contas', value: nonAdminUsers.length, color: 'bg-blue-50 text-blue-600', icon: 'users' },
+    { label: 'Ativas', value: active, color: 'bg-green-50 text-green-600', icon: 'check-circle' },
+    { label: 'Pendentes', value: pending, color: 'bg-amber-50 text-amber-600', icon: 'clock' },
+    { label: 'Total Eventos', value: Store.events.length, color: 'bg-indigo-50 text-indigo-600', icon: 'calendar' }
   ];
 
   document.getElementById('admin-stats').innerHTML = stats.map(s => `
-    <div class="text-center" style="background:var(--app-card);border:1px solid var(--app-border);border-radius:var(--app-radius);box-shadow:var(--app-shadow);padding:1rem">
-      <i data-lucide="${s.icon}" class="w-5 h-5 mx-auto mb-1" style="color:var(--app-gold)"></i>
-      <div class="text-2xl font-bold" style="color:var(--app-ink)">${s.value}</div>
-      <div class="text-xs font-semibold mt-1" style="color:var(--app-muted)">${s.label}</div>
+    <div class="stat-card ${s.color} rounded-xl p-4 text-center">
+      <i data-lucide="${s.icon}" class="w-5 h-5 mx-auto mb-1"></i>
+      <div class="text-2xl font-bold">${s.value}</div>
+      <div class="text-xs font-semibold mt-1">${s.label}</div>
     </div>`).join('');
 
   // Limpar input de busca
@@ -160,21 +160,21 @@ function renderAdminAccountsList(users) {
     const adminLabel = escapeHTML(u.adminLabel || '-');
     const userRole = u.role || 'user';
     
-    let html = '<div class="bg-white rounded-xl shadow-sm p-4 mb-3">';
+    let html = '<div style="background:var(--app-card);border-radius:var(--app-radius);box-shadow:var(--app-shadow);border:1px solid var(--app-border)" class="p-4 mb-3">';
     html += '<div class="flex items-start gap-3 mb-3">';
-    html += '<div class="w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center text-teal-700 font-bold flex-shrink-0">' + userPhone.charAt(0).toUpperCase() + '</div>';
+    html += '<div class="w-10 h-10 rounded-full flex items-center justify-center font-bold flex-shrink-0" style="background:#ccfbf1;color:#0f766e">' + userPhone.charAt(0).toUpperCase() + '</div>';
     html += '<div class="flex-1 min-w-0">';
-    html += '<p class="font-semibold text-gray-800 text-sm">' + userPhone + '</p>';
-    html += '<p class="text-xs text-gray-500">ID: <code class="bg-gray-100 px-1 py-0.5 rounded">' + userId + '</code></p>';
+    html += '<p class="font-semibold text-sm" style="color:var(--app-ink)">' + userPhone + '</p>';
+    html += '<p class="text-xs" style="color:var(--app-muted)">ID: <code class="px-1 py-0.5 rounded" style="background:var(--app-bg)">' + userId + '</code></p>';
     html += '</div></div>';
     
     html += '<div class="grid grid-cols-2 gap-2 mb-3 text-xs">';
-    html += '<div class="bg-gray-50 p-2 rounded"><p class="text-gray-500 mb-0.5">Username</p><p class="text-gray-800 font-semibold break-all">' + userPhone + '</p></div>';
-    html += '<div class="bg-gray-50 p-2 rounded"><p class="text-gray-500 mb-0.5">Tipo</p><p class="text-gray-800 font-semibold">' + (userRole === 'moderator' ? 'Moderador' : 'Utilizador') + '</p></div>';
-    html += '<div class="bg-gray-50 p-2 rounded"><p class="text-gray-500 mb-0.5">Nome Admin</p><p class="text-gray-800 font-semibold">' + adminLabel + '</p></div>';
-    html += '<div class="bg-gray-50 p-2 rounded"><p class="text-gray-500 mb-0.5">Senha</p><p class="text-gray-800 font-mono text-xs break-all">•••••••• <button class="text-teal-600 underline font-sans not-italic" style="font-size:0.68rem" onclick="changeUserPassword(\'' + u.id + '\')">redefinir</button></p></div>';
-    html += '<div class="bg-gray-50 p-2 rounded"><p class="text-gray-500 mb-0.5">Status</p><span class="inline-block px-2 py-0.5 rounded-full font-semibold ' + userStatusClass + '">' + userStatus + '</span></div>';
-    html += '<div class="bg-gray-50 p-2 rounded"><p class="text-gray-500 mb-0.5">Eventos</p><p class="text-gray-800 font-semibold">' + userEvents + '/' + eventLimit + '</p></div>';
+    html += '<div class="p-2 rounded" style="background:var(--app-bg)"><p class="mb-0.5" style="color:var(--app-muted)">Username</p><p class="font-semibold break-all" style="color:var(--app-ink)">' + userPhone + '</p></div>';
+    html += '<div class="p-2 rounded" style="background:var(--app-bg)"><p class="mb-0.5" style="color:var(--app-muted)">Tipo</p><p class="font-semibold" style="color:var(--app-ink)">' + (userRole === 'moderator' ? 'Moderador' : 'Utilizador') + '</p></div>';
+    html += '<div class="p-2 rounded" style="background:var(--app-bg)"><p class="mb-0.5" style="color:var(--app-muted)">Nome Admin</p><p class="font-semibold" style="color:var(--app-ink)">' + adminLabel + '</p></div>';
+    html += '<div class="p-2 rounded" style="background:var(--app-bg)"><p class="mb-0.5" style="color:var(--app-muted)">Senha</p><p class="font-mono text-xs break-all" style="color:var(--app-ink)">•••••••• <button class="text-teal-600 underline font-sans not-italic" style="font-size:0.68rem" onclick="changeUserPassword(\'' + u.id + '\')">redefinir</button></p></div>';
+    html += '<div class="p-2 rounded" style="background:var(--app-bg)"><p class="mb-0.5" style="color:var(--app-muted)">Status</p><span class="inline-block px-2 py-0.5 rounded-full font-semibold ' + userStatusClass + '">' + userStatus + '</span></div>';
+    html += '<div class="p-2 rounded" style="background:var(--app-bg)"><p class="mb-0.5" style="color:var(--app-muted)">Eventos</p><p class="font-semibold" style="color:var(--app-ink)">' + userEvents + '/' + eventLimit + '</p></div>';
     html += '</div>';
     
     html += '<div class="flex flex-wrap gap-2">';
