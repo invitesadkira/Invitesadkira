@@ -331,6 +331,7 @@ async function renderGuestView() {
   // Check both sources: visuals table first, then events table, then default
   const _evCol = eventData.event_color || '#007f9f';
   document.documentElement.style.setProperty('--ev-color', _evCol);
+  document.getElementById('screen-guest')?.classList.toggle('guest-buttons-round', eventData.button_style === 'round');
   const _rsvpSec = document.getElementById('rsvp-section');
   if (_rsvpSec) {
     _rsvpSec.style.background = _evCol;

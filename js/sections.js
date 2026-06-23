@@ -209,9 +209,10 @@ async function renderGuestSections(eventData) {
   // Posicionadas pelo CSS para nunca tocarem o texto (pointer-events:none,
   // atrás do conteúdo, com margem garantida) — não são arrastáveis de
   // propósito, para isso não depender do tamanho do ecrã do convidado.
-  if (decorOn && eventData.decor_top_url) {
-    bodyHtml = `<div class="decor-top-wrap"><div class="decor-top-img" style="background-image:url('${eventData.decor_top_url}')"></div></div>` + bodyHtml;
-  }
+  // ✅ decor_top_url agora é tratado como canto decorativo sobre a foto de
+  // capa (ver applyGuestBackground/ guest-hero-decor), não como secção
+  // própria — fazia pouco sentido visualmente ter uma secção vazia só para
+  // a flor, separada do resto.
   if (decorOn && (eventData.decor_bottom_left_url || eventData.decor_bottom_right_url)) {
     bodyHtml += `<div class="decor-bottom-wrap">
       ${eventData.decor_bottom_left_url ? `<div class="decor-bottom-img left" style="background-image:url('${eventData.decor_bottom_left_url}')"></div>` : ''}
@@ -323,6 +324,23 @@ function applyGuestBackground(ev) {
   // Hero overlay (cover image already set in renderGuestView, just set overlay opacity)
   const heroOvEl = document.getElementById('guest-hero-overlay');
   if (heroOvEl) heroOvEl.style.background = `rgba(0,0,0,${overlayAlpha})`;
+
+  // ── Flor/ornamento decorativo no canto da foto de capa ──
+  // Substituiu a versão antiga (secção própria, separada) — agora fica
+  // directamente sobre a foto de capa, num canto, sem ocupar espaço extra
+  // nem se sobrepor aos nomes do casal.
+  const decorEl = document.getElementById('guest-hero-decor');
+  if (decorEl) {
+    const decorOn = _yesOrTrue(ev.show_decor);
+    if (decorOn && ev.decor_top_url) {
+      decorEl.style.backgroundImage = `url('${ev.decor_top_url}')`;
+      decorEl.classList.remove('hidden');
+      decorEl.classList.toggle('decor-corner-right', ev.decor_top_position === 'right');
+      decorEl.classList.toggle('decor-corner-left', ev.decor_top_position !== 'right');
+    } else {
+      decorEl.classList.add('hidden');
+    }
+  }
 }
 
 function buildBibleSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';

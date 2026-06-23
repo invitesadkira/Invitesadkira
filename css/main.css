@@ -17,6 +17,16 @@ html, body { height: 100%; margin: 0; width: 100%; overflow-x: hidden; }
   white-space: nowrap; display: inline-flex; align-items: center; justify-content: center;
 }
 .btn-main:hover { background: #006b86; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,127,159,0.3); }
+
+/* ── Estilo de botões redondos (opção do dono do evento, só no convite) ── */
+#screen-guest.guest-buttons-round .btn-main,
+#screen-guest.guest-buttons-round .btn-outline,
+#screen-guest.guest-buttons-round .dg-card-btn,
+#screen-guest.guest-buttons-round button[onclick*="submitRSVP"],
+#screen-guest.guest-buttons-round button[onclick*="openGuestGiftsModal"],
+#screen-guest.guest-buttons-round button[onclick*="openGuestDresscodeModal"] {
+  border-radius: 999px !important;
+}
 .btn-outline {
   border: 2px solid #007f9f; color: #007f9f; border-radius: 0.75rem;
   padding: 0.6rem 1.5rem; font-weight: 600; transition: all 0.2s; background: transparent;
@@ -151,13 +161,28 @@ html, body { height: 100%; margin: 0; width: 100%; overflow-x: hidden; }
 .drawer-footer { padding: 1rem 1.2rem; border-top: 1px solid #e5e7eb; }
 .drawer-logout { display: flex; align-items: center; gap: 0.75rem; color: #dc2626; font-weight: 600; font-size: 0.9rem; cursor: pointer; background: none; border: none; width: 100%; padding: 0.6rem 0; }
 
+:root {
+  --app-teal: #007f9f;
+  --app-teal-deep: #045469;
+  --app-gold: #c9a84c;
+  --app-gold-light: #e3c878;
+  --app-ink: #2a2520;
+  --app-muted: #7c7468;
+  --app-border: #e9e4da;
+  --app-bg: #f7f5f1;
+  --app-card: #fffdf9;
+  --app-radius: 18px;
+  --app-shadow: 0 2px 14px rgba(60,50,30,0.07);
+  --app-shadow-hover: 0 10px 28px rgba(60,50,30,0.12);
+}
+
 /* Quick-action grid */
 .quick-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; margin-bottom: 1.5rem; }
-.quick-card { background: #fff; border-radius: 16px; padding: 1rem 0.5rem 0.8rem; display: flex; flex-direction: column; align-items: center; gap: 0.5rem; cursor: pointer; border: 1.5px solid #e5e7eb; transition: all 0.2s; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
-.quick-card:hover, .quick-card:active { border-color: #007f9f; background: #f0f9fb; transform: translateY(-1px); }
-.quick-card .qc-icon { width: 44px; height: 44px; border-radius: 14px; background: linear-gradient(135deg, #007f9f, #0099bb); display: flex; align-items: center; justify-content: center; }
+.quick-card { background: var(--app-card); border-radius: var(--app-radius); padding: 1.1rem 0.5rem 0.9rem; display: flex; flex-direction: column; align-items: center; gap: 0.6rem; cursor: pointer; border: 1px solid var(--app-border); transition: all 0.2s; box-shadow: var(--app-shadow); }
+.quick-card:hover, .quick-card:active { border-color: var(--app-teal); background: #fff; transform: translateY(-2px); box-shadow: var(--app-shadow-hover); }
+.quick-card .qc-icon { width: 44px; height: 44px; border-radius: 13px; background: linear-gradient(135deg, var(--app-gold-light), var(--app-gold)); display: flex; align-items: center; justify-content: center; }
 .quick-card .qc-icon svg { width: 20px; height: 20px; color: #fff; }
-.quick-card .qc-label { font-size: 0.72rem; font-weight: 700; color: #374151; text-align: center; line-height: 1.2; }
+.quick-card .qc-label { font-size: 0.72rem; font-weight: 700; color: var(--app-ink); text-align: center; line-height: 1.2; }
 @media (min-width: 641px) { .quick-grid { grid-template-columns: repeat(4, 1fr); } }
 
 /* Section reorder */
@@ -791,8 +816,8 @@ html, body { height: 100%; margin: 0; width: 100%; overflow-x: hidden; }
 /* ── Decoração: topo e cantos do fim — zonas próprias, sem texto dentro,
    por isso nunca podem tapar nada (em qualquer ecrã). Não são arrastáveis
    de propósito, ver explicação dada ao cliente. ── */
-.decor-top-wrap { width: 100%; max-width: 720px; margin: 0 auto; padding: 1.5rem 1.5rem 0; pointer-events: none; }
-.decor-top-img { width: 100%; height: clamp(70px, 14vw, 130px); background-size: contain; background-repeat: no-repeat; background-position: center; }
+.decor-corner-left { top: 0.5rem; left: 0.5rem; background-position: top left; }
+.decor-corner-right { top: 0.5rem; right: 0.5rem; background-position: top right; }
 .decor-bottom-wrap { position: relative; width: 100%; max-width: 720px; margin: 0 auto; height: clamp(80px, 16vw, 150px); pointer-events: none; }
 .decor-bottom-img { position: absolute; bottom: 0; width: clamp(90px, 22vw, 170px); height: 100%; background-size: contain; background-repeat: no-repeat; background-position: bottom; }
 .decor-bottom-img.left { left: 0.5rem; background-position: bottom left; }

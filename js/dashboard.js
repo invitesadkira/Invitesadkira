@@ -58,27 +58,27 @@ function renderDashboard() {
 
   if (userEvents.length === 0) {
     container.innerHTML = `
-      <div class="bg-white rounded-2xl shadow-md p-10 text-center">
-        <div class="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
-          <i data-lucide="calendar-x" class="w-8 h-8 text-gray-400"></i>
+      <div style="background:var(--app-card);border-radius:var(--app-radius);box-shadow:var(--app-shadow);border:1px solid var(--app-border)" class="p-10 text-center">
+        <div style="width:64px;height:64px;border-radius:50%;background:#f3eee2" class="flex items-center justify-center mx-auto mb-4">
+          <i data-lucide="calendar-x" class="w-8 h-8" style="color:var(--app-muted)"></i>
         </div>
-        <p class="text-gray-500 mb-4">Nenhum evento ainda.</p>
+        <p style="color:var(--app-muted)" class="mb-4">Nenhum evento ainda.</p>
         <button class="btn-main" onclick="Router.go('create-event')">Criar Primeiro Evento</button>
       </div>`;
   } else {
     container.innerHTML = userEvents.map(ev => {
       const confirmed = (ev.confirmations || []).filter(c => c.attending || c.attending === 'yes').length;
       return `
-        <div class="bg-white rounded-2xl shadow-md p-5 mb-4 card-hover cursor-pointer" onclick="Store.currentEventId='${ev.id}'; Router.go('event-details')">
+        <div style="background:var(--app-card);border-radius:var(--app-radius);box-shadow:var(--app-shadow);border:1px solid var(--app-border)" class="p-5 mb-3 card-hover cursor-pointer" onclick="Store.currentEventId='${ev.id}'; Router.go('event-details')">
           <div class="flex items-center gap-4">
-            <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-teal-500 to-blue-400 flex items-center justify-center flex-shrink-0">
-              <i data-lucide="calendar-check" class="w-7 h-7 text-white"></i>
+            <div style="width:52px;height:52px;border-radius:14px;background:linear-gradient(135deg,var(--app-gold-light),var(--app-gold))" class="flex items-center justify-center flex-shrink-0">
+              <i data-lucide="calendar-check" class="w-6 h-6 text-white"></i>
             </div>
             <div class="flex-1 min-w-0">
-              <h3 class="font-bold text-gray-800 truncate">${ev.title}</h3>
-              <p class="text-sm text-gray-500">${formatDate(ev.date)} às ${ev.time}</p>
+              <h3 class="font-bold truncate" style="color:var(--app-ink)">${ev.title}</h3>
+              <p class="text-sm" style="color:var(--app-muted)">${formatDate(ev.date)} às ${ev.time}</p>
             </div>
-            <span class="text-xs font-semibold px-3 py-1 rounded-full bg-teal-50 text-teal-600">${confirmed} confirmados</span>
+            <span class="text-xs font-semibold px-3 py-1 rounded-full" style="background:#eaf6f4;color:var(--app-teal-deep)">${confirmed} confirmados</span>
           </div>
         </div>`;
     }).join('');

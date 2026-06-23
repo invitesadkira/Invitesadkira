@@ -86,17 +86,17 @@ function renderAdmin() {
   const pending = nonAdminUsers.filter(u => u.status === 'pending').length;
 
   const stats = [
-    { label: 'Total Contas', value: nonAdminUsers.length, color: 'bg-blue-50 text-blue-600', icon: 'users' },
-    { label: 'Ativas', value: active, color: 'bg-green-50 text-green-600', icon: 'check-circle' },
-    { label: 'Pendentes', value: pending, color: 'bg-amber-50 text-amber-600', icon: 'clock' },
-    { label: 'Total Eventos', value: Store.events.length, color: 'bg-indigo-50 text-indigo-600', icon: 'calendar' }
+    { label: 'Total Contas', value: nonAdminUsers.length, icon: 'users' },
+    { label: 'Ativas', value: active, icon: 'check-circle' },
+    { label: 'Pendentes', value: pending, icon: 'clock' },
+    { label: 'Total Eventos', value: Store.events.length, icon: 'calendar' }
   ];
 
   document.getElementById('admin-stats').innerHTML = stats.map(s => `
-    <div class="stat-card ${s.color} rounded-xl p-4 text-center">
-      <i data-lucide="${s.icon}" class="w-5 h-5 mx-auto mb-1"></i>
-      <div class="text-2xl font-bold">${s.value}</div>
-      <div class="text-xs font-semibold mt-1">${s.label}</div>
+    <div class="text-center" style="background:var(--app-card);border:1px solid var(--app-border);border-radius:var(--app-radius);box-shadow:var(--app-shadow);padding:1rem">
+      <i data-lucide="${s.icon}" class="w-5 h-5 mx-auto mb-1" style="color:var(--app-gold)"></i>
+      <div class="text-2xl font-bold" style="color:var(--app-ink)">${s.value}</div>
+      <div class="text-xs font-semibold mt-1" style="color:var(--app-muted)">${s.label}</div>
     </div>`).join('');
 
   // Limpar input de busca
