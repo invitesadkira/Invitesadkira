@@ -108,9 +108,10 @@ async function openMediaLibraryPicker(applyUrlFn) {
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
     </div>
-    <p class="text-xs text-gray-500 mb-3">Clica numa foto para a reaproveitar. Marca várias com a caixinha para eliminar de uma vez — isso liberta espaço.</p>
+    <p class="text-xs text-gray-500 mb-3">Clica numa foto para a reaproveitar. Marca várias com a caixinha para descarregar ou eliminar de uma vez.</p>
     <div id="media-library-toolbar" class="hidden items-center gap-2 mb-2" style="display:none">
       <span id="media-library-selected-count" class="text-xs font-semibold text-gray-600">0 selecionadas</span>
+      <button class="text-xs font-semibold text-teal-600" onclick="_downloadSelectedMediaLibraryItems()">⬇ Descarregar</button>
       <button class="text-xs font-semibold text-red-600 ml-auto" onclick="_deleteSelectedMediaLibraryItems()">🗑 Eliminar selecionadas</button>
     </div>
     <div class="flex items-center justify-between mb-2">
@@ -164,6 +165,7 @@ function _renderMediaLibraryGrid(items) {
       <input type="checkbox" class="media-lib-checkbox" data-idx="${idx}" onclick="event.stopPropagation();_toggleMediaLibrarySelection(${idx}, this.checked)" style="position:absolute;top:4px;left:4px;width:18px;height:18px;z-index:2;cursor:pointer">
       <img src="${item.url}" loading="lazy" style="width:100%;height:100%;object-fit:cover" onerror="this.parentElement.style.opacity='0.35'">
       <span style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,0.7));color:#fff;font-size:0.6rem;padding:0.3rem 0.4rem;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHTML(item.label || 'Imagem')}</span>
+      <button onclick="event.stopPropagation();downloadFileFromUrl('${item.url}', (window._mediaLibraryItems[${idx}].label||'foto').replace(/[^a-z0-9]+/gi,'_')+'.jpg')" title="Descarregar" style="position:absolute;top:3px;right:29px;width:22px;height:22px;border-radius:50%;background:rgba(0,127,159,0.92);color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:0.7rem;line-height:0">⬇</button>
       <button onclick="event.stopPropagation();_deleteMediaLibraryItem(${idx})" title="Eliminar" style="position:absolute;top:3px;right:3px;width:22px;height:22px;border-radius:50%;background:rgba(239,68,68,0.92);color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:0.7rem;line-height:0">✕</button>
     </div>`).join('');
 }
@@ -223,6 +225,19 @@ async function _deleteMediaLibraryItem(idx) {
   window._mediaLibrarySelected = new Set();
   _renderMediaLibraryGrid(window._mediaLibraryItems);
   document.getElementById('media-library-toolbar').style.display = 'none';
+}
+
+async function _downloadSelectedMediaLibraryItems() {
+  const idxs = Array.from(window._mediaLibrarySelected || []);
+  if (!idxs.length) return;
+  toast('A descarregar ' + idxs.length + ' foto(s)...');
+  for (const i of idxs) {
+    const item = window._mediaLibraryItems[i];
+    if (!item) continue;
+    const filename = (item.label || 'foto').replace(/[^a-z0-9]+/gi, '_') + '.jpg';
+    await downloadFileFromUrl(item.url, filename);
+    await new Promise(r => setTimeout(r, 400)); // espaça os downloads para o browser não bloquear
+  }
 }
 
 async function _deleteSelectedMediaLibraryItems() {

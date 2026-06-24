@@ -2989,13 +2989,36 @@ function renderSaveTheDateScreen(ev, decision) {
         </button>
         ${ev.iban_footer ? `<p style="font-size:0.65rem;color:#9ca3af;margin-top:0.6rem;font-style:italic">${escapeHTML(ev.iban_footer)}</p>` : ''}
       </div>` : ''}
+      ${ev.music_url ? `<div id="std-music-player-slot" class="std-anim std-anim-7" style="margin-top:1.25rem"></div>` : ''}
     </div>`;
 
   document.body.appendChild(overlay);
 
-  // Música removida do Save the Date a pedido explícito do utilizador —
-  // o leitor só aparece no convite completo, nunca nesta tela.
-  window._stdRestoreMusicPlayer = null;
+  // ✅ Música no Save the Date — reaproveita o mesmo botão flutuante e o
+  // mesmo elemento de áudio já usados no convite completo (mesma música,
+  // mesmas funções toggleMusicPlayer()/startMusicAutoplay()) — não toca
+  // duas vezes nem usa lógica duplicada, só fica visível neste sítio
+  // enquanto o Save the Date estiver no ecrã.
+  const stdMusicSlot = document.getElementById('std-music-player-slot');
+  const floatBtn = document.getElementById('floating-music-btn');
+  if (stdMusicSlot && floatBtn) {
+    const originalParent = floatBtn.parentElement;
+    const originalNextSibling = floatBtn.nextSibling;
+    stdMusicSlot.appendChild(floatBtn);
+    floatBtn.classList.add('visible');
+    window._stdRestoreMusicPlayer = () => {
+      if (floatBtn && originalParent) {
+        if (originalNextSibling) originalParent.insertBefore(floatBtn, originalNextSibling);
+        else originalParent.appendChild(floatBtn);
+      }
+    };
+    if (ev.music_url && !document.getElementById('guest-audio')?.src && !document.getElementById('yt-music-frame')?.src) {
+      const ytId = extractYouTubeId(ev.music_url);
+      startMusicAutoplay(ytId || null, ytId ? null : ev.music_url);
+    }
+  } else {
+    window._stdRestoreMusicPlayer = null;
+  }
 
   if (introEnabled) {
     _wireIntroScreenButton('std-intro-screen');

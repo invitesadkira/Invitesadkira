@@ -2097,12 +2097,39 @@ function renderStorageFiles() {
         <p class="text-xs text-gray-400">${f.bucket} · ${sizeKB}</p>
       </div>
       ${type === 'image' ? `<img src="${f.url}" class="w-10 h-10 object-cover rounded-lg flex-shrink-0">` : ''}
+      <button onclick="downloadFileFromUrl('${f.url}','${f.name}')" class="text-teal-500 hover:text-teal-700 px-1 flex-shrink-0" title="Descarregar">
+        <i data-lucide="download" class="w-3.5 h-3.5"></i>
+      </button>
       <button onclick="deleteStorageFile('${f.bucket}','${f.name}',this)" class="text-red-400 hover:text-red-600 px-1 flex-shrink-0">
         <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
       </button>
     </div>`;
   }).join('');
   lucide.createIcons();
+}
+
+// Descarrega qualquer ficheiro (imagem, música, fonte) para o computador/
+// telemóvel do utilizador — funciona mesmo sendo um URL de outro site
+// (Supabase Storage), porque vai buscar o conteúdo primeiro e só depois
+// força o download, em vez de só abrir o link.
+async function downloadFileFromUrl(url, filename) {
+  try {
+    toast('A preparar download...');
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('Falha ao obter o ficheiro');
+    const blob = await res.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = blobUrl;
+    a.download = filename || 'ficheiro';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 4000);
+  } catch (e) {
+    toast('Não foi possível descarregar. Tenta abrir o link directamente.');
+    window.open(url, '_blank');
+  }
 }
 
 async function deleteStorageFile(bucket, name, btn, skipConfirm = false) {
