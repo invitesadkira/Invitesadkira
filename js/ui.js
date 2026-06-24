@@ -594,12 +594,10 @@ function buildAdminQuickGrid() {
     { icon:'package',      label:'Pacotes',          action:"openPackageEditor()" },
     { icon:'send',         label:'Link Cliente',     action:"openIntakeLinkPicker()" },
     { icon:'megaphone',    label:'Avisos Site',      action:"openSiteNoticesManager()" },
-    { icon:'star',         label:'Avaliações',       action:"openReviewsManager()" },
     { icon:'shopping-bag', label:'Encomendas',       action:"openOrdersManager()" },
     { icon:'bell',         label:'Notificar Todos',  action:"openSendNotificationModal()" },
     { icon:'bar-chart-3',  label:'Análise de Acessos', action:"openAnalyticsPanel()" },
     { icon:'file-text',  label:'Política e Termos', action:"openLegalPagesEditor()" },
-    { icon:'clock',  label:'Prazo de Entrega', action:"adminEditDeliveryText()" },
     { icon:'monitor-play',  label:'Eventos de Demonstração', action:"adminEditDemoEvents()" },
     { icon:'image',  label:'Vitrine do Hero (Site Comercial)', action:"adminEditHeroShowcase()" },
   ];

@@ -2685,9 +2685,20 @@ async function checkURLForEvent() {
     dlog('🔍 Procurando por event_code=', eventCode);
     
     // ✅ Query otimizada: procurar por event_code OU id, com LIMIT 1
-    let eventsData = await supabaseRequest(
-      `events?or=(event_code.eq.${eventCode},id.eq.${eventCode})&select=id,user_id,title,date,time,confirm_by_date,cover_image,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,rsvp_enabled,allow_edit_rsvp,save_the_date_enabled,release_type,release_date,is_invite_released,std_title,std_subtitle,std_font_family,std_name_size,std_title_size,std_intro_enabled,std_intro_text,std_intro_photo_url,std_intro_photo_mobile_url,std_intro_photo_desktop_url,std_intro_on_invite,std_show_cover,std_cover_url,std_cover_mobile_url,std_cover_desktop_url,std_scratch_enabled,std_scratch_mode,std_scratch_photo_url,std_scratch_text,std_date_style,is_example_event,std_show_iban,personalized_links_enabled,show_rsvp_in_full_invite,show_guest_name_in_invite,allow_messages,show_guest_messages,music_url,music_title,iban_message,iban_number,iban_holder,iban_footer,groom_name,bride_name,couple_size,show_couple,bg_url,bg_overlay,bible_text,bible_ref,show_bible,invite_text,show_invite,groom_parents,bride_parents,show_parents,gallery_urls,show_gallery,show_manual,manual_items,show_schedule,schedule_items,custom_font_family,section_order,story_text,invite_blessing,event_color,show_decor,decor_side_url,decor_ornament_url,decor_top_url,decor_top_position,decor_bottom_left_url,decor_bottom_right_url,rsvps(guest_name,attending,side,companions,kids,wants_gift,message,created_at,updated_at),gifts(id,name,category,reserved,reserved_by,quantity,image_url)&limit=1`
-    );
+    const _eventLookupQuery = `events?or=(event_code.eq.${eventCode},id.eq.${eventCode})&select=id,user_id,title,date,time,confirm_by_date,cover_image,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,rsvp_enabled,allow_edit_rsvp,save_the_date_enabled,release_type,release_date,is_invite_released,std_title,std_subtitle,std_font_family,std_name_size,std_title_size,std_intro_enabled,std_intro_text,std_intro_photo_url,std_intro_photo_mobile_url,std_intro_photo_desktop_url,std_intro_on_invite,std_show_cover,std_cover_url,std_cover_mobile_url,std_cover_desktop_url,std_scratch_enabled,std_scratch_mode,std_scratch_photo_url,std_scratch_text,std_date_style,is_example_event,std_show_iban,personalized_links_enabled,show_rsvp_in_full_invite,show_guest_name_in_invite,allow_messages,show_guest_messages,music_url,music_title,iban_message,iban_number,iban_holder,iban_footer,groom_name,bride_name,couple_size,show_couple,bg_url,bg_overlay,bible_text,bible_ref,show_bible,invite_text,show_invite,groom_parents,bride_parents,show_parents,gallery_urls,show_gallery,show_manual,manual_items,show_schedule,schedule_items,custom_font_family,section_order,story_text,invite_blessing,event_color,show_decor,decor_side_url,decor_ornament_url,decor_top_url,decor_top_position,decor_bottom_left_url,decor_bottom_right_url,rsvps(guest_name,attending,side,companions,kids,wants_gift,message,created_at,updated_at),gifts(id,name,category,reserved,reserved_by,quantity,image_url)&limit=1`;
+
+    let eventsData = await supabaseRequest(_eventLookupQuery).catch(() => null);
+
+    // ✅ NOVO: antes de assumir "não encontrado", tenta mais uma vez — uma
+    // falha momentânea de rede ou um pico de tráfego no Supabase pode fazer
+    // o PRIMEIRO pedido falhar mesmo que o evento exista. Em vez de mostrar
+    // logo "Evento Não Encontrado" a um convidado real, espera um instante
+    // e repete a mesma busca pelo código antes de desistir.
+    if (!eventsData || eventsData.length === 0) {
+      dlog('⚠️ Evento não encontrado à primeira — a tentar novamente em 700ms...');
+      await new Promise(r => setTimeout(r, 700));
+      eventsData = await supabaseRequest(_eventLookupQuery).catch(() => null);
+    }
     
     dlog('📥 Resultado da busca:', eventsData?.length === 1 ? 'Encontrado' : 'Não encontrado');
     
