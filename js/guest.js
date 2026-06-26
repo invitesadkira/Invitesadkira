@@ -490,7 +490,8 @@ async function renderGuestView() {
   // ✅ Extrair data da deadline para mostrar ao convidado
   const deadlineDateOnly = deadlineDate.split(' ')[0];
   
-  document.getElementById('guest-deadline-text').textContent = 'Favor confirmar até ' + formatDate(deadlineDateOnly);
+  const deadlineTextEl = document.getElementById('guest-deadline-text');
+  if (deadlineTextEl) deadlineTextEl.textContent = 'Favor confirmar até ' + formatDate(deadlineDateOnly);
   // Start CTA section deadline countdown
   startDeadlineCountdown(deadlineDateOnly);
 
