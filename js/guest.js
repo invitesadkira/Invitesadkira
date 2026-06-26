@@ -286,7 +286,8 @@ async function renderGuestView() {
   const _criticalNulls = ['bible_text','gallery_urls','invite_text','groom_parents','bride_parents',
     'iban_number','story_text','event_color','groom_name','bride_name','music_url','schedule_items',
     'save_the_date_enabled','release_type','release_date','is_invite_released','std_title','std_subtitle','std_font_family',
-    'std_name_size','std_title_size','std_intro_enabled','std_intro_text','std_intro_photo_url'];
+    'std_name_size','std_title_size','std_intro_enabled','std_intro_text','std_intro_photo_url',
+    'std_extra_phrase','std_extra_phrase_enabled'];
   const _stillMissing = _criticalNulls.filter(k => !eventData[k]);
   if (_stillMissing.length > 0) {
     try {
@@ -302,7 +303,7 @@ async function renderGuestView() {
     } catch(e2) { console.warn('Visual fallback reload failed:', e2); }
   }
 
-  const RSVP_ONLY_FIELDS = new Set(['show_time','time','date','title','confirm_by_date','deadline','allowCompanions','allow_companions','maxCompanions','max_companions','allowKids','allow_kids','maxKids','max_kids','allowGifts','allow_gifts','allowSides','allow_sides','side1_name','side2_name','allowMessages','allow_messages','showGuestMessages','show_guest_messages','id','eventCode','cover_image','rsvp_enabled','save_the_date_enabled','release_type','release_date','is_invite_released','std_title','std_subtitle','std_font_family','std_name_size','std_title_size','std_intro_enabled','std_intro_text','std_intro_photo_url','std_show_cover','personalized_links_enabled','show_rsvp_in_full_invite','show_guest_name_in_invite','std_cover_url','userId','user_id','std_scratch_enabled','std_scratch_mode','std_scratch_photo_url','std_scratch_text','std_date_style','std_show_iban','allow_edit_rsvp','std_intro_photo_mobile_url','std_intro_photo_desktop_url','std_intro_on_invite','std_cover_mobile_url','std_cover_desktop_url']);
+  const RSVP_ONLY_FIELDS = new Set(['show_time','time','date','title','confirm_by_date','deadline','allowCompanions','allow_companions','maxCompanions','max_companions','allowKids','allow_kids','maxKids','max_kids','allowGifts','allow_gifts','allowSides','allow_sides','side1_name','side2_name','allowMessages','allow_messages','showGuestMessages','show_guest_messages','id','eventCode','cover_image','rsvp_enabled','save_the_date_enabled','release_type','release_date','is_invite_released','std_title','std_subtitle','std_font_family','std_name_size','std_title_size','std_intro_enabled','std_intro_text','std_intro_photo_url','std_show_cover','personalized_links_enabled','show_rsvp_in_full_invite','show_guest_name_in_invite','std_cover_url','userId','user_id','std_scratch_enabled','std_scratch_mode','std_scratch_photo_url','std_scratch_text','std_date_style','std_show_iban','allow_edit_rsvp','std_intro_photo_mobile_url','std_intro_photo_desktop_url','std_intro_on_invite','std_cover_mobile_url','std_cover_desktop_url','std_extra_phrase','std_extra_phrase_enabled']);
 
   // Restore all fields: RSVP fields always from events table; visual fields use
   // whichever source (visuals or events table) has a non-null value
@@ -331,6 +332,12 @@ async function renderGuestView() {
   // Check both sources: visuals table first, then events table, then default
   const _evCol = eventData.event_color || '#007f9f';
   document.documentElement.style.setProperty('--ev-color', _evCol);
+  // ✅ 2ª cor opcional — quando definida, os fundos de destaque (botão de
+  // confirmar presença, faixa de RSVP, etc.) passam a usar um degradê
+  // entre as 2 cores em vez de uma cor lisa. Sem 2ª cor, o degradê é só
+  // a mesma cor duas vezes — visualmente idêntico a uma cor sólida.
+  const _evCol2 = eventData.event_color_2 || _evCol;
+  document.documentElement.style.setProperty('--ev-gradient', `linear-gradient(135deg, ${_evCol}, ${_evCol2})`);
   document.getElementById('screen-guest')?.classList.toggle('guest-buttons-round', eventData.button_style === 'round');
   const _rsvpSec = document.getElementById('rsvp-section');
   if (_rsvpSec) {
@@ -2963,6 +2970,7 @@ function renderSaveTheDateScreen(ev, decision) {
       ${!showCover ? `<p class="std-anim std-anim-1" style="font-size:${titleSize}rem;letter-spacing:0.25em;text-transform:uppercase;font-weight:800;color:${evColor};font-family:'Quicksand',sans-serif;margin-bottom:0.5rem">${escapeHTML(stdTitle)}</p>` : ''}
       ${coupleNames ? `<h2 class="std-anim std-anim-2" style="font-family:${nameFont?`'${nameFont}',`:''}var(--event-font,'Playfair Display',serif);font-size:clamp(1.4rem,7vw,${nameSize}rem);line-height:1.2;margin-bottom:0.3rem;color:${evColor};padding:0 0.5rem">${coupleNames}</h2>` : ''}
       <p class="std-anim std-anim-3" style="font-size:0.9rem;font-weight:500;color:#6b7280;font-family:'Quicksand',sans-serif;margin-bottom:1.25rem">${escapeHTML(stdSubtitle)}</p>
+      ${(_yesOrTrue(ev.std_extra_phrase_enabled) && ev.std_extra_phrase) ? `<p class="std-anim std-anim-3" style="font-size:0.85rem;font-weight:500;color:${evColor};font-family:'Quicksand',sans-serif;margin:-0.5rem 0 1.25rem;max-width:340px">${escapeHTML(ev.std_extra_phrase)}</p>` : ''}
       <div class="std-anim std-anim-4">${_buildStdDateBlock(eventDateLabel, evColor, ev.std_date_style)}</div>
       <div id="std-countdown-wrap" class="std-anim std-anim-5" style="width:100%;margin-bottom:1.1rem">
         <p id="std-countdown-label" style="font-size:0.6rem;text-transform:uppercase;letter-spacing:0.1em;opacity:0.5;margin-bottom:0.4rem;font-weight:700">A calcular...</p>

@@ -14,7 +14,7 @@
   <script>tailwind.config = { theme: { extend: { colors: { teal: { 500: '#007f9f', 600: '#006b86' } } } } }</script>
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💌</text></svg>">
-  <link rel="stylesheet" href="css/main.css?v=1782460065">
+  <link rel="stylesheet" href="css/main.css?v=1782472278">
 </head>
 <body class="h-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
 
@@ -894,6 +894,18 @@ para testemunhar o seu enlace matrimonial</textarea>
           <input type="text" id="evt-event-color-hex" class="input-field w-24 text-xs font-mono" value="#007f9f" placeholder="#007f9f" oninput="document.getElementById('evt-event-color').value=this.value" >
          </div>
         </div>
+        <!-- Segunda cor (opcional) -->
+        <div class="flex items-center justify-between">
+         <span class="text-sm font-semibold text-gray-700">2ª Cor <span class="text-gray-400 font-normal">(opcional)</span></span>
+         <div class="flex items-center gap-2">
+          <input id="evt-event-color-2" type="color" value="#c9a84c" class="w-10 h-8 rounded-lg border border-gray-300 cursor-pointer p-0.5" oninput="const h=document.getElementById('evt-event-color-2-hex');if(h)h.value=this.value; document.getElementById('evt-event-color-2-enabled').checked=true;">
+          <input type="text" id="evt-event-color-2-hex" class="input-field w-24 text-xs font-mono" value="" placeholder="#c0c0c0" oninput="document.getElementById('evt-event-color-2').value=this.value; document.getElementById('evt-event-color-2-enabled').checked=true;">
+          <label class="flex items-center gap-1 text-xs text-gray-500 cursor-pointer">
+           <input type="checkbox" id="evt-event-color-2-enabled" class="w-3.5 h-3.5"> Usar
+          </label>
+         </div>
+        </div>
+        <p class="text-xs text-gray-400 -mt-2 mb-1">Quando ligado, os botões e faixas de destaque passam a usar um degradê entre as 2 cores (ex: "verde oliva e prata").</p>
         <!-- Estilo dos botões -->
         <div class="flex items-center justify-between">
          <span class="text-sm font-semibold text-gray-700">Estilo dos Botões</span>
@@ -1197,19 +1209,19 @@ para testemunhar o seu enlace matrimonial</textarea>
   </a>
 
   <!-- ===================== SCRIPTS (ordem importa) ===================== -->
-  <script src="js/config.js?v=1782460065"></script>
-  <script src="js/store.js?v=1782460065"></script>
-  <script src="js/visuals.js?v=1782460065"></script>
-  <script src="js/venues.js?v=1782460065"></script>
-  <script src="js/rsvp.js?v=1782460065"></script>
-  <script src="js/ui.js?v=1782460065"></script>
-  <script src="js/auth.js?v=1782460065"></script>
-  <script src="js/dashboard.js?v=1782460065"></script>
-  <script src="js/events.js?v=1782460065"></script>
-  <script src="js/guest.js?v=1782460065"></script>
-  <script src="js/sections.js?v=1782460065"></script>
-  <script src="js/admin.js?v=1782460065"></script>
-  <script src="js/router.js?v=1782460065"></script>
+  <script src="js/config.js?v=1782472278"></script>
+  <script src="js/store.js?v=1782472278"></script>
+  <script src="js/visuals.js?v=1782472278"></script>
+  <script src="js/venues.js?v=1782472278"></script>
+  <script src="js/rsvp.js?v=1782472278"></script>
+  <script src="js/ui.js?v=1782472278"></script>
+  <script src="js/auth.js?v=1782472278"></script>
+  <script src="js/dashboard.js?v=1782472278"></script>
+  <script src="js/events.js?v=1782472278"></script>
+  <script src="js/guest.js?v=1782472278"></script>
+  <script src="js/sections.js?v=1782472278"></script>
+  <script src="js/admin.js?v=1782472278"></script>
+  <script src="js/router.js?v=1782472278"></script>
 
 </body>
 </html>
