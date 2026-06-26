@@ -2013,12 +2013,18 @@ async function openIconPickerModal(category, onSelect) {
 // ── Foto final dos noivos ──────────────────────────────────────────────────
 function buildFinalPhotoSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
   const hasNames = !!(ev.groom_name || ev.bride_name);
-  return _SD + `<div class="event-section" style="padding:0;overflow:hidden">
-    <div class="reveal" style="width:100%;background:#0f172a">
+  const namesHtml = `${escapeHTML(ev.groom_name||'')}${ev.groom_name&&ev.bride_name?' &amp; ':''}${escapeHTML(ev.bride_name||'')}`;
+  // ✅ O wrapper é "inline-block" e do tamanho exacto da foto renderizada
+  // (nunca maior) — por isso o nome sobreposto cai sempre dentro da própria
+  // foto (nunca sobre espaço vazio à volta), mesmo que a foto não preencha
+  // toda a largura/altura disponível. Fundo branco em vez do escuro anterior.
+  return _SD + `<div class="event-section" style="padding:2.5rem 1rem;background:#fff;text-align:center">
+    <div class="reveal" style="display:inline-block;position:relative;max-width:100%;line-height:0">
       <img src="${ev.final_photo_url}" alt="Foto dos Noivos"
-        style="display:block;width:100%;height:auto;max-height:80vh;object-fit:contain;margin:0 auto"
+        style="display:block;width:auto;height:auto;max-width:100%;max-height:80vh;margin:0 auto"
         onerror="this.parentElement.parentElement.style.display='none'">
-      ${hasNames ? `<p style="margin:0;padding:0.9rem 1rem;text-align:center;background:#0f172a;color:#fff;font-size:1.05rem;font-weight:700;letter-spacing:0.05em;font-family:var(--event-font,'Playfair Display',serif)">${escapeHTML(ev.groom_name||'')}${ev.groom_name&&ev.bride_name?' & ':''}${escapeHTML(ev.bride_name||'')}</p>` : ''}
+      ${hasNames ? `<div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,0.5) 0%,transparent 40%)"></div>
+      <p style="position:absolute;bottom:1.1rem;left:0;right:0;text-align:center;color:#fff;font-size:1.05rem;font-weight:700;letter-spacing:0.05em;font-family:var(--event-font,'Playfair Display',serif);margin:0;line-height:normal">${namesHtml}</p>` : ''}
     </div>
   </div>`;
 }

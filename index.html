@@ -14,7 +14,7 @@
   <script>tailwind.config = { theme: { extend: { colors: { teal: { 500: '#007f9f', 600: '#006b86' } } } } }</script>
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💌</text></svg>">
-  <link rel="stylesheet" href="css/main.css?v=1782491607">
+  <link rel="stylesheet" href="css/main.css?v=1782495555">
 </head>
 <body class="h-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
 
@@ -928,27 +928,45 @@ para testemunhar o seu enlace matrimonial</textarea>
          <p class="text-xs font-semibold text-gray-600 mb-2">Para cada elemento, escolhe qual das 2 cores usar — é sempre 1 cor sólida, nunca uma mistura:</p>
          <div class="grid grid-cols-2 gap-2 items-center mb-1.5">
           <span class="text-xs text-gray-600">Botões e faixa de RSVP</span>
-          <select id="evt-button-color-choice" class="input-field text-xs"><option value="primary">Cor Principal</option><option value="secondary">2ª Cor</option><option value="black">Preto</option><option value="silver">Prateado</option></select>
+          <div class="flex gap-1.5 items-center">
+           <select id="evt-button-color-choice" class="input-field text-xs flex-1" onchange="document.getElementById('evt-button-color-choice-custom').style.display=this.value==='custom'?'inline-block':'none'"><option value="primary">Cor Principal</option><option value="secondary">2ª Cor</option><option value="black">Preto</option><option value="silver">Prateado</option><option value="custom">Personalizada</option></select>
+           <input type="color" id="evt-button-color-choice-custom" value="#007f9f" style="display:none;width:28px;height:26px;padding:0;border:1px solid #d1d5db;border-radius:0.35rem;cursor:pointer;flex-shrink:0">
+          </div>
          </div>
          <div class="grid grid-cols-2 gap-2 items-center mb-1.5">
           <span class="text-xs text-gray-600">Nomes do casal</span>
-          <select id="evt-color-names" class="input-field text-xs"><option value="primary">Cor Principal</option><option value="secondary">2ª Cor</option><option value="black">Preto</option><option value="silver">Prateado</option></select>
+          <div class="flex gap-1.5 items-center">
+           <select id="evt-color-names" class="input-field text-xs flex-1" onchange="document.getElementById('evt-color-names-custom').style.display=this.value==='custom'?'inline-block':'none'"><option value="primary">Cor Principal</option><option value="secondary">2ª Cor</option><option value="black">Preto</option><option value="silver">Prateado</option><option value="custom">Personalizada</option></select>
+           <input type="color" id="evt-color-names-custom" value="#1e293b" style="display:none;width:28px;height:26px;padding:0;border:1px solid #d1d5db;border-radius:0.35rem;cursor:pointer;flex-shrink:0">
+          </div>
          </div>
          <div class="grid grid-cols-2 gap-2 items-center mb-1.5">
           <span class="text-xs text-gray-600">Contagem regressiva</span>
-          <select id="evt-color-countdown" class="input-field text-xs"><option value="primary">Cor Principal</option><option value="secondary">2ª Cor</option><option value="black">Preto</option><option value="silver">Prateado</option></select>
+          <div class="flex gap-1.5 items-center">
+           <select id="evt-color-countdown" class="input-field text-xs flex-1" onchange="document.getElementById('evt-color-countdown-custom').style.display=this.value==='custom'?'inline-block':'none'"><option value="primary">Cor Principal</option><option value="secondary">2ª Cor</option><option value="black">Preto</option><option value="silver">Prateado</option><option value="custom">Personalizada</option></select>
+           <input type="color" id="evt-color-countdown-custom" value="#007f9f" style="display:none;width:28px;height:26px;padding:0;border:1px solid #d1d5db;border-radius:0.35rem;cursor:pointer;flex-shrink:0">
+          </div>
          </div>
          <div class="grid grid-cols-2 gap-2 items-center mb-1.5">
           <span class="text-xs text-gray-600">Títulos das secções</span>
-          <select id="evt-color-titles" class="input-field text-xs"><option value="primary">Cor Principal</option><option value="secondary">2ª Cor</option><option value="black">Preto</option><option value="silver">Prateado</option></select>
+          <div class="flex gap-1.5 items-center">
+           <select id="evt-color-titles" class="input-field text-xs flex-1" onchange="document.getElementById('evt-color-titles-custom').style.display=this.value==='custom'?'inline-block':'none'"><option value="primary">Cor Principal</option><option value="secondary">2ª Cor</option><option value="black">Preto</option><option value="silver">Prateado</option><option value="custom">Personalizada</option></select>
+           <input type="color" id="evt-color-titles-custom" value="#1e293b" style="display:none;width:28px;height:26px;padding:0;border:1px solid #d1d5db;border-radius:0.35rem;cursor:pointer;flex-shrink:0">
+          </div>
          </div>
          <div class="grid grid-cols-2 gap-2 items-center mb-1.5">
           <span class="text-xs text-gray-600">Textos de mensagem</span>
-          <select id="evt-color-message" class="input-field text-xs"><option value="primary">Cor Principal</option><option value="secondary">2ª Cor</option><option value="black">Preto</option><option value="silver">Prateado</option></select>
+          <div class="flex gap-1.5 items-center">
+           <select id="evt-color-message" class="input-field text-xs flex-1" onchange="document.getElementById('evt-color-message-custom').style.display=this.value==='custom'?'inline-block':'none'"><option value="primary">Cor Principal</option><option value="secondary">2ª Cor</option><option value="black">Preto</option><option value="silver">Prateado</option><option value="custom">Personalizada</option></select>
+           <input type="color" id="evt-color-message-custom" value="#1e293b" style="display:none;width:28px;height:26px;padding:0;border:1px solid #d1d5db;border-radius:0.35rem;cursor:pointer;flex-shrink:0">
+          </div>
          </div>
          <div class="grid grid-cols-2 gap-2 items-center">
           <span class="text-xs text-gray-600">Data do evento</span>
-          <select id="evt-color-date" class="input-field text-xs"><option value="primary">Cor Principal</option><option value="secondary">2ª Cor</option><option value="black">Preto</option><option value="silver">Prateado</option></select>
+          <div class="flex gap-1.5 items-center">
+           <select id="evt-color-date" class="input-field text-xs flex-1" onchange="document.getElementById('evt-color-date-custom').style.display=this.value==='custom'?'inline-block':'none'"><option value="primary">Cor Principal</option><option value="secondary">2ª Cor</option><option value="black">Preto</option><option value="silver">Prateado</option><option value="custom">Personalizada</option></select>
+           <input type="color" id="evt-color-date-custom" value="#1e293b" style="display:none;width:28px;height:26px;padding:0;border:1px solid #d1d5db;border-radius:0.35rem;cursor:pointer;flex-shrink:0">
+          </div>
          </div>
          <p class="text-xs text-gray-400 mt-2">O texto ajusta-se automaticamente (branco ou escuro) para nunca ficar difícil de ler.</p>
         </div>
@@ -1256,19 +1274,19 @@ para testemunhar o seu enlace matrimonial</textarea>
   </a>
 
   <!-- ===================== SCRIPTS (ordem importa) ===================== -->
-  <script src="js/config.js?v=1782491607"></script>
-  <script src="js/store.js?v=1782491607"></script>
-  <script src="js/visuals.js?v=1782491607"></script>
-  <script src="js/venues.js?v=1782491607"></script>
-  <script src="js/rsvp.js?v=1782491607"></script>
-  <script src="js/ui.js?v=1782491607"></script>
-  <script src="js/auth.js?v=1782491607"></script>
-  <script src="js/dashboard.js?v=1782491607"></script>
-  <script src="js/events.js?v=1782491607"></script>
-  <script src="js/guest.js?v=1782491607"></script>
-  <script src="js/sections.js?v=1782491607"></script>
-  <script src="js/admin.js?v=1782491607"></script>
-  <script src="js/router.js?v=1782491607"></script>
+  <script src="js/config.js?v=1782495555"></script>
+  <script src="js/store.js?v=1782495555"></script>
+  <script src="js/visuals.js?v=1782495555"></script>
+  <script src="js/venues.js?v=1782495555"></script>
+  <script src="js/rsvp.js?v=1782495555"></script>
+  <script src="js/ui.js?v=1782495555"></script>
+  <script src="js/auth.js?v=1782495555"></script>
+  <script src="js/dashboard.js?v=1782495555"></script>
+  <script src="js/events.js?v=1782495555"></script>
+  <script src="js/guest.js?v=1782495555"></script>
+  <script src="js/sections.js?v=1782495555"></script>
+  <script src="js/admin.js?v=1782495555"></script>
+  <script src="js/router.js?v=1782495555"></script>
 
 </body>
 </html>

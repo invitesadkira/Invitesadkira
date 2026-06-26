@@ -853,6 +853,38 @@ function toggleMusicPlayer() {
   }
 }
 
+// ── Ícone de som do Save the Date (junto à foto de capa) ────────────────
+// ✅ Diferente do botão flutuante normal (que pausa/toca): este nunca pausa
+// a música — apenas silencia/activa o som, mantendo a reprodução contínua.
+// Pensado para um único ícone simples de "som", como pedido.
+const VOLUME_ON_ICON  = '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>';
+const VOLUME_OFF_ICON = '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/>';
+function toggleStdMusicMute() {
+  const audio = document.getElementById('guest-audio');
+  const ytFrame = document.getElementById('yt-music-frame');
+  const icon = document.getElementById('std-mute-icon');
+  const btn = document.getElementById('std-mute-btn');
+  let nowMuted;
+
+  if (audio && audio.src) {
+    audio.muted = !audio.muted;
+    nowMuted = audio.muted;
+  } else if (ytFrame && ytFrame.src) {
+    nowMuted = ytFrame.dataset.muted !== '1';
+    ytFrame.dataset.muted = nowMuted ? '1' : '0';
+    try {
+      ytFrame.contentWindow.postMessage(
+        JSON.stringify({ event: 'command', func: nowMuted ? 'mute' : 'unMute', args: [] }), '*'
+      );
+    } catch(e) {}
+  } else {
+    return; // nada a tocar ainda (autoplay pode estar bloqueado/a aguardar gesto)
+  }
+
+  if (icon) icon.innerHTML = nowMuted ? VOLUME_OFF_ICON : VOLUME_ON_ICON;
+  if (btn) btn.title = nowMuted ? 'Som desligado — clique para activar' : 'Som ligado — clique para silenciar';
+}
+
 function startMusicAutoplay(ytId, audioSrc) {
   const icon = document.getElementById('music-play-icon');
   const eq   = document.getElementById('music-equalizer');

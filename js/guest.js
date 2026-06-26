@@ -380,12 +380,16 @@ async function renderGuestView() {
   // convite, textos de confirmação de presença).
   const _evCol2 = eventData.event_color_2 || null;
   document.documentElement.style.setProperty('--ev-color-2', _evCol2 || _evCol);
-  const _SILVER_FLAT = '#b9b9b9';
-  const _SILVER_GRADIENT = 'linear-gradient(110deg, #8e8e8e 0%, #f4f4f4 18%, #ffffff 32%, #c7c7c7 50%, #f4f4f4 68%, #8e8e8e 86%, #c7c7c7 100%)';
+  const _SILVER_FLAT = '#8c8c8c';
+  const _SILVER_GRADIENT = 'linear-gradient(110deg, #5f5f5f 0%, #9a9a9a 18%, #d4d4d4 32%, #6e6e6e 50%, #d4d4d4 68%, #5f5f5f 86%, #9a9a9a 100%)';
   const _BLACK_SOLID = '#111111';
   // Valor "completo" — pode ser uma cor sólida OU uma string de gradiente.
   // Funciona bem em qualquer `background:` (fundos de botões, caixas, etc).
-  const _pickColor = (choice) => {
+  // "custom" = o dono do evento escolheu uma cor totalmente livre (ex: nos
+  // nomes do casal, no hero) — usa-se essa cor exacta, sem qualquer limite
+  // às 4 opções pré-definidas.
+  const _pickColor = (choice, customHex) => {
+    if (choice === 'custom' && customHex) return customHex;
     if (choice === 'black') return _BLACK_SOLID;
     if (choice === 'silver') return _SILVER_GRADIENT;
     if (choice === 'secondary' && _evCol2) return _evCol2;
@@ -394,7 +398,8 @@ async function renderGuestView() {
   // Valor "plano" — sempre uma cor sólida, nunca um gradiente. Usado onde o
   // CSS precisa mesmo de uma cor (ex: `color:` de ícones/legendas pequenas)
   // e um gradiente simplesmente não funcionaria.
-  const _pickFlatColor = (choice) => {
+  const _pickFlatColor = (choice, customHex) => {
+    if (choice === 'custom' && customHex) return customHex;
     if (choice === 'black') return _BLACK_SOLID;
     if (choice === 'silver') return _SILVER_FLAT;
     if (choice === 'secondary' && _evCol2) return _evCol2;
@@ -402,8 +407,9 @@ async function renderGuestView() {
   };
   const _applyColorTarget = (varName, choiceField, silverClass) => {
     const choice = eventData[choiceField];
-    const color = _pickColor(choice);
-    const flat = _pickFlatColor(choice);
+    const customHex = eventData[choiceField + '_custom'];
+    const color = _pickColor(choice, customHex);
+    const flat = _pickFlatColor(choice, customHex);
     document.documentElement.style.setProperty(varName, color);
     document.documentElement.style.setProperty(varName + '-flat', flat);
     document.documentElement.style.setProperty(varName + '-text', _readableTextColor(flat));
@@ -3044,7 +3050,14 @@ function renderSaveTheDateScreen(ev, decision) {
       <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:0 1rem">
         <p style="font-size:${titleSize}rem;letter-spacing:0.3em;text-transform:uppercase;font-weight:800;color:#fff;font-family:'Quicksand',sans-serif;text-shadow:0 2px 12px rgba(0,0,0,0.5);margin:0">${escapeHTML(stdTitle)}</p>
       </div>
-    </div>` : `<div style="height:2.5rem;flex-shrink:0"></div>`}
+      ${ev.music_url ? `<button id="std-mute-btn" type="button" onclick="toggleStdMusicMute()" title="Som" style="position:absolute;top:0.85rem;right:0.85rem;z-index:3;width:38px;height:38px;border-radius:50%;background:rgba(0,0,0,0.42);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)">
+        <svg id="std-mute-icon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+      </button>` : ''}
+    </div>` : `<div style="height:2.5rem;flex-shrink:0;position:relative">
+      ${ev.music_url ? `<button id="std-mute-btn" type="button" onclick="toggleStdMusicMute()" title="Som" style="position:fixed;top:0.85rem;right:0.85rem;z-index:9001;width:38px;height:38px;border-radius:50%;background:rgba(0,0,0,0.55);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)">
+        <svg id="std-mute-icon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+      </button>` : ''}
+    </div>`}
     <div id="std-main-content" style="position:relative;z-index:2;max-width:440px;width:100%;text-align:center;color:#1e293b;padding:1rem 1.5rem 2.5rem;flex:1;display:flex;flex-direction:column;align-items:center">
       ${!showCover ? `<p class="std-anim std-anim-1" style="font-size:${titleSize}rem;letter-spacing:0.25em;text-transform:uppercase;font-weight:800;color:${evColor};font-family:'Quicksand',sans-serif;margin-bottom:0.5rem">${escapeHTML(stdTitle)}</p>` : ''}
       ${coupleNames ? `<h2 class="std-anim std-anim-2 std-couple-names" style="font-family:${nameFont?`'${nameFont}',`:''}var(--event-font,'Playfair Display',serif);font-size:clamp(1.4rem,7vw,${nameSize}rem);line-height:1.2;margin-bottom:0.3rem;color:${evColor};padding:0 0.5rem">${coupleNames}</h2>` : ''}
@@ -3077,35 +3090,19 @@ function renderSaveTheDateScreen(ev, decision) {
         </button>
         ${ev.iban_footer ? `<p style="font-size:0.65rem;color:#9ca3af;margin-top:0.6rem;font-style:italic">${escapeHTML(ev.iban_footer)}</p>` : ''}
       </div>` : ''}
-      ${ev.music_url ? `<div id="std-music-player-slot" class="std-anim std-anim-7" style="margin-top:1.25rem"></div>` : ''}
     </div>`;
 
   document.body.appendChild(overlay);
 
-  // ✅ Música no Save the Date — reaproveita o mesmo botão flutuante e o
-  // mesmo elemento de áudio já usados no convite completo (mesma música,
-  // mesmas funções toggleMusicPlayer()/startMusicAutoplay()) — não toca
-  // duas vezes nem usa lógica duplicada, só fica visível neste sítio
-  // enquanto o Save the Date estiver no ecrã.
-  const stdMusicSlot = document.getElementById('std-music-player-slot');
-  const floatBtn = document.getElementById('floating-music-btn');
-  if (stdMusicSlot && floatBtn) {
-    const originalParent = floatBtn.parentElement;
-    const originalNextSibling = floatBtn.nextSibling;
-    stdMusicSlot.appendChild(floatBtn);
-    floatBtn.classList.add('visible');
-    window._stdRestoreMusicPlayer = () => {
-      if (floatBtn && originalParent) {
-        if (originalNextSibling) originalParent.insertBefore(floatBtn, originalNextSibling);
-        else originalParent.appendChild(floatBtn);
-      }
-    };
-    if (ev.music_url && !document.getElementById('guest-audio')?.src && !document.getElementById('yt-music-frame')?.src) {
-      const ytId = extractYouTubeId(ev.music_url);
-      startMusicAutoplay(ytId || null, ytId ? null : ev.music_url);
-    }
-  } else {
-    window._stdRestoreMusicPlayer = null;
+  // ✅ Música no Save the Date — toca automaticamente como já acontecia,
+  // mas o controlo deixou de ser o botão flutuante reposicionado (ficava
+  // ao fundo do conteúdo, longe da foto de capa). Agora é só um ícone de
+  // som fixo no canto da própria foto de capa (toggleStdMusicMute), que
+  // nunca pausa a música — só silencia/activa o som, sempre a tocar.
+  window._stdRestoreMusicPlayer = null;
+  if (ev.music_url && !document.getElementById('guest-audio')?.src && !document.getElementById('yt-music-frame')?.src) {
+    const ytId = extractYouTubeId(ev.music_url);
+    startMusicAutoplay(ytId || null, ytId ? null : ev.music_url);
   }
 
   if (introEnabled) {

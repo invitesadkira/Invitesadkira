@@ -54,9 +54,11 @@ html, body { height: 100%; margin: 0; width: 100%; overflow-x: hidden; }
 .invitation-text, .std-extra-message { color: var(--ev-message-color, var(--ev-color)) !important; }
 .std-date-value { color: var(--ev-date-color, var(--ev-color)) !important; }
 
-/* ── "Prateado": gradiente metálico brilhante com leve animação, para
-   textos/elementos que pedem um tom neutro e elegante em vez da cor de
-   marca do evento. Activado via classe no <html>, posta pelo JS quando o
+/* ── "Prateado": gradiente metálico com contraste reforçado — nunca chega
+   a branco puro (isso desaparecia em fundos brancos, só se via a "piscar"
+   durante a animação). Os tons mais escuros (#5f5f5f/#6e6e6e) garantem que
+   fica sempre legível mesmo parado, com um leve "drop-shadow" a dar
+   profundidade. Activado via classe no <html>, posta pelo JS quando o
    organizador escolhe "Prateado" nesse seletor de cor específico. As
    regras abaixo têm sempre mais especificidade + !important do que as
    regras de cor "normais" acima, por isso ganham sempre quando activas. ── */
@@ -69,11 +71,12 @@ html.ev-silver-message .invitation-text,
 html.ev-silver-message .std-extra-message,
 html.ev-silver-date .std-date-value,
 html.ev-silver-countdown .std-countdown-num {
-  background-image: linear-gradient(110deg, #8e8e8e 0%, #f4f4f4 18%, #ffffff 32%, #c7c7c7 50%, #f4f4f4 68%, #8e8e8e 86%, #c7c7c7 100%) !important;
+  background-image: linear-gradient(110deg, #5f5f5f 0%, #9a9a9a 18%, #d4d4d4 32%, #6e6e6e 50%, #d4d4d4 68%, #5f5f5f 86%, #9a9a9a 100%) !important;
   background-size: 200% auto;
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 1px 1px rgba(0,0,0,0.22));
   color: transparent !important;
   animation: ev-silver-shimmer 3.2s linear infinite;
 }

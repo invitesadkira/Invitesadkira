@@ -830,11 +830,17 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
           event_color_2_targets: (['names','countdown','titles','message','date'].filter(t=>document.getElementById('evt-color2-t-'+t)?.checked).join(',')),
           cover_video_url: document.getElementById('evt-cover-video-url')?.value || null,
           button_color_choice: document.getElementById('evt-button-color-choice')?.value || 'primary',
+          button_color_choice_custom: document.getElementById('evt-button-color-choice-custom')?.value || null,
           color_names: document.getElementById('evt-color-names')?.value || 'primary',
+          color_names_custom: document.getElementById('evt-color-names-custom')?.value || null,
           color_countdown: document.getElementById('evt-color-countdown')?.value || 'primary',
+          color_countdown_custom: document.getElementById('evt-color-countdown-custom')?.value || null,
           color_titles: document.getElementById('evt-color-titles')?.value || 'primary',
+          color_titles_custom: document.getElementById('evt-color-titles-custom')?.value || null,
           color_message: document.getElementById('evt-color-message')?.value || 'primary',
+          color_message_custom: document.getElementById('evt-color-message-custom')?.value || null,
           color_date: document.getElementById('evt-color-date')?.value || 'primary',
+          color_date_custom: document.getElementById('evt-color-date-custom')?.value || null,
           invite_layout: document.getElementById('evt-invite-layout')?.value || 'sections',
           groom_name: newGroomName, bride_name: newBrideName, couple_size: newCoupleSize,
           show_couple: newShowCouple ? 'yes' : 'no',
@@ -1849,12 +1855,26 @@ function _fillEditForm(ev) {
     const preview = document.getElementById('cover-video-preview');
     if (preview) { preview.src = ev.cover_video_url; document.getElementById('cover-video-preview-wrap')?.classList.remove('hidden'); }
   }
-  const _validColorChoices = ['primary','secondary','black','silver'];
+  const _validColorChoices = ['primary','secondary','black','silver','custom'];
   const btnColorChoiceEl = document.getElementById('evt-button-color-choice');
-  if (btnColorChoiceEl) btnColorChoiceEl.value = _validColorChoices.includes(ev.button_color_choice) ? ev.button_color_choice : 'primary';
+  if (btnColorChoiceEl) {
+    btnColorChoiceEl.value = _validColorChoices.includes(ev.button_color_choice) ? ev.button_color_choice : 'primary';
+    const customEl = document.getElementById('evt-button-color-choice-custom');
+    if (customEl) {
+      if (ev.button_color_choice_custom) customEl.value = ev.button_color_choice_custom;
+      customEl.style.display = btnColorChoiceEl.value === 'custom' ? 'inline-block' : 'none';
+    }
+  }
   ['names','countdown','titles','message','date'].forEach(t => {
     const el = document.getElementById('evt-color-' + t);
-    if (el) el.value = _validColorChoices.includes(ev['color_' + t]) ? ev['color_' + t] : 'primary';
+    if (el) {
+      el.value = _validColorChoices.includes(ev['color_' + t]) ? ev['color_' + t] : 'primary';
+      const customEl = document.getElementById('evt-color-' + t + '-custom');
+      if (customEl) {
+        if (ev['color_' + t + '_custom']) customEl.value = ev['color_' + t + '_custom'];
+        customEl.style.display = el.value === 'custom' ? 'inline-block' : 'none';
+      }
+    }
   });
   const btnStyleEl = document.getElementById('evt-button-style');
   if (btnStyleEl) btnStyleEl.value = ev.button_style === 'round' ? 'round' : 'rounded';
