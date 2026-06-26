@@ -123,7 +123,7 @@ async function handleCreateEvent(e) {
     // faz sentido reenviar/duplicar, usa directamente.
     toast('A criar evento...');
     submitBtn.textContent = 'Criando evento...';
-    saveEventWithCover(eventId, title, date, time, deadlineWithTime, coverImg.src, allowComp, maxComp, allowGifts, allowKids, maxKids, allowSides, side1Name, side2Name, allowMessages, showGuestMessages, allowMusic ? musicUrl : null, musicTitle, ibanMessage, ibanNumber, ibanHolder, ibanFooter, {showCouple,groomName,brideName,coupleSize,bgUrl,bgUrlMobile,bgUrlDesktop,bgOverlay,showBible,bibleText,bibleRef,bibleText2,bibleRef2,bibleSize,showInvite,inviteText,showParents,groomPar,bridePar,showGallery,galleryUrls,showManual,manualItems,showSchedule,schedItems,customFont,sectionOrder:Store.eventSectionOrder,storyText:document.getElementById('evt-story-text')?.value.trim()||null,inviteBlessing:document.getElementById('evt-invite-blessing')?.value.trim()||null,eventColor:document.getElementById('evt-event-color')?.value.trim()||null,buttonStyle:document.getElementById('evt-button-style')?.value||'rounded',inviteLayout:document.getElementById('evt-invite-layout')?.value||'sections'}, submitBtn, originalText);
+    saveEventWithCover(eventId, title, date, time, deadlineWithTime, coverImg.src, allowComp, maxComp, allowGifts, allowKids, maxKids, allowSides, side1Name, side2Name, allowMessages, showGuestMessages, allowMusic ? musicUrl : null, musicTitle, ibanMessage, ibanNumber, ibanHolder, ibanFooter, {showCouple,groomName,brideName,coupleSize,bgUrl,bgUrlMobile,bgUrlDesktop,bgOverlay,showBible,bibleText,bibleRef,bibleText2,bibleRef2,bibleSize,showInvite,inviteText,showParents,groomPar,bridePar,showGallery,galleryUrls,showManual,manualItems,showSchedule,schedItems,customFont,sectionOrder:Store.eventSectionOrder,storyText:document.getElementById('evt-story-text')?.value.trim()||null,inviteBlessing:document.getElementById('evt-invite-blessing')?.value.trim() ?? '',eventColor:document.getElementById('evt-event-color')?.value.trim()||null,buttonStyle:document.getElementById('evt-button-style')?.value||'rounded',inviteLayout:document.getElementById('evt-invite-layout')?.value||'sections'}, submitBtn, originalText);
   } else if (hasCover) {
     // Mostrar progresso
     submitBtn.textContent = 'Enviando imagem...';
@@ -133,15 +133,15 @@ async function handleCreateEvent(e) {
       toast('Imagem recebida, criando evento...');
       submitBtn.textContent = 'Criando evento...';
       // Agora criar evento com URL da imagem no Supabase
-      saveEventWithCover(eventId, title, date, time, deadlineWithTime, coverImageURL, allowComp, maxComp, allowGifts, allowKids, maxKids, allowSides, side1Name, side2Name, allowMessages, showGuestMessages, allowMusic ? musicUrl : null, musicTitle, ibanMessage, ibanNumber, ibanHolder, ibanFooter, {showCouple,groomName,brideName,coupleSize,bgUrl,bgUrlMobile,bgUrlDesktop,bgOverlay,showBible,bibleText,bibleRef,bibleText2,bibleRef2,bibleSize,showInvite,inviteText,showParents,groomPar,bridePar,showGallery,galleryUrls,showManual,manualItems,showSchedule,schedItems,customFont,sectionOrder:Store.eventSectionOrder,storyText:document.getElementById('evt-story-text')?.value.trim()||null,inviteBlessing:document.getElementById('evt-invite-blessing')?.value.trim()||null,eventColor:document.getElementById('evt-event-color')?.value.trim()||null,buttonStyle:document.getElementById('evt-button-style')?.value||'rounded',inviteLayout:document.getElementById('evt-invite-layout')?.value||'sections'}, submitBtn, originalText);
+      saveEventWithCover(eventId, title, date, time, deadlineWithTime, coverImageURL, allowComp, maxComp, allowGifts, allowKids, maxKids, allowSides, side1Name, side2Name, allowMessages, showGuestMessages, allowMusic ? musicUrl : null, musicTitle, ibanMessage, ibanNumber, ibanHolder, ibanFooter, {showCouple,groomName,brideName,coupleSize,bgUrl,bgUrlMobile,bgUrlDesktop,bgOverlay,showBible,bibleText,bibleRef,bibleText2,bibleRef2,bibleSize,showInvite,inviteText,showParents,groomPar,bridePar,showGallery,galleryUrls,showManual,manualItems,showSchedule,schedItems,customFont,sectionOrder:Store.eventSectionOrder,storyText:document.getElementById('evt-story-text')?.value.trim()||null,inviteBlessing:document.getElementById('evt-invite-blessing')?.value.trim() ?? '',eventColor:document.getElementById('evt-event-color')?.value.trim()||null,buttonStyle:document.getElementById('evt-button-style')?.value||'rounded',inviteLayout:document.getElementById('evt-invite-layout')?.value||'sections'}, submitBtn, originalText);
     }).catch(error => {
       console.error('❌ ERRO upload imagem:', error);
       toast('Erro ao fazer upload da imagem. Criando evento sem capa...');
       submitBtn.textContent = 'Criando evento...';
-      saveEventWithCover(eventId, title, date, time, deadlineWithTime, null, allowComp, maxComp, allowGifts, allowKids, maxKids, allowSides, side1Name, side2Name, allowMessages, showGuestMessages, allowMusic ? musicUrl : null, musicTitle, ibanMessage, ibanNumber, ibanHolder, ibanFooter, {showCouple,groomName,brideName,coupleSize,bgUrl,bgUrlMobile,bgUrlDesktop,bgOverlay,showBible,bibleText,bibleRef,bibleText2,bibleRef2,bibleSize,showInvite,inviteText,showParents,groomPar,bridePar,showGallery,galleryUrls,showManual,manualItems,showSchedule,schedItems,customFont,sectionOrder:Store.eventSectionOrder,storyText:document.getElementById('evt-story-text')?.value.trim()||null,inviteBlessing:document.getElementById('evt-invite-blessing')?.value.trim()||null,eventColor:document.getElementById('evt-event-color')?.value.trim()||null,buttonStyle:document.getElementById('evt-button-style')?.value||'rounded',inviteLayout:document.getElementById('evt-invite-layout')?.value||'sections'}, submitBtn, originalText);
+      saveEventWithCover(eventId, title, date, time, deadlineWithTime, null, allowComp, maxComp, allowGifts, allowKids, maxKids, allowSides, side1Name, side2Name, allowMessages, showGuestMessages, allowMusic ? musicUrl : null, musicTitle, ibanMessage, ibanNumber, ibanHolder, ibanFooter, {showCouple,groomName,brideName,coupleSize,bgUrl,bgUrlMobile,bgUrlDesktop,bgOverlay,showBible,bibleText,bibleRef,bibleText2,bibleRef2,bibleSize,showInvite,inviteText,showParents,groomPar,bridePar,showGallery,galleryUrls,showManual,manualItems,showSchedule,schedItems,customFont,sectionOrder:Store.eventSectionOrder,storyText:document.getElementById('evt-story-text')?.value.trim()||null,inviteBlessing:document.getElementById('evt-invite-blessing')?.value.trim() ?? '',eventColor:document.getElementById('evt-event-color')?.value.trim()||null,buttonStyle:document.getElementById('evt-button-style')?.value||'rounded',inviteLayout:document.getElementById('evt-invite-layout')?.value||'sections'}, submitBtn, originalText);
     });
   } else {
-    saveEventWithCover(eventId, title, date, time, deadlineWithTime, null, allowComp, maxComp, allowGifts, allowKids, maxKids, allowSides, side1Name, side2Name, allowMessages, showGuestMessages, allowMusic ? musicUrl : null, musicTitle, ibanMessage, ibanNumber, ibanHolder, ibanFooter, {showCouple,groomName,brideName,coupleSize,bgUrl,bgUrlMobile,bgUrlDesktop,bgOverlay,showBible,bibleText,bibleRef,bibleText2,bibleRef2,bibleSize,showInvite,inviteText,showParents,groomPar,bridePar,showGallery,galleryUrls,showManual,manualItems,showSchedule,schedItems,customFont,sectionOrder:Store.eventSectionOrder,storyText:document.getElementById('evt-story-text')?.value.trim()||null,inviteBlessing:document.getElementById('evt-invite-blessing')?.value.trim()||null,eventColor:document.getElementById('evt-event-color')?.value.trim()||null,buttonStyle:document.getElementById('evt-button-style')?.value||'rounded',inviteLayout:document.getElementById('evt-invite-layout')?.value||'sections'}, submitBtn, originalText);
+    saveEventWithCover(eventId, title, date, time, deadlineWithTime, null, allowComp, maxComp, allowGifts, allowKids, maxKids, allowSides, side1Name, side2Name, allowMessages, showGuestMessages, allowMusic ? musicUrl : null, musicTitle, ibanMessage, ibanNumber, ibanHolder, ibanFooter, {showCouple,groomName,brideName,coupleSize,bgUrl,bgUrlMobile,bgUrlDesktop,bgOverlay,showBible,bibleText,bibleRef,bibleText2,bibleRef2,bibleSize,showInvite,inviteText,showParents,groomPar,bridePar,showGallery,galleryUrls,showManual,manualItems,showSchedule,schedItems,customFont,sectionOrder:Store.eventSectionOrder,storyText:document.getElementById('evt-story-text')?.value.trim()||null,inviteBlessing:document.getElementById('evt-invite-blessing')?.value.trim() ?? '',eventColor:document.getElementById('evt-event-color')?.value.trim()||null,buttonStyle:document.getElementById('evt-button-style')?.value||'rounded',inviteLayout:document.getElementById('evt-invite-layout')?.value||'sections'}, submitBtn, originalText);
   }
 }
 
@@ -314,7 +314,7 @@ function saveEventWithCover(eventId, title, date, time, deadline, coverImageURL,
     custom_font_family: v.customFont || null,
     section_order: v.sectionOrder ? JSON.stringify(v.sectionOrder) : null,
     story_text: v.storyText || null,
-    invite_blessing: v.inviteBlessing || null,
+    invite_blessing: v.inviteBlessing ?? '',
     event_color: v.eventColor || null,
     decor_side_url: document.getElementById('evt-decor-side-url')?.value || null,
     decor_ornament_url: document.getElementById('evt-decor-ornament-url')?.value || null,
@@ -420,7 +420,7 @@ function saveEventWithCover(eventId, title, date, time, deadline, coverImageURL,
         event_color: v.eventColor || null,
           section_order: v.sectionOrder ? JSON.stringify(v.sectionOrder) : null,
           story_text: v.storyText || null,
-          invite_blessing: v.inviteBlessing || null
+          invite_blessing: v.inviteBlessing ?? ''
         };
       } catch(e) {}
       
@@ -432,7 +432,7 @@ function saveEventWithCover(eventId, title, date, time, deadline, coverImageURL,
         bg_url: v.bgUrl || null, bg_url_mobile: v.bgUrlMobile || null, bg_url_desktop: v.bgUrlDesktop || null, bg_overlay: v.bgOverlay !== undefined ? v.bgOverlay : 35,
         show_bible: v.showBible ? 'yes' : 'no', bible_text: v.bibleText || null, bible_ref: v.bibleRef || null, bible_text_2: v.bibleText2 || null, bible_ref_2: v.bibleRef2 || null, bible_size: v.bibleSize || '0.92',
         show_invite: v.showInvite ? 'yes' : 'no', invite_text: v.inviteText || null,
-        invite_blessing: v.inviteBlessing || null,
+        invite_blessing: v.inviteBlessing ?? '',
         show_parents: v.showParents ? 'yes' : 'no', groom_parents: v.groomPar || null, bride_parents: v.bridePar || null,
         show_gallery: v.showGallery ? 'yes' : 'no', gallery_urls: v.galleryUrls || null,
         show_manual: v.showManual ? 'yes' : 'no', manual_items: v.manualItems || null,
@@ -734,7 +734,7 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
     custom_font_family: newCustomFont,
     section_order: Store.eventSectionOrder ? JSON.stringify(Store.eventSectionOrder) : null,
     story_text: document.getElementById('evt-story-text')?.value.trim() || null,
-    invite_blessing: document.getElementById('evt-invite-blessing')?.value.trim() || null,
+    invite_blessing: document.getElementById('evt-invite-blessing')?.value.trim() ?? '',
     event_color: document.getElementById('evt-event-color')?.value.trim() || null
     // button_style/invite_layout REMOVIDOS deste PATCH: vivem em
     // event_visuals (nunca em events) — já são gravados correctamente mais
@@ -778,7 +778,7 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
         ev.custom_font_family = newCustomFont;
         ev.section_order = Store.eventSectionOrder ? JSON.stringify(Store.eventSectionOrder) : null;
         ev.story_text = document.getElementById('evt-story-text')?.value.trim() || null;
-        ev.invite_blessing = document.getElementById('evt-invite-blessing')?.value.trim() || null;
+        ev.invite_blessing = document.getElementById('evt-invite-blessing')?.value.trim() ?? '';
         ev.event_color = document.getElementById('evt-event-color')?.value.trim() || null;
       }
       
@@ -824,7 +824,7 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
           bg_url: newBgUrl, bg_url_mobile: newBgUrlMobile, bg_url_desktop: newBgUrlDesktop, bg_overlay: newBgOverlay,
           show_bible: newShowBible ? 'yes' : 'no', bible_text: newBibleText, bible_ref: newBibleRef, bible_text_2: newBibleText2, bible_ref_2: newBibleRef2, bible_size: newBibleSize,
           show_invite: newShowInvite ? 'yes' : 'no', invite_text: newInviteText,
-          invite_blessing: document.getElementById('evt-invite-blessing')?.value?.trim() || null,
+          invite_blessing: document.getElementById('evt-invite-blessing')?.value?.trim() ?? '',
           show_parents: newShowParents ? 'yes' : 'no', groom_parents: newGroomPar, bride_parents: newBridePar,
           show_gallery: newShowGallery ? 'yes' : 'no', gallery_urls: newGalleryUrls,
           show_manual: newShowManual ? 'yes' : 'no',
@@ -2816,7 +2816,7 @@ async function checkURLForEvent() {
         section_order: eventData.section_order || null,
         event_color: eventData.event_color || null,
         story_text: eventData.story_text || null,
-        invite_blessing: eventData.invite_blessing || null,
+        invite_blessing: eventData.invite_blessing ?? '',
         confirmations: (eventData.rsvps || []).map(rsvp => ({
           name: rsvp.guest_name,
           attending: rsvp.attending === true || rsvp.attending === 'yes',

@@ -234,6 +234,7 @@ async function handleLoginSecure(e) {
 
   Store.currentUser = { id: user.id, phone: user.phone, role: user.role || 'user', status: 'active' };
   toast('Bem-vindo! Carregando seus dados...');
+  if (typeof invalidateEventsCache !== 'undefined') invalidateEventsCache();
   Router.go(user.role === 'admin' ? 'admin' : 'dashboard');
 }
 
@@ -424,6 +425,7 @@ async function handleLogin(e) {
     localStorage.setItem('userRole', user.role || 'user');
     Store.currentUser = { id: user.id, phone: user.phone, role: user.role || 'user', status: 'active' };
     toast('Bem-vindo! Carregando seus dados...');
+  if (typeof invalidateEventsCache !== 'undefined') invalidateEventsCache();
     Router.go(user.role === 'admin' ? 'admin' : 'dashboard');
     return;
   }
@@ -483,6 +485,7 @@ async function handleLogin(e) {
     localStorage.setItem('userRole', authedUser.role || 'user');
     Store.currentUser = { id: authedUser.id, phone: authedUser.phone, role: authedUser.role || 'user', status: 'active' };
     toast('Bem-vindo! Carregando seus dados...');
+  if (typeof invalidateEventsCache !== 'undefined') invalidateEventsCache();
     Router.go(authedUser.role === 'admin' ? 'admin' : 'dashboard');
     return;
   }

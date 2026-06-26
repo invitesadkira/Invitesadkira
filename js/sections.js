@@ -111,8 +111,8 @@ function buildSimpleInviteTemplate(ev) {
       ${ev.bible_ref ? `<p style="font-size:0.78rem;color:${evColor};font-weight:700;margin-top:0.5rem">${escapeHTML(ev.bible_ref)}</p>` : ''}
     </div>` : '';
 
-  const blessingLine = !isSingle ? `
-    <p style="text-align:center;font-size:0.7rem;letter-spacing:0.14em;text-transform:uppercase;font-weight:700;color:${evColor};margin:2rem 0 0.5rem">Com a bênção de Deus e seus pais</p>
+  const blessingLine = (!isSingle && ev.invite_blessing !== '') ? `
+    <p style="text-align:center;font-size:0.7rem;letter-spacing:0.14em;text-transform:uppercase;font-weight:700;color:${evColor};margin:2rem 0 0.5rem">${escapeHTML(ev.invite_blessing || 'Com a bênção de Deus e seus pais')}</p>
   ` : '';
 
   // Primeiro local (cerimónia, ou recepção se não houver cerimónia definida)
@@ -487,8 +487,17 @@ function buildBibleSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
   const lines = (ev.bible_text || '').split('\n').filter(Boolean).map(l => `<p class="bible-verse" style="font-size:${bibleSize}rem;line-height:1.8;font-style:italic">${escapeHTML(l)}</p>`).join('');
   const lines2 = (ev.bible_text_2 || '').split('\n').filter(Boolean).map(l => `<p class="bible-verse" style="font-size:${bibleSize}rem;line-height:1.8;font-style:italic">${escapeHTML(l)}</p>`).join('');
   const hasParents = ev.groom_parents || ev.bride_parents;
-  // Always show the hardcoded blessing label — never use invite_blessing as the label
-  const blessingLabel = 'Com a bênção de Deus e de seus pais';
+  // ✅ CORRIGIDO: agora usa mesmo o campo editável (evt-invite-blessing),
+  // que já existia no formulário mas estava a ser ignorado de propósito.
+  // Semântica: campo vazio (admin limpou-o) = não mostra nada; campo nunca
+  // tocado (eventos antigos) = mostra o texto padrão; texto próprio = usa
+  // esse texto. Também já não depende de teres nomes dos pais preenchidos
+  // — às vezes quem convida são os próprios noivos, ou os filhos, sem
+  // listar nomes de pais nenhuns.
+  const singleP_blessing = ev.event_type === 'birthday' || ev.event_type === 'other';
+  const blessingLabel = ev.invite_blessing === ''
+    ? ''
+    : (ev.invite_blessing || (singleP_blessing ? 'Com a bênção de Deus e da família' : 'Com a bênção de Deus e de seus pais'));
 
   // Apply invert_names to parents in this section too
   const _invertNamesB = _yesOrTrue(ev.invert_names);
@@ -496,14 +505,14 @@ function buildBibleSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
   let _brideParentsB = ev.bride_parents;
   if (_invertNamesB) { [_groomParentsB, _brideParentsB] = [_brideParentsB, _groomParentsB]; }
 
-  const parentsHtml = hasParents ? `
+  const parentsHtml = (blessingLabel || hasParents) ? `
     <div class="reveal" style="margin-top:1.5rem">
-      <p class="invitation-text" style="margin-bottom:1rem;font-size:0.9rem">${blessingLabel}</p>
-      <div style="display:flex;gap:1.5rem;justify-content:center;flex-wrap:wrap;text-align:center;max-width:380px;margin:0 auto">
+      ${blessingLabel ? `<p class="invitation-text" style="margin-bottom:1rem;font-size:0.9rem">${escapeHTML(blessingLabel)}</p>` : ''}
+      ${hasParents ? `<div style="display:flex;gap:1.5rem;justify-content:center;flex-wrap:wrap;text-align:center;max-width:380px;margin:0 auto">
         ${_groomParentsB ? (() => { return '<div>' + _groomParentsB.split('\n').filter(l=>l.trim()).map(l=>{ const hasCross=l.includes('✟'); const im=l.includes('(em memória)')||hasCross; let n=l.replace('(em memória)','').replace(/✟/g,'').trim(); const _pSize = ev.parents_size || '0.88'; return '<p style="font-weight:600;color:#1e293b;line-height:1.85;font-size:'+_pSize+'rem">'+escapeHTML(n)+(hasCross?' <span style="opacity:0.7">✟</span>':(im?' <span style="color:#6b7280;font-size:0.78rem;font-style:italic">(em memória)</span>':''))+'</p>'; }).join('') + '</div>'; })() : ''}
         ${_groomParentsB && _brideParentsB ? '<div style="width:1px;background:linear-gradient(to bottom,transparent,var(--ev-color,#007f9f) 20%,var(--ev-color,#007f9f) 80%,transparent);align-self:stretch;flex-shrink:0;min-height:60px"></div>' : ''}
         ${_brideParentsB ? (() => { return '<div>' + _brideParentsB.split('\n').filter(l=>l.trim()).map(l=>{ const hasCross=l.includes('✟'); const im=l.includes('(em memória)')||hasCross; let n=l.replace('(em memória)','').replace(/✟/g,'').trim(); const _pSize = ev.parents_size || '0.88'; return '<p style="font-weight:600;color:#1e293b;line-height:1.85;font-size:'+_pSize+'rem">'+escapeHTML(n)+(hasCross?' <span style="opacity:0.7">✟</span>':(im?' <span style="color:#6b7280;font-size:0.78rem;font-style:italic">(em memória)</span>':''))+'</p>'; }).join('') + '</div>'; })() : ''}
-      </div>
+      </div>` : ''}
     </div>` : '';
 
   // Couple names shown inside the "Têm a honra de convidar" blessing block.
