@@ -317,6 +317,15 @@ async function renderGuestSections(eventData) {
         case 'couplemsg': if (_yesOrTrue(eventData.show_couplemsg) && eventData.couplemsg_text) html += buildCoupleMsgSection(eventData); break;
         case 'final_photo': if (_yesOrTrue(eventData.show_final_photo) && eventData.final_photo_url) html += buildFinalPhotoSection(eventData); break;
         case 'event_faq': if (_yesOrTrue(eventData.show_event_faq) && eventData.event_faq_items) html += buildEventFaqSection(eventData); break;
+        case 'messages':
+          // ✅ Independente da confirmação de presença: aparece sempre que
+          // "allow_messages" e/ou "show_guest_messages" estiverem activos,
+          // mesmo que a secção/botão de RSVP esteja completamente escondida
+          // (ex: rsvp_enabled=false, ou Save the Date activo sem "mostrar
+          // também no convite completo"). Ver/Deixar Recado nunca deve
+          // depender de a confirmação de presença estar visível.
+          html += buildMessagesSection(eventData);
+          break;
         case 'rsvp':     break; // always last, separate element
       }
     } catch(sectionErr) {
@@ -1717,6 +1726,7 @@ const ALL_SECTION_DEFS = [
   { key: 'couplemsg',   label: 'Mensagem dos Noivos',                   icon: 'message-circle' },
   { key: 'final_photo', label: 'Foto Final dos Noivos',                 icon: 'image' },
   { key: 'event_faq',   label: 'Perguntas Frequentes',                  icon: 'help-circle' },
+  { key: 'messages',    label: 'Recados / Correio do Amor',             icon: 'message-square-heart' },
 ];
 
 function getDefaultSectionOrder() {
@@ -1822,7 +1832,7 @@ function buildVenueSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
 
   const cards = venues.map(v => `
     <div style="background:#fff;border-radius:1rem;overflow:hidden;border:1.5px solid color-mix(in srgb,${evColor} 20%,#e5e7eb);text-align:center;flex:1;min-width:180px">
-      ${v.image ? `<div style="width:100%;height:120px;overflow:hidden"><img src="${v.image}" style="width:100%;height:100%;object-fit:cover" alt="${escapeHTML(v.title)}"></div>` : ''}
+      ${v.image ? `<div style="width:100%;max-height:170px;overflow:hidden;display:flex;align-items:center;justify-content:center;background:color-mix(in srgb,${evColor} 6%,#fff)"><img src="${v.image}" style="width:100%;height:auto;max-height:170px;object-fit:contain" alt="${escapeHTML(v.title)}"></div>` : ''}
       <div style="padding:1.25rem 1rem">
         ${!v.image ? `<div style="width:44px;height:44px;border-radius:50%;background:color-mix(in srgb,${evColor} 12%,white);display:flex;align-items:center;justify-content:center;margin:0 auto 0.6rem">
           <i data-lucide="${v.icon}" style="width:20px;height:20px;color:${evColor}"></i>
@@ -2002,13 +2012,13 @@ async function openIconPickerModal(category, onSelect) {
 
 // ── Foto final dos noivos ──────────────────────────────────────────────────
 function buildFinalPhotoSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
+  const hasNames = !!(ev.groom_name || ev.bride_name);
   return _SD + `<div class="event-section" style="padding:0;overflow:hidden">
-    <div class="reveal" style="width:100%;aspect-ratio:4/3;overflow:hidden;position:relative">
+    <div class="reveal" style="width:100%;background:#0f172a">
       <img src="${ev.final_photo_url}" alt="Foto dos Noivos"
-        style="width:100%;height:100%;object-fit:cover;object-position:center"
+        style="display:block;width:100%;height:auto;max-height:80vh;object-fit:contain;margin:0 auto"
         onerror="this.parentElement.parentElement.style.display='none'">
-      <div style="position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,0.35) 0%,transparent 55%)"></div>
-      ${(ev.groom_name || ev.bride_name) ? `<p style="position:absolute;bottom:1.25rem;left:0;right:0;text-align:center;color:#fff;font-size:1.05rem;font-weight:700;letter-spacing:0.05em;font-family:var(--event-font,'Playfair Display',serif)">${escapeHTML(ev.groom_name||'')}${ev.groom_name&&ev.bride_name?' & ':''}${escapeHTML(ev.bride_name||'')}</p>` : ''}
+      ${hasNames ? `<p style="margin:0;padding:0.9rem 1rem;text-align:center;background:#0f172a;color:#fff;font-size:1.05rem;font-weight:700;letter-spacing:0.05em;font-family:var(--event-font,'Playfair Display',serif)">${escapeHTML(ev.groom_name||'')}${ev.groom_name&&ev.bride_name?' & ':''}${escapeHTML(ev.bride_name||'')}</p>` : ''}
     </div>
   </div>`;
 }
@@ -2036,8 +2046,38 @@ function buildEventFaqSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
   </div>`;
 }
 
-// Acordeão: abrir uma pergunta fecha automaticamente qualquer outra que
-// estivesse aberta na mesma secção (tanto no convite como no site comercial).
+// ── Recados / Correio do Amor ───────────────────────────────────────────
+// ✅ Secção independente da confirmação de presença: tanto "Ver Recados"
+// como "Deixar Recado" reaproveitam o overlay/modal já existentes em
+// rsvp.js (rsvpOpenFelicitacoes / rsvpLeaveFelicitacao), mas com um botão
+// próprio aqui no corpo do convite — assim continuam acessíveis mesmo
+// quando a secção/botão de RSVP está completamente escondida (rsvp_enabled
+// desligado, ou Save the Date activo sem "mostrar também no convite
+// completo"). Controlado pelos mesmos 2 interruptores de sempre:
+// allow_messages (pode escrever) e show_guest_messages (pode ver).
+function buildMessagesSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
+  const allowWrite = (ev.allowMessages === true) || (ev.allow_messages === 'yes') || (String(ev.allow_messages || '').toLowerCase() === 'yes');
+  const allowView  = (ev.showGuestMessages === true) || (ev.show_guest_messages === 'yes') || (String(ev.show_guest_messages || '').toLowerCase() === 'yes');
+  if (!allowWrite && !allowView) return '';
+  const evColor = ev.event_color || '#007f9f';
+  const count = (ev.confirmations || []).filter(c => c.message && String(c.message).trim()).length;
+  const introText = allowWrite
+    ? 'Deixe uma mensagem especial para este momento — não precisa de confirmar presença para isso.'
+    : 'Veja as mensagens deixadas por quem já passou por aqui.';
+  return _SD + `<div class="event-section" style="text-align:center">
+    <div class="section-inner reveal">
+      <p style="font-size:0.65rem;font-weight:800;letter-spacing:0.15em;text-transform:uppercase;color:${evColor};margin-bottom:0.3rem">RECADOS</p>
+      <h2 class="section-title" style="margin-bottom:0.5rem">Correio do Amor</h2>
+      <p style="font-size:0.85rem;color:#6b7280;max-width:380px;margin:0 auto 1.25rem;line-height:1.6">${introText}</p>
+      <div style="display:flex;gap:0.75rem;justify-content:center;flex-wrap:wrap">
+        ${allowView ? `<button type="button" onclick="rsvpOpenFelicitacoes()" style="background:transparent;border:1.5px solid ${evColor};color:${evColor};border-radius:999px;padding:0.65rem 1.5rem;font-weight:700;font-size:0.85rem;cursor:pointer;font-family:inherit">Ver Recados${count ? ` (${count})` : ''}</button>` : ''}
+        ${allowWrite ? `<button type="button" onclick="rsvpLeaveFelicitacao()" class="std-rsvp-btn-anim" style="border:none;border-radius:999px;padding:0.7rem 1.6rem;font-weight:700;font-size:0.85rem;cursor:pointer;font-family:inherit">Deixar Recado</button>` : ''}
+      </div>
+    </div>
+  </div>`;
+}
+
+
 function _toggleEventFaqAnswer(btn) {
   const block = btn.parentElement;
   const answer = block.querySelector('.faq-answer');

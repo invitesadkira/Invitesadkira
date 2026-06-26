@@ -556,13 +556,13 @@ function rsvpLeaveFelicitacao() {
   const evColor = ev?.event_color || '#007f9f';
   const eventId = Store.currentEventId;
 
-  // Require prior RSVP (confirmed or declined)
+  // ✅ Deixar recado NUNCA depende de já ter confirmado/declinado presença.
+  // Se já existir uma confirmação anterior, reaproveita-se o nome (e fica
+  // bloqueado no formulário, como antes); caso contrário, o convidado
+  // escreve agora mesmo o seu nome — o input para isso já existe mais
+  // abaixo, só não era alcançado por causa desta trava.
   const confirmed = rsvpCheckConfirmed(eventId);
-  if (!confirmed || !confirmed.name) {
-    toast('Para deixar uma felicitação, confirma ou declina a tua presença primeiro.');
-    return;
-  }
-  const confirmedName = confirmed.name;
+  const confirmedName = (confirmed && confirmed.name) ? confirmed.name : '';
 
   const modalId = '_fel-modal-' + Date.now();
   const modal = document.createElement('div');
