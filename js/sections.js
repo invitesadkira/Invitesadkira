@@ -1295,7 +1295,7 @@ function openScheduleEditor(clientMode) {
 // automaticamente — sem precisar de preencher campo a campo. Funciona para
 // o "Manual do Bom Convidado" (uma frase por linha) e para o "Monograma do
 // Dia" (frase + hora no fim de cada linha, ex: "Corte do bolo 17:30").
-const _BULK_PASTE_ICONS = ['check-circle','clock','users','shirt','baby','smartphone-off',
+const _BULK_PASTE_ICONS = ['check-circle','clock','users','shirt','baby','ban',
   'camera','heart','smile','music','party-popper','hand-heart','volume-x','door-open','sparkles'];
 
 function openBulkPasteModal(target) {

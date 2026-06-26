@@ -26,8 +26,36 @@ async function handleRegister(e) {
     if (tk.expires_at && new Date(tk.expires_at) < new Date()) { showErr('Este código expirou. Contacta a AdKira.'); if (btn) { btn.disabled = false; btn.textContent = 'Criar Conta'; } return; }
 
     if (btn) btn.textContent = 'A criar conta...';
+
+    // ✅ Fase 3: cria também o utilizador real no Supabase Auth, ligado a
+    // esta conta via auth_uid — assim toda a conta nova já nasce protegida,
+    // sem precisar de nenhum passo manual no painel do Supabase. Usa um
+    // e-mail sintético derivado do telefone (o cliente nunca o vê nem o usa
+    // directamente — só serve de identificador interno para o Auth).
+    let newAuthUid = null;
+    try {
+      const syntheticEmail = _phoneToSyntheticEmail(phone);
+      const signupRes = await fetch(`${SUPABASE_URL}/auth/v1/signup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY },
+        body: JSON.stringify({ email: syntheticEmail, password: pass })
+      });
+      const signupData = await signupRes.json();
+      if (signupRes.ok && signupData.user) {
+        newAuthUid = signupData.user.id;
+      } else {
+        // Não bloqueia a criação da conta — apenas regista para diagnóstico.
+        // A conta continua a funcionar pelo sistema antigo até alguém a
+        // ligar manualmente mais tarde (mesmo processo usado para o admin).
+        console.warn('Conta criada sem auth_uid (Supabase Auth signup falhou):', signupData);
+      }
+    } catch(e) {
+      console.warn('Falha ao criar utilizador no Supabase Auth (conta continua pelo sistema antigo):', e);
+    }
+
     const result = await supabaseRequest('accounts', 'POST', {
-      phone, password: pass, role: 'user', approved: true, event_limit: 1, login_count: 0
+      phone, password: pass, role: 'user', approved: true, event_limit: 1, login_count: 0,
+      auth_uid: newAuthUid
     });
     if (!result || !result[0]) {
       showErr('Erro ao criar conta. O telefone pode já estar em uso.');
@@ -424,6 +452,40 @@ async function handleLogin(e) {
     status: user.status,
     role: user.role
   });
+
+  // ✅ Fase 3, em migração: esta conta já tem auth_uid ligado (foi migrada
+  // para o Supabase Auth real) — usa esse caminho, mais seguro, em vez da
+  // comparação de senha em texto simples. Contas ainda não migradas
+  // (auth_uid vazio) continuam pelo caminho antigo, sem qualquer mudança.
+  if (user.auth_uid) {
+    const result = await loginViaSupabaseAuth(phone, pass);
+    if (result.error) {
+      _registerFailedLogin(phone);
+      errEl.textContent = result.error;
+      errEl.classList.remove('hidden');
+      return;
+    }
+    _clearLoginAttempts(phone);
+    const authedUser = result.account;
+    if (authedUser.status === 'pending') {
+      errEl.textContent = '⏳ Sua conta ainda não foi aprovada pelo administrador.';
+      errEl.classList.remove('hidden');
+      return;
+    }
+    if (authedUser.status === 'blocked') {
+      errEl.textContent = 'Sua conta foi bloqueada. Contacte o administrador.';
+      errEl.classList.remove('hidden');
+      return;
+    }
+    localStorage.setItem('authToken', authedUser.id);
+    localStorage.setItem('userId', authedUser.id);
+    localStorage.setItem('userPhone', authedUser.phone || '');
+    localStorage.setItem('userRole', authedUser.role || 'user');
+    Store.currentUser = { id: authedUser.id, phone: authedUser.phone, role: authedUser.role || 'user', status: 'active' };
+    toast('Bem-vindo! Carregando seus dados...');
+    Router.go(authedUser.role === 'admin' ? 'admin' : 'dashboard');
+    return;
+  }
   
   // ✅ Validar senha (em produção usar bcrypt)
   if (user.password !== pass) {

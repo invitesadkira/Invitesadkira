@@ -539,14 +539,15 @@ function toggleDrawer() {
   const d = document.getElementById('side-drawer');
   const o = document.getElementById('drawer-overlay');
   const btn = document.getElementById('hamburger-btn');
+  if (!d || !o) return;
   const isOpen = d.classList.contains('open');
   d.classList.toggle('open', !isOpen);
   o.classList.toggle('open', !isOpen);
-  btn.classList.toggle('open', !isOpen);
+  if (btn) btn.classList.toggle('open', !isOpen);
 }
 function closeDrawer() {
-  document.getElementById('side-drawer').classList.remove('open');
-  document.getElementById('drawer-overlay').classList.remove('open');
+  document.getElementById('side-drawer')?.classList.remove('open');
+  document.getElementById('drawer-overlay')?.classList.remove('open');
   const btn = document.getElementById('hamburger-btn');
   if (btn) btn.classList.remove('open');
 }
