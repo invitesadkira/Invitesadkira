@@ -1849,11 +1849,12 @@ function _fillEditForm(ev) {
     const preview = document.getElementById('cover-video-preview');
     if (preview) { preview.src = ev.cover_video_url; document.getElementById('cover-video-preview-wrap')?.classList.remove('hidden'); }
   }
+  const _validColorChoices = ['primary','secondary','black','silver'];
   const btnColorChoiceEl = document.getElementById('evt-button-color-choice');
-  if (btnColorChoiceEl) btnColorChoiceEl.value = ev.button_color_choice === 'secondary' ? 'secondary' : 'primary';
+  if (btnColorChoiceEl) btnColorChoiceEl.value = _validColorChoices.includes(ev.button_color_choice) ? ev.button_color_choice : 'primary';
   ['names','countdown','titles','message','date'].forEach(t => {
     const el = document.getElementById('evt-color-' + t);
-    if (el) el.value = ev['color_' + t] === 'secondary' ? 'secondary' : 'primary';
+    if (el) el.value = _validColorChoices.includes(ev['color_' + t]) ? ev['color_' + t] : 'primary';
   });
   const btnStyleEl = document.getElementById('evt-button-style');
   if (btnStyleEl) btnStyleEl.value = ev.button_style === 'round' ? 'round' : 'rounded';

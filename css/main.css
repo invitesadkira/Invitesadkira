@@ -49,10 +49,34 @@ html, body { height: 100%; margin: 0; width: 100%; overflow-x: hidden; }
   background: var(--ev-countdown-color, var(--ev-color)) !important;
   color: var(--ev-countdown-color-text, #fff) !important;
 }
-.std-countdown-num { color: var(--ev-countdown-color, var(--ev-color)) !important; }
+.std-countdown-num { color: var(--ev-countdown-color-flat, var(--ev-color)) !important; }
 .section-title { color: var(--ev-titles-color, var(--ev-color)) !important; }
 .invitation-text, .std-extra-message { color: var(--ev-message-color, var(--ev-color)) !important; }
 .std-date-value { color: var(--ev-date-color, var(--ev-color)) !important; }
+
+/* ── "Prateado": gradiente metálico brilhante com leve animação, para
+   textos/elementos que pedem um tom neutro e elegante em vez da cor de
+   marca do evento. Activado via classe no <html>, posta pelo JS quando o
+   organizador escolhe "Prateado" nesse seletor de cor específico. As
+   regras abaixo têm sempre mais especificidade + !important do que as
+   regras de cor "normais" acima, por isso ganham sempre quando activas. ── */
+@keyframes ev-silver-shimmer { 0% { background-position: 0% center; } 100% { background-position: 200% center; } }
+html.ev-silver-names #hero-couple-names,
+html.ev-silver-names .std-couple-names,
+html.ev-silver-names .bible-couple-names,
+html.ev-silver-titles .section-title,
+html.ev-silver-message .invitation-text,
+html.ev-silver-message .std-extra-message,
+html.ev-silver-date .std-date-value,
+html.ev-silver-countdown .std-countdown-num {
+  background-image: linear-gradient(110deg, #8e8e8e 0%, #f4f4f4 18%, #ffffff 32%, #c7c7c7 50%, #f4f4f4 68%, #8e8e8e 86%, #c7c7c7 100%) !important;
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent !important;
+  animation: ev-silver-shimmer 3.2s linear infinite;
+}
 
 /* ── Estilo "Redondo": ícone vira um círculo, com o nome do botão por baixo ── */
 #screen-guest.guest-buttons-round .rsvp-cta-btn,
@@ -69,7 +93,7 @@ html, body { height: 100%; margin: 0; width: 100%; overflow-x: hidden; }
 #screen-guest.guest-buttons-round .iban-copy-btn { margin: 0 auto; }
 #screen-guest.guest-buttons-round .action-btn-icon {
   width: 64px; height: 64px; border-radius: 50%; background: #fff;
-  color: var(--ev-button-color, var(--ev-color, #007f9f)); box-shadow: 0 6px 18px rgba(0,0,0,0.18);
+  color: var(--ev-button-color-flat, var(--ev-color, #007f9f)); box-shadow: 0 6px 18px rgba(0,0,0,0.18);
 }
 #screen-guest.guest-buttons-round .action-btn-icon svg { width: 24px; height: 24px; }
 #screen-guest.guest-buttons-round .rsvp-cta-btn .action-btn-label { color: #fff; font-size: 0.82rem; font-weight: 700; }
@@ -84,7 +108,7 @@ html, body { height: 100%; margin: 0; width: 100%; overflow-x: hidden; }
 #screen-guest.guest-buttons-round .iban-copy-btn .action-btn-icon svg { width: 20px; height: 20px; }
 #screen-guest.guest-buttons-round .dg-card-btn .action-btn-label,
 #screen-guest.guest-buttons-round .venue-map-btn .action-btn-label,
-#screen-guest.guest-buttons-round .iban-copy-btn .action-btn-label { color: var(--ev-button-color, var(--ev-color, #007f9f)); font-size: 0.78rem; font-weight: 700; }
+#screen-guest.guest-buttons-round .iban-copy-btn .action-btn-label { color: var(--ev-button-color-flat, var(--ev-color, #007f9f)); font-size: 0.78rem; font-weight: 700; }
 .btn-outline {
   border: 2px solid #007f9f; color: #007f9f; border-radius: 0.75rem;
   padding: 0.6rem 1.5rem; font-weight: 600; transition: all 0.2s; background: transparent;

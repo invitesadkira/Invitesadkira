@@ -374,21 +374,48 @@ async function renderGuestView() {
   // elemento (botões, nomes, contagem, títulos, mensagens, data), qual
   // das 2 cores usar ali. O texto ajusta-se sempre (branco/escuro) para
   // nunca ficar difícil de ler, seja qual for a cor escolhida.
+  // ✅ Também pode escolher "Preto" (cor sólida fixa, neutra) ou "Prateado"
+  // (gradiente metálico brilhante, com animação) — pensados para textos que
+  // não devem competir com a cor de marca do evento (ex: frases formais de
+  // convite, textos de confirmação de presença).
   const _evCol2 = eventData.event_color_2 || null;
   document.documentElement.style.setProperty('--ev-color-2', _evCol2 || _evCol);
-  const _pickColor = (choice) => (choice === 'secondary' && _evCol2) ? _evCol2 : _evCol;
-  const _applyColorTarget = (varName, choiceField) => {
-    const color = _pickColor(eventData[choiceField]);
-    document.documentElement.style.setProperty(varName, color);
-    document.documentElement.style.setProperty(varName + '-text', _readableTextColor(color));
-    return color;
+  const _SILVER_FLAT = '#b9b9b9';
+  const _SILVER_GRADIENT = 'linear-gradient(110deg, #8e8e8e 0%, #f4f4f4 18%, #ffffff 32%, #c7c7c7 50%, #f4f4f4 68%, #8e8e8e 86%, #c7c7c7 100%)';
+  const _BLACK_SOLID = '#111111';
+  // Valor "completo" — pode ser uma cor sólida OU uma string de gradiente.
+  // Funciona bem em qualquer `background:` (fundos de botões, caixas, etc).
+  const _pickColor = (choice) => {
+    if (choice === 'black') return _BLACK_SOLID;
+    if (choice === 'silver') return _SILVER_GRADIENT;
+    if (choice === 'secondary' && _evCol2) return _evCol2;
+    return _evCol;
   };
-  const _evButtonColor = _applyColorTarget('--ev-button-color', 'button_color_choice');
-  _applyColorTarget('--ev-names-color', 'color_names');
-  _applyColorTarget('--ev-countdown-color', 'color_countdown');
-  _applyColorTarget('--ev-titles-color', 'color_titles');
-  _applyColorTarget('--ev-message-color', 'color_message');
-  _applyColorTarget('--ev-date-color', 'color_date');
+  // Valor "plano" — sempre uma cor sólida, nunca um gradiente. Usado onde o
+  // CSS precisa mesmo de uma cor (ex: `color:` de ícones/legendas pequenas)
+  // e um gradiente simplesmente não funcionaria.
+  const _pickFlatColor = (choice) => {
+    if (choice === 'black') return _BLACK_SOLID;
+    if (choice === 'silver') return _SILVER_FLAT;
+    if (choice === 'secondary' && _evCol2) return _evCol2;
+    return _evCol;
+  };
+  const _applyColorTarget = (varName, choiceField, silverClass) => {
+    const choice = eventData[choiceField];
+    const color = _pickColor(choice);
+    const flat = _pickFlatColor(choice);
+    document.documentElement.style.setProperty(varName, color);
+    document.documentElement.style.setProperty(varName + '-flat', flat);
+    document.documentElement.style.setProperty(varName + '-text', _readableTextColor(flat));
+    if (silverClass) document.documentElement.classList.toggle(silverClass, choice === 'silver');
+    return flat;
+  };
+  const _evButtonColor = _applyColorTarget('--ev-button-color', 'button_color_choice', 'ev-silver-button');
+  _applyColorTarget('--ev-names-color', 'color_names', 'ev-silver-names');
+  _applyColorTarget('--ev-countdown-color', 'color_countdown', 'ev-silver-countdown');
+  _applyColorTarget('--ev-titles-color', 'color_titles', 'ev-silver-titles');
+  _applyColorTarget('--ev-message-color', 'color_message', 'ev-silver-message');
+  _applyColorTarget('--ev-date-color', 'color_date', 'ev-silver-date');
   document.documentElement.style.setProperty('--ev-button-text-color', _readableTextColor(_evButtonColor));
   document.getElementById('screen-guest')?.classList.toggle('guest-buttons-round', eventData.button_style === 'round');
   const _rsvpSec = document.getElementById('rsvp-section');
