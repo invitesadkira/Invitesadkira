@@ -318,6 +318,37 @@ async function bootstrapSupabaseSession() {
   return (accountRows && accountRows[0]) || null;
 }
 
+// Login com e-mail real do Supabase Auth (para contas já migradas, como o
+// admin) — diferente de loginViaSupabaseAuth, que converte telefone num
+// e-mail sintético. Esta usa o e-mail tal como foi introduzido.
+async function loginViaSupabaseAuthEmail(email, password) {
+  const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY },
+    body: JSON.stringify({ email, password })
+  });
+  const data = await res.json();
+  if (!res.ok || !data.access_token) {
+    return { error: 'E-mail ou senha incorrectos.' };
+  }
+
+  setStoredSupabaseSession({
+    access_token: data.access_token,
+    refresh_token: data.refresh_token,
+    expires_at: data.expires_at
+  });
+  localStorage.setItem('sb_session_auth_uid', data.user.id);
+
+  // Agora que já há sessão real, procura a conta (profile) ligada a este
+  // utilizador do Auth pelo auth_uid — NÃO pelo telefone, porque esta
+  // conta pode nem ter telefone definido.
+  const accountRows = await supabaseRequest(`accounts?auth_uid=eq.${data.user.id}&limit=1`);
+  const account = accountRows && accountRows[0];
+  if (!account) return { error: 'Conta autenticada, mas não encontrada em "accounts" (confirma se o auth_uid foi ligado correctamente).' };
+
+  return { account };
+}
+
 async function handleLogin(e) {
   e.preventDefault();
   const phone = document.getElementById('login-phone').value.trim();
@@ -334,6 +365,40 @@ async function handleLogin(e) {
   }
 
   toast('Autenticando...');
+
+  // ✅ NOVO (Fase 3, em migração): se o campo parece um e-mail, esta conta
+  // já foi migrada para o Supabase Auth real — usa esse caminho em vez do
+  // antigo. Contas por telefone continuam exactamente como sempre foram,
+  // sem nenhuma alteração, até serem migradas uma a uma.
+  if (phone.includes('@')) {
+    const result = await loginViaSupabaseAuthEmail(phone, pass);
+    if (result.error) {
+      _registerFailedLogin(phone);
+      errEl.textContent = result.error;
+      errEl.classList.remove('hidden');
+      return;
+    }
+    _clearLoginAttempts(phone);
+    const user = result.account;
+    if (user.status === 'pending') {
+      errEl.textContent = '⏳ Sua conta ainda não foi aprovada pelo administrador.';
+      errEl.classList.remove('hidden');
+      return;
+    }
+    if (user.status === 'blocked') {
+      errEl.textContent = 'Sua conta foi bloqueada. Contacte o administrador.';
+      errEl.classList.remove('hidden');
+      return;
+    }
+    localStorage.setItem('authToken', user.id);
+    localStorage.setItem('userId', user.id);
+    localStorage.setItem('userPhone', user.phone || '');
+    localStorage.setItem('userRole', user.role || 'user');
+    Store.currentUser = { id: user.id, phone: user.phone, role: user.role || 'user', status: 'active' };
+    toast('Bem-vindo! Carregando seus dados...');
+    Router.go(user.role === 'admin' ? 'admin' : 'dashboard');
+    return;
+  }
   
   // ✅ Buscar no Supabase
   const accountData = await supabaseRequest(`accounts?phone=eq.${encodeURIComponent(phone)}`);
