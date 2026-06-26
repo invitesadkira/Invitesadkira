@@ -1290,7 +1290,237 @@ function openScheduleEditor(clientMode) {
   window._scheduleEditorClientMode = clientMode;
 }
 
-// ===================== COLAR EM BLOCO (Manual + Cronograma) =====================
+// ===================== COLAR TEXTO INTELIGENTE =====================
+// Permite ao admin (normalmente a impersonar um utilizador) colar um bloco
+// de texto livre, com marcadores tipo "📖 Texto bíblico:", "👰 Nomes dos
+// noivos:", etc — muito comum quando o cliente manda os dados todos de
+// uma vez por WhatsApp — e o site distribui automaticamente cada parte
+// para o campo certo do formulário.
+
+function openSmartPasteModal() {
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.id = 'smart-paste-modal';
+  modal.style.zIndex = '10700';
+  modal.innerHTML = `<div class="modal-content bg-white rounded-2xl shadow-lg p-5 max-w-lg w-full max-h-[85vh] overflow-y-auto">
+    <h3 class="text-base font-bold text-gray-800 mb-1">🪄 Colar Texto Inteligente</h3>
+    <p class="text-xs text-gray-400 mb-3">Cola aqui o texto todo que o cliente mandou (com os marcadores tipo "📖 Texto bíblico:", "👰 Nomes dos noivos:", etc). O site tenta identificar cada parte e preencher os campos certos — revê sempre depois, por segurança.</p>
+    <textarea id="smart-paste-textarea" class="input-field text-sm" rows="14" placeholder="Cola aqui o texto completo..."></textarea>
+    <div class="flex gap-2 mt-4">
+      <button class="flex-1 btn-main text-sm" onclick="applySmartPaste()">Analisar e Preencher</button>
+      <button class="flex-1 btn-outline text-sm" onclick="this.closest('.modal-overlay').remove()">Cancelar</button>
+    </div>
+    <div id="smart-paste-report" class="mt-3 text-xs"></div>
+  </div>`;
+  document.body.appendChild(modal);
+  document.getElementById('smart-paste-textarea').focus();
+}
+
+function _activateSwitch(id, extraId) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.add('active');
+  if (extraId) document.getElementById(extraId)?.classList.remove('hidden');
+}
+
+const MONTHS_PT = {
+  'janeiro':1,'fevereiro':2,'março':3,'marco':3,'abril':4,'maio':5,'junho':6,
+  'julho':7,'agosto':8,'setembro':9,'outubro':10,'novembro':11,'dezembro':12
+};
+
+function _parsePtDate(text) {
+  const m = text.match(/(\d{1,2})\s*de\s*([a-zçã]+)(?:\s*de)?\s*(\d{4})/i);
+  if (!m) return null;
+  const day = parseInt(m[1], 10);
+  const month = MONTHS_PT[m[2].toLowerCase()];
+  const year = parseInt(m[3], 10);
+  if (!month) return null;
+  return `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+}
+
+function _stripLabel(line) {
+  // Remove prefixos comuns: "R:", "R :", parênteses como "(Noivo)", etc,
+  // deixando só o conteúdo real.
+  return line.replace(/^\s*R\s*:\s*/i, '').trim();
+}
+
+function applySmartPaste() {
+  const raw = document.getElementById('smart-paste-textarea').value;
+  if (!raw.trim()) { document.getElementById('smart-paste-modal')?.remove(); return; }
+
+  // ── 1) Dividir o texto em secções, usando os marcadores conhecidos ──
+  const SECTION_DEFS = [
+    { key: 'bible',    test: /b[ií]blic/i },
+    { key: 'couple',   test: /noivos|do casal|nome do anivers/i },
+    { key: 'parents',  test: /nomes dos pais|dos pais/i },
+    { key: 'date',     test: /data do evento|data:/i },
+    { key: 'time',     test: /hor[áa]rio/i },
+    { key: 'venue',    test: /local do evento|locais do evento/i },
+    { key: 'maps',     test: /google maps|link do local|mapa/i },
+    { key: 'schedule', test: /cronograma/i },
+    { key: 'message',  test: /mensagem para os convidados|mensagem do casal|mensagem:/i },
+  ];
+
+  const lines = raw.split('\n').map(l => l.trim()).filter(l => l.length);
+  const sections = {};
+  let current = null;
+
+  lines.forEach(line => {
+    // Tira emojis/símbolos do início (e quaisquer emojis a meio da linha)
+    // — tanto para comparar o cabeçalho, como para nunca deixar emoji
+    // entrar no conteúdo que vai para os campos do formulário.
+    const noEmoji = line.replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{2190}-\u{21FF}\u{2B00}-\u{2BFF}]/gu, '').replace(/ {2,}/g, ' ').trim();
+    const clean = noEmoji.replace(/^[^\p{L}]*/u, '').trim();
+    const matched = SECTION_DEFS.find(s => s.test.test(clean));
+    if (matched) {
+      current = matched.key;
+      if (!sections[current]) sections[current] = [];
+      // Se houver texto depois da própria etiqueta na mesma linha (ex:
+      // "Horário: Civil: 14:30"), guarda só essa parte como 1ª linha.
+      const afterLabel = clean.replace(/^[^:]*:\s*/, '').trim();
+      if (afterLabel && afterLabel !== clean) sections[current].push(afterLabel);
+    } else if (current) {
+      sections[current].push(noEmoji);
+    }
+  });
+
+  const filled = [];
+
+  // ── 2) Texto bíblico ──
+  if (sections.bible && sections.bible.length) {
+    const first = sections.bible[0];
+    const looksLikeRef = /\d/.test(first) && first.length < 40;
+    const ref = looksLikeRef ? _stripLabel(first) : '';
+    const textLines = looksLikeRef ? sections.bible.slice(1) : sections.bible;
+    const text = textLines.map(_stripLabel).join('\n').replace(/^["“]|["”]$/g, '');
+    if (text) { document.getElementById('evt-bible-text').value = text; _activateSwitch('sw-bible','bible-extra'); filled.push('Texto bíblico'); }
+    if (ref) { document.getElementById('evt-bible-ref').value = ref; }
+  }
+
+  // ── 3) Nomes dos noivos ──
+  if (sections.couple && sections.couple.length) {
+    const line = _stripLabel(sections.couple[0]);
+    const parts = line.split(/\s+e\s+/i);
+    if (parts.length >= 2) {
+      document.getElementById('evt-groom-name').value = parts[0].trim();
+      document.getElementById('evt-bride-name').value = parts[1].trim();
+      filled.push('Nomes dos noivos');
+    } else if (parts.length === 1) {
+      document.getElementById('evt-groom-name').value = parts[0].trim();
+      filled.push('Nome do aniversariante');
+    }
+  }
+
+  // ── 4) Nomes dos pais ──
+  if (sections.parents && sections.parents.length) {
+    let groomP = '', brideP = '';
+    sections.parents.forEach(line => {
+      const clean = _stripLabel(line);
+      if (/noivo\)/i.test(clean) || /^\(noivo/i.test(clean)) {
+        groomP = clean.replace(/^\(noivo\)\s*:?\s*/i, '').replace(/\s+e\s+/gi, '\n').trim();
+      } else if (/noiva\)/i.test(clean) || /^\(noiva/i.test(clean)) {
+        brideP = clean.replace(/^\(noiva\)\s*:?\s*/i, '').replace(/\s+e\s+/gi, '\n').trim();
+      }
+    });
+    if (groomP) { document.getElementById('evt-groom-parents').value = groomP; _activateSwitch('sw-parents','parents-extra'); filled.push('Pais do noivo'); }
+    if (brideP) { document.getElementById('evt-bride-parents').value = brideP; filled.push('Pais da noiva'); }
+  }
+
+  // ── 5) Data do evento ──
+  if (sections.date && sections.date.length) {
+    const dateStr = _parsePtDate(sections.date.join(' '));
+    if (dateStr) { document.getElementById('evt-date').value = dateStr; filled.push('Data'); }
+  }
+
+  // ── 6) Horário (primeiro horário encontrado vai para a hora principal) ──
+  let timesFound = [];
+  if (sections.time && sections.time.length) {
+    sections.time.forEach(line => {
+      const m = line.match(/(\d{1,2}[:h]\d{2})/);
+      if (m) timesFound.push({ label: line.replace(m[0], '').replace(/[:\-–]+$/, '').trim(), time: m[1].replace('h',':') });
+    });
+    if (timesFound.length) { document.getElementById('evt-time').value = timesFound[0].time; filled.push('Hora'); }
+  }
+
+  // ── 7) Local do evento (cerimónia / civil / recepção) ──
+  const venueMap = { ceremony: null, civil: null, reception: null };
+  if (sections.venue && sections.venue.length) {
+    sections.venue.forEach(line => {
+      const clean = _stripLabel(line);
+      let type = null;
+      if (/civil/i.test(clean)) type = 'civil';
+      else if (/cerim[óo]nia|religios/i.test(clean)) type = 'ceremony';
+      else if (/recep[çc][ãa]o|copo de [áa]gua|festa/i.test(clean)) type = 'reception';
+      if (type) {
+        const name = clean.replace(/^\([^)]*\)\s*:?\s*/, '').replace(/^[^:]*:\s*/, '').trim();
+        venueMap[type] = name;
+      }
+    });
+    Object.keys(venueMap).forEach(type => {
+      if (venueMap[type]) {
+        const el = document.getElementById(`evt-venue-${type}`);
+        if (el) { el.value = venueMap[type]; _activateSwitch('sw-venues','venues-extra'); filled.push('Local (' + type + ')'); }
+      }
+    });
+  }
+
+  // ── 8) Link do Google Maps — aplica a todos os locais já preenchidos ──
+  if (sections.maps && sections.maps.length) {
+    const mapsText = sections.maps.join(' ');
+    const urls = mapsText.match(/https?:\/\/\S+/g) || [];
+    if (urls.length) {
+      Object.keys(venueMap).forEach(type => {
+        if (venueMap[type]) {
+          const el = document.getElementById(`evt-venue-${type}-maps`);
+          if (el && !el.value) el.value = urls[0];
+        }
+      });
+      filled.push('Link do mapa');
+    }
+  }
+
+  // ── 9) Cronograma do dia ──
+  if (sections.schedule && sections.schedule.length) {
+    const items = [];
+    sections.schedule.forEach((line, i) => {
+      let m = line.match(/^(\d{1,2}[:h]\d{2})\s*[-–:]?\s*(.+)$/); // hora primeiro
+      let time, label;
+      if (m) { time = m[1].replace('h',':'); label = m[2].trim(); }
+      else {
+        m = line.match(/^(.+?)[\s,–-]+(\d{1,2}[:h]\d{2})\s*$/); // hora no fim
+        if (m) { label = m[1].trim(); time = m[2].replace('h',':'); }
+      }
+      if (time && label) items.push({ icon: _BULK_PASTE_ICONS[i % _BULK_PASTE_ICONS.length], time, label, sub: '' });
+    });
+    if (items.length) {
+      Store.eventScheduleItems = items;
+      _activateSwitch('sw-schedule','schedule-extra');
+      filled.push('Cronograma (' + items.length + ' momentos)');
+    }
+  }
+
+  // ── 10) Mensagem para os convidados ──
+  if (sections.message && sections.message.length) {
+    const msg = sections.message.join('\n').trim();
+    if (msg) {
+      document.getElementById('evt-couplemsg-text').value = msg;
+      _activateSwitch('sw-couplemsg','couplemsg-extra');
+      filled.push('Mensagem para os convidados');
+    }
+  }
+
+  // ── Relatório final ──
+  const reportEl = document.getElementById('smart-paste-report');
+  if (reportEl) {
+    reportEl.innerHTML = filled.length
+      ? `<p class="text-green-600 font-semibold mb-1">✅ Preenchido: ${filled.join(', ')}.</p><p class="text-gray-400">Revê os campos antes de guardar — a leitura é automática, pode não ser perfeita.</p>`
+      : `<p class="text-amber-600 font-semibold">⚠️ Não consegui identificar nenhuma parte conhecida neste texto. Tenta manter os marcadores tipo "📖 Texto bíblico:", "👰 Nomes dos noivos:", etc.</p>`;
+  }
+  if (filled.length) toast('Texto analisado — ' + filled.length + ' secções preenchidas!');
+  setTimeout(() => { document.getElementById('smart-paste-modal')?.remove(); }, filled.length ? 1800 : 0);
+}
+
+
 // Permite ao admin colar uma lista de texto simples e o site organiza
 // automaticamente — sem precisar de preencher campo a campo. Funciona para
 // o "Manual do Bom Convidado" (uma frase por linha) e para o "Monograma do
