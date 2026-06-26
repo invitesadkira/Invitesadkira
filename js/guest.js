@@ -364,13 +364,17 @@ async function renderGuestView() {
   const _evCol2 = eventData.event_color_2 || null;
   let _evGradient;
   if (_evCol2) {
-    const _light = _adjustColorLightness(_evCol2, 55);
-    const _dark = _adjustColorLightness(_evCol2, -35);
-    _evGradient = `linear-gradient(120deg, ${_evCol} 0%, ${_dark} 28%, ${_light} 50%, ${_dark} 72%, ${_evCol} 100%)`;
+    const _light = _adjustColorLightness(_evCol2, 42);
+    const _dark = _adjustColorLightness(_evCol2, -22);
+    _evGradient = `linear-gradient(100deg, ${_evCol} 0%, ${_dark} 32%, ${_light} 50%, ${_dark} 68%, ${_evCol} 100%)`;
   } else {
     _evGradient = `linear-gradient(135deg, ${_evCol}, ${_evCol})`;
   }
   document.documentElement.style.setProperty('--ev-gradient', _evGradient);
+  // ✅ Botões: cor sólida única (nunca mistura das 2 cores) — o organizador
+  // escolhe se usa a cor principal ou a 2ª cor, sempre inteira.
+  const _evButtonColor = (eventData.button_color_choice === 'secondary' && _evCol2) ? _evCol2 : _evCol;
+  document.documentElement.style.setProperty('--ev-button-color', _evButtonColor);
   // ✅ Onde aplicar o efeito metálico — o organizador escolhe (botões,
   // nomes do casal, contagem regressiva, títulos das secções). Por
   // padrão só os botões usam, para não mudar nada em quem não escolheu.
@@ -380,7 +384,8 @@ async function renderGuestView() {
     _guestEl.classList.toggle('metallic-names', !!_evCol2 && _color2Targets.includes('names'));
     _guestEl.classList.toggle('metallic-countdown', !!_evCol2 && _color2Targets.includes('countdown'));
     _guestEl.classList.toggle('metallic-titles', !!_evCol2 && _color2Targets.includes('titles'));
-    _guestEl.classList.toggle('metallic-buttons', !!_evCol2 && _color2Targets.includes('buttons'));
+    _guestEl.classList.toggle('metallic-message', !!_evCol2 && _color2Targets.includes('message'));
+    _guestEl.classList.toggle('metallic-date', !!_evCol2 && _color2Targets.includes('date'));
   }
   document.getElementById('screen-guest')?.classList.toggle('guest-buttons-round', eventData.button_style === 'round');
   const _rsvpSec = document.getElementById('rsvp-section');
@@ -966,7 +971,7 @@ async function reloadEventFromSupabase(eventId) {
       custom_font_family: event.custom_font_family || null,
       section_order: event.section_order || null,
       story_text: event.story_text || null,
-      invite_blessing: event.invite_blessing || null,
+      invite_blessing: event.invite_blessing ?? null,
       event_color: event.event_color || null,
         cover: event.cover_image,
         cover_image: event.cover_image,
@@ -2883,7 +2888,7 @@ function _buildStdDateBlock(eventDateLabel, evColor, style) {
     return `
       <div style="margin-bottom:1.1rem;text-align:center">
         <p style="font-size:0.6rem;text-transform:uppercase;letter-spacing:0.1em;color:${evColor};opacity:0.6;font-weight:700;margin-bottom:0.15rem">Data do Evento</p>
-        <p style="font-size:1rem;font-weight:700;color:#1e293b">${eventDateLabel}</p>
+        <p class="std-date-value" style="font-size:1rem;font-weight:700;color:#1e293b">${eventDateLabel}</p>
       </div>`;
   }
 
@@ -2897,7 +2902,7 @@ function _buildStdDateBlock(eventDateLabel, evColor, style) {
         <span style="font-size:2.1rem;font-weight:900;color:${evColor};line-height:1">${day}</span>
         <div style="text-align:left">
           <p style="font-size:0.58rem;text-transform:uppercase;letter-spacing:0.1em;color:${evColor};opacity:0.65;font-weight:700">Data do Evento</p>
-          <p style="font-size:0.8rem;font-weight:700;color:#1e293b">${rest}</p>
+          <p class="std-date-value" style="font-size:0.8rem;font-weight:700;color:#1e293b">${rest}</p>
         </div>
       </div>`;
   }
@@ -2906,7 +2911,7 @@ function _buildStdDateBlock(eventDateLabel, evColor, style) {
   return `
     <div style="background:${evColor}13;border-radius:0.75rem;padding:0.45rem 1.5rem;margin-bottom:1.1rem;display:inline-block">
       <p style="font-size:0.6rem;text-transform:uppercase;letter-spacing:0.1em;color:${evColor};opacity:0.65;font-weight:700;margin-bottom:0.1rem">Data do Evento</p>
-      <p style="font-size:0.95rem;font-weight:800;color:${evColor}">${eventDateLabel}</p>
+      <p class="std-date-value" style="font-size:0.95rem;font-weight:800;color:${evColor}">${eventDateLabel}</p>
     </div>`;
 }
 
@@ -3005,7 +3010,8 @@ function renderSaveTheDateScreen(ev, decision) {
   overlay.classList.toggle('metallic-names', _stdHasColor2 && _stdColor2Targets.includes('names'));
   overlay.classList.toggle('metallic-countdown', _stdHasColor2 && _stdColor2Targets.includes('countdown'));
   overlay.classList.toggle('metallic-titles', _stdHasColor2 && _stdColor2Targets.includes('titles'));
-  overlay.classList.toggle('metallic-buttons', _stdHasColor2 && _stdColor2Targets.includes('buttons'));
+  overlay.classList.toggle('metallic-message', _stdHasColor2 && _stdColor2Targets.includes('message'));
+  overlay.classList.toggle('metallic-date', _stdHasColor2 && _stdColor2Targets.includes('date'));
 
   overlay.innerHTML = `
     <style>${fontFaceCSS}</style>
@@ -3024,7 +3030,7 @@ function renderSaveTheDateScreen(ev, decision) {
       ${!showCover ? `<p class="std-anim std-anim-1" style="font-size:${titleSize}rem;letter-spacing:0.25em;text-transform:uppercase;font-weight:800;color:${evColor};font-family:'Quicksand',sans-serif;margin-bottom:0.5rem">${escapeHTML(stdTitle)}</p>` : ''}
       ${coupleNames ? `<h2 class="std-anim std-anim-2 std-couple-names" style="font-family:${nameFont?`'${nameFont}',`:''}var(--event-font,'Playfair Display',serif);font-size:clamp(1.4rem,7vw,${nameSize}rem);line-height:1.2;margin-bottom:0.3rem;color:${evColor};padding:0 0.5rem">${coupleNames}</h2>` : ''}
       <p class="std-anim std-anim-3" style="font-size:0.9rem;font-weight:500;color:#6b7280;font-family:'Quicksand',sans-serif;margin-bottom:1.25rem">${escapeHTML(stdSubtitle)}</p>
-      ${(_yesOrTrue(ev.std_extra_phrase_enabled) && ev.std_extra_phrase) ? `<p class="std-anim std-anim-3" style="font-size:0.85rem;font-weight:500;color:${evColor};font-family:'Quicksand',sans-serif;margin:-0.5rem 0 1.25rem;max-width:340px">${escapeHTML(ev.std_extra_phrase)}</p>` : ''}
+      ${(_yesOrTrue(ev.std_extra_phrase_enabled) && ev.std_extra_phrase) ? `<p class="std-anim std-anim-3 std-extra-message" style="font-size:0.85rem;font-weight:500;color:${evColor};font-family:'Quicksand',sans-serif;margin:-0.5rem 0 1.25rem;max-width:340px">${escapeHTML(ev.std_extra_phrase)}</p>` : ''}
       <div class="std-anim std-anim-4">${_buildStdDateBlock(eventDateLabel, evColor, ev.std_date_style)}</div>
       <div id="std-countdown-wrap" class="std-anim std-anim-5" style="width:100%;margin-bottom:1.1rem">
         <p id="std-countdown-label" style="font-size:0.6rem;text-transform:uppercase;letter-spacing:0.1em;opacity:0.5;margin-bottom:0.4rem;font-weight:700">A calcular...</p>

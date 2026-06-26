@@ -151,7 +151,7 @@ function buildSimpleInviteTemplate(ev) {
       ${blessingLine}
 
       <!-- 4. Nomes do casal -->
-      <h1 style="text-align:center;font-family:'Playfair Display',serif;font-style:italic;font-size:clamp(2.2rem,8vw,3.2rem);color:#1e293b;margin:0.25rem 0 1rem">${coupleNames}</h1>
+      <h1 class="bible-couple-names" style="text-align:center;font-family:'Playfair Display',serif;font-style:italic;font-size:clamp(2.2rem,8vw,3.2rem);color:#1e293b;margin:0.25rem 0 1rem">${coupleNames}</h1>
 
       <!-- 5. Convidam ___ para a celebração -->
       <p style="text-align:center;font-size:0.98rem;color:#374151;line-height:1.7;max-width:380px;margin:0 auto 2.5rem;padding:0 1.5rem">${inviteLine}</p>
@@ -530,7 +530,7 @@ function buildBibleSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
   const coupleFontFamily = ev.custom_font_family ? `'${ev.custom_font_family}', serif` : 'inherit';
   const coupleNamesHtml = (groomName || brideName) ? `
     <div class="reveal" style="margin-top:1.25rem;text-align:center">
-      <p style="font-size:${blessingCoupleFontSize};font-weight:700;color:${ev.event_color||'#007f9f'};letter-spacing:0.01em;font-family:${coupleFontFamily}">
+      <p class="bible-couple-names" style="font-size:${blessingCoupleFontSize};font-weight:700;color:${ev.event_color||'#007f9f'};letter-spacing:0.01em;font-family:${coupleFontFamily}">
         ${escapeHTML(groomName)}${groomName && brideName ? ` <span style="font-weight:300;opacity:0.65">&amp;</span> ` : ''}${escapeHTML(brideName)}
       </p>
     </div>` : '';

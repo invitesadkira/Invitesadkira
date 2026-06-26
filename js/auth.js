@@ -676,7 +676,7 @@ async function handleLogin(e) {
       custom_font_family: event.custom_font_family || null,
       section_order: event.section_order || null,
       story_text: event.story_text || null,
-      invite_blessing: event.invite_blessing || null,
+      invite_blessing: event.invite_blessing ?? null,
       event_color: event.event_color || null,
         cover: event.cover_image,
         cover_image: event.cover_image,

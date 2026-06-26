@@ -330,8 +330,8 @@ function removeCoverImageFromForm() {
 async function handleCoverVideoUpload(input) {
   const file = input.files[0];
   if (!file) return;
-  if (file.size > 25 * 1024 * 1024) {
-    toast('Vídeo muito grande (máx. 25MB) — usa um vídeo curto ou comprime antes de carregar.');
+  if (file.size > 10 * 1024 * 1024) {
+    toast('Vídeo muito grande (máx. 10MB) — usa um vídeo curto ou comprime antes de carregar.');
     input.value = '';
     return;
   }

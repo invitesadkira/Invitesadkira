@@ -18,20 +18,26 @@ html, body { height: 100%; margin: 0; width: 100%; overflow-x: hidden; }
 }
 .btn-main:hover { background: #006b86; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,127,159,0.3); }
 
-/* ── 2ª cor / efeito metálico — só aplica onde o organizador escolheu ── */
-#screen-guest.metallic-buttons .dg-card-btn,
-#screen-guest.metallic-buttons #rsvp-form button[type="submit"],
-#screen-guest.metallic-buttons .iban-copy-btn,
-#screen-guest.metallic-buttons .rsvp-cta-section,
-#screen-guest.metallic-buttons .rsvp-copyright,
-#screen-guest.metallic-buttons.guest-buttons-round .iban-copy-btn .action-btn-icon {
-  background: var(--ev-gradient, var(--ev-color)) !important;
+/* ── Botões: sempre 1 cor sólida (nunca mistura) — a escolha do
+   organizador entre cor principal ou 2ª cor já vem em --ev-button-color ── */
+.dg-card-btn,
+#rsvp-form button[type="submit"],
+.iban-copy-btn,
+.rsvp-cta-section,
+.rsvp-copyright,
+.guest-buttons-round .iban-copy-btn .action-btn-icon,
+.std-rsvp-btn-anim {
+  background: var(--ev-button-color, var(--ev-color)) !important;
 }
+
+/* ── 2ª cor / efeito metálico (mistura das 2 cores) — só nos sítios que
+   o organizador escolher, nunca nos botões ── */
 #screen-guest.metallic-countdown .countdown-section-box {
   background: var(--ev-gradient, var(--ev-color)) !important;
 }
 #screen-guest.metallic-names #hero-couple-names,
-#screen-guest.metallic-names .std-couple-names {
+#screen-guest.metallic-names .std-couple-names,
+#screen-guest.metallic-names .bible-couple-names {
   background: var(--ev-gradient, var(--ev-color));
   -webkit-background-clip: text; background-clip: text;
   color: transparent !important; -webkit-text-fill-color: transparent;
@@ -55,8 +61,20 @@ html, body { height: 100%; margin: 0; width: 100%; overflow-x: hidden; }
   -webkit-background-clip: text; background-clip: text;
   color: transparent !important; -webkit-text-fill-color: transparent;
 }
-#std-screen-overlay.metallic-buttons .std-rsvp-btn-anim {
+#screen-guest.metallic-message .invitation-text,
+#std-screen-overlay.metallic-message .std-extra-message {
+  background: var(--ev-gradient, var(--ev-color));
+  -webkit-background-clip: text; background-clip: text;
+  color: transparent !important; -webkit-text-fill-color: transparent;
+}
+#std-screen-overlay.metallic-date .std-date-value {
+  background: var(--ev-gradient, var(--ev-color));
+  -webkit-background-clip: text; background-clip: text;
+  color: transparent !important; -webkit-text-fill-color: transparent;
+}
+#screen-guest.metallic-date .countdown-section-box {
   background: var(--ev-gradient, var(--ev-color)) !important;
+  color: #fff !important;
 }
 /* Por padrão: ícone e texto lado a lado, tal como já era */
 .action-btn-icon { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
