@@ -1116,7 +1116,10 @@ async function openManualEditor() {
     <h3 class="text-base font-bold text-gray-800 mb-1">Manual do Bom Convidado</h3>
     <p class="text-xs text-gray-400 mb-2">Os ícones são nomes do <a href="https://lucide.dev/icons/" target="_blank" class="text-teal-500 underline">Lucide Icons</a>. Escreve o nome e vê a pré-visualização ao lado.</p>
     <div id="manual-items-list">${renderItems()}</div>
-    <button type="button" class="mt-2 text-xs text-teal-600 font-semibold" onclick="addManualItem()">+ Adicionar item</button>
+    <div class="flex gap-3 mt-2">
+      <button type="button" class="text-xs text-teal-600 font-semibold" onclick="addManualItem()">+ Adicionar item</button>
+      <button type="button" class="text-xs text-teal-600 font-semibold" onclick="openBulkPasteModal('manual')">📋 Colar em bloco</button>
+    </div>
     <div class="flex gap-2 mt-4">
       <button class="flex-1 btn-main" onclick="saveManualItems()">Guardar</button>
       <button class="flex-1 btn-outline" onclick="this.closest('.modal-overlay').remove()">Cancelar</button>
@@ -1271,7 +1274,10 @@ function openScheduleEditor(clientMode) {
     <h3 class="text-base font-bold text-gray-800 mb-1">Monograma do Dia</h3>
     <p class="text-xs text-gray-400 mb-2">${clientMode ? 'Coloca a hora e o momento de cada parte do dia. A ordem é organizada automaticamente.' : 'Os ícones são nomes do <a href="https://lucide.dev/icons/" target="_blank" class="text-teal-500 underline">Lucide Icons</a>. Escreve o nome e vê a pré-visualização.'}</p>
     <div id="schedule-items-list">${renderRows()}</div>
-    <button type="button" class="mt-2 text-xs text-teal-600 font-semibold" onclick="addScheduleItem(${clientMode})">+ Adicionar momento</button>
+    <div class="flex gap-3 mt-2">
+      <button type="button" class="text-xs text-teal-600 font-semibold" onclick="addScheduleItem(${clientMode})">+ Adicionar momento</button>
+      <button type="button" class="text-xs text-teal-600 font-semibold" onclick="openBulkPasteModal('schedule')">📋 Colar em bloco</button>
+    </div>
     <div class="flex gap-2 mt-4">
       <button class="flex-1 btn-main" onclick="saveScheduleItems()">Guardar</button>
       <button class="flex-1 btn-outline" onclick="this.closest('.modal-overlay').remove()">Cancelar</button>
@@ -1282,6 +1288,62 @@ function openScheduleEditor(clientMode) {
   lucide.createIcons();
   window._scheduleEditorItems = items;
   window._scheduleEditorClientMode = clientMode;
+}
+
+// ===================== COLAR EM BLOCO (Manual + Cronograma) =====================
+// Permite ao admin colar uma lista de texto simples e o site organiza
+// automaticamente — sem precisar de preencher campo a campo. Funciona para
+// o "Manual do Bom Convidado" (uma frase por linha) e para o "Monograma do
+// Dia" (frase + hora no fim de cada linha, ex: "Corte do bolo 17:30").
+const _BULK_PASTE_ICONS = ['check-circle','clock','users','shirt','baby','smartphone-off',
+  'camera','heart','smile','music','party-popper','hand-heart','volume-x','door-open','sparkles'];
+
+function openBulkPasteModal(target) {
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.id = 'bulk-paste-modal';
+  modal.style.zIndex = '10600';
+  const isSchedule = target === 'schedule';
+  modal.innerHTML = `<div class="modal-content bg-white rounded-2xl shadow-lg p-5 max-w-md w-full">
+    <h3 class="text-base font-bold text-gray-800 mb-1">Colar em Bloco</h3>
+    <p class="text-xs text-gray-400 mb-3">${isSchedule
+      ? 'Uma linha por momento, com a hora no final. Ex: <br><code class="bg-gray-100 px-1 rounded">Corte do bolo 17:30</code>'
+      : 'Uma frase por linha. Cada linha vira um item da lista.'}</p>
+    <textarea id="bulk-paste-textarea" class="input-field text-sm" rows="10" placeholder="${isSchedule ? 'Cerimônia de alambamento 14h\nChegada dos convidados 16h\nEntrada dos noivos 17h' : 'Confirme a sua presença\nSeja pontual\nNão leve crianças'}"></textarea>
+    <div class="flex gap-2 mt-4">
+      <button class="flex-1 btn-main text-sm" onclick="applyBulkPaste('${target}', false)">Adicionar aos existentes</button>
+      <button class="flex-1 btn-outline text-sm" onclick="applyBulkPaste('${target}', true)">Substituir tudo</button>
+    </div>
+    <button class="text-xs text-gray-400 mt-3 w-full text-center" onclick="this.closest('.modal-overlay').remove()">Cancelar</button>
+  </div>`;
+  document.body.appendChild(modal);
+  document.getElementById('bulk-paste-textarea').focus();
+}
+
+function applyBulkPaste(target, replace) {
+  const raw = document.getElementById('bulk-paste-textarea').value;
+  const lines = raw.split('\n').map(l => l.trim()).filter(Boolean);
+  if (!lines.length) { document.getElementById('bulk-paste-modal')?.remove(); return; }
+
+  if (target === 'schedule') {
+    // Extrai a hora do FIM de cada linha (ex: "14h", "17:30", "19h45") —
+    // o resto da linha fica como o nome do momento.
+    const newItems = lines.map((line, i) => {
+      const m = line.match(/^(.*?)[\s,–-]+(\d{1,2}(?:[h:]\d{0,2})?)\s*h?\s*$/i);
+      const label = m ? m[1].trim() : line;
+      let time = m ? m[2].trim() : '';
+      if (time && /^\d{1,2}$/.test(time)) time += 'h'; // só "14" → "14h"
+      return { icon: _BULK_PASTE_ICONS[i % _BULK_PASTE_ICONS.length], time: time || '00h00', label, sub: '' };
+    });
+    window._scheduleEditorItems = replace ? newItems : [...window._scheduleEditorItems, ...newItems];
+    refreshScheduleEditorList();
+  } else {
+    const newItems = lines.map((text, i) => ({ icon: _BULK_PASTE_ICONS[i % _BULK_PASTE_ICONS.length], text }));
+    window._manualEditorItems = replace ? newItems : [...window._manualEditorItems, ...newItems];
+    refreshManualEditorList();
+  }
+  toast(replace ? 'Lista substituída!' : 'Itens adicionados!');
+  document.getElementById('bulk-paste-modal')?.remove();
 }
 
 function addScheduleItem(clientMode) {

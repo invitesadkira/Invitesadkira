@@ -3066,6 +3066,12 @@ function renderSaveTheDateScreen(ev, decision) {
     if (decision.reason==='on_confirmation' && yes) {
       if(window._stdCountdownInterval)clearInterval(window._stdCountdownInterval);
       if(typeof window._stdRestoreMusicPlayer==='function'){window._stdRestoreMusicPlayer();window._stdRestoreMusicPlayer=null;}
+      // ✅ Esta chamada a renderGuestView() não passa pelo Router.go — que é
+      // o único sítio que normalmente adiciona 'std-pending' (a classe que
+      // esconde tudo até sabermos o que mostrar). Sem isto, há um instante
+      // em que o convite completo fica visível por trás, antes da decisão
+      // ser recalculada — exactamente o "flash" reportado. Repomos aqui.
+      document.getElementById('screen-guest')?.classList.add('std-pending');
       // Fade out puro — a tela esvanece-se completamente, dando espaço
       // ao convite completo por trás, sem qualquer deslocamento.
       overlay.style.transition = 'opacity 0.5s ease';

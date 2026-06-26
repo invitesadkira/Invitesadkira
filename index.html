@@ -14,7 +14,7 @@
   <script>tailwind.config = { theme: { extend: { colors: { teal: { 500: '#007f9f', 600: '#006b86' } } } } }</script>
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💌</text></svg>">
-  <link rel="stylesheet" href="css/main.css?v=1782294500">
+  <link rel="stylesheet" href="css/main.css?v=1782453679">
 </head>
 <body class="h-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
 
@@ -294,11 +294,14 @@
      <div style="background:var(--app-card);border-radius:var(--app-radius);box-shadow:var(--app-shadow);border:1px solid var(--app-border)" class="p-6">
       <h2 class="text-2xl font-bold mb-5" style="color:var(--app-ink)">Criar Evento</h2>
       <form onsubmit="handleCreateEvent(event)">
-       <!-- Cover --> <label class="block text-sm font-semibold text-gray-600 mb-1">Imagem de Capa</label>
+       <!-- Cover --> <label class="block text-sm font-semibold text-gray-600 mb-1">Imagem de Capa <span class="text-gray-400 font-normal">(opcional)</span></label>
        <div id="cover-preview" class="w-full h-40 rounded-xl bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center cursor-pointer mb-1 overflow-hidden hover:border-teal-400 transition" onclick="document.getElementById('cover-input').click()">
-        <span id="cover-placeholder" class="text-gray-400 flex flex-col items-center"><i data-lucide="image" class="w-8 h-8 mb-1"></i><span class="text-sm">Carregar imagem</span></span> <img id="cover-img" class="hidden w-full h-full object-contain bg-white">
+        <span id="cover-placeholder" class="text-gray-400 flex flex-col items-center"><i data-lucide="image" class="w-8 h-8 mb-1"></i><span class="text-sm">Carregar imagem</span><span class="text-xs mt-0.5">(podes deixar em branco)</span></span> <img id="cover-img" class="hidden w-full h-full object-contain bg-white">
        </div>
-       <button type="button" class="text-xs text-teal-600 font-semibold mb-4" onclick="openMediaLibraryPicker((url) => { const img=document.getElementById('cover-img'); img.src=url; img.classList.remove('hidden'); document.getElementById('cover-placeholder').classList.add('hidden'); })">📁 Escolher da Biblioteca</button>
+       <div class="flex items-center gap-3 mb-4">
+        <button type="button" class="text-xs text-teal-600 font-semibold" onclick="openMediaLibraryPicker((url) => { const img=document.getElementById('cover-img'); img.src=url; img.classList.remove('hidden'); document.getElementById('cover-placeholder').classList.add('hidden'); document.getElementById('cover-remove-btn').classList.remove('hidden'); })">📁 Escolher da Biblioteca</button>
+        <button type="button" id="cover-remove-btn" class="text-xs text-red-500 font-semibold hidden" onclick="removeCoverImageFromForm()">✕ Remover foto</button>
+       </div>
        <input id="cover-input" type="file" accept="image/*" class="hidden" onchange="previewCover(this)"> <label class="block text-sm font-semibold text-gray-600 mb-1">Título do Evento</label> <input id="evt-title" class="input-field mb-3" placeholder="Ex: Casamento Ana &amp; Pedro" required>
        <div class="grid grid-cols-2 gap-3 mb-3">
         <div>
@@ -1191,19 +1194,19 @@ para testemunhar o seu enlace matrimonial</textarea>
   </a>
 
   <!-- ===================== SCRIPTS (ordem importa) ===================== -->
-  <script src="js/config.js?v=1782294500"></script>
-  <script src="js/store.js?v=1782294500"></script>
-  <script src="js/visuals.js?v=1782294500"></script>
-  <script src="js/venues.js?v=1782294500"></script>
-  <script src="js/rsvp.js?v=1782294500"></script>
-  <script src="js/ui.js?v=1782294500"></script>
-  <script src="js/auth.js?v=1782294500"></script>
-  <script src="js/dashboard.js?v=1782294500"></script>
-  <script src="js/events.js?v=1782294500"></script>
-  <script src="js/guest.js?v=1782294500"></script>
-  <script src="js/sections.js?v=1782294500"></script>
-  <script src="js/admin.js?v=1782294500"></script>
-  <script src="js/router.js?v=1782294500"></script>
+  <script src="js/config.js?v=1782453679"></script>
+  <script src="js/store.js?v=1782453679"></script>
+  <script src="js/visuals.js?v=1782453679"></script>
+  <script src="js/venues.js?v=1782453679"></script>
+  <script src="js/rsvp.js?v=1782453679"></script>
+  <script src="js/ui.js?v=1782453679"></script>
+  <script src="js/auth.js?v=1782453679"></script>
+  <script src="js/dashboard.js?v=1782453679"></script>
+  <script src="js/events.js?v=1782453679"></script>
+  <script src="js/guest.js?v=1782453679"></script>
+  <script src="js/sections.js?v=1782453679"></script>
+  <script src="js/admin.js?v=1782453679"></script>
+  <script src="js/router.js?v=1782453679"></script>
 
 </body>
 </html>

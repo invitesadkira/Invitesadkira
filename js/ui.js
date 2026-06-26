@@ -315,6 +315,18 @@ function toggleSwitch(el, extraId) {
   }
 }
 
+// Limpa a foto de capa de volta para "sem foto" — a capa é sempre opcional;
+// isto torna isso óbvio em vez de só "tecnicamente possível".
+function removeCoverImageFromForm() {
+  const img = document.getElementById('cover-img');
+  img.src = '';
+  img.classList.add('hidden');
+  document.getElementById('cover-placeholder')?.classList.remove('hidden');
+  document.getElementById('cover-remove-btn')?.classList.add('hidden');
+  const input = document.getElementById('cover-input');
+  if (input) input.value = '';
+}
+
 async function previewCover(input) {
   const file = input.files[0];
   if (!file) return;
@@ -324,6 +336,7 @@ async function previewCover(input) {
     img.src = url; // URL existente — a gravação já trata "http" como "não re-enviar"
     img.classList.remove('hidden');
     document.getElementById('cover-placeholder').classList.add('hidden');
+    document.getElementById('cover-remove-btn')?.classList.remove('hidden');
   };
   const proceed = await _confirmIfDuplicatePhoto(file, eventId, 'Foto de Capa', applyUrl);
   if (!proceed) { input.value = ''; return; }
@@ -333,6 +346,7 @@ async function previewCover(input) {
     img.src = e.target.result;
     img.classList.remove('hidden');
     document.getElementById('cover-placeholder').classList.add('hidden');
+    document.getElementById('cover-remove-btn')?.classList.remove('hidden');
   };
   reader.readAsDataURL(file);
 }
