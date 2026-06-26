@@ -1,4 +1,17 @@
 // ===================== GUEST VIEW =====================
+// Calcula se o texto em cima desta cor deve ser branco ou escuro, para
+// nunca ficar "perdido" (ex: texto branco em cima de prata claro).
+function _readableTextColor(hex) {
+  hex = (hex || '#007f9f').replace('#', '');
+  if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
+  const r = parseInt(hex.substr(0, 2), 16) || 0;
+  const g = parseInt(hex.substr(2, 2), 16) || 0;
+  const b = parseInt(hex.substr(4, 2), 16) || 0;
+  // Fórmula de luminância relativa (perceção humana de brilho)
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return luminance > 0.6 ? '#1e293b' : '#ffffff';
+}
+
 // Aclara (percent positivo) ou escurece (percent negativo) uma cor hex —
 // usado para criar o efeito de "brilho metálico" da 2ª cor do evento.
 function _adjustColorLightness(hex, percent) {
@@ -356,37 +369,26 @@ async function renderGuestView() {
   // Check both sources: visuals table first, then events table, then default
   const _evCol = eventData.event_color || '#007f9f';
   document.documentElement.style.setProperty('--ev-color', _evCol);
-  // ✅ 2ª cor opcional — em vez de só misturar as 2 cores num degradê plano
-  // (o que faz uma "prata" parecer um cinzento sem vida), criamos um
-  // degradê com várias faixas claras/escuras da 2ª cor, simulando luz a
-  // passar sobre uma superfície metálica. Isto dá um "brilho" reconhecível
-  // mesmo em telas pequenas, em vez de só uma mistura morta de 2 tons.
+  // ✅ 2ª cor opcional — cada elemento usa SEMPRE 1 das 2 cores, sólida,
+  // nunca uma mistura/degradê das duas. O organizador escolhe, elemento a
+  // elemento (botões, nomes, contagem, títulos, mensagens, data), qual
+  // das 2 cores usar ali. O texto ajusta-se sempre (branco/escuro) para
+  // nunca ficar difícil de ler, seja qual for a cor escolhida.
   const _evCol2 = eventData.event_color_2 || null;
-  let _evGradient;
-  if (_evCol2) {
-    const _light = _adjustColorLightness(_evCol2, 42);
-    const _dark = _adjustColorLightness(_evCol2, -22);
-    _evGradient = `linear-gradient(100deg, ${_evCol} 0%, ${_dark} 32%, ${_light} 50%, ${_dark} 68%, ${_evCol} 100%)`;
-  } else {
-    _evGradient = `linear-gradient(135deg, ${_evCol}, ${_evCol})`;
-  }
-  document.documentElement.style.setProperty('--ev-gradient', _evGradient);
-  // ✅ Botões: cor sólida única (nunca mistura das 2 cores) — o organizador
-  // escolhe se usa a cor principal ou a 2ª cor, sempre inteira.
-  const _evButtonColor = (eventData.button_color_choice === 'secondary' && _evCol2) ? _evCol2 : _evCol;
-  document.documentElement.style.setProperty('--ev-button-color', _evButtonColor);
-  // ✅ Onde aplicar o efeito metálico — o organizador escolhe (botões,
-  // nomes do casal, contagem regressiva, títulos das secções). Por
-  // padrão só os botões usam, para não mudar nada em quem não escolheu.
-  const _color2Targets = (eventData.event_color_2_targets || 'buttons').split(',');
-  const _guestEl = document.getElementById('screen-guest');
-  if (_guestEl) {
-    _guestEl.classList.toggle('metallic-names', !!_evCol2 && _color2Targets.includes('names'));
-    _guestEl.classList.toggle('metallic-countdown', !!_evCol2 && _color2Targets.includes('countdown'));
-    _guestEl.classList.toggle('metallic-titles', !!_evCol2 && _color2Targets.includes('titles'));
-    _guestEl.classList.toggle('metallic-message', !!_evCol2 && _color2Targets.includes('message'));
-    _guestEl.classList.toggle('metallic-date', !!_evCol2 && _color2Targets.includes('date'));
-  }
+  document.documentElement.style.setProperty('--ev-color-2', _evCol2 || _evCol);
+  const _pickColor = (choice) => (choice === 'secondary' && _evCol2) ? _evCol2 : _evCol;
+  const _applyColorTarget = (varName, choiceField) => {
+    const color = _pickColor(eventData[choiceField]);
+    document.documentElement.style.setProperty(varName, color);
+    document.documentElement.style.setProperty(varName + '-text', _readableTextColor(color));
+  };
+  _applyColorTarget('--ev-button-color', 'button_color_choice');
+  _applyColorTarget('--ev-names-color', 'color_names');
+  _applyColorTarget('--ev-countdown-color', 'color_countdown');
+  _applyColorTarget('--ev-titles-color', 'color_titles');
+  _applyColorTarget('--ev-message-color', 'color_message');
+  _applyColorTarget('--ev-date-color', 'color_date');
+  document.documentElement.style.setProperty('--ev-button-text-color', _readableTextColor(_evButtonColor));
   document.getElementById('screen-guest')?.classList.toggle('guest-buttons-round', eventData.button_style === 'round');
   const _rsvpSec = document.getElementById('rsvp-section');
   if (_rsvpSec) {
@@ -2917,12 +2919,6 @@ function _buildStdDateBlock(eventDateLabel, evColor, style) {
 
 function renderSaveTheDateScreen(ev, decision) {
   const evColor = ev.event_color || '#007f9f';
-  // ✅ As cores e o efeito metálico (2ª cor) já ficam definidos a nível
-  // global (--ev-color/--ev-gradient, vindos de renderGuestView) — só
-  // falta aplicar as classes que dizem ONDE usar o efeito, desta vez no
-  // ecrã do Save the Date (que é um overlay próprio, fora de #screen-guest).
-  const _stdColor2Targets = (ev.event_color_2_targets || 'buttons').split(',');
-  const _stdHasColor2 = !!ev.event_color_2;
   const invertNames = _yesOrTrue(ev.invert_names);
   let groom = ev.groom_name || ''; let bride = ev.bride_name || '';
   if (invertNames && groom && bride) { [groom, bride] = [bride, groom]; }
@@ -3007,11 +3003,6 @@ function renderSaveTheDateScreen(ev, decision) {
   const overlay = document.createElement('div');
   overlay.id = 'std-screen-overlay';
   overlay.style.cssText = 'position:fixed;inset:0;z-index:9000;overflow-y:auto;background:#fdfaf6;display:flex;flex-direction:column;align-items:center';
-  overlay.classList.toggle('metallic-names', _stdHasColor2 && _stdColor2Targets.includes('names'));
-  overlay.classList.toggle('metallic-countdown', _stdHasColor2 && _stdColor2Targets.includes('countdown'));
-  overlay.classList.toggle('metallic-titles', _stdHasColor2 && _stdColor2Targets.includes('titles'));
-  overlay.classList.toggle('metallic-message', _stdHasColor2 && _stdColor2Targets.includes('message'));
-  overlay.classList.toggle('metallic-date', _stdHasColor2 && _stdColor2Targets.includes('date'));
 
   overlay.innerHTML = `
     <style>${fontFaceCSS}</style>

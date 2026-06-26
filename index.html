@@ -14,7 +14,7 @@
   <script>tailwind.config = { theme: { extend: { colors: { teal: { 500: '#007f9f', 600: '#006b86' } } } } }</script>
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💌</text></svg>">
-  <link rel="stylesheet" href="css/main.css?v=1782478310">
+  <link rel="stylesheet" href="css/main.css?v=1782479149">
 </head>
 <body class="h-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
 
@@ -917,18 +917,32 @@ para testemunhar o seu enlace matrimonial</textarea>
         </div>
         <p class="text-xs text-gray-400 -mt-2 mb-1">Quando ligado, os botões e faixas de destaque passam a usar um degradê metálico entre as 2 cores (ex: "verde oliva e prata").</p>
         <div id="evt-color2-targets-wrap" class="mb-3" style="background:#f9fafb;border-radius:0.5rem;padding:0.6rem 0.75rem">
-         <p class="text-xs font-semibold text-gray-600 mb-1.5">Cor dos botões e da faixa de confirmar presença:</p>
-         <select id="evt-button-color-choice" class="input-field text-xs mb-2">
-          <option value="primary">Cor Principal (sólida)</option>
-          <option value="secondary">2ª Cor (sólida, ex: Prateado)</option>
-         </select>
-         <p class="text-xs text-gray-400 mb-2">Os botões usam sempre 1 cor sólida — nunca uma mistura das 2.</p>
-         <p class="text-xs font-semibold text-gray-600 mb-1.5">Onde aplicar o efeito de brilho metálico (mistura das 2 cores):</p>
-         <label class="flex items-center gap-1.5 text-xs text-gray-600 cursor-pointer mb-1"><input type="checkbox" id="evt-color2-t-names" class="w-3.5 h-3.5"> Nomes do casal</label>
-         <label class="flex items-center gap-1.5 text-xs text-gray-600 cursor-pointer mb-1"><input type="checkbox" id="evt-color2-t-countdown" class="w-3.5 h-3.5"> Contagem regressiva</label>
-         <label class="flex items-center gap-1.5 text-xs text-gray-600 cursor-pointer mb-1"><input type="checkbox" id="evt-color2-t-titles" class="w-3.5 h-3.5"> Títulos das secções</label>
-         <label class="flex items-center gap-1.5 text-xs text-gray-600 cursor-pointer mb-1"><input type="checkbox" id="evt-color2-t-message" class="w-3.5 h-3.5"> Textos de mensagem</label>
-         <label class="flex items-center gap-1.5 text-xs text-gray-600 cursor-pointer"><input type="checkbox" id="evt-color2-t-date" class="w-3.5 h-3.5"> Data do evento</label>
+         <p class="text-xs font-semibold text-gray-600 mb-2">Para cada elemento, escolhe qual das 2 cores usar — é sempre 1 cor sólida, nunca uma mistura:</p>
+         <div class="grid grid-cols-2 gap-2 items-center mb-1.5">
+          <span class="text-xs text-gray-600">Botões e faixa de RSVP</span>
+          <select id="evt-button-color-choice" class="input-field text-xs"><option value="primary">Cor Principal</option><option value="secondary">2ª Cor</option></select>
+         </div>
+         <div class="grid grid-cols-2 gap-2 items-center mb-1.5">
+          <span class="text-xs text-gray-600">Nomes do casal</span>
+          <select id="evt-color-names" class="input-field text-xs"><option value="primary">Cor Principal</option><option value="secondary">2ª Cor</option></select>
+         </div>
+         <div class="grid grid-cols-2 gap-2 items-center mb-1.5">
+          <span class="text-xs text-gray-600">Contagem regressiva</span>
+          <select id="evt-color-countdown" class="input-field text-xs"><option value="primary">Cor Principal</option><option value="secondary">2ª Cor</option></select>
+         </div>
+         <div class="grid grid-cols-2 gap-2 items-center mb-1.5">
+          <span class="text-xs text-gray-600">Títulos das secções</span>
+          <select id="evt-color-titles" class="input-field text-xs"><option value="primary">Cor Principal</option><option value="secondary">2ª Cor</option></select>
+         </div>
+         <div class="grid grid-cols-2 gap-2 items-center mb-1.5">
+          <span class="text-xs text-gray-600">Textos de mensagem</span>
+          <select id="evt-color-message" class="input-field text-xs"><option value="primary">Cor Principal</option><option value="secondary">2ª Cor</option></select>
+         </div>
+         <div class="grid grid-cols-2 gap-2 items-center">
+          <span class="text-xs text-gray-600">Data do evento</span>
+          <select id="evt-color-date" class="input-field text-xs"><option value="primary">Cor Principal</option><option value="secondary">2ª Cor</option></select>
+         </div>
+         <p class="text-xs text-gray-400 mt-2">O texto ajusta-se automaticamente (branco ou escuro) para nunca ficar difícil de ler.</p>
         </div>
         <!-- Estilo dos botões -->
         <div class="flex items-center justify-between">
@@ -1234,19 +1248,19 @@ para testemunhar o seu enlace matrimonial</textarea>
   </a>
 
   <!-- ===================== SCRIPTS (ordem importa) ===================== -->
-  <script src="js/config.js?v=1782478310"></script>
-  <script src="js/store.js?v=1782478310"></script>
-  <script src="js/visuals.js?v=1782478310"></script>
-  <script src="js/venues.js?v=1782478310"></script>
-  <script src="js/rsvp.js?v=1782478310"></script>
-  <script src="js/ui.js?v=1782478310"></script>
-  <script src="js/auth.js?v=1782478310"></script>
-  <script src="js/dashboard.js?v=1782478310"></script>
-  <script src="js/events.js?v=1782478310"></script>
-  <script src="js/guest.js?v=1782478310"></script>
-  <script src="js/sections.js?v=1782478310"></script>
-  <script src="js/admin.js?v=1782478310"></script>
-  <script src="js/router.js?v=1782478310"></script>
+  <script src="js/config.js?v=1782479149"></script>
+  <script src="js/store.js?v=1782479149"></script>
+  <script src="js/visuals.js?v=1782479149"></script>
+  <script src="js/venues.js?v=1782479149"></script>
+  <script src="js/rsvp.js?v=1782479149"></script>
+  <script src="js/ui.js?v=1782479149"></script>
+  <script src="js/auth.js?v=1782479149"></script>
+  <script src="js/dashboard.js?v=1782479149"></script>
+  <script src="js/events.js?v=1782479149"></script>
+  <script src="js/guest.js?v=1782479149"></script>
+  <script src="js/sections.js?v=1782479149"></script>
+  <script src="js/admin.js?v=1782479149"></script>
+  <script src="js/router.js?v=1782479149"></script>
 
 </body>
 </html>

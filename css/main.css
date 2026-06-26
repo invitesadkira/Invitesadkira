@@ -19,7 +19,9 @@ html, body { height: 100%; margin: 0; width: 100%; overflow-x: hidden; }
 .btn-main:hover { background: #006b86; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,127,159,0.3); }
 
 /* ── Botões: sempre 1 cor sólida (nunca mistura) — a escolha do
-   organizador entre cor principal ou 2ª cor já vem em --ev-button-color ── */
+   organizador entre cor principal ou 2ª cor já vem em --ev-button-color.
+   O texto dentro ajusta-se automaticamente (branco ou escuro) para nunca
+   ficar difícil de ler, seja qual for a cor escolhida (ex: prata claro). ── */
 .dg-card-btn,
 #rsvp-form button[type="submit"],
 .iban-copy-btn,
@@ -28,57 +30,29 @@ html, body { height: 100%; margin: 0; width: 100%; overflow-x: hidden; }
 .guest-buttons-round .iban-copy-btn .action-btn-icon,
 .std-rsvp-btn-anim {
   background: var(--ev-button-color, var(--ev-color)) !important;
+  color: var(--ev-button-color-text, #fff) !important;
 }
-
-/* ── 2ª cor / efeito metálico (mistura das 2 cores) — só nos sítios que
-   o organizador escolher, nunca nos botões ── */
-#screen-guest.metallic-countdown .countdown-section-box {
-  background: var(--ev-gradient, var(--ev-color)) !important;
-}
-#screen-guest.metallic-names #hero-couple-names,
-#screen-guest.metallic-names .std-couple-names,
-#screen-guest.metallic-names .bible-couple-names {
-  background: var(--ev-gradient, var(--ev-color));
-  -webkit-background-clip: text; background-clip: text;
-  color: transparent !important; -webkit-text-fill-color: transparent;
-}
-#screen-guest.metallic-titles .section-title {
-  background: var(--ev-gradient, var(--ev-color));
-  -webkit-background-clip: text; background-clip: text;
-  color: transparent !important; -webkit-text-fill-color: transparent;
-}
-
-/* ── O mesmo efeito metálico, mas no ecrã do Save the Date (é um overlay
-   próprio, fora de #screen-guest, por isso precisa das suas próprias
-   regras, mesmo reaproveitando as mesmas variáveis --ev-color/--ev-gradient) ── */
-#std-screen-overlay.metallic-names .std-couple-names {
-  background: var(--ev-gradient, var(--ev-color));
-  -webkit-background-clip: text; background-clip: text;
-  color: transparent !important; -webkit-text-fill-color: transparent;
-}
-#std-screen-overlay.metallic-countdown .std-countdown-num {
-  background: var(--ev-gradient, var(--ev-color));
-  -webkit-background-clip: text; background-clip: text;
-  color: transparent !important; -webkit-text-fill-color: transparent;
-}
-#screen-guest.metallic-message .invitation-text,
-#std-screen-overlay.metallic-message .std-extra-message {
-  background: var(--ev-gradient, var(--ev-color));
-  -webkit-background-clip: text; background-clip: text;
-  color: transparent !important; -webkit-text-fill-color: transparent;
-}
-#std-screen-overlay.metallic-date .std-date-value {
-  background: var(--ev-gradient, var(--ev-color));
-  -webkit-background-clip: text; background-clip: text;
-  color: transparent !important; -webkit-text-fill-color: transparent;
-}
-#screen-guest.metallic-date .countdown-section-box {
-  background: var(--ev-gradient, var(--ev-color)) !important;
-  color: #fff !important;
+.rsvp-cta-section .action-btn-label,
+.rsvp-cta-btn {
+  color: var(--ev-button-color-text, #fff);
 }
 /* Por padrão: ícone e texto lado a lado, tal como já era */
 .action-btn-icon { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .action-btn-label { display: inline; }
+
+/* ── Os outros elementos (nomes, contagem, títulos, mensagens, data):
+   cada um usa SEMPRE 1 das 2 cores, sólida — nunca misturadas. ── */
+#hero-couple-names, .std-couple-names, .bible-couple-names {
+  color: var(--ev-names-color, var(--ev-color)) !important;
+}
+.countdown-section-box {
+  background: var(--ev-countdown-color, var(--ev-color)) !important;
+  color: var(--ev-countdown-color-text, #fff) !important;
+}
+.std-countdown-num { color: var(--ev-countdown-color, var(--ev-color)) !important; }
+.section-title { color: var(--ev-titles-color, var(--ev-color)) !important; }
+.invitation-text, .std-extra-message { color: var(--ev-message-color, var(--ev-color)) !important; }
+.std-date-value { color: var(--ev-date-color, var(--ev-color)) !important; }
 
 /* ── Estilo "Redondo": ícone vira um círculo, com o nome do botão por baixo ── */
 #screen-guest.guest-buttons-round .rsvp-cta-btn,
@@ -95,19 +69,22 @@ html, body { height: 100%; margin: 0; width: 100%; overflow-x: hidden; }
 #screen-guest.guest-buttons-round .iban-copy-btn { margin: 0 auto; }
 #screen-guest.guest-buttons-round .action-btn-icon {
   width: 64px; height: 64px; border-radius: 50%; background: #fff;
-  color: var(--ev-color, #007f9f); box-shadow: 0 6px 18px rgba(0,0,0,0.18);
+  color: var(--ev-button-color, var(--ev-color, #007f9f)); box-shadow: 0 6px 18px rgba(0,0,0,0.18);
 }
 #screen-guest.guest-buttons-round .action-btn-icon svg { width: 24px; height: 24px; }
 #screen-guest.guest-buttons-round .rsvp-cta-btn .action-btn-label { color: #fff; font-size: 0.82rem; font-weight: 700; }
 #screen-guest.guest-buttons-round .dg-card-btn .action-btn-icon,
 #screen-guest.guest-buttons-round .venue-map-btn .action-btn-icon,
-#screen-guest.guest-buttons-round .iban-copy-btn .action-btn-icon { background: var(--ev-color, #007f9f); color: #fff; width: 48px; height: 48px; }
+#screen-guest.guest-buttons-round .iban-copy-btn .action-btn-icon {
+  background: var(--ev-button-color, var(--ev-color, #007f9f));
+  color: var(--ev-button-color-text, #fff); width: 48px; height: 48px;
+}
 #screen-guest.guest-buttons-round .dg-card-btn .action-btn-icon svg,
 #screen-guest.guest-buttons-round .venue-map-btn .action-btn-icon svg,
 #screen-guest.guest-buttons-round .iban-copy-btn .action-btn-icon svg { width: 20px; height: 20px; }
 #screen-guest.guest-buttons-round .dg-card-btn .action-btn-label,
 #screen-guest.guest-buttons-round .venue-map-btn .action-btn-label,
-#screen-guest.guest-buttons-round .iban-copy-btn .action-btn-label { color: var(--ev-color, #007f9f); font-size: 0.78rem; font-weight: 700; }
+#screen-guest.guest-buttons-round .iban-copy-btn .action-btn-label { color: var(--ev-button-color, var(--ev-color, #007f9f)); font-size: 0.78rem; font-weight: 700; }
 .btn-outline {
   border: 2px solid #007f9f; color: #007f9f; border-radius: 0.75rem;
   padding: 0.6rem 1.5rem; font-weight: 600; transition: all 0.2s; background: transparent;
