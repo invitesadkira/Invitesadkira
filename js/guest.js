@@ -152,20 +152,30 @@ async function renderGuestView() {
     return;
   }
 
-  // ── Cover image → hero background ──
+  // ── Capa: vídeo (se houver) ou foto/gradiente, como já era ──
   const coverImage = eventData.cover_image || eventData.cover || '';
+  const coverVideo = eventData.cover_video_url || '';
   const heroEl = document.getElementById('guest-hero-bg');
-  if (heroEl) {
-    if (coverImage && coverImage.startsWith('http')) {
-      heroEl.style.backgroundImage = `url('${coverImage}')`;
-      // If image fails to load, fallback to gradient
-      const _testImg = new Image();
-      _testImg.onerror = () => { heroEl.style.backgroundImage = ''; heroEl.style.background = 'linear-gradient(135deg, var(--ev-color,#007f9f) 0%, #0d4f6a 100%)'; };
-      _testImg.src = coverImage;
-      heroEl.style.backgroundSize = 'cover';
-      heroEl.style.backgroundPosition = 'center';
-    } else {
-      heroEl.style.background = 'linear-gradient(135deg, #007f9f 0%, #0d4f6a 100%)';
+  const videoEl = document.getElementById('guest-hero-video');
+  if (coverVideo && coverVideo.startsWith('http') && videoEl) {
+    videoEl.src = coverVideo;
+    videoEl.classList.remove('hidden');
+    videoEl.play().catch(() => {}); // alguns browsers exigem interação antes de dar play; falha em silêncio
+    if (heroEl) heroEl.style.background = 'none'; // a foto fica escondida por trás do vídeo
+  } else {
+    if (videoEl) { videoEl.classList.add('hidden'); videoEl.removeAttribute('src'); }
+    if (heroEl) {
+      if (coverImage && coverImage.startsWith('http')) {
+        heroEl.style.backgroundImage = `url('${coverImage}')`;
+        // If image fails to load, fallback to gradient
+        const _testImg = new Image();
+        _testImg.onerror = () => { heroEl.style.backgroundImage = ''; heroEl.style.background = 'linear-gradient(135deg, var(--ev-color,#007f9f) 0%, #0d4f6a 100%)'; };
+        _testImg.src = coverImage;
+        heroEl.style.backgroundSize = 'cover';
+        heroEl.style.backgroundPosition = 'center';
+      } else {
+        heroEl.style.background = 'linear-gradient(135deg, #007f9f 0%, #0d4f6a 100%)';
+      }
     }
   }
 
@@ -361,6 +371,17 @@ async function renderGuestView() {
     _evGradient = `linear-gradient(135deg, ${_evCol}, ${_evCol})`;
   }
   document.documentElement.style.setProperty('--ev-gradient', _evGradient);
+  // ✅ Onde aplicar o efeito metálico — o organizador escolhe (botões,
+  // nomes do casal, contagem regressiva, títulos das secções). Por
+  // padrão só os botões usam, para não mudar nada em quem não escolheu.
+  const _color2Targets = (eventData.event_color_2_targets || 'buttons').split(',');
+  const _guestEl = document.getElementById('screen-guest');
+  if (_guestEl) {
+    _guestEl.classList.toggle('metallic-names', !!_evCol2 && _color2Targets.includes('names'));
+    _guestEl.classList.toggle('metallic-countdown', !!_evCol2 && _color2Targets.includes('countdown'));
+    _guestEl.classList.toggle('metallic-titles', !!_evCol2 && _color2Targets.includes('titles'));
+    _guestEl.classList.toggle('metallic-buttons', !!_evCol2 && _color2Targets.includes('buttons'));
+  }
   document.getElementById('screen-guest')?.classList.toggle('guest-buttons-round', eventData.button_style === 'round');
   const _rsvpSec = document.getElementById('rsvp-section');
   if (_rsvpSec) {
@@ -2891,6 +2912,12 @@ function _buildStdDateBlock(eventDateLabel, evColor, style) {
 
 function renderSaveTheDateScreen(ev, decision) {
   const evColor = ev.event_color || '#007f9f';
+  // ✅ As cores e o efeito metálico (2ª cor) já ficam definidos a nível
+  // global (--ev-color/--ev-gradient, vindos de renderGuestView) — só
+  // falta aplicar as classes que dizem ONDE usar o efeito, desta vez no
+  // ecrã do Save the Date (que é um overlay próprio, fora de #screen-guest).
+  const _stdColor2Targets = (ev.event_color_2_targets || 'buttons').split(',');
+  const _stdHasColor2 = !!ev.event_color_2;
   const invertNames = _yesOrTrue(ev.invert_names);
   let groom = ev.groom_name || ''; let bride = ev.bride_name || '';
   if (invertNames && groom && bride) { [groom, bride] = [bride, groom]; }
@@ -2975,6 +3002,10 @@ function renderSaveTheDateScreen(ev, decision) {
   const overlay = document.createElement('div');
   overlay.id = 'std-screen-overlay';
   overlay.style.cssText = 'position:fixed;inset:0;z-index:9000;overflow-y:auto;background:#fdfaf6;display:flex;flex-direction:column;align-items:center';
+  overlay.classList.toggle('metallic-names', _stdHasColor2 && _stdColor2Targets.includes('names'));
+  overlay.classList.toggle('metallic-countdown', _stdHasColor2 && _stdColor2Targets.includes('countdown'));
+  overlay.classList.toggle('metallic-titles', _stdHasColor2 && _stdColor2Targets.includes('titles'));
+  overlay.classList.toggle('metallic-buttons', _stdHasColor2 && _stdColor2Targets.includes('buttons'));
 
   overlay.innerHTML = `
     <style>${fontFaceCSS}</style>
@@ -2991,17 +3022,17 @@ function renderSaveTheDateScreen(ev, decision) {
     </div>` : `<div style="height:2.5rem;flex-shrink:0"></div>`}
     <div id="std-main-content" style="position:relative;z-index:2;max-width:440px;width:100%;text-align:center;color:#1e293b;padding:1rem 1.5rem 2.5rem;flex:1;display:flex;flex-direction:column;align-items:center">
       ${!showCover ? `<p class="std-anim std-anim-1" style="font-size:${titleSize}rem;letter-spacing:0.25em;text-transform:uppercase;font-weight:800;color:${evColor};font-family:'Quicksand',sans-serif;margin-bottom:0.5rem">${escapeHTML(stdTitle)}</p>` : ''}
-      ${coupleNames ? `<h2 class="std-anim std-anim-2" style="font-family:${nameFont?`'${nameFont}',`:''}var(--event-font,'Playfair Display',serif);font-size:clamp(1.4rem,7vw,${nameSize}rem);line-height:1.2;margin-bottom:0.3rem;color:${evColor};padding:0 0.5rem">${coupleNames}</h2>` : ''}
+      ${coupleNames ? `<h2 class="std-anim std-anim-2 std-couple-names" style="font-family:${nameFont?`'${nameFont}',`:''}var(--event-font,'Playfair Display',serif);font-size:clamp(1.4rem,7vw,${nameSize}rem);line-height:1.2;margin-bottom:0.3rem;color:${evColor};padding:0 0.5rem">${coupleNames}</h2>` : ''}
       <p class="std-anim std-anim-3" style="font-size:0.9rem;font-weight:500;color:#6b7280;font-family:'Quicksand',sans-serif;margin-bottom:1.25rem">${escapeHTML(stdSubtitle)}</p>
       ${(_yesOrTrue(ev.std_extra_phrase_enabled) && ev.std_extra_phrase) ? `<p class="std-anim std-anim-3" style="font-size:0.85rem;font-weight:500;color:${evColor};font-family:'Quicksand',sans-serif;margin:-0.5rem 0 1.25rem;max-width:340px">${escapeHTML(ev.std_extra_phrase)}</p>` : ''}
       <div class="std-anim std-anim-4">${_buildStdDateBlock(eventDateLabel, evColor, ev.std_date_style)}</div>
       <div id="std-countdown-wrap" class="std-anim std-anim-5" style="width:100%;margin-bottom:1.1rem">
         <p id="std-countdown-label" style="font-size:0.6rem;text-transform:uppercase;letter-spacing:0.1em;opacity:0.5;margin-bottom:0.4rem;font-weight:700">A calcular...</p>
         <div style="display:flex;gap:0.4rem;justify-content:center">
-          <div style="background:${evColor}12;border-radius:0.6rem;padding:0.5rem 0.2rem;flex:1;max-width:66px"><div id="std-days" style="font-size:1.15rem;font-weight:900;color:${evColor}">--</div><div style="font-size:0.55rem;opacity:0.55;text-transform:uppercase">Dias</div></div>
-          <div style="background:${evColor}12;border-radius:0.6rem;padding:0.5rem 0.2rem;flex:1;max-width:66px"><div id="std-hours" style="font-size:1.15rem;font-weight:900;color:${evColor}">--</div><div style="font-size:0.55rem;opacity:0.55;text-transform:uppercase">Horas</div></div>
-          <div style="background:${evColor}12;border-radius:0.6rem;padding:0.5rem 0.2rem;flex:1;max-width:66px"><div id="std-mins" style="font-size:1.15rem;font-weight:900;color:${evColor}">--</div><div style="font-size:0.55rem;opacity:0.55;text-transform:uppercase">Min</div></div>
-          <div style="background:${evColor}12;border-radius:0.6rem;padding:0.5rem 0.2rem;flex:1;max-width:66px"><div id="std-secs" style="font-size:1.15rem;font-weight:900;color:${evColor}">--</div><div style="font-size:0.55rem;opacity:0.55;text-transform:uppercase">Seg</div></div>
+          <div style="background:${evColor}12;border-radius:0.6rem;padding:0.5rem 0.2rem;flex:1;max-width:66px"><div id="std-days" class="std-countdown-num" style="font-size:1.15rem;font-weight:900;color:${evColor}">--</div><div style="font-size:0.55rem;opacity:0.55;text-transform:uppercase">Dias</div></div>
+          <div style="background:${evColor}12;border-radius:0.6rem;padding:0.5rem 0.2rem;flex:1;max-width:66px"><div id="std-hours" class="std-countdown-num" style="font-size:1.15rem;font-weight:900;color:${evColor}">--</div><div style="font-size:0.55rem;opacity:0.55;text-transform:uppercase">Horas</div></div>
+          <div style="background:${evColor}12;border-radius:0.6rem;padding:0.5rem 0.2rem;flex:1;max-width:66px"><div id="std-mins" class="std-countdown-num" style="font-size:1.15rem;font-weight:900;color:${evColor}">--</div><div style="font-size:0.55rem;opacity:0.55;text-transform:uppercase">Min</div></div>
+          <div style="background:${evColor}12;border-radius:0.6rem;padding:0.5rem 0.2rem;flex:1;max-width:66px"><div id="std-secs" class="std-countdown-num" style="font-size:1.15rem;font-weight:900;color:${evColor}">--</div><div style="font-size:0.55rem;opacity:0.55;text-transform:uppercase">Seg</div></div>
         </div>
       </div>
       <p id="std-rsvp-status-text" class="std-anim std-anim-6" style="font-size:0.82rem;color:#16a34a;margin-bottom:0.7rem;font-weight:600;min-height:1.1em">${alreadyConfirmed?'Obrigado por confirmar! Já contamos consigo. 🎉':''}</p>

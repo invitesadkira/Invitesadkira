@@ -327,6 +327,35 @@ function removeCoverImageFromForm() {
   if (input) input.value = '';
 }
 
+async function handleCoverVideoUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 25 * 1024 * 1024) {
+    toast('Vídeo muito grande (máx. 25MB) — usa um vídeo curto ou comprime antes de carregar.');
+    input.value = '';
+    return;
+  }
+  toast('A carregar vídeo...');
+  try {
+    const url = await uploadImageToStorage(file, 'event-covers', 'Vídeo de Capa');
+    document.getElementById('evt-cover-video-url').value = url;
+    const preview = document.getElementById('cover-video-preview');
+    preview.src = url;
+    document.getElementById('cover-video-preview-wrap').classList.remove('hidden');
+    toast('Vídeo carregado!');
+  } catch(e) {
+    toast('Erro ao carregar o vídeo.');
+    console.warn(e);
+  }
+}
+
+function removeCoverVideoFromForm() {
+  document.getElementById('evt-cover-video-url').value = '';
+  document.getElementById('cover-video-input').value = '';
+  document.getElementById('cover-video-preview').src = '';
+  document.getElementById('cover-video-preview-wrap').classList.add('hidden');
+}
+
 async function previewCover(input) {
   const file = input.files[0];
   if (!file) return;

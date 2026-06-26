@@ -14,7 +14,7 @@
   <script>tailwind.config = { theme: { extend: { colors: { teal: { 500: '#007f9f', 600: '#006b86' } } } } }</script>
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💌</text></svg>">
-  <link rel="stylesheet" href="css/main.css?v=1782474741">
+  <link rel="stylesheet" href="css/main.css?v=1782476374">
 </head>
 <body class="h-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
 
@@ -301,9 +301,19 @@
        <div id="cover-preview" class="w-full h-40 rounded-xl bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center cursor-pointer mb-1 overflow-hidden hover:border-teal-400 transition" onclick="document.getElementById('cover-input').click()">
         <span id="cover-placeholder" class="text-gray-400 flex flex-col items-center"><i data-lucide="image" class="w-8 h-8 mb-1"></i><span class="text-sm">Carregar imagem</span><span class="text-xs mt-0.5">(podes deixar em branco)</span></span> <img id="cover-img" class="hidden w-full h-full object-contain bg-white">
        </div>
-       <div class="flex items-center gap-3 mb-4">
+       <div class="flex items-center gap-3 mb-2">
         <button type="button" class="text-xs text-teal-600 font-semibold" onclick="openMediaLibraryPicker((url) => { const img=document.getElementById('cover-img'); img.src=url; img.classList.remove('hidden'); document.getElementById('cover-placeholder').classList.add('hidden'); document.getElementById('cover-remove-btn').classList.remove('hidden'); })">📁 Escolher da Biblioteca</button>
         <button type="button" id="cover-remove-btn" class="text-xs text-red-500 font-semibold hidden" onclick="removeCoverImageFromForm()">✕ Remover foto</button>
+       </div>
+       <div class="mb-4" style="background:#f9fafb;border-radius:0.5rem;padding:0.6rem 0.75rem">
+        <p class="text-xs font-semibold text-gray-600 mb-1">🎬 Ou usar um vídeo em vez de foto <span class="text-gray-400 font-normal">(opcional)</span></p>
+        <p class="text-xs text-gray-400 mb-1.5">Vídeo curto (poucos segundos), sem som — toca em loop automaticamente. Se carregares um vídeo, ele substitui a foto de capa.</p>
+        <input type="file" id="cover-video-input" accept="video/mp4,video/webm" class="input-field text-xs" onchange="handleCoverVideoUpload(this)">
+        <input type="hidden" id="evt-cover-video-url" value="">
+        <div id="cover-video-preview-wrap" class="hidden mt-2">
+         <video id="cover-video-preview" class="w-full rounded-lg" style="max-height:120px" muted loop autoplay playsinline></video>
+         <button type="button" class="text-xs text-red-500 font-semibold mt-1" onclick="removeCoverVideoFromForm()">✕ Remover vídeo</button>
+        </div>
        </div>
        <input id="cover-input" type="file" accept="image/*" class="hidden" onchange="previewCover(this)"> <label class="block text-sm font-semibold text-gray-600 mb-1">Título do Evento</label> <input id="evt-title" class="input-field mb-3" placeholder="Ex: Casamento Ana &amp; Pedro" required>
        <div class="grid grid-cols-2 gap-3 mb-3">
@@ -905,7 +915,14 @@ para testemunhar o seu enlace matrimonial</textarea>
           </label>
          </div>
         </div>
-        <p class="text-xs text-gray-400 -mt-2 mb-1">Quando ligado, os botões e faixas de destaque passam a usar um degradê entre as 2 cores (ex: "verde oliva e prata").</p>
+        <p class="text-xs text-gray-400 -mt-2 mb-1">Quando ligado, os botões e faixas de destaque passam a usar um degradê metálico entre as 2 cores (ex: "verde oliva e prata").</p>
+        <div id="evt-color2-targets-wrap" class="mb-3" style="background:#f9fafb;border-radius:0.5rem;padding:0.6rem 0.75rem">
+         <p class="text-xs font-semibold text-gray-600 mb-1.5">Onde aplicar o efeito metálico:</p>
+         <label class="flex items-center gap-1.5 text-xs text-gray-600 cursor-pointer mb-1"><input type="checkbox" id="evt-color2-t-buttons" class="w-3.5 h-3.5" checked> Botões e faixa de confirmar presença</label>
+         <label class="flex items-center gap-1.5 text-xs text-gray-600 cursor-pointer mb-1"><input type="checkbox" id="evt-color2-t-names" class="w-3.5 h-3.5"> Nomes do casal</label>
+         <label class="flex items-center gap-1.5 text-xs text-gray-600 cursor-pointer mb-1"><input type="checkbox" id="evt-color2-t-countdown" class="w-3.5 h-3.5"> Contagem regressiva</label>
+         <label class="flex items-center gap-1.5 text-xs text-gray-600 cursor-pointer"><input type="checkbox" id="evt-color2-t-titles" class="w-3.5 h-3.5"> Títulos das secções</label>
+        </div>
         <!-- Estilo dos botões -->
         <div class="flex items-center justify-between">
          <span class="text-sm font-semibold text-gray-700">Estilo dos Botões</span>
@@ -958,6 +975,7 @@ para testemunhar o seu enlace matrimonial</textarea>
     <!-- ── HERO (capa + nomes dos noivos) ── -->
     <div class="guest-hero" id="guest-hero">
      <div class="guest-hero-bg" id="guest-hero-bg"></div>
+     <video id="guest-hero-video" class="hidden" muted loop autoplay playsinline style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0"></video>
      <div class="guest-hero-overlay" id="guest-hero-overlay"></div>
      <div id="guest-hero-decor" class="hidden decor-corner-left" style="position:absolute;width:clamp(110px,22vw,190px);height:clamp(110px,22vw,190px);background-size:contain;background-repeat:no-repeat;pointer-events:none;z-index:1"></div>
      <div id="save-the-date-overlay" style="display:none;position:absolute;inset:0;flex-direction:column;align-items:center;justify-content:center;z-index:2"></div>
@@ -1209,19 +1227,19 @@ para testemunhar o seu enlace matrimonial</textarea>
   </a>
 
   <!-- ===================== SCRIPTS (ordem importa) ===================== -->
-  <script src="js/config.js?v=1782474741"></script>
-  <script src="js/store.js?v=1782474741"></script>
-  <script src="js/visuals.js?v=1782474741"></script>
-  <script src="js/venues.js?v=1782474741"></script>
-  <script src="js/rsvp.js?v=1782474741"></script>
-  <script src="js/ui.js?v=1782474741"></script>
-  <script src="js/auth.js?v=1782474741"></script>
-  <script src="js/dashboard.js?v=1782474741"></script>
-  <script src="js/events.js?v=1782474741"></script>
-  <script src="js/guest.js?v=1782474741"></script>
-  <script src="js/sections.js?v=1782474741"></script>
-  <script src="js/admin.js?v=1782474741"></script>
-  <script src="js/router.js?v=1782474741"></script>
+  <script src="js/config.js?v=1782476374"></script>
+  <script src="js/store.js?v=1782476374"></script>
+  <script src="js/visuals.js?v=1782476374"></script>
+  <script src="js/venues.js?v=1782476374"></script>
+  <script src="js/rsvp.js?v=1782476374"></script>
+  <script src="js/ui.js?v=1782476374"></script>
+  <script src="js/auth.js?v=1782476374"></script>
+  <script src="js/dashboard.js?v=1782476374"></script>
+  <script src="js/events.js?v=1782476374"></script>
+  <script src="js/guest.js?v=1782476374"></script>
+  <script src="js/sections.js?v=1782476374"></script>
+  <script src="js/admin.js?v=1782476374"></script>
+  <script src="js/router.js?v=1782476374"></script>
 
 </body>
 </html>

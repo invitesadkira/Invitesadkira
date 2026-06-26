@@ -18,7 +18,46 @@ html, body { height: 100%; margin: 0; width: 100%; overflow-x: hidden; }
 }
 .btn-main:hover { background: #006b86; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,127,159,0.3); }
 
-/* ── Botões de ação com ícone (RSVP, Dress Code, Presentes) ── */
+/* ── 2ª cor / efeito metálico — só aplica onde o organizador escolheu ── */
+#screen-guest.metallic-buttons .dg-card-btn,
+#screen-guest.metallic-buttons #rsvp-form button[type="submit"],
+#screen-guest.metallic-buttons .iban-copy-btn,
+#screen-guest.metallic-buttons .rsvp-cta-section,
+#screen-guest.metallic-buttons .rsvp-copyright,
+#screen-guest.metallic-buttons.guest-buttons-round .iban-copy-btn .action-btn-icon {
+  background: var(--ev-gradient, var(--ev-color)) !important;
+}
+#screen-guest.metallic-countdown .countdown-section-box {
+  background: var(--ev-gradient, var(--ev-color)) !important;
+}
+#screen-guest.metallic-names #hero-couple-names,
+#screen-guest.metallic-names .std-couple-names {
+  background: var(--ev-gradient, var(--ev-color));
+  -webkit-background-clip: text; background-clip: text;
+  color: transparent !important; -webkit-text-fill-color: transparent;
+}
+#screen-guest.metallic-titles .section-title {
+  background: var(--ev-gradient, var(--ev-color));
+  -webkit-background-clip: text; background-clip: text;
+  color: transparent !important; -webkit-text-fill-color: transparent;
+}
+
+/* ── O mesmo efeito metálico, mas no ecrã do Save the Date (é um overlay
+   próprio, fora de #screen-guest, por isso precisa das suas próprias
+   regras, mesmo reaproveitando as mesmas variáveis --ev-color/--ev-gradient) ── */
+#std-screen-overlay.metallic-names .std-couple-names {
+  background: var(--ev-gradient, var(--ev-color));
+  -webkit-background-clip: text; background-clip: text;
+  color: transparent !important; -webkit-text-fill-color: transparent;
+}
+#std-screen-overlay.metallic-countdown .std-countdown-num {
+  background: var(--ev-gradient, var(--ev-color));
+  -webkit-background-clip: text; background-clip: text;
+  color: transparent !important; -webkit-text-fill-color: transparent;
+}
+#std-screen-overlay.metallic-buttons .std-rsvp-btn-anim {
+  background: var(--ev-gradient, var(--ev-color)) !important;
+}
 /* Por padrão: ícone e texto lado a lado, tal como já era */
 .action-btn-icon { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .action-btn-label { display: inline; }
@@ -44,7 +83,7 @@ html, body { height: 100%; margin: 0; width: 100%; overflow-x: hidden; }
 #screen-guest.guest-buttons-round .rsvp-cta-btn .action-btn-label { color: #fff; font-size: 0.82rem; font-weight: 700; }
 #screen-guest.guest-buttons-round .dg-card-btn .action-btn-icon,
 #screen-guest.guest-buttons-round .venue-map-btn .action-btn-icon,
-#screen-guest.guest-buttons-round .iban-copy-btn .action-btn-icon { background: var(--ev-gradient, var(--ev-color, #007f9f)); color: #fff; width: 48px; height: 48px; }
+#screen-guest.guest-buttons-round .iban-copy-btn .action-btn-icon { background: var(--ev-color, #007f9f); color: #fff; width: 48px; height: 48px; }
 #screen-guest.guest-buttons-round .dg-card-btn .action-btn-icon svg,
 #screen-guest.guest-buttons-round .venue-map-btn .action-btn-icon svg,
 #screen-guest.guest-buttons-round .iban-copy-btn .action-btn-icon svg { width: 20px; height: 20px; }
@@ -298,7 +337,7 @@ html, body { height: 100%; margin: 0; width: 100%; overflow-x: hidden; }
 
 /* ── Countdown ── */
 .countdown-section-grid { display: flex; justify-content: center; gap: 0.75rem; flex-wrap: nowrap; overflow-x: auto; padding: 0 1rem; -webkit-overflow-scrolling: touch; }
-.countdown-section-box { background: var(--ev-gradient, var(--ev-color)); color: #fff; border-radius: 0.875rem; padding: 0.75rem 0.9rem; text-align: center; min-width: 58px; box-shadow: 0 4px 16px color-mix(in srgb, var(--ev-color) 40%, transparent); }
+.countdown-section-box { background: var(--ev-color); color: #fff; border-radius: 0.875rem; padding: 0.75rem 0.9rem; text-align: center; min-width: 58px; box-shadow: 0 4px 16px color-mix(in srgb, var(--ev-color) 40%, transparent); }
 .countdown-section-box .cdb-num { font-size: clamp(1.4rem, 5vw, 2.2rem); font-weight: 900; line-height: 1; }
 .countdown-section-box .cdb-label { font-size: clamp(0.55rem, 1.5vw, 0.65rem); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.85; margin-top: 2px; }
 @media (max-width: 380px) { .countdown-section-box { padding: 0.6rem 0.65rem; min-width: 50px; } .countdown-section-grid { gap: 0.4rem; } }
@@ -331,7 +370,7 @@ html, body { height: 100%; margin: 0; width: 100%; overflow-x: hidden; }
 .dg-card-title { font-size: 0.95rem; font-weight: 800; color: #1e293b; margin: 0; }
 .dg-card-sub { font-size: 0.74rem; color: #6b7280; line-height: 1.4; margin: 0 0 0.4rem; }
 .dg-card-btn {
-  background: var(--ev-gradient, var(--ev-color, #007f9f)); color: #fff; border: none; border-radius: 999px;
+  background: var(--ev-color, #007f9f); color: #fff; border: none; border-radius: 999px;
   padding: 0.55rem 1.2rem; font-size: 0.8rem; font-weight: 700; cursor: pointer;
   font-family: inherit; transition: filter 0.2s, transform 0.2s; width: 100%;
 }
@@ -385,12 +424,12 @@ html, body { height: 100%; margin: 0; width: 100%; overflow-x: hidden; }
 /* ── IBAN ── */
 .iban-card { background: linear-gradient(135deg, #f0f9fb, #e6f4f7); border: 1.5px solid color-mix(in srgb, var(--ev-color) 25%, transparent); border-radius: 1rem; padding: 1.1rem 1.2rem; margin-bottom: 1rem; }
 .iban-value { font-family: 'Courier New', monospace; font-size: 0.88rem; font-weight: 700; color: var(--ev-color); letter-spacing: 0.03em; word-break: break-all; text-align: center; display: block; }
-.iban-copy-btn { display: inline-flex; align-items: center; gap: 0.4rem; background: var(--ev-gradient, var(--ev-color)); color: #fff; border: none; border-radius: 0.5rem; padding: 0.4rem 0.9rem; font-size: 0.78rem; font-weight: 700; cursor: pointer; transition: 0.2s; margin-top: 0.5rem; }
+.iban-copy-btn { display: inline-flex; align-items: center; gap: 0.4rem; background: var(--ev-color); color: #fff; border: none; border-radius: 0.5rem; padding: 0.4rem 0.9rem; font-size: 0.78rem; font-weight: 700; cursor: pointer; transition: 0.2s; margin-top: 0.5rem; }
 .iban-copy-btn:hover { filter: brightness(0.85); }
 .iban-copy-btn.copied { background: #16a34a; }
 
 /* ── RSVP CTA section ── */
-.rsvp-cta-section { background: var(--ev-gradient, var(--ev-color)); padding: 3.5rem 1.5rem; text-align: center; }
+.rsvp-cta-section { background: var(--ev-color); padding: 3.5rem 1.5rem; text-align: center; }
 .dg-card-btn,
 #rsvp-form button[type="submit"],
 .iban-copy-btn,
@@ -435,7 +474,7 @@ html, body { height: 100%; margin: 0; width: 100%; overflow-x: hidden; }
 
 /* RSVP drawer submit button uses event color */
 #rsvp-form button[type="submit"] {
-  background: var(--ev-gradient, var(--ev-color)) !important;
+  background: var(--ev-color) !important;
   border-radius: 999px; padding: 0.9rem; font-size: 1rem; font-weight: 800;
 }
 /* IBAN card icon uses event color */
@@ -929,7 +968,7 @@ html, body { height: 100%; margin: 0; width: 100%; overflow-x: hidden; }
 
 /* ── Footer under RSVP section ── */
 .rsvp-copyright {
-  background: var(--ev-gradient, var(--ev-color));
+  background: var(--ev-color);
   color: rgba(255,255,255,0.6);
   text-align: center;
   font-size: 0.72rem;
