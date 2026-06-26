@@ -381,8 +381,9 @@ async function renderGuestView() {
     const color = _pickColor(eventData[choiceField]);
     document.documentElement.style.setProperty(varName, color);
     document.documentElement.style.setProperty(varName + '-text', _readableTextColor(color));
+    return color;
   };
-  _applyColorTarget('--ev-button-color', 'button_color_choice');
+  const _evButtonColor = _applyColorTarget('--ev-button-color', 'button_color_choice');
   _applyColorTarget('--ev-names-color', 'color_names');
   _applyColorTarget('--ev-countdown-color', 'color_countdown');
   _applyColorTarget('--ev-titles-color', 'color_titles');
