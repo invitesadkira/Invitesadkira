@@ -14,7 +14,7 @@
   <script>tailwind.config = { theme: { extend: { colors: { teal: { 500: '#007f9f', 600: '#006b86' } } } } }</script>
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💌</text></svg>">
-  <link rel="stylesheet" href="css/main.css?v=1782495555">
+  <link rel="stylesheet" href="css/main.css?v=1782496800">
 </head>
 <body class="h-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
 
@@ -545,6 +545,9 @@ A vossa presença neste dia tão especial é, para nós, o maior presente. No en
         <div id="couple-extra" class="pl-4 space-y-2">
          <input id="evt-groom-name" type="text" class="input-field" placeholder="Nome do Noivo / Aniversariante">
          <input id="evt-bride-name" type="text" class="input-field" placeholder="Nome da Noiva (opcional)">
+         <label class="text-xs text-gray-500 block mt-2">Frase por baixo dos nomes (opcional)</label>
+         <input id="evt-hero-subtitle" type="text" class="input-field" placeholder="Ex: Bodas de Prata, Noivado, Convite...">
+         <p class="text-xs text-gray-400 mt-1">Aparece sobre a foto de capa, por baixo dos nomes, em letras pequenas e diferentes. Deixa vazio para não mostrar nada.</p>
          <label class="text-xs text-gray-500">Tamanho do texto</label>
          <div class="flex items-center gap-2">
           <button type="button" class="w-8 h-8 rounded-lg border border-gray-300 flex items-center justify-center font-bold" onclick="changeCoupleSize(-2)"><i data-lucide="minus" class="w-3 h-3"></i></button>
@@ -934,7 +937,14 @@ para testemunhar o seu enlace matrimonial</textarea>
           </div>
          </div>
          <div class="grid grid-cols-2 gap-2 items-center mb-1.5">
-          <span class="text-xs text-gray-600">Nomes do casal</span>
+          <span class="text-xs text-gray-600">Nomes do casal — Hero (capa)</span>
+          <div class="flex gap-1.5 items-center">
+           <select id="evt-color-hero-names" class="input-field text-xs flex-1" onchange="document.getElementById('evt-color-hero-names-custom').style.display=this.value==='custom'?'inline-block':'none'"><option value="primary">Cor Principal</option><option value="secondary">2ª Cor</option><option value="black">Preto</option><option value="silver">Prateado</option><option value="custom">Personalizada</option></select>
+           <input type="color" id="evt-color-hero-names-custom" value="#ffffff" style="display:none;width:28px;height:26px;padding:0;border:1px solid #d1d5db;border-radius:0.35rem;cursor:pointer;flex-shrink:0">
+          </div>
+         </div>
+         <div class="grid grid-cols-2 gap-2 items-center mb-1.5">
+          <span class="text-xs text-gray-600">Nomes do casal — Save the Date / Bíblia</span>
           <div class="flex gap-1.5 items-center">
            <select id="evt-color-names" class="input-field text-xs flex-1" onchange="document.getElementById('evt-color-names-custom').style.display=this.value==='custom'?'inline-block':'none'"><option value="primary">Cor Principal</option><option value="secondary">2ª Cor</option><option value="black">Preto</option><option value="silver">Prateado</option><option value="custom">Personalizada</option></select>
            <input type="color" id="evt-color-names-custom" value="#1e293b" style="display:none;width:28px;height:26px;padding:0;border:1px solid #d1d5db;border-radius:0.35rem;cursor:pointer;flex-shrink:0">
@@ -1028,6 +1038,7 @@ para testemunhar o seu enlace matrimonial</textarea>
      <div id="save-the-date-overlay" style="display:none;position:absolute;inset:0;flex-direction:column;align-items:center;justify-content:center;z-index:2"></div>
      <div class="guest-hero-content">
       <div id="hero-couple-names" class="couple-names" style="font-size:2.4rem"></div>
+      <span id="hero-subtitle-tagline" class="hero-subtitle-tagline hidden"></span>
      </div>
      <div class="scroll-hint" id="scroll-hint">
       <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
@@ -1274,19 +1285,19 @@ para testemunhar o seu enlace matrimonial</textarea>
   </a>
 
   <!-- ===================== SCRIPTS (ordem importa) ===================== -->
-  <script src="js/config.js?v=1782495555"></script>
-  <script src="js/store.js?v=1782495555"></script>
-  <script src="js/visuals.js?v=1782495555"></script>
-  <script src="js/venues.js?v=1782495555"></script>
-  <script src="js/rsvp.js?v=1782495555"></script>
-  <script src="js/ui.js?v=1782495555"></script>
-  <script src="js/auth.js?v=1782495555"></script>
-  <script src="js/dashboard.js?v=1782495555"></script>
-  <script src="js/events.js?v=1782495555"></script>
-  <script src="js/guest.js?v=1782495555"></script>
-  <script src="js/sections.js?v=1782495555"></script>
-  <script src="js/admin.js?v=1782495555"></script>
-  <script src="js/router.js?v=1782495555"></script>
+  <script src="js/config.js?v=1782496800"></script>
+  <script src="js/store.js?v=1782496800"></script>
+  <script src="js/visuals.js?v=1782496800"></script>
+  <script src="js/venues.js?v=1782496800"></script>
+  <script src="js/rsvp.js?v=1782496800"></script>
+  <script src="js/ui.js?v=1782496800"></script>
+  <script src="js/auth.js?v=1782496800"></script>
+  <script src="js/dashboard.js?v=1782496800"></script>
+  <script src="js/events.js?v=1782496800"></script>
+  <script src="js/guest.js?v=1782496800"></script>
+  <script src="js/sections.js?v=1782496800"></script>
+  <script src="js/admin.js?v=1782496800"></script>
+  <script src="js/router.js?v=1782496800"></script>
 
 </body>
 </html>

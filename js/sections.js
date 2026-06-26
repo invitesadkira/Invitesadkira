@@ -137,11 +137,15 @@ function buildSimpleInviteTemplate(ev) {
 
   return `
     <div class="simple-invite" style="background:#fff;max-width:560px;margin:0 auto">
-      <!-- 1. Capa com degradê branco por baixo -->
+      <!-- 1. Capa, com nomes (e frase opcional) sobrepostos em baixo, sobre a foto -->
       <div style="position:relative;width:100%;height:62vh;min-height:340px;max-height:560px;overflow:hidden">
         ${ev.cover_image ? `<img src="${ev.cover_image}" style="width:100%;height:100%;object-fit:cover">` : `<div style="width:100%;height:100%;background:linear-gradient(135deg,${evColor},#1a1a2e)"></div>`}
-        <div style="position:absolute;inset:0;background:linear-gradient(to bottom, transparent 55%, #fff 98%)"></div>
+        <div style="position:absolute;inset:0;background:linear-gradient(to top, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.18) 38%, transparent 65%)"></div>
         ${decorHtml}
+        <div style="position:absolute;left:0;right:0;bottom:1.5rem;text-align:center;padding:0 1rem;z-index:2">
+          <h1 class="hero-couple-names-simple" style="font-family:'Playfair Display',serif;font-style:italic;font-size:clamp(2rem,8vw,3rem);margin:0">${coupleNames}</h1>
+          ${ev.hero_subtitle ? `<span class="hero-subtitle-tagline" style="margin-top:0.5rem">${escapeHTML(ev.hero_subtitle)}</span>` : ''}
+        </div>
       </div>
 
       <!-- 2. Texto bíblico -->
@@ -150,19 +154,16 @@ function buildSimpleInviteTemplate(ev) {
       <!-- 3. Com a bênção de Deus e seus pais -->
       ${blessingLine}
 
-      <!-- 4. Nomes do casal -->
-      <h1 class="bible-couple-names" style="text-align:center;font-family:'Playfair Display',serif;font-style:italic;font-size:clamp(2.2rem,8vw,3.2rem);color:#1e293b;margin:0.25rem 0 1rem">${coupleNames}</h1>
-
-      <!-- 5. Convidam ___ para a celebração -->
+      <!-- 4. Convidam ___ para a celebração -->
       <p style="text-align:center;font-size:0.98rem;color:#374151;line-height:1.7;max-width:380px;margin:0 auto 2.5rem;padding:0 1.5rem">${inviteLine}</p>
 
-      <!-- 6. Data e horário -->
+      <!-- 5. Data e horário -->
       <div style="text-align:center;margin-bottom:2.5rem">
         <p style="font-size:1.3rem;font-weight:800;color:${evColor};margin:0">${escapeHTML(longDate)}</p>
         ${ev.time ? `<p style="font-size:0.95rem;color:#6b7280;margin:0.2rem 0 0">às ${escapeHTML(ev.time)}</p>` : ''}
       </div>
 
-      <!-- 7. Local do evento -->
+      <!-- 6. Local do evento -->
       ${venue1Name ? `
       <div style="text-align:center;margin-bottom:2.5rem;padding:0 1.5rem">
         ${venue1Label ? `<p style="font-size:0.68rem;letter-spacing:0.12em;text-transform:uppercase;font-weight:700;color:${evColor};margin:0 0 0.3rem">${venue1Label}</p>` : ''}
@@ -170,7 +171,7 @@ function buildSimpleInviteTemplate(ev) {
         ${venue1Maps ? `<a href="${escapeHTML(venue1Maps)}" target="_blank" style="font-size:0.8rem;color:${evColor};font-weight:600;text-decoration:underline">Ver no mapa</a>` : ''}
       </div>` : ''}
 
-      <!-- 8. Confirmar presença -->
+      <!-- 7. Confirmar presença -->
       <div style="text-align:center;margin-bottom:3rem">
         <button onclick="openRsvpDrawer()" style="background:${evColor};color:#fff;border:none;border-radius:999px;padding:0.9rem 2.6rem;font-weight:800;font-size:0.95rem;cursor:pointer;font-family:inherit;box-shadow:0 8px 24px rgba(0,0,0,0.18)">Confirmar Presença</button>
       </div>
@@ -2019,7 +2020,7 @@ function buildFinalPhotoSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
   // foto (nunca sobre espaço vazio à volta), mesmo que a foto não preencha
   // toda a largura/altura disponível. Fundo branco em vez do escuro anterior.
   return _SD + `<div class="event-section" style="padding:2.5rem 1rem;background:#fff;text-align:center">
-    <div class="reveal" style="display:inline-block;position:relative;max-width:100%;line-height:0">
+    <div class="reveal" style="display:inline-block;position:relative;max-width:100%;line-height:0;border-radius:1.1rem;overflow:hidden">
       <img src="${ev.final_photo_url}" alt="Foto dos Noivos"
         style="display:block;width:auto;height:auto;max-width:100%;max-height:80vh;margin:0 auto"
         onerror="this.parentElement.parentElement.style.display='none'">

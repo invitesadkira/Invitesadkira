@@ -40,9 +40,20 @@ html, body { height: 100%; margin: 0; width: 100%; overflow-x: hidden; }
 .action-btn-icon { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .action-btn-label { display: inline; }
 
-/* ── Os outros elementos (nomes, contagem, títulos, mensagens, data):
-   cada um usa SEMPRE 1 das 2 cores, sólida — nunca misturadas. ── */
-#hero-couple-names, .std-couple-names, .bible-couple-names {
+/* ── O hero (capa principal, seja no layout clássico ou no "Simples") tem
+   a SUA PRÓPRIA cor, independente dos nomes que aparecem noutros sítios
+   (Save the Date, secção bíblica) — escolher uma não afecta a outra. ── */
+#hero-couple-names, .hero-couple-names-simple {
+  color: var(--ev-hero-names-color, var(--ev-color)) !important;
+}
+.hero-subtitle-tagline {
+  display: block; color: rgba(255,255,255,0.88); text-shadow: 0 2px 10px rgba(0,0,0,0.55);
+  font-size: 0.78rem; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase;
+  font-family: 'Quicksand', sans-serif; margin-top: 0.4rem;
+}
+/* ── Os outros elementos (nomes fora do hero, contagem, títulos, mensagens,
+   data): cada um usa SEMPRE 1 das 2 cores, sólida — nunca misturadas. ── */
+.std-couple-names, .bible-couple-names {
   color: var(--ev-names-color, var(--ev-color)) !important;
 }
 .countdown-section-box {
@@ -63,7 +74,8 @@ html, body { height: 100%; margin: 0; width: 100%; overflow-x: hidden; }
    regras abaixo têm sempre mais especificidade + !important do que as
    regras de cor "normais" acima, por isso ganham sempre quando activas. ── */
 @keyframes ev-silver-shimmer { 0% { background-position: 0% center; } 100% { background-position: 200% center; } }
-html.ev-silver-names #hero-couple-names,
+html.ev-silver-hero-names #hero-couple-names,
+html.ev-silver-hero-names .hero-couple-names-simple,
 html.ev-silver-names .std-couple-names,
 html.ev-silver-names .bible-couple-names,
 html.ev-silver-titles .section-title,

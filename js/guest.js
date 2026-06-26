@@ -417,6 +417,7 @@ async function renderGuestView() {
     return flat;
   };
   const _evButtonColor = _applyColorTarget('--ev-button-color', 'button_color_choice', 'ev-silver-button');
+  _applyColorTarget('--ev-hero-names-color', 'color_hero_names', 'ev-silver-hero-names');
   _applyColorTarget('--ev-names-color', 'color_names', 'ev-silver-names');
   _applyColorTarget('--ev-countdown-color', 'color_countdown', 'ev-silver-countdown');
   _applyColorTarget('--ev-titles-color', 'color_titles', 'ev-silver-titles');

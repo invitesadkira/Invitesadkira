@@ -831,6 +831,8 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
           cover_video_url: document.getElementById('evt-cover-video-url')?.value || null,
           button_color_choice: document.getElementById('evt-button-color-choice')?.value || 'primary',
           button_color_choice_custom: document.getElementById('evt-button-color-choice-custom')?.value || null,
+          color_hero_names: document.getElementById('evt-color-hero-names')?.value || 'primary',
+          color_hero_names_custom: document.getElementById('evt-color-hero-names-custom')?.value || null,
           color_names: document.getElementById('evt-color-names')?.value || 'primary',
           color_names_custom: document.getElementById('evt-color-names-custom')?.value || null,
           color_countdown: document.getElementById('evt-color-countdown')?.value || 'primary',
@@ -843,6 +845,7 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
           color_date_custom: document.getElementById('evt-color-date-custom')?.value || null,
           invite_layout: document.getElementById('evt-invite-layout')?.value || 'sections',
           groom_name: newGroomName, bride_name: newBrideName, couple_size: newCoupleSize,
+          hero_subtitle: document.getElementById('evt-hero-subtitle')?.value?.trim() || null,
           show_couple: newShowCouple ? 'yes' : 'no',
           bg_url: newBgUrl, bg_url_mobile: newBgUrlMobile, bg_url_desktop: newBgUrlDesktop, bg_overlay: newBgOverlay,
           show_bible: newShowBible ? 'yes' : 'no', bible_text: newBibleText, bible_ref: newBibleRef, bible_text_2: newBibleText2, bible_ref_2: newBibleRef2, bible_size: newBibleSize,
@@ -1772,6 +1775,8 @@ function _fillEditForm(ev) {
   _setSwitch('sw-couple', _yesOrTrue(ev.show_couple), 'couple-extra');
   document.getElementById('evt-groom-name').value = ev.groom_name || '';
   document.getElementById('evt-bride-name').value = ev.bride_name || '';
+  const heroSubtitleEl = document.getElementById('evt-hero-subtitle');
+  if (heroSubtitleEl) heroSubtitleEl.value = ev.hero_subtitle || '';
   const sz = parseFloat(ev.couple_size || 2.4);
   document.getElementById('evt-couple-size').value = sz;
   const szLbl = document.getElementById('couple-size-label');
@@ -1865,13 +1870,14 @@ function _fillEditForm(ev) {
       customEl.style.display = btnColorChoiceEl.value === 'custom' ? 'inline-block' : 'none';
     }
   }
-  ['names','countdown','titles','message','date'].forEach(t => {
+  ['hero-names','names','countdown','titles','message','date'].forEach(t => {
     const el = document.getElementById('evt-color-' + t);
     if (el) {
-      el.value = _validColorChoices.includes(ev['color_' + t]) ? ev['color_' + t] : 'primary';
+      const field = t === 'hero-names' ? 'color_hero_names' : ('color_' + t);
+      el.value = _validColorChoices.includes(ev[field]) ? ev[field] : 'primary';
       const customEl = document.getElementById('evt-color-' + t + '-custom');
       if (customEl) {
-        if (ev['color_' + t + '_custom']) customEl.value = ev['color_' + t + '_custom'];
+        if (ev[field + '_custom']) customEl.value = ev[field + '_custom'];
         customEl.style.display = el.value === 'custom' ? 'inline-block' : 'none';
       }
     }

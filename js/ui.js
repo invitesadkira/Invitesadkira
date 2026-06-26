@@ -866,10 +866,12 @@ function toggleStdMusicMute() {
   const btn = document.getElementById('std-mute-btn');
   let nowMuted;
 
-  if (audio && audio.src) {
-    audio.muted = !audio.muted;
-    nowMuted = audio.muted;
-  } else if (ytFrame && ytFrame.src) {
+  // ✅ Verificar primeiro o iframe do YouTube (igual ao toggleMusicPlayer já
+  // existente) — "audio.src = ''" para limpar o áudio não o deixa mesmo
+  // vazio: resolve para o URL da própria página, por isso audio.src fica
+  // sempre "verdadeiro" mesmo sem música nenhuma carregada aí. Verificar o
+  // áudio primeiro fazia este botão nunca chegar a silenciar o YouTube.
+  if (ytFrame && ytFrame.src) {
     nowMuted = ytFrame.dataset.muted !== '1';
     ytFrame.dataset.muted = nowMuted ? '1' : '0';
     try {
@@ -877,6 +879,9 @@ function toggleStdMusicMute() {
         JSON.stringify({ event: 'command', func: nowMuted ? 'mute' : 'unMute', args: [] }), '*'
       );
     } catch(e) {}
+  } else if (audio && audio.src) {
+    audio.muted = !audio.muted;
+    nowMuted = audio.muted;
   } else {
     return; // nada a tocar ainda (autoplay pode estar bloqueado/a aguardar gesto)
   }
@@ -1118,14 +1123,22 @@ function _galleryNav(dir) {
 
 function renderHeroCoupleNames(ev) {
   const nameEl = document.getElementById('hero-couple-names');
-  if (!nameEl) return;
+  const subtitleEl = document.getElementById('hero-subtitle-tagline');
   const hasCouple = _yesOrTrue(ev.show_couple || ev.sw_couple);
   const invertNames = _yesOrTrue(ev.invert_names);
   let groom = ev.groom_name || '';
   let bride  = ev.bride_name  || '';
   if (invertNames && groom && bride) { [groom, bride] = [bride, groom]; }
+  const namesVisible = hasCouple && (groom || bride);
 
-  if (!hasCouple || (!groom && !bride)) { nameEl.innerHTML = ''; nameEl.style.display = 'none'; return; }
+  if (subtitleEl) {
+    const sub = (ev.hero_subtitle || '').trim();
+    if (sub && namesVisible) { subtitleEl.textContent = sub; subtitleEl.classList.remove('hidden'); }
+    else { subtitleEl.textContent = ''; subtitleEl.classList.add('hidden'); }
+  }
+  if (!nameEl) return;
+
+  if (!namesVisible) { nameEl.innerHTML = ''; nameEl.style.display = 'none'; return; }
 
   nameEl.style.display = '';
   if (ev.custom_font_family) nameEl.style.fontFamily = `'${ev.custom_font_family}', serif`;
