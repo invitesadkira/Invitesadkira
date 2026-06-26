@@ -1,4 +1,18 @@
 // ===================== GUEST VIEW =====================
+// Aclara (percent positivo) ou escurece (percent negativo) uma cor hex —
+// usado para criar o efeito de "brilho metálico" da 2ª cor do evento.
+function _adjustColorLightness(hex, percent) {
+  hex = (hex || '#888888').replace('#', '');
+  if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
+  let r = parseInt(hex.substr(0, 2), 16) || 0;
+  let g = parseInt(hex.substr(2, 2), 16) || 0;
+  let b = parseInt(hex.substr(4, 2), 16) || 0;
+  r = Math.min(255, Math.max(0, r + percent));
+  g = Math.min(255, Math.max(0, g + percent));
+  b = Math.min(255, Math.max(0, b + percent));
+  return '#' + [r, g, b].map(v => Math.round(v).toString(16).padStart(2, '0')).join('');
+}
+
 async function renderGuestView() {
   // controlo de lado será aplicado após carregar evento
 
@@ -332,12 +346,21 @@ async function renderGuestView() {
   // Check both sources: visuals table first, then events table, then default
   const _evCol = eventData.event_color || '#007f9f';
   document.documentElement.style.setProperty('--ev-color', _evCol);
-  // ✅ 2ª cor opcional — quando definida, os fundos de destaque (botão de
-  // confirmar presença, faixa de RSVP, etc.) passam a usar um degradê
-  // entre as 2 cores em vez de uma cor lisa. Sem 2ª cor, o degradê é só
-  // a mesma cor duas vezes — visualmente idêntico a uma cor sólida.
-  const _evCol2 = eventData.event_color_2 || _evCol;
-  document.documentElement.style.setProperty('--ev-gradient', `linear-gradient(135deg, ${_evCol}, ${_evCol2})`);
+  // ✅ 2ª cor opcional — em vez de só misturar as 2 cores num degradê plano
+  // (o que faz uma "prata" parecer um cinzento sem vida), criamos um
+  // degradê com várias faixas claras/escuras da 2ª cor, simulando luz a
+  // passar sobre uma superfície metálica. Isto dá um "brilho" reconhecível
+  // mesmo em telas pequenas, em vez de só uma mistura morta de 2 tons.
+  const _evCol2 = eventData.event_color_2 || null;
+  let _evGradient;
+  if (_evCol2) {
+    const _light = _adjustColorLightness(_evCol2, 55);
+    const _dark = _adjustColorLightness(_evCol2, -35);
+    _evGradient = `linear-gradient(120deg, ${_evCol} 0%, ${_dark} 28%, ${_light} 50%, ${_dark} 72%, ${_evCol} 100%)`;
+  } else {
+    _evGradient = `linear-gradient(135deg, ${_evCol}, ${_evCol})`;
+  }
+  document.documentElement.style.setProperty('--ev-gradient', _evGradient);
   document.getElementById('screen-guest')?.classList.toggle('guest-buttons-round', eventData.button_style === 'round');
   const _rsvpSec = document.getElementById('rsvp-section');
   if (_rsvpSec) {

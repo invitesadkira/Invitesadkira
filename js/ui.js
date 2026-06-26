@@ -1006,10 +1006,21 @@ function initFloatingMusicBtn() {
 
 function openLightbox(src) {
   // Collect all gallery URLs (use data-url if set, otherwise img.src)
-  window._galleryImages = Array.from(document.querySelectorAll('.gallery-item img'))
+  // — funciona tanto para a galeria em grelha (.gallery-item img) como
+  // para o carrossel 3D (.g3d-slide, que usa background-image em vez de
+  // <img>, por isso precisa de ser lido de forma diferente).
+  const gridUrls = Array.from(document.querySelectorAll('.gallery-item img'))
     .filter(i => !i.closest('.gallery-item').style.display.includes('none'))
     .map(i => i.dataset.url || i.src)
     .filter(u => u && u.startsWith('http'));
+  const carouselUrls = Array.from(document.querySelectorAll('.g3d-slide'))
+    .map(s => {
+      const bg = s.style.backgroundImage || '';
+      const m = bg.match(/url\(["']?(.*?)["']?\)/);
+      return m ? m[1] : null;
+    })
+    .filter(u => u && u.startsWith('http'));
+  window._galleryImages = gridUrls.length ? gridUrls : carouselUrls;
   window._galleryIndex = window._galleryImages.indexOf(src);
   if (window._galleryIndex < 0) {
     window._galleryImages = [src];

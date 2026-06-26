@@ -735,9 +735,8 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
     custom_font_family: newCustomFont,
     section_order: Store.eventSectionOrder ? JSON.stringify(Store.eventSectionOrder) : null,
     story_text: document.getElementById('evt-story-text')?.value.trim() || null,
-    invite_blessing: document.getElementById('evt-invite-blessing')?.value.trim() ?? '',
     event_color: document.getElementById('evt-event-color')?.value.trim() || null
-    // button_style/invite_layout REMOVIDOS deste PATCH: vivem em
+    // button_style/invite_layout/invite_blessing REMOVIDOS deste PATCH: vivem em
     // event_visuals (nunca em events) — já são gravados correctamente mais
     // abaixo, na chamada a saveEventVisuals().
   }).then(result => {
