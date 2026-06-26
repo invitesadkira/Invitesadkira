@@ -332,7 +332,7 @@ html, body { height: 100%; margin: 0; width: 100%; overflow-x: hidden; }
 
 /* ── Countdown ── */
 .countdown-section-grid { display: flex; justify-content: center; gap: 0.75rem; flex-wrap: nowrap; overflow-x: auto; padding: 0 1rem; -webkit-overflow-scrolling: touch; }
-.countdown-section-box { background: var(--ev-color); color: #fff; border-radius: 0.875rem; padding: 0.75rem 0.9rem; text-align: center; min-width: 58px; box-shadow: 0 4px 16px color-mix(in srgb, var(--ev-color) 40%, transparent); }
+.countdown-section-box { background: var(--ev-color); color: #fff; border-radius: 0.875rem; padding: 0.75rem 0.9rem; text-align: center; min-width: 58px; box-shadow: 0 3px 6px color-mix(in srgb, var(--ev-color) 35%, transparent); }
 .countdown-section-box .cdb-num { font-size: clamp(1.4rem, 5vw, 2.2rem); font-weight: 900; line-height: 1; }
 .countdown-section-box .cdb-label { font-size: clamp(0.55rem, 1.5vw, 0.65rem); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.85; margin-top: 2px; }
 @media (max-width: 380px) { .countdown-section-box { padding: 0.6rem 0.65rem; min-width: 50px; } .countdown-section-grid { gap: 0.4rem; } }

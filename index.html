@@ -14,7 +14,7 @@
   <script>tailwind.config = { theme: { extend: { colors: { teal: { 500: '#007f9f', 600: '#006b86' } } } } }</script>
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💌</text></svg>">
-  <link rel="stylesheet" href="css/main.css?v=1782479149">
+  <link rel="stylesheet" href="css/main.css?v=1782479808">
 </head>
 <body class="h-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
 
@@ -631,6 +631,15 @@ A vossa presença neste dia tão especial é, para nós, o maior presente. No en
         </div>
 
         <div class="flex items-center justify-between">
+         <span class="text-sm font-semibold text-gray-700">Frase de Bênção <span class="text-gray-400 font-normal text-xs">(antes dos nomes)</span></span>
+         <div id="sw-invite-blessing" class="switch active" onclick="toggleSwitch(this, 'invite-blessing-extra')"></div>
+        </div>
+        <div id="invite-blessing-extra" class="pl-4 space-y-1">
+         <input id="evt-invite-blessing" type="text" class="input-field text-sm" placeholder="Ex: Com a bênção de Deus e de seus pais" value="Com a bênção de Deus e de seus pais">
+         <p class="text-xs text-gray-400">Aparece em cima dos nomes do casal. Desliga o interruptor acima para não mostrar nenhuma frase aqui.</p>
+        </div>
+
+        <div class="flex items-center justify-between">
          <span class="text-sm font-semibold text-gray-700">Texto de Convite</span>
          <div id="sw-invite" class="switch active" onclick="toggleSwitch(this, 'invite-extra')"></div>
         </div>
@@ -873,7 +882,6 @@ para testemunhar o seu enlace matrimonial</textarea>
          <div id="sw-story" class="switch active" onclick="toggleSwitch(this, 'story-extra')"></div>
         </div>
         <div id="story-extra" class="pl-4 space-y-2">
-         <input id="evt-invite-blessing" type="text" class="input-field text-sm" placeholder="Texto de bênção (ex: Com a bênção de Deus e de seus pais)" value="Com a bênção de Deus e de seus pais">
          <label class="text-xs text-gray-500">Nossa História (aparece como texto da secção)</label>
          <textarea id="evt-story-text" class="input-field text-sm" rows="5" placeholder="Conta a vossa história aqui..."></textarea>
          <label class="text-xs font-semibold text-gray-600 block mt-1">Estilo visual</label>
@@ -1248,19 +1256,19 @@ para testemunhar o seu enlace matrimonial</textarea>
   </a>
 
   <!-- ===================== SCRIPTS (ordem importa) ===================== -->
-  <script src="js/config.js?v=1782479149"></script>
-  <script src="js/store.js?v=1782479149"></script>
-  <script src="js/visuals.js?v=1782479149"></script>
-  <script src="js/venues.js?v=1782479149"></script>
-  <script src="js/rsvp.js?v=1782479149"></script>
-  <script src="js/ui.js?v=1782479149"></script>
-  <script src="js/auth.js?v=1782479149"></script>
-  <script src="js/dashboard.js?v=1782479149"></script>
-  <script src="js/events.js?v=1782479149"></script>
-  <script src="js/guest.js?v=1782479149"></script>
-  <script src="js/sections.js?v=1782479149"></script>
-  <script src="js/admin.js?v=1782479149"></script>
-  <script src="js/router.js?v=1782479149"></script>
+  <script src="js/config.js?v=1782479808"></script>
+  <script src="js/store.js?v=1782479808"></script>
+  <script src="js/visuals.js?v=1782479808"></script>
+  <script src="js/venues.js?v=1782479808"></script>
+  <script src="js/rsvp.js?v=1782479808"></script>
+  <script src="js/ui.js?v=1782479808"></script>
+  <script src="js/auth.js?v=1782479808"></script>
+  <script src="js/dashboard.js?v=1782479808"></script>
+  <script src="js/events.js?v=1782479808"></script>
+  <script src="js/guest.js?v=1782479808"></script>
+  <script src="js/sections.js?v=1782479808"></script>
+  <script src="js/admin.js?v=1782479808"></script>
+  <script src="js/router.js?v=1782479808"></script>
 
 </body>
 </html>
