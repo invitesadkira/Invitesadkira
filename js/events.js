@@ -1100,10 +1100,17 @@ function renderEventDetails() {
   
   document.getElementById('btn-delete-event').classList.toggle('hidden', !(isOwner || isAdmin));
 
-  // Botão "Marcar como Exemplo" — apenas o admin God autenticado directamente,
-  // NUNCA durante impersonação de um utilizador (Store.adminModeActive), por
-  // pedido explícito: só o admin real pode decidir quais eventos são exemplo.
-  const isRealAdminGod = Store.currentUser && Store.currentUser.role === 'admin' && !Store.adminModeActive;
+  // Botão "Marcar como Exemplo" — só o admin God real pode usar isto, mas
+  // isso TEM de incluir enquanto está a "entrar como" outro utilizador
+  // (Modo Admin) — é precisamente assim que se chega à página de um
+  // evento que pertence a outra pessoa. Excluir esse caso (como estava
+  // antes) escondia o botão exactamente na única situação em que era
+  // preciso usá-lo. Por isso verificamos também a identidade original
+  // (Store.adminOriginalUser), guardada antes de entrar em impersonação.
+  const isRealAdminGod = !!(
+    (Store.currentUser && Store.currentUser.role === 'admin') ||
+    (Store.adminModeActive && Store.adminOriginalUser && Store.adminOriginalUser.role === 'admin')
+  );
   const exampleBtn = document.getElementById('btn-example-event');
   if (exampleBtn) {
     exampleBtn.classList.toggle('hidden', !isRealAdminGod);
@@ -4512,7 +4519,14 @@ async function adminToggleExampleEvent() {
   // Defesa em profundidade: apenas o admin God autenticado directamente,
   // nunca durante impersonação — mesmo que alguém chame esta função
   // directamente sem passar pelo botão (que já está escondido nesse caso).
-  const isRealAdminGod = Store.currentUser && Store.currentUser.role === 'admin' && !Store.adminModeActive;
+  // Defesa em profundidade: só o admin God real — mas isso inclui estar
+  // a "entrar como" outro utilizador (Modo Admin), que é como se chega à
+  // página de um evento de outra pessoa. Ver explicação igual junto ao
+  // botão, em renderEventDetails().
+  const isRealAdminGod = !!(
+    (Store.currentUser && Store.currentUser.role === 'admin') ||
+    (Store.adminModeActive && Store.adminOriginalUser && Store.adminOriginalUser.role === 'admin')
+  );
   if (!isRealAdminGod) {
     toast('Apenas o administrador pode marcar eventos como exemplo.');
     return;
