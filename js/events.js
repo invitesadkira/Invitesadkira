@@ -4298,6 +4298,13 @@ async function saveStdEditor() {
   toast('A guardar...');
   try {
     const result = await supabaseRequest(`events?id=eq.${eventId}`, 'PATCH', payload);
+    // ✅ CRÍTICO: a página do convidado lê a data/prazo de uma tabela
+    // dedicada (event_dates), que tem prioridade sobre esta coluna da
+    // tabela events. Sem isto, o que se guarda aqui fica correto na
+    // tabela events mas continua a aparecer errado para o convidado,
+    // porque a outra tabela nunca é actualizada e continua com o valor
+    // antigo (normalmente igual à data do evento).
+    try { await saveEventDates(eventId, { event_date: dateVal, confirm_by_date: deadlineVal }); } catch(e) { console.warn('Falha ao sincronizar event_dates:', e); }
     if (result) {
       toast('Save the Date guardado com sucesso!');
       // Update local cache and re-fetch fresh in background
