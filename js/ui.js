@@ -829,7 +829,52 @@ function setMusicPlayingUI(playing) {
 }
 
 // ── Abas do editor de evento ──────────────────────────────────────────────
+// Uma aba por cada secção individual do convite (estilo Chrome) — substitui
+// o antigo formulário gigante numa só página. Lista única, usada para
+// construir a barra de abas e para saber para onde voltar por defeito.
+const EVENT_EDITOR_TABS = [
+  { key: 'geral', label: 'Geral' },
+  { key: 'acompanhantes', label: 'Acompanhantes' },
+  { key: 'presentes', label: 'Presentes' },
+  { key: 'criancas', label: 'Crianças' },
+  { key: 'lados', label: 'Lados' },
+  { key: 'confirmacao', label: 'Confirmação de Presença' },
+  { key: 'savethedate', label: 'Save the Date' },
+  { key: 'intro', label: 'Tela de Abertura' },
+  { key: 'recados', label: 'Felicitações' },
+  { key: 'musica', label: 'Música' },
+  { key: 'presente-iban', label: 'Presente (IBAN)' },
+  { key: 'tipo-estilo', label: 'Tipo & Estilo' },
+  { key: 'hero', label: 'Hero' },
+  { key: 'fundo', label: 'Imagem de Fundo' },
+  { key: 'versiculo', label: 'Versículo' },
+  { key: 'bencao', label: 'Bênção' },
+  { key: 'convite-texto', label: 'Texto de Convite' },
+  { key: 'pais', label: 'Pais' },
+  { key: 'galeria', label: 'Galeria' },
+  { key: 'msg-noivos', label: 'Mensagem dos Noivos' },
+  { key: 'foto-final', label: 'Foto Final' },
+  { key: 'faq', label: 'FAQ' },
+  { key: 'manual', label: 'Manual do Convidado' },
+  { key: 'monograma', label: 'Monograma' },
+  { key: 'locais', label: 'Locais' },
+  { key: 'decoracao', label: 'Decoração' },
+  { key: 'historia', label: 'Nosso Amor' },
+  { key: 'contagem', label: 'Contagem' },
+  { key: 'cores-evento', label: 'Cores & Estilo' },
+];
+
+function buildEventEditorTabs() {
+  const wrap = document.getElementById('event-editor-tabs');
+  if (!wrap || wrap.dataset.built === '1') return;
+  wrap.innerHTML = EVENT_EDITOR_TABS.map((t, i) =>
+    `<button type="button" class="event-tab-btn${i===0?' active':''}" data-tab="${t.key}" onclick="switchEventTab('${t.key}')">${t.label}</button>`
+  ).join('');
+  wrap.dataset.built = '1';
+}
+
 function switchEventTab(tabName) {
+  buildEventEditorTabs();
   document.querySelectorAll('.event-tab-pane').forEach(p => {
     p.classList.toggle('hidden', p.dataset.tab !== tabName);
   });
