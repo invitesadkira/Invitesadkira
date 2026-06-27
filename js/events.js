@@ -854,6 +854,7 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
           color_date: document.getElementById('evt-color-date')?.value || 'primary',
           color_date_custom: document.getElementById('evt-color-date-custom')?.value || null,
           invite_layout: document.getElementById('evt-invite-layout')?.value || 'sections',
+          bible_ornament_url: document.getElementById('evt-bible-ornament-url')?.value || null,
           groom_name: newGroomName, bride_name: newBrideName, couple_size: newCoupleSize,
           hero_subtitle: document.getElementById('evt-hero-subtitle')?.value?.trim() || null,
           show_couple: newShowCouple ? 'yes' : 'no',
@@ -1763,6 +1764,20 @@ function _fillEditForm(ev) {
   document.getElementById('evt-bride-name').value = ev.bride_name || '';
   const heroSubtitleEl = document.getElementById('evt-hero-subtitle');
   if (heroSubtitleEl) heroSubtitleEl.value = ev.hero_subtitle || '';
+  const ornamentUrlEl = document.getElementById('evt-bible-ornament-url');
+  const ornamentPreviewEl = document.getElementById('bible-ornament-preview');
+  const ornamentRemoveBtn = document.getElementById('bible-ornament-remove-btn');
+  if (ornamentUrlEl) {
+    ornamentUrlEl.value = ev.bible_ornament_url || '';
+    if (ev.bible_ornament_url && ornamentPreviewEl) {
+      ornamentPreviewEl.src = ev.bible_ornament_url;
+      ornamentPreviewEl.style.display = '';
+      if (ornamentRemoveBtn) ornamentRemoveBtn.style.display = '';
+    } else {
+      if (ornamentPreviewEl) ornamentPreviewEl.style.display = 'none';
+      if (ornamentRemoveBtn) ornamentRemoveBtn.style.display = 'none';
+    }
+  }
   const sz = parseFloat(ev.couple_size || 2.4);
   document.getElementById('evt-couple-size').value = sz;
   const szLbl = document.getElementById('couple-size-label');

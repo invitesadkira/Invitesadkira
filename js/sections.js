@@ -544,7 +544,7 @@ function buildBibleSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
   const coupleNamesHtml = (groomName || brideName) ? `
     <div class="reveal" style="margin-top:1.25rem;text-align:center">
       <p class="bible-couple-names" style="font-size:${blessingCoupleFontSize};font-weight:700;color:${ev.event_color||'#007f9f'};letter-spacing:0.01em;font-family:${coupleFontFamily}">
-        ${escapeHTML(groomName)}${groomName && brideName ? ` <span style="font-weight:300;opacity:0.65">&amp;</span> ` : ''}${escapeHTML(brideName)}
+        ${escapeHTML(groomName)}${groomName && brideName ? ' & ' : ''}${escapeHTML(brideName)}
       </p>
     </div>` : '';
 
@@ -570,7 +570,9 @@ function buildBibleSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
         ${lines}
         ${ev.bible_ref ? `<p class="bible-ref" style="margin-top:0.75rem">${escapeHTML(ev.bible_ref)}</p>` : ''}
         ${lines2 ? `<div style="margin-top:1rem">${lines2}${ev.bible_ref_2 ? `<p class="bible-ref" style="margin-top:0.75rem">${escapeHTML(ev.bible_ref_2)}</p>` : ''}</div>` : ''}
-        <div style="font-size:1.2rem;color:${ev.event_color||'#c9a84c'};margin-top:0.75rem;letter-spacing:0.2em">✦</div>
+        ${ev.bible_ornament_url
+          ? `<img src="${ev.bible_ornament_url}" alt="" style="height:28px;width:auto;margin:0.75rem auto 0;display:block" onerror="this.style.display='none'">`
+          : `<div style="font-size:1.2rem;color:${ev.event_color||'#c9a84c'};margin-top:0.75rem;letter-spacing:0.2em">✦</div>`}
       </div>
       ${parentsHtml}
       ${coupleNamesHtml}

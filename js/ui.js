@@ -1133,7 +1133,7 @@ function renderHeroCoupleNames(ev) {
 
   if (subtitleEl) {
     const sub = (ev.hero_subtitle || '').trim();
-    if (sub && namesVisible) { subtitleEl.textContent = sub; subtitleEl.classList.remove('hidden'); }
+    if (sub) { subtitleEl.textContent = sub; subtitleEl.classList.remove('hidden'); }
     else { subtitleEl.textContent = ''; subtitleEl.classList.add('hidden'); }
   }
   if (!nameEl) return;
@@ -1146,7 +1146,7 @@ function renderHeroCoupleNames(ev) {
   // Single line: "Araújo & Marlene"
   // Use only first name of each person for the hero
   const firstName = (name) => (name || '').split(' ')[0];
-  const amp = groom && bride ? ` <span style="font-size:0.6em;opacity:0.65;font-weight:300">&amp;</span> ` : '';
+  const amp = groom && bride ? ' & ' : '';
 
   nameEl.innerHTML = firstName(groom) + amp + firstName(bride);
 
@@ -1357,6 +1357,22 @@ function removeStdCoverPhoto() {
   document.getElementById('evt-std-cover-photo').value = '';
   document.getElementById('std-cover-preview-wrap')?.classList.add('hidden');
   toast('Foto de capa removida.');
+}
+
+async function handleBibleOrnamentUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 2*1024*1024) { toast('Imagem muito grande. Máx. 2 MB.'); return; }
+  const label = 'Ornamento decorativo';
+  toast('A carregar ornamento...');
+  try {
+    const url = await uploadImageToStorage(file, 'event-covers', label);
+    document.getElementById('evt-bible-ornament-url').value = url;
+    const prev = document.getElementById('bible-ornament-preview');
+    if (prev) { prev.src = url; prev.style.display = ''; }
+    document.getElementById('bible-ornament-remove-btn')?.style && (document.getElementById('bible-ornament-remove-btn').style.display = '');
+    toast('Ornamento carregado!');
+  } catch(e) { toast('Erro ao carregar o ornamento.'); }
 }
 
 async function handleFinalPhotoUpload(input) {
