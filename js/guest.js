@@ -3012,6 +3012,71 @@ function _buildStdDateBlock(eventDateLabel, evColor, style) {
     </div>`;
 }
 
+// ── Contagem regressiva do Save the Date — mesmos 7 estilos do convite ──
+// Reaproveita a mesma escolha "countdown_style" do editor: antes, esta
+// contagem (do Save the Date) e a do convite completo eram duas coisas
+// completamente separadas, cada uma com o seu próprio visual fixo — mudar
+// o estilo no editor só afectava a do convite, nunca esta aqui.
+function _buildStdCountdownUnits(evColor, style) {
+  const units = [['std-days','Dias','DIAS'],['std-hours','Horas','HORAS'],['std-mins','Min','MIN'],['std-secs','Seg','SEG']];
+  if (style === 'continuous') {
+    return `<div style="display:flex;align-items:flex-start;justify-content:center;gap:0.1rem">
+      ${units.map(([id,,lbl], i) => `${i>0?`<span style="font-size:1.5rem;font-weight:300;color:${evColor};opacity:0.4;line-height:1;font-family:Georgia,serif;padding:0 0.05rem">:</span>`:''}
+        <div style="display:flex;flex-direction:column;align-items:center">
+          <span class="std-countdown-num" style="font-size:1.5rem;font-weight:300;color:${evColor};font-family:Georgia,serif;line-height:1" id="${id}">--</span>
+          <span style="font-size:0.5rem;letter-spacing:0.1em;opacity:0.55;margin-top:0.25rem">${lbl}</span>
+        </div>`).join('')}
+    </div>`;
+  }
+  if (style === 'circles') {
+    return `<div style="display:flex;gap:0.5rem;justify-content:center">
+      ${units.map(([id,,lbl]) => `<div style="width:54px;height:54px;border-radius:50%;border:2px solid ${evColor};display:flex;flex-direction:column;align-items:center;justify-content:center">
+        <span class="std-countdown-num" style="font-size:1rem;font-weight:900;color:${evColor};line-height:1" id="${id}">--</span>
+        <span style="font-size:0.42rem;opacity:0.55;margin-top:0.1rem">${lbl}</span>
+      </div>`).join('')}
+    </div>`;
+  }
+  if (style === 'minimal') {
+    return `<div style="display:flex;justify-content:center;border-top:1px solid rgba(0,0,0,0.08);border-bottom:1px solid rgba(0,0,0,0.08);max-width:300px;margin:0 auto">
+      ${units.map(([id,,lbl], i) => `<div style="flex:1;text-align:center;padding:0.5rem 0.2rem;${i<3?'border-right:1px solid rgba(0,0,0,0.08)':''}">
+        <div class="std-countdown-num" style="font-size:1.1rem;font-weight:300;color:#1e293b;line-height:1" id="${id}">--</div>
+        <div style="font-size:0.45rem;letter-spacing:0.1em;opacity:0.5;margin-top:0.2rem">${lbl}</div>
+      </div>`).join('')}
+    </div>`;
+  }
+  if (style === 'flip') {
+    return `<div style="display:flex;gap:0.4rem;justify-content:center">
+      ${units.map(([id,,lbl]) => `<div style="text-align:center">
+        <div style="background:linear-gradient(180deg,#1e293b,#334155);border-radius:0.35rem;padding:0.4rem 0.55rem;box-shadow:0 3px 8px rgba(0,0,0,0.25);position:relative;min-width:42px">
+          <span class="std-countdown-num" style="font-size:1.05rem;font-weight:800;color:#fff;font-family:'Courier New',monospace" id="${id}">--</span>
+          <div style="position:absolute;left:0;right:0;top:50%;height:1px;background:rgba(0,0,0,0.35)"></div>
+        </div>
+        <div style="font-size:0.45rem;letter-spacing:0.08em;opacity:0.55;margin-top:0.25rem">${lbl}</div>
+      </div>`).join('')}
+    </div>`;
+  }
+  if (style === 'outline') {
+    return `<div style="display:flex;gap:0.4rem;justify-content:center">
+      ${units.map(([id,,lbl]) => `<div style="border:2px solid ${evColor};border-radius:0.5rem;padding:0.4rem 0.55rem;min-width:46px">
+        <div class="std-countdown-num" style="font-size:1rem;font-weight:800;color:${evColor};text-align:center;line-height:1" id="${id}">--</div>
+        <div style="font-size:0.42rem;letter-spacing:0.08em;color:${evColor};opacity:0.8;text-align:center;margin-top:0.15rem">${lbl}</div>
+      </div>`).join('')}
+    </div>`;
+  }
+  if (style === 'pills') {
+    return `<div style="display:flex;gap:0.35rem;justify-content:center;flex-wrap:wrap">
+      ${units.map(([id,lblFull]) => `<div style="background:${evColor};border-radius:999px;padding:0.3rem 0.7rem;display:inline-flex;align-items:baseline;gap:0.3rem">
+        <span class="std-countdown-num" style="font-size:0.9rem;font-weight:800;color:#fff;line-height:1" id="${id}">--</span>
+        <span style="font-size:0.5rem;color:#fff;opacity:0.9">${lblFull}</span>
+      </div>`).join('')}
+    </div>`;
+  }
+  // cards (padrão)
+  return `<div style="display:flex;gap:0.4rem;justify-content:center">
+    ${units.map(([id,lblFull]) => `<div style="background:${evColor}12;border-radius:0.6rem;padding:0.5rem 0.2rem;flex:1;max-width:66px"><div id="${id}" class="std-countdown-num" style="font-size:1.15rem;font-weight:900;color:${evColor}">--</div><div style="font-size:0.55rem;opacity:0.55;text-transform:uppercase">${lblFull}</div></div>`).join('')}
+  </div>`;
+}
+
 function renderSaveTheDateScreen(ev, decision) {
   const evColor = ev.event_color || '#007f9f';
   const invertNames = _yesOrTrue(ev.invert_names);
@@ -3152,12 +3217,7 @@ function renderSaveTheDateScreen(ev, decision) {
       <div class="std-anim std-anim-4">${_buildStdDateBlock(eventDateLabel, evColor, ev.std_date_style)}</div>
       <div id="std-countdown-wrap" class="std-anim std-anim-5" style="width:100%;margin-bottom:1.1rem">
         <p id="std-countdown-label" style="font-size:0.6rem;text-transform:uppercase;letter-spacing:0.1em;opacity:0.5;margin-bottom:0.4rem;font-weight:700">A calcular...</p>
-        <div style="display:flex;gap:0.4rem;justify-content:center">
-          <div style="background:${evColor}12;border-radius:0.6rem;padding:0.5rem 0.2rem;flex:1;max-width:66px"><div id="std-days" class="std-countdown-num" style="font-size:1.15rem;font-weight:900;color:${evColor}">--</div><div style="font-size:0.55rem;opacity:0.55;text-transform:uppercase">Dias</div></div>
-          <div style="background:${evColor}12;border-radius:0.6rem;padding:0.5rem 0.2rem;flex:1;max-width:66px"><div id="std-hours" class="std-countdown-num" style="font-size:1.15rem;font-weight:900;color:${evColor}">--</div><div style="font-size:0.55rem;opacity:0.55;text-transform:uppercase">Horas</div></div>
-          <div style="background:${evColor}12;border-radius:0.6rem;padding:0.5rem 0.2rem;flex:1;max-width:66px"><div id="std-mins" class="std-countdown-num" style="font-size:1.15rem;font-weight:900;color:${evColor}">--</div><div style="font-size:0.55rem;opacity:0.55;text-transform:uppercase">Min</div></div>
-          <div style="background:${evColor}12;border-radius:0.6rem;padding:0.5rem 0.2rem;flex:1;max-width:66px"><div id="std-secs" class="std-countdown-num" style="font-size:1.15rem;font-weight:900;color:${evColor}">--</div><div style="font-size:0.55rem;opacity:0.55;text-transform:uppercase">Seg</div></div>
-        </div>
+        ${_buildStdCountdownUnits(evColor, ev.countdown_style || 'cards')}
       </div>
       <p id="std-rsvp-status-text" class="std-anim std-anim-6" style="font-size:0.82rem;color:${alreadyConfirmed ? '#16a34a' : '#6b7280'};margin-bottom:0.7rem;font-weight:600;min-height:1.1em">${alreadyConfirmed ? 'Obrigado por confirmar! Já contamos consigo. 🎉' : (_stdHasDeclined ? 'A sua resposta foi registada — obrigado por avisar.' : '')}</p>
       <div class="std-anim std-anim-6">${rsvpBtnHtml}</div>

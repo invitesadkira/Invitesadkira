@@ -1508,3 +1508,21 @@ html.ev-silver-countdown .std-countdown-num {
     width: 100%; max-height: 220px; position: static; border-right: none; border-bottom: 1.5px solid #e5e7eb;
   }
 }
+
+/* ── Ícone de presente: tampa "salta" a abrir e fecha, em loop suave ──
+   A base da caixa fica sempre fixa; só a tampa + laço (agrupados num <g>
+   próprio no SVG) é que se move — sobe, inclina ligeiramente, e volta a
+   fechar, com um pequeno ressalto a meio para não parecer mecânico.
+   Maior parte do tempo fica fechada (efeito discreto, não distrai),
+   com um "pop" breve e claro a cada ciclo. */
+@keyframes giftBoxLidPop {
+  0%, 55% { transform: translateY(0) rotate(0deg); }
+  68% { transform: translateY(-3px) rotate(-9deg); }
+  76% { transform: translateY(-1.6px) rotate(-4deg); }
+  84% { transform: translateY(-2.6px) rotate(-7deg); }
+  100% { transform: translateY(0) rotate(0deg); }
+}
+.gift-box-anim-svg .gift-box-lid {
+  transform-origin: 12px 9.5px;
+  animation: giftBoxLidPop 3.2s cubic-bezier(.45,0,.2,1) infinite;
+}
