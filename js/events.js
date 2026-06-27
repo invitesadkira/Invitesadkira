@@ -857,6 +857,8 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
           invite_layout: document.getElementById('evt-invite-layout')?.value || 'sections',
           bible_ornament_url: document.getElementById('evt-bible-ornament-url')?.value || null,
           bible_ornament_size: document.getElementById('evt-bible-ornament-size')?.value || '28',
+          couplemsg_size: document.getElementById('evt-couplemsg-size')?.value || '0.95',
+          story_size: document.getElementById('evt-story-size')?.value || '0.88',
           groom_name: newGroomName, bride_name: newBrideName, couple_size: newCoupleSize,
           hero_subtitle: document.getElementById('evt-hero-subtitle')?.value?.trim() || null,
           show_couple: newShowCouple ? 'yes' : 'no',
@@ -1814,6 +1816,8 @@ function _fillEditForm(ev) {
   { const br2 = document.getElementById('evt-bible-ref-2'); if (br2) br2.value = ev.bible_ref_2 || ''; }
   { const bsInp = document.getElementById('evt-bible-size'); const bsLbl = document.getElementById('bible-size-label'); const bsVal = ev.bible_size || '0.92'; if (bsInp) bsInp.value = bsVal; if (bsLbl) bsLbl.textContent = bsVal + 'rem'; }
   { const tsInp = document.getElementById('evt-titles-size'); const tsLbl = document.getElementById('titles-size-label'); const tsVal = ev.section_titles_size || '1.6'; if (tsInp) tsInp.value = tsVal; if (tsLbl) tsLbl.textContent = tsVal + 'rem'; }
+  { const cmInp = document.getElementById('evt-couplemsg-size'); const cmLbl = document.getElementById('couplemsg-size-label'); const cmVal = ev.couplemsg_size || '0.95'; if (cmInp) cmInp.value = cmVal; if (cmLbl) cmLbl.textContent = cmVal + 'rem'; }
+  { const stInp = document.getElementById('evt-story-size'); const stLbl = document.getElementById('story-size-label'); const stVal = ev.story_size || '0.88'; if (stInp) stInp.value = stVal; if (stLbl) stLbl.textContent = stVal + 'rem'; }
 
   _setSwitch('sw-invite', _yesOrTrue(ev.show_invite), 'invite-extra');
   document.getElementById('evt-invite-text').value = ev.invite_text || '';

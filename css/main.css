@@ -102,7 +102,7 @@ html.ev-silver-countdown .std-countdown-num {
      Forçar opacity:1 aqui resolve isso em qualquer contexto, sem efeito
      nenhum onde isto não era um problema. */
   opacity: 1 !important;
-  animation: ev-silver-shimmer 6s linear infinite;
+  animation: ev-silver-shimmer 11s linear infinite;
 }
 
 /* ── Estilo "Redondo": ícone vira um círculo, com o nome do botão por baixo ── */

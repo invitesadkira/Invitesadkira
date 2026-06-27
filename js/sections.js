@@ -716,6 +716,7 @@ function buildStorySection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
   if (!ev.story_text) return '';
   const evColor = ev.event_color || '#007f9f';
   const storyStyle = ev.story_style || 'centered';
+  const storySize = parseFloat(ev.story_size) || 0.88;
 
   // ── Style: PHOTO-SIDE — story text next to a photo ──
   if (storyStyle === 'photo-side' && ev.story_photo_url) {
@@ -727,7 +728,7 @@ function buildStorySection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
             <img src="${ev.story_photo_url}" style="width:100%;height:100%;object-fit:cover" alt="">
           </div>
           <div style="flex:1 1 220px;min-width:200px">
-            <p style="font-size:0.88rem;color:#4b5563;line-height:1.75;white-space:pre-line">${escapeHTML(ev.story_text)}</p>
+            <p style="font-size:${storySize}rem;color:#4b5563;line-height:1.75;white-space:pre-line">${escapeHTML(ev.story_text)}</p>
           </div>
         </div>
       </div>
@@ -741,7 +742,7 @@ function buildStorySection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
         <div class="reveal">
           <svg width="32" height="32" viewBox="0 0 24 24" fill="${evColor}" style="opacity:0.35;margin-bottom:0.5rem"><path d="M9.983 3v7.391c0 5.704-3.731 9.57-8.983 10.609l-.995-2.151c2.432-.917 3.995-3.638 3.995-5.849h-4v-10h9.983zm14.017 0v7.391c0 5.704-3.748 9.57-9 10.609l-.996-2.151c2.433-.917 3.996-3.638 3.996-5.849h-3.983v-10h9.983z"/></svg>
           <h2 class="section-title" style="margin-bottom:1rem">Nossa História</h2>
-          <p style="font-size:1rem;color:#374151;line-height:1.85;font-style:italic;white-space:pre-line">${escapeHTML(ev.story_text)}</p>
+          <p style="font-size:${storySize}rem;color:#374151;line-height:1.85;font-style:italic;white-space:pre-line">${escapeHTML(ev.story_text)}</p>
         </div>
       </div>
     </div>`;
@@ -759,7 +760,7 @@ function buildStorySection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
       <div class="section-inner" style="text-align:center">
         <div class="reveal">
           <h2 class="section-title">Nossa História</h2>
-          <p class="story-text">${escapeHTML(ev.story_text)}</p>
+          <p class="story-text" style="font-size:${storySize}rem">${escapeHTML(ev.story_text)}</p>
         </div>
       </div>
     </div>`;
@@ -774,7 +775,7 @@ function buildStorySection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
 
     const card = `<div class="story-card ${isLeft ? 'story-left' : 'story-right'} reveal" style="background:transparent;border:none;box-shadow:none;padding:0.5rem 0.9rem">
       <div class="story-date" style="font-size:0.65rem;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:${evColor};margin-bottom:0.2rem">${escapeHTML(titleLine)}</div>
-      ${body ? `<p class="story-body" style="font-size:0.78rem;color:#4b5563;line-height:1.55;margin:0">${escapeHTML(body)}</p>` : ''}
+      ${body ? `<p class="story-body" style="font-size:${(storySize*0.89).toFixed(2)}rem;color:#4b5563;line-height:1.55;margin:0">${escapeHTML(body)}</p>` : ''}
     </div>`;
     const node = `<div class="story-node" style="width:10px;height:10px;border-radius:50%;background:${evColor};flex-shrink:0;position:relative;z-index:3;box-shadow:0 0 0 3px #fff,0 0 0 4px color-mix(in srgb,${evColor} 30%,transparent);transition:width 0.3s ease,height 0.3s ease;"></div>`;
     const empty = `<div></div>`;
@@ -1941,7 +1942,7 @@ function buildCoupleMsgSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="${evColor}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
       </div>
       <h3 class="section-title">${escapeHTML(title)}</h3>
-      <p style="font-size:0.95rem;color:#374151;line-height:1.75;max-width:460px;margin:0 auto;white-space:pre-wrap">${escapeHTML(ev.couplemsg_text || '')}</p>
+      <p style="font-size:${parseFloat(ev.couplemsg_size)||0.95}rem;color:#374151;line-height:1.75;max-width:460px;margin:0 auto;white-space:pre-wrap">${escapeHTML(ev.couplemsg_text || '')}</p>
     </div>
   </div>`;
 }

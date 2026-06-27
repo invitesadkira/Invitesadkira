@@ -1331,6 +1331,26 @@ function changeOrnamentSize(delta) {
   if (lbl) lbl.textContent = v + 'px';
 }
 
+function changeCouplemsgSize(delta) {
+  const inp = document.getElementById('evt-couplemsg-size');
+  const lbl = document.getElementById('couplemsg-size-label');
+  if (!inp) return;
+  let v = parseFloat(inp.value) || 0.95;
+  v = Math.max(0.6, Math.min(1.8, parseFloat((v + delta * 0.08).toFixed(2))));
+  inp.value = v;
+  if (lbl) lbl.textContent = v + 'rem';
+}
+
+function changeStorySize(delta) {
+  const inp = document.getElementById('evt-story-size');
+  const lbl = document.getElementById('story-size-label');
+  if (!inp) return;
+  let v = parseFloat(inp.value) || 0.88;
+  v = Math.max(0.6, Math.min(1.8, parseFloat((v + delta * 0.08).toFixed(2))));
+  inp.value = v;
+  if (lbl) lbl.textContent = v + 'rem';
+}
+
 function changeStdNameSize(delta) {
   const inp = document.getElementById('evt-std-name-size');
   const lbl = document.getElementById('std-name-size-label');
