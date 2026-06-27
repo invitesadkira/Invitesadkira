@@ -856,6 +856,7 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
           color_date_custom: document.getElementById('evt-color-date-custom')?.value || null,
           invite_layout: document.getElementById('evt-invite-layout')?.value || 'sections',
           bible_ornament_url: document.getElementById('evt-bible-ornament-url')?.value || null,
+          bible_ornament_size: document.getElementById('evt-bible-ornament-size')?.value || '28',
           groom_name: newGroomName, bride_name: newBrideName, couple_size: newCoupleSize,
           hero_subtitle: document.getElementById('evt-hero-subtitle')?.value?.trim() || null,
           show_couple: newShowCouple ? 'yes' : 'no',
@@ -1770,6 +1771,11 @@ function _fillEditForm(ev) {
   const ornamentRemoveBtn = document.getElementById('bible-ornament-remove-btn');
   if (ornamentUrlEl) {
     ornamentUrlEl.value = ev.bible_ornament_url || '';
+    const ornSizeEl = document.getElementById('evt-bible-ornament-size');
+    const ornSizeLbl = document.getElementById('ornament-size-label');
+    const ornSizeVal = ev.bible_ornament_size || '28';
+    if (ornSizeEl) ornSizeEl.value = ornSizeVal;
+    if (ornSizeLbl) ornSizeLbl.textContent = ornSizeVal + 'px';
     if (ev.bible_ornament_url && ornamentPreviewEl) {
       ornamentPreviewEl.src = ev.bible_ornament_url;
       ornamentPreviewEl.style.display = '';

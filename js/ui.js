@@ -834,33 +834,18 @@ function setMusicPlayingUI(playing) {
 // construir a barra de abas e para saber para onde voltar por defeito.
 const EVENT_EDITOR_TABS = [
   { key: 'geral', label: 'Geral' },
-  { key: 'acompanhantes', label: 'Acompanhantes' },
+  { key: 'convidados-rsvp', label: 'Convidados & RSVP' },
   { key: 'presentes', label: 'Presentes' },
-  { key: 'criancas', label: 'Crianças' },
-  { key: 'lados', label: 'Lados' },
-  { key: 'confirmacao', label: 'Confirmação de Presença' },
   { key: 'savethedate', label: 'Save the Date' },
-  { key: 'intro', label: 'Tela de Abertura' },
-  { key: 'recados', label: 'Felicitações' },
+  { key: 'midia-capa', label: 'Capa & Mídia' },
   { key: 'musica', label: 'Música' },
-  { key: 'presente-iban', label: 'Presente (IBAN)' },
   { key: 'tipo-estilo', label: 'Tipo & Estilo' },
-  { key: 'hero', label: 'Hero' },
-  { key: 'fundo', label: 'Imagem de Fundo' },
-  { key: 'versiculo', label: 'Versículo' },
-  { key: 'bencao', label: 'Bênção' },
-  { key: 'convite-texto', label: 'Texto de Convite' },
-  { key: 'pais', label: 'Pais' },
-  { key: 'galeria', label: 'Galeria' },
-  { key: 'msg-noivos', label: 'Mensagem dos Noivos' },
-  { key: 'foto-final', label: 'Foto Final' },
+  { key: 'texto-convite', label: 'Texto do Convite' },
+  { key: 'mensagem-historia', label: 'Mensagem & História' },
   { key: 'faq', label: 'FAQ' },
-  { key: 'manual', label: 'Manual do Convidado' },
-  { key: 'monograma', label: 'Monograma' },
+  { key: 'manual-monograma', label: 'Manual & Monograma' },
   { key: 'locais', label: 'Locais' },
   { key: 'decoracao', label: 'Decoração' },
-  { key: 'historia', label: 'Nosso Amor' },
-  { key: 'contagem', label: 'Contagem' },
   { key: 'cores-evento', label: 'Cores & Estilo' },
 ];
 
@@ -871,6 +856,28 @@ function buildEventEditorTabs() {
     `<button type="button" class="event-tab-btn${i===0?' active':''}" data-tab="${t.key}" onclick="switchEventTab('${t.key}')">${t.label}</button>`
   ).join('');
   wrap.dataset.built = '1';
+  _applySavedEventTabLayout();
+}
+
+// ── Alternar entre abas horizontais (estilo Chrome) e lista vertical ──
+function _applySavedEventTabLayout() {
+  const layout = document.getElementById('event-editor-layout');
+  const lbl = document.getElementById('tab-layout-toggle-label');
+  if (!layout) return;
+  let saved = 'horizontal';
+  try { saved = localStorage.getItem('eventEditorTabLayout') || 'horizontal'; } catch(e) {}
+  layout.classList.toggle('tabs-vertical', saved === 'vertical');
+  if (lbl) lbl.textContent = saved === 'vertical' ? 'Ver em abas horizontais' : 'Ver em lista vertical';
+}
+
+function toggleEventTabLayout() {
+  const layout = document.getElementById('event-editor-layout');
+  const lbl = document.getElementById('tab-layout-toggle-label');
+  if (!layout) return;
+  const nowVertical = !layout.classList.contains('tabs-vertical');
+  layout.classList.toggle('tabs-vertical', nowVertical);
+  if (lbl) lbl.textContent = nowVertical ? 'Ver em abas horizontais' : 'Ver em lista vertical';
+  try { localStorage.setItem('eventEditorTabLayout', nowVertical ? 'vertical' : 'horizontal'); } catch(e) {}
 }
 
 function switchEventTab(tabName) {
@@ -1312,6 +1319,16 @@ function changeTitlesSize(delta) {
   v = Math.max(1.0, Math.min(2.6, parseFloat((v + delta * 0.1).toFixed(1))));
   inp.value = v;
   if (lbl) lbl.textContent = v + 'rem';
+}
+
+function changeOrnamentSize(delta) {
+  const inp = document.getElementById('evt-bible-ornament-size');
+  const lbl = document.getElementById('ornament-size-label');
+  if (!inp) return;
+  let v = parseInt(inp.value, 10) || 28;
+  v = Math.max(14, Math.min(80, v + delta));
+  inp.value = v;
+  if (lbl) lbl.textContent = v + 'px';
 }
 
 function changeStdNameSize(delta) {
