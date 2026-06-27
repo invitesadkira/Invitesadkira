@@ -1143,36 +1143,12 @@ function renderEventDetails() {
   document.getElementById('detail-stats').innerHTML = stats.map(s => '<div class="stat-card ' + s.color + ' rounded-xl p-4 text-center"><i data-lucide="' + s.icon + '" class="w-5 h-5 mx-auto mb-1"></i><div class="text-2xl font-bold">' + s.value + '</div><div class="text-xs font-semibold mt-1">' + s.label + '</div></div>').join('');
 
 
-  // ── Gallery & Cover management for owner ──
-  let galleryMgmtEl = document.getElementById('detail-gallery-mgmt');
-  if (!galleryMgmtEl) {
-    galleryMgmtEl = document.createElement('div');
-    galleryMgmtEl.id = 'detail-gallery-mgmt';
-    galleryMgmtEl.style.cssText = 'margin-top:1rem;padding:0.85rem;background:#f8fafc;border-radius:0.75rem;border:1px solid #e5e7eb';
-    const statsEl = document.getElementById('detail-stats');
-    if (statsEl && statsEl.parentElement) statsEl.parentElement.insertBefore(galleryMgmtEl, statsEl.nextSibling);
-  }
-
-  if (isOwner || isAdmin) {
-    const galleryUrls = (event.gallery_urls || '').split('\n').map(u => u.trim()).filter(Boolean);
-    const coverUrl    = event.cover_image || null;
-
-    galleryMgmtEl.style.display = '';
-    galleryMgmtEl.innerHTML = `<p style="font-size:0.8rem;font-weight:700;color:#374151;margin-bottom:0.6rem">Fotos do Evento</p>
-      ${coverUrl ? `<div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.5rem">
-        <img src="${coverUrl}" alt="Capa" style="width:48px;height:48px;object-fit:cover;border-radius:0.5rem;border:1px solid #e5e7eb" onerror="this.style.display='none'">
-        <span style="font-size:0.78rem;color:#374151;flex:1">Foto de capa</span>
-        <button onclick="deleteCoverPhoto('${event.id}')" style="background:#fee2e2;color:#991b1b;border:none;border-radius:0.5rem;padding:3px 10px;font-size:0.7rem;font-weight:700;cursor:pointer">Remover</button>
-      </div>` : '<p style="font-size:0.75rem;color:#9ca3af;margin-bottom:0.5rem">Sem foto de capa</p>'}
-      ${galleryUrls.length > 0 ? `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0.4rem;margin-bottom:0.5rem">
-        ${galleryUrls.map(url => `<div style="position:relative">
-          <img src="${url}" alt="" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:0.4rem;border:1px solid #e5e7eb" onerror="this.closest('div').style.display='none'">
-          <button onclick="deleteGalleryPhoto('${event.id}','${url}')" style="position:absolute;top:2px;right:2px;background:rgba(239,68,68,0.9);color:#fff;border:none;border-radius:50%;width:18px;height:18px;font-size:10px;cursor:pointer;line-height:1;display:flex;align-items:center;justify-content:center">×</button>
-        </div>`).join('')}
-      </div>` : '<p style="font-size:0.75rem;color:#9ca3af">Sem fotos na galeria</p>'}`;
-  } else {
-    galleryMgmtEl.style.display = 'none';
-  }
+  // ── Gallery & Cover management widget — removido do dashboard a pedido
+  // (existia logo depois das estatísticas; a gestão de fotos já está
+  // disponível, e fica melhor, dentro do editor do evento em "Editar").
+  // Se já existir de uma sessão anterior (sem refresh), só escondê-lo.
+  const _oldGalleryMgmtEl = document.getElementById('detail-gallery-mgmt');
+  if (_oldGalleryMgmtEl) _oldGalleryMgmtEl.remove();
 
   const confContainer = document.getElementById('detail-confirmations');
   

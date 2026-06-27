@@ -94,7 +94,15 @@ html.ev-silver-countdown .std-countdown-num {
   -webkit-text-fill-color: transparent;
   filter: drop-shadow(0 1px 1px rgba(0,0,0,0.22));
   color: transparent !important;
-  animation: ev-silver-shimmer 2.6s linear infinite;
+  /* ✅ Alguns elementos (ex: nomes/frases no Save the Date) já têm a SUA
+     PRÓPRIA animação de entrada, que parte de opacity:0. Como esta regra
+     tem mais especificidade, substituía essa animação inteira por esta
+     (a propriedade "animation" é uma só, não se somam) — sem nada a
+     levar de volta a opacity:1, o texto ficava invisível para sempre.
+     Forçar opacity:1 aqui resolve isso em qualquer contexto, sem efeito
+     nenhum onde isto não era um problema. */
+  opacity: 1 !important;
+  animation: ev-silver-shimmer 6s linear infinite;
 }
 
 /* ── Estilo "Redondo": ícone vira um círculo, com o nome do botão por baixo ── */

@@ -469,9 +469,13 @@ function applyGuestBackground(ev) {
     if (guestEl) guestEl.removeAttribute('style');
   }
 
-  // Hero overlay (cover image already set in renderGuestView, just set overlay opacity)
-  const heroOvEl = document.getElementById('guest-hero-overlay');
-  if (heroOvEl) heroOvEl.style.background = `rgba(0,0,0,${overlayAlpha})`;
+  // ✅ O hero JÁ tem o seu próprio degradê cuidado em CSS (escuro só na
+  // base, para os nomes ficarem legíveis — transparente a partir de ~65%
+  // da foto). Antes, esta função substituía esse degradê inteiro por um
+  // tom escuro UNIFORME sobre toda a foto (rgba(0,0,0,overlayAlpha), por
+  // defeito 35%) — isso é que estava a fazer qualquer foto de capa parecer
+  // "coberta" por uma coisa preta. O "bg_overlay" é para o fundo fixo da
+  // página (guest-bg-overlay-el, abaixo), não para o hero.
 
   // ── Flor/ornamento decorativo no canto da foto de capa ──
   // Substituiu a versão antiga (secção própria, separada) — agora fica

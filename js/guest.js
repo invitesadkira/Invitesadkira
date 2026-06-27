@@ -2876,7 +2876,6 @@ function _buildIntroScreenHtml(ev, evColor, screenId) {
   return `
     <div id="${screenId}" class="std-intro-open-btn" style="position:fixed;inset:0;z-index:9500;cursor:pointer;background:#0f172a">
       <div style="position:absolute;inset:0;background:url('${photoUrl}') center/cover no-repeat"></div>
-      <div style="position:absolute;inset:0;background:rgba(0,0,0,0.18)"></div>
     </div>`;
 }
 
