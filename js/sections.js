@@ -911,7 +911,7 @@ function buildIbanSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
       <div style="background:#fff;border-radius:1rem;padding:1.5rem 1.25rem;max-width:480px;margin:0 auto;border:1.5px solid color-mix(in srgb,${evColor} 25%,transparent)">
         <div style="text-align:center;margin-bottom:1rem">
           <div class="iban-gift-icon">
-            <svg class="gift-box-anim-svg" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="${evColor}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <svg class="gift-box-anim-svg" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="${evColor}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="overflow:visible">
               <polyline points="20 12 20 22 4 22 4 12"/>
               <line x1="12" y1="22" x2="12" y2="12"/>
               <g class="gift-box-lid">
@@ -919,6 +919,11 @@ function buildIbanSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
                 <line x1="12" y1="12" x2="12" y2="7"/>
                 <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/>
                 <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/>
+              </g>
+              <g class="gift-box-sparkle" stroke="none" fill="${evColor}">
+                <circle cx="2.5" cy="3" r="0.55"/>
+                <circle cx="21.5" cy="2.2" r="0.45"/>
+                <circle cx="19.5" cy="5.5" r="0.4"/>
               </g>
             </svg>
           </div>
@@ -1958,7 +1963,7 @@ function buildDressGiftsSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
       <h4 class="dg-card-title">Sugestão de Presentes</h4>
       <p class="dg-card-sub">${escapeHTML(giftsSub)}</p>
       <button type="button" class="dg-card-btn" onclick="openGuestGiftsModal()">
-        <span class="action-btn-icon"><svg class="gift-box-anim-svg" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <span class="action-btn-icon"><svg class="gift-box-anim-svg" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="overflow:visible">
           <polyline points="20 12 20 22 4 22 4 12"/>
           <line x1="12" y1="22" x2="12" y2="12"/>
           <g class="gift-box-lid">
@@ -1966,6 +1971,11 @@ function buildDressGiftsSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
             <line x1="12" y1="12" x2="12" y2="7"/>
             <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/>
             <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/>
+          </g>
+          <g class="gift-box-sparkle" stroke="none" fill="currentColor">
+            <circle cx="2.5" cy="3" r="0.55"/>
+            <circle cx="21.5" cy="2.2" r="0.45"/>
+            <circle cx="19.5" cy="5.5" r="0.4"/>
           </g>
         </svg></span>
         <span class="action-btn-label">Ver Presentes</span>

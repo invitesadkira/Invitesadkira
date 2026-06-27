@@ -1515,6 +1515,7 @@ html.ev-silver-countdown .std-countdown-num {
    fechar, com um pequeno ressalto a meio para não parecer mecânico.
    Maior parte do tempo fica fechada (efeito discreto, não distrai),
    com um "pop" breve e claro a cada ciclo. */
+.gift-box-anim-svg { overflow: visible; }
 @keyframes giftBoxLidPop {
   0%, 55% { transform: translateY(0) rotate(0deg); }
   68% { transform: translateY(-3px) rotate(-9deg); }
@@ -1525,4 +1526,28 @@ html.ev-silver-countdown .std-countdown-num {
 .gift-box-anim-svg .gift-box-lid {
   transform-origin: 12px 9.5px;
   animation: giftBoxLidPop 3.2s cubic-bezier(.45,0,.2,1) infinite;
+}
+/* A caixa inteira "respira" muito ligeiramente no momento da abertura —
+   dá uma sensação de vida ao ícone sem ser exagerado. */
+@keyframes giftBoxWholePulse {
+  0%, 55% { transform: scale(1); }
+  76% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+.gift-box-anim-svg {
+  animation: giftBoxWholePulse 3.2s cubic-bezier(.45,0,.2,1) infinite;
+  transform-origin: center;
+}
+/* Pequenos brilhos que aparecem só no instante em que a tampa está mais
+   aberta, como se algo especial estivesse a sair da caixa — desaparecem
+   de novo assim que fecha. */
+@keyframes giftBoxSparkleFlash {
+  0%, 62% { opacity: 0; transform: scale(0.4); }
+  74% { opacity: 1; transform: scale(1.1); }
+  84% { opacity: 1; transform: scale(1); }
+  94%, 100% { opacity: 0; transform: scale(0.4); }
+}
+.gift-box-anim-svg .gift-box-sparkle {
+  transform-origin: 12px 4px;
+  animation: giftBoxSparkleFlash 3.2s cubic-bezier(.45,0,.2,1) infinite;
 }
