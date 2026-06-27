@@ -416,6 +416,7 @@ async function renderGuestView() {
     if (silverClass) document.documentElement.classList.toggle(silverClass, choice === 'silver');
     return flat;
   };
+  document.documentElement.style.setProperty('--ev-titles-size', (parseFloat(eventData.section_titles_size) || 1.6) + 'rem');
   const _evButtonColor = _applyColorTarget('--ev-button-color', 'button_color_choice', 'ev-silver-button');
   _applyColorTarget('--ev-hero-names-color', 'color_hero_names', 'ev-silver-hero-names');
   _applyColorTarget('--ev-names-color', 'color_names', 'ev-silver-names');

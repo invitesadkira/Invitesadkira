@@ -849,6 +849,7 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
           color_countdown_custom: document.getElementById('evt-color-countdown-custom')?.value || null,
           color_titles: document.getElementById('evt-color-titles')?.value || 'primary',
           color_titles_custom: document.getElementById('evt-color-titles-custom')?.value || null,
+          section_titles_size: document.getElementById('evt-titles-size')?.value || '1.6',
           color_message: document.getElementById('evt-color-message')?.value || 'primary',
           color_message_custom: document.getElementById('evt-color-message-custom')?.value || null,
           color_date: document.getElementById('evt-color-date')?.value || 'primary',
@@ -1806,6 +1807,7 @@ function _fillEditForm(ev) {
   { const bt2 = document.getElementById('evt-bible-text-2'); if (bt2) bt2.value = ev.bible_text_2 || ''; }
   { const br2 = document.getElementById('evt-bible-ref-2'); if (br2) br2.value = ev.bible_ref_2 || ''; }
   { const bsInp = document.getElementById('evt-bible-size'); const bsLbl = document.getElementById('bible-size-label'); const bsVal = ev.bible_size || '0.92'; if (bsInp) bsInp.value = bsVal; if (bsLbl) bsLbl.textContent = bsVal + 'rem'; }
+  { const tsInp = document.getElementById('evt-titles-size'); const tsLbl = document.getElementById('titles-size-label'); const tsVal = ev.section_titles_size || '1.6'; if (tsInp) tsInp.value = tsVal; if (tsLbl) tsLbl.textContent = tsVal + 'rem'; }
 
   _setSwitch('sw-invite', _yesOrTrue(ev.show_invite), 'invite-extra');
   document.getElementById('evt-invite-text').value = ev.invite_text || '';
@@ -2053,6 +2055,7 @@ function _fillEditForm(ev) {
   btn.textContent = 'Guardar Alterações';
   
   Router.go('create-event');
+  if (typeof switchEventTab === 'function') switchEventTab('geral');
 }
 
 

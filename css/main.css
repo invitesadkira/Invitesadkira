@@ -348,7 +348,7 @@ html.ev-silver-countdown .std-countdown-num {
 /* ── Sections ── */
 .event-section { width: 100%; padding: 2.5rem 1.25rem; }
 .section-inner { max-width: 700px; margin: 0 auto; }
-.section-title { font-size: 1.6rem; font-weight: 800; color: var(--ev-color); text-align: center; margin-bottom: 1.5rem; }
+.section-title { font-size: var(--ev-titles-size, 1.6rem); font-weight: 800; color: var(--ev-color); text-align: center; margin-bottom: 1.5rem; }
 .section-tag { display: inline-block; font-size: 0.65rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ev-color); padding: 3px 10px; border: 1.5px solid color-mix(in srgb, var(--ev-color) 20%, transparent); border-radius: 999px; margin-bottom: 0.75rem; background: color-mix(in srgb, var(--ev-color) 8%, white); }
 .section-divider { display: flex; align-items: center; justify-content: center; padding: 0 2rem; }
 .section-divider-line { width: 100%; max-width: 480px; height: 1px; background: linear-gradient(to right, transparent, #d1d5db 30%, #d1d5db 70%, transparent); }
@@ -1456,3 +1456,17 @@ html.ev-silver-countdown .std-countdown-num {
   opacity: 0;
   animation: stdCoverFadeIn 0.7s ease forwards;
 }
+
+/* ── Abas do editor de evento ("Editar Evento" / "Criar Evento") ──
+   Substitui o antigo formulário gigante numa única página por abas, à
+   semelhança das abas do navegador — cada uma mostra só a sua secção,
+   sem alterar nenhum campo nem comportamento, só a forma como se navega
+   entre eles. */
+.event-tab-btn {
+  flex-shrink: 0; padding: 0.5rem 0.85rem; font-size: 0.8rem; font-weight: 700;
+  color: #6b7280; background: transparent; border: none; cursor: pointer;
+  border-bottom: 2.5px solid transparent; white-space: nowrap; transition: color 0.15s, border-color 0.15s;
+}
+.event-tab-btn:hover { color: #0f766e; }
+.event-tab-btn.active { color: #0f766e; border-bottom-color: #0f766e; }
+.event-tab-pane.hidden { display: none; }

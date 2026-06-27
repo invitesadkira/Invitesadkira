@@ -828,6 +828,20 @@ function setMusicPlayingUI(playing) {
   }
 }
 
+// ── Abas do editor de evento ──────────────────────────────────────────────
+function switchEventTab(tabName) {
+  document.querySelectorAll('.event-tab-pane').forEach(p => {
+    p.classList.toggle('hidden', p.dataset.tab !== tabName);
+  });
+  document.querySelectorAll('.event-tab-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.tab === tabName);
+  });
+  // Volta ao topo do formulário ao trocar de aba — sem isto, se o
+  // utilizador já tinha percorrido a aba anterior até meio, a próxima
+  // aba abriria "a meio" do scroll, parecendo vazia.
+  document.getElementById('event-editor-tabs')?.scrollIntoView({ block: 'nearest' });
+}
+
 function toggleMusicPlayer() {
   const ytFrame = document.getElementById('yt-music-frame');
   const audio   = document.getElementById('guest-audio');
@@ -1241,6 +1255,16 @@ function changeBibleSize(delta) {
   if (!inp) return;
   let v = parseFloat(inp.value) || 0.92;
   v = Math.max(0.6, Math.min(2.0, parseFloat((v + delta * 0.08).toFixed(2))));
+  inp.value = v;
+  if (lbl) lbl.textContent = v + 'rem';
+}
+
+function changeTitlesSize(delta) {
+  const inp = document.getElementById('evt-titles-size');
+  const lbl = document.getElementById('titles-size-label');
+  if (!inp) return;
+  let v = parseFloat(inp.value) || 1.6;
+  v = Math.max(1.0, Math.min(2.6, parseFloat((v + delta * 0.1).toFixed(1))));
   inp.value = v;
   if (lbl) lbl.textContent = v + 'rem';
 }

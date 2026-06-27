@@ -63,7 +63,7 @@ function renderDashboard() {
           <i data-lucide="calendar-x" class="w-8 h-8" style="color:var(--app-muted)"></i>
         </div>
         <p style="color:var(--app-muted)" class="mb-4">Nenhum evento ainda.</p>
-        <button class="btn-main" onclick="Router.go('create-event')">Criar Primeiro Evento</button>
+        <button class="btn-main" onclick="Router.go('create-event');switchEventTab('geral')">Criar Primeiro Evento</button>
       </div>`;
   } else {
     container.innerHTML = userEvents.map(ev => {
@@ -129,6 +129,7 @@ function goToCreateEvent() {
   
   // Navegar para create-event
   Router.go('create-event');
+  if (typeof switchEventTab === 'function') switchEventTab('geral');
 }
 
 // ===================== USER ORDERS PANEL =====================
