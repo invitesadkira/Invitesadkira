@@ -145,7 +145,14 @@ html.ev-silver-countdown .std-countdown-num {
 
 .input-field {
   border: 1.5px solid #d1d5db; border-radius: 0.6rem; padding: 0.6rem 0.85rem;
-  width: 100%; transition: all 0.2s; font-size: 0.95rem; outline: none;
+  width: 100%; transition: all 0.2s; outline: none;
+  /* ✅ !important: muitos campos combinam esta classe com utilitários do
+     Tailwind tipo "text-xs"/"text-sm" (ambos com a mesma especificidade —
+     quem ganha depende da ordem de carregamento, que não é garantida com
+     o Tailwind via CDN). Sem isto, alguns campos ficavam com menos de
+     16px, e o iOS faz zoom automático da página sempre que se toca num
+     campo de texto com menos de 16px — afecta o editor inteiro no iPhone. */
+  font-size: 16px !important;
 }
 .input-field:focus { border-color: #007f9f; box-shadow: 0 0 0 3px rgba(0,127,159,0.15); }
 
@@ -558,7 +565,7 @@ html.ev-silver-countdown .std-countdown-num {
 
 /* ── Floating music button — circular spinner ring ── */
 #floating-music-btn {
-  position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 150;
+  position: fixed; bottom: max(1.5rem, env(safe-area-inset-bottom)); right: max(1.5rem, env(safe-area-inset-right)); z-index: 150;
   width: 52px; height: 52px; border-radius: 50%;
   background: linear-gradient(135deg, #0f172a, #1e3a4a);
   box-shadow: 0 4px 18px rgba(0,0,0,0.4);
@@ -1064,7 +1071,7 @@ html.ev-silver-countdown .std-countdown-num {
 @media (max-width: 768px) {
   .landing-nav-toggle { display: flex; }
   .landing-nav-links {
-    position: fixed; top: 0; right: 0; height: 100vh; width: min(78vw, 320px);
+    position: fixed; top: 0; right: 0; height: 100vh; height: 100dvh; width: min(78vw, 320px);
     background: #fff;
     flex-direction: column; align-items: stretch; justify-content: flex-start;
     padding: calc(4.5rem + env(safe-area-inset-top)) 1.5rem 2rem;

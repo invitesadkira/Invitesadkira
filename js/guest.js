@@ -3121,7 +3121,7 @@ function renderSaveTheDateScreen(ev, decision) {
         <svg id="std-mute-icon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
       </button>` : ''}
     </div>` : `<div style="height:2.5rem;flex-shrink:0;position:relative">
-      ${ev.music_url ? `<button id="std-mute-btn" type="button" onclick="toggleStdMusicMute()" title="Som" style="position:fixed;top:0.85rem;right:0.85rem;z-index:9001;width:38px;height:38px;border-radius:50%;background:rgba(0,0,0,0.55);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)">
+      ${ev.music_url ? `<button id="std-mute-btn" type="button" onclick="toggleStdMusicMute()" title="Som" style="position:fixed;top:max(0.85rem, env(safe-area-inset-top));right:max(0.85rem, env(safe-area-inset-right));z-index:9001;width:38px;height:38px;border-radius:50%;background:rgba(0,0,0,0.55);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)">
         <svg id="std-mute-icon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
       </button>` : ''}
     </div>`}
