@@ -1,4 +1,14 @@
 // ===================== CREATE EVENT =====================
+// ✅ Helper partilhado: a galeria guarda-se sempre com 1 URL por linha (é o
+// que o textarea do editor usa, o que o botão "Escolher da Biblioteca"
+// usa, e o que a página do convidado lê). Remove linhas vazias e fotos
+// repetidas, mantendo a primeira ocorrência de cada uma.
+function _dedupeGalleryUrls(text) {
+  if (!text) return null;
+  const urls = [...new Set(text.split('\n').map(u => u.trim()).filter(Boolean))];
+  return urls.length ? urls.join('\n') : null;
+}
+
 async function handleCreateEvent(e) {
   e.preventDefault();
   
@@ -97,7 +107,7 @@ async function handleCreateEvent(e) {
   const groomPar    = showParents ? (document.getElementById('evt-groom-parents').value.trim() || null) : null;
   const bridePar    = showParents ? (document.getElementById('evt-bride-parents').value.trim() || null) : null;
   const showGallery = document.getElementById('sw-gallery').classList.contains('active');
-  const galleryUrls = showGallery ? (document.getElementById('evt-gallery-urls').value.trim() || null) : null;
+  const galleryUrls = showGallery ? _dedupeGalleryUrls(document.getElementById('evt-gallery-urls').value.trim()) : null;
   const showManual  = document.getElementById('sw-manual').classList.contains('active');
   const manualItems = showManual && Store.eventManualItems ? JSON.stringify(Store.eventManualItems) : null;
   const showSchedule= document.getElementById('sw-schedule').classList.contains('active');
@@ -664,7 +674,7 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
   const newGroomPar    = newShowParents ? (document.getElementById('evt-groom-parents')?.value.trim() || null) : null;
   const newBridePar    = newShowParents ? (document.getElementById('evt-bride-parents')?.value.trim() || null) : null;
   const newShowGallery = document.getElementById('sw-gallery')?.classList.contains('active');
-  const newGalleryUrls = newShowGallery ? (document.getElementById('evt-gallery-urls')?.value.trim() || null) : null;
+  const newGalleryUrls = newShowGallery ? _dedupeGalleryUrls(document.getElementById('evt-gallery-urls')?.value.trim() || '') : null;
   const newShowManual  = document.getElementById('sw-manual')?.classList.contains('active');
   const newManualItems = newShowManual && Store.eventManualItems ? JSON.stringify(Store.eventManualItems) : null;
   const newShowSched   = document.getElementById('sw-schedule')?.classList.contains('active');
@@ -1144,7 +1154,7 @@ function renderEventDetails() {
   }
 
   if (isOwner || isAdmin) {
-    const galleryUrls = (event.gallery_urls || '').split('|').filter(Boolean);
+    const galleryUrls = (event.gallery_urls || '').split('\n').map(u => u.trim()).filter(Boolean);
     const coverUrl    = event.cover_image || null;
 
     galleryMgmtEl.style.display = '';
@@ -3473,7 +3483,7 @@ async function openIntakeFormMain(eventId) {
 
   // ── Pre-fill gallery with existing photos ──
   if (ev.gallery_urls) {
-    const existingUrls = ev.gallery_urls.split('|').filter(Boolean);
+    const existingUrls = ev.gallery_urls.split('\n').map(u => u.trim()).filter(Boolean);
     existingUrls.slice(0, 8).forEach((url, i) => {
       const preview = document.getElementById(`int-gal-preview-${i}`);
       const icon = document.getElementById(`int-gal-icon-${i}`);
@@ -3673,7 +3683,7 @@ if (g('int-groom'))        patches.groom_name    = g('int-groom');
       if (g('int-iban'))         visualPatches.iban_number   = g('int-iban');
       if (g('int-iban-holder'))  visualPatches.iban_holder   = g('int-iban-holder');
       if (g('int-music'))        visualPatches.music_url     = g('int-music');
-      if (galleryUrls.length)    visualPatches.gallery_urls  = galleryUrls.join('|');
+      if (galleryUrls.length)    visualPatches.gallery_urls  = _dedupeGalleryUrls(galleryUrls.join('\n'));
       if (g('int-couplemsg')) { visualPatches.couplemsg_text = g('int-couplemsg'); visualPatches.show_couplemsg = 'yes'; }
       if (g('int-dresscode')) { visualPatches.dresscode_text = g('int-dresscode'); visualPatches.show_dresscode = 'yes'; }
       if (g('int-dresscode-detail')) visualPatches.dresscode_detail = g('int-dresscode-detail');
@@ -3914,13 +3924,20 @@ async function deleteGalleryPhoto(eventId, urlToRemove) {
   const ev2 = Store.events.find(e => e.id === eventId);
   if (!ev2) return;
   const visuals = await loadEventVisuals(eventId);
-  const urls = (visuals.gallery_urls || ev2.gallery_urls || '').split('|').filter(u => u && u !== urlToRemove);
-  const newGalleryStr = urls.join('|') || null;
-  // ✅ CORREÇÃO: gallery_urls existe TANTO em event_visuals COMO em events
-  // (herança histórica). Só atualizar event_visuals deixava a cópia da
-  // tabela events congelada com a foto "eliminada" — e como o painel, ao
-  // recarregar a página, lê essa cópia antiga em vários sítios, a foto
-  // parecia reaparecer sozinha. Agora actualiza as duas, sempre.
+  // ✅ CORREÇÃO: o separador real usado em todo o resto do sistema (textarea
+  // do editor, "Escolher da Biblioteca", e a própria página do convidado)
+  // é uma quebra de linha — nunca "|". Como esse caractere nunca aparece no
+  // texto real, o split antigo devolvia a string inteira como um único
+  // "URL", a comparação nunca encontrava a foto a remover, e nada era
+  // mesmo eliminado (apesar da mensagem de sucesso a dizer o contrário).
+  const rawUrls = (visuals.gallery_urls || ev2.gallery_urls || '').split('\n').map(u => u.trim()).filter(Boolean);
+  const urls = [...new Set(rawUrls)].filter(u => u !== urlToRemove);
+  const newGalleryStr = urls.join('\n') || null;
+  // ✅ gallery_urls existe TANTO em event_visuals COMO em events (herança
+  // histórica). Só atualizar event_visuals deixava a cópia da tabela events
+  // congelada com a foto "eliminada" — e como o painel, ao recarregar a
+  // página, lê essa cópia antiga em vários sítios, a foto parecia
+  // reaparecer sozinha. Agora actualiza as duas, sempre.
   await Promise.all([
     saveEventVisuals(eventId, { gallery_urls: newGalleryStr }),
     supabaseRequest(`events?id=eq.${eventId}`, 'PATCH', { gallery_urls: newGalleryStr }).catch(() => {})

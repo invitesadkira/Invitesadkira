@@ -14,7 +14,7 @@
   <script>tailwind.config = { theme: { extend: { colors: { teal: { 500: '#007f9f', 600: '#006b86' } } } } }</script>
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💌</text></svg>">
-  <link rel="stylesheet" href="css/main.css?v=1782496800">
+  <link rel="stylesheet" href="css/main.css?v=1782540787">
 </head>
 <body class="h-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
 
@@ -680,7 +680,7 @@ para testemunhar o seu enlace matrimonial</textarea>
          <p class="text-xs text-gray-500 mb-2">Adicione URLs de imagens (uma por linha) ou carregue ficheiros.</p>
          <textarea id="evt-gallery-urls" class="input-field text-sm" rows="4" placeholder="https://exemplo.com/foto1.jpg&#10;https://exemplo.com/foto2.jpg"></textarea>
          <button type="button" class="mt-2 text-xs text-teal-600 font-semibold" onclick="addGalleryImage()">+ Carregar imagem</button>
-         <button type="button" class="mt-2 ml-3 text-xs text-teal-600 font-semibold" onclick="openMediaLibraryPicker((url) => { const t=document.getElementById('evt-gallery-urls'); t.value = (t.value.trim() ? t.value.trim()+'\n' : '') + url; })">📁 Escolher da Biblioteca</button>
+         <button type="button" class="mt-2 ml-3 text-xs text-teal-600 font-semibold" onclick="openMediaLibraryPicker((url) => { const t=document.getElementById('evt-gallery-urls'); const lines=t.value.split('\n').map(l=>l.trim()).filter(Boolean); if(!lines.includes(url)) lines.push(url); t.value = lines.join('\n'); })">📁 Escolher da Biblioteca</button>
          <input id="gallery-file-input" type="file" accept="image/*" multiple class="hidden" onchange="handleGalleryUpload(this)">
          <label class="text-xs font-semibold text-gray-600 block mt-3 mb-1">Estilo visual</label>
          <select id="evt-gallery-style" class="input-field text-sm">
@@ -1285,19 +1285,19 @@ para testemunhar o seu enlace matrimonial</textarea>
   </a>
 
   <!-- ===================== SCRIPTS (ordem importa) ===================== -->
-  <script src="js/config.js?v=1782496800"></script>
-  <script src="js/store.js?v=1782496800"></script>
-  <script src="js/visuals.js?v=1782496800"></script>
-  <script src="js/venues.js?v=1782496800"></script>
-  <script src="js/rsvp.js?v=1782496800"></script>
-  <script src="js/ui.js?v=1782496800"></script>
-  <script src="js/auth.js?v=1782496800"></script>
-  <script src="js/dashboard.js?v=1782496800"></script>
-  <script src="js/events.js?v=1782496800"></script>
-  <script src="js/guest.js?v=1782496800"></script>
-  <script src="js/sections.js?v=1782496800"></script>
-  <script src="js/admin.js?v=1782496800"></script>
-  <script src="js/router.js?v=1782496800"></script>
+  <script src="js/config.js?v=1782540787"></script>
+  <script src="js/store.js?v=1782540787"></script>
+  <script src="js/visuals.js?v=1782540787"></script>
+  <script src="js/venues.js?v=1782540787"></script>
+  <script src="js/rsvp.js?v=1782540787"></script>
+  <script src="js/ui.js?v=1782540787"></script>
+  <script src="js/auth.js?v=1782540787"></script>
+  <script src="js/dashboard.js?v=1782540787"></script>
+  <script src="js/events.js?v=1782540787"></script>
+  <script src="js/guest.js?v=1782540787"></script>
+  <script src="js/sections.js?v=1782540787"></script>
+  <script src="js/admin.js?v=1782540787"></script>
+  <script src="js/router.js?v=1782540787"></script>
 
 </body>
 </html>

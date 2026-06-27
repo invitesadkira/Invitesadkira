@@ -381,7 +381,7 @@ async function renderGuestView() {
   const _evCol2 = eventData.event_color_2 || null;
   document.documentElement.style.setProperty('--ev-color-2', _evCol2 || _evCol);
   const _SILVER_FLAT = '#8c8c8c';
-  const _SILVER_GRADIENT = 'linear-gradient(110deg, #5f5f5f 0%, #9a9a9a 18%, #d4d4d4 32%, #6e6e6e 50%, #d4d4d4 68%, #5f5f5f 86%, #9a9a9a 100%)';
+  const _SILVER_GRADIENT = 'linear-gradient(115deg, #4a4a4a 0%, #8c8c8c 7%, #f0f0f0 13%, #ffffff 18%, #b0b0b0 25%, #6b6b6b 34%, #a8a8a8 41%, #f5f5f5 47%, #ffffff 51%, #909090 58%, #555555 67%, #cfcfcf 75%, #ffffff 80%, #8a8a8a 88%, #4a4a4a 100%)';
   const _BLACK_SOLID = '#111111';
   // Valor "completo" — pode ser uma cor sólida OU uma string de gradiente.
   // Funciona bem em qualquer `background:` (fundos de botões, caixas, etc).

@@ -140,10 +140,9 @@ function buildSimpleInviteTemplate(ev) {
       <!-- 1. Capa, com nomes (e frase opcional) sobrepostos em baixo, sobre a foto -->
       <div style="position:relative;width:100%;height:62vh;min-height:340px;max-height:560px;overflow:hidden">
         ${ev.cover_image ? `<img src="${ev.cover_image}" style="width:100%;height:100%;object-fit:cover">` : `<div style="width:100%;height:100%;background:linear-gradient(135deg,${evColor},#1a1a2e)"></div>`}
-        <div style="position:absolute;inset:0;background:linear-gradient(to top, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.18) 38%, transparent 65%)"></div>
         ${decorHtml}
         <div style="position:absolute;left:0;right:0;bottom:1.5rem;text-align:center;padding:0 1rem;z-index:2">
-          <h1 class="hero-couple-names-simple" style="font-family:'Playfair Display',serif;font-style:italic;font-size:clamp(2rem,8vw,3rem);margin:0">${coupleNames}</h1>
+          <h1 class="hero-couple-names-simple" style="font-family:'Playfair Display',serif;font-style:italic;font-size:clamp(2rem,8vw,3rem);margin:0;text-shadow:0 2px 18px rgba(0,0,0,0.65),0 0 4px rgba(0,0,0,0.5)">${coupleNames}</h1>
           ${ev.hero_subtitle ? `<span class="hero-subtitle-tagline" style="margin-top:0.5rem">${escapeHTML(ev.hero_subtitle)}</span>` : ''}
         </div>
       </div>
@@ -861,7 +860,7 @@ function buildIbanSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
 }
 
 function buildGallerySection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
-  const urls = (ev.gallery_urls || '').split('\n').map(u => u.trim()).filter(Boolean);
+  const urls = [...new Set((ev.gallery_urls || '').split('\n').map(u => u.trim()).filter(Boolean))];
   if (!urls.length) return '';
   const style = ev.gallery_style || 'grid';
   const evColor = ev.event_color || '#007f9f';
@@ -2069,7 +2068,7 @@ function buildMessagesSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
   const evColor = ev.event_color || '#007f9f';
   const count = (ev.confirmations || []).filter(c => c.message && String(c.message).trim()).length;
   const introText = allowWrite
-    ? 'Deixe uma mensagem especial para este momento — não precisa de confirmar presença para isso.'
+    ? 'Deixe uma mensagem especial para este momento.'
     : 'Veja as mensagens deixadas por quem já passou por aqui.';
   return _SD + `<div class="event-section" style="text-align:center">
     <div class="section-inner reveal">
