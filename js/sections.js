@@ -109,6 +109,9 @@ function buildSimpleInviteTemplate(ev) {
     <div style="max-width:480px;margin:0 auto;text-align:center;padding:0 1.5rem">
       ${ev.bible_text.split('\n').filter(Boolean).map(l => `<p style="font-style:italic;color:#4b5563;font-size:0.95rem;line-height:1.8;margin:0 0 0.4rem">${escapeHTML(l)}</p>`).join('')}
       ${ev.bible_ref ? `<p style="font-size:0.78rem;color:${evColor};font-weight:700;margin-top:0.5rem">${escapeHTML(ev.bible_ref)}</p>` : ''}
+      ${ev.bible_ornament_url
+        ? `<img src="${ev.bible_ornament_url}" alt="" style="height:28px;width:auto;margin:0.75rem auto 0;display:block" onerror="this.style.display='none'">`
+        : ''}
     </div>` : '';
 
   const blessingLine = (!isSingle && ev.invite_blessing !== '') ? `
