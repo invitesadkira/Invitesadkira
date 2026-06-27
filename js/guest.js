@@ -2656,6 +2656,43 @@ async function handleGalleryUpload(input) {
   urlInput.value = (existing ? existing + '\n' : '') + urls.join('\n');
   toast(urls.length + ' imagem(ns) adicionada(s)!');
   input.value = '';
+  renderGalleryOrderPreview();
+}
+
+// ── Ordem da galeria: escolher qual foto é a primeira e qual é a última ──
+function renderGalleryOrderPreview() {
+  const ta = document.getElementById('evt-gallery-urls');
+  const wrap = document.getElementById('gallery-order-preview');
+  const hint = document.getElementById('gallery-order-hint');
+  if (!ta || !wrap) return;
+  const urls = ta.value.split('\n').map(u => u.trim()).filter(Boolean);
+  if (!urls.length) { wrap.innerHTML = ''; if (hint) hint.classList.add('hidden'); return; }
+  if (hint) hint.classList.toggle('hidden', urls.length < 2);
+  wrap.innerHTML = urls.map((url, i) => {
+    const isFirst = i === 0;
+    const isLast = i === urls.length - 1 && urls.length > 1;
+    const borderColor = isFirst ? '#0f766e' : (isLast ? '#c9a84c' : '#e5e7eb');
+    return `<div style="position:relative;border-radius:0.5rem;overflow:hidden;border:2px solid ${borderColor}">
+      <img src="${url}" style="width:100%;aspect-ratio:1;object-fit:cover;display:block;background:#f3f4f6" onerror="this.style.opacity='0.15'">
+      ${isFirst ? `<span style="position:absolute;top:2px;left:2px;background:#0f766e;color:#fff;font-size:0.55rem;font-weight:800;padding:1px 4px;border-radius:0.25rem">1ª</span>` : ''}
+      ${isLast ? `<span style="position:absolute;top:2px;right:2px;background:#c9a84c;color:#fff;font-size:0.55rem;font-weight:800;padding:1px 4px;border-radius:0.25rem">Última</span>` : ''}
+      ${urls.length > 1 ? `<div style="position:absolute;bottom:0;left:0;right:0;display:flex;background:rgba(0,0,0,0.6)">
+        <button type="button" onclick="setGalleryPhotoPosition(${i},'first')" title="Definir como primeira foto" style="flex:1;background:none;border:none;color:#fff;font-size:0.6rem;font-weight:700;padding:3px 0;cursor:pointer">⇤ 1ª</button>
+        <button type="button" onclick="setGalleryPhotoPosition(${i},'last')" title="Definir como última foto" style="flex:1;background:none;border:none;color:#fff;font-size:0.6rem;font-weight:700;padding:3px 0;cursor:pointer;border-left:1px solid rgba(255,255,255,0.25)">Última ⇥</button>
+      </div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function setGalleryPhotoPosition(index, pos) {
+  const ta = document.getElementById('evt-gallery-urls');
+  if (!ta) return;
+  const urls = ta.value.split('\n').map(u => u.trim()).filter(Boolean);
+  if (index < 0 || index >= urls.length) return;
+  const [item] = urls.splice(index, 1);
+  if (pos === 'first') urls.unshift(item); else urls.push(item);
+  ta.value = urls.join('\n');
+  renderGalleryOrderPreview();
 }
 
 // ===================== FONT UPLOAD (ADMIN ONLY) =====================
@@ -2986,7 +3023,13 @@ function renderSaveTheDateScreen(ev, decision) {
   };
 
   const eventDateParsed = parseDateSafe(ev.date);
-  const deadlineParsed  = parseDateSafe(ev.confirm_by_date);
+  // ✅ Mesmo padrão de segurança já usado mais acima neste ficheiro para o
+  // convite completo: por vezes o prazo chega só em "deadline" e não em
+  // "confirm_by_date" (dependendo de qual tabela/caminho preencheu os
+  // dados nesse carregamento específico — ex: ao abrir normalmente vs.
+  // depois de um refresh). Verificar os dois evita usar a data do evento
+  // por engano quando o prazo real está só guardado no outro campo.
+  const deadlineParsed  = parseDateSafe(ev.confirm_by_date || ev.deadline);
 
   // If we have a separate RSVP deadline AND it differs from the event date, use it.
   // If the deadline IS the event date (or not set), still show a countdown but to the

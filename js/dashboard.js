@@ -126,6 +126,7 @@ function goToCreateEvent() {
   btn.textContent = 'Criar Evento';
   
   dlog('✅ Formulário limpo e pronto para novo evento');
+  if (typeof renderGalleryOrderPreview === 'function') renderGalleryOrderPreview();
   
   // Navegar para create-event
   Router.go('create-event');

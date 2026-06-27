@@ -1824,6 +1824,7 @@ function _fillEditForm(ev) {
 
   _setSwitch('sw-gallery', _yesOrTrue(ev.show_gallery), 'gallery-extra');
   document.getElementById('evt-gallery-urls').value = ev.gallery_urls || '';
+  if (typeof renderGalleryOrderPreview === 'function') renderGalleryOrderPreview();
 
   _setSwitch('sw-manual', _yesOrTrue(ev.show_manual), 'manual-extra');
   // ✅ CORREÇÃO: protegido com try/catch — um JSON inválido aqui travava
