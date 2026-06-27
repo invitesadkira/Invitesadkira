@@ -1230,6 +1230,45 @@ function renderEventDetails() {
   }
 
   lucide.createIcons();
+  _startEventDetailsPolling(event.id);
+}
+
+// ── Atualização automática das confirmações, sem precisar de refresh ──
+// Em vez de WebSockets/Supabase Realtime (que exigiriam carregar uma
+// biblioteca nova só para isto), repete-se periodicamente o mesmo pedido
+// que já é feito ao abrir a página — simples, e cobre exactamente o que foi
+// pedido: o dono do evento vê novas confirmações sem ter de dar refresh.
+// Para-se a si próprio quando o utilizador navega para fora desta página.
+function _startEventDetailsPolling(eventId) {
+  if (Store._eventDetailsPollInterval) clearInterval(Store._eventDetailsPollInterval);
+  Store._eventDetailsPollInterval = setInterval(async () => {
+    const stillHere = Store.currentEventId === eventId &&
+      !document.getElementById('screen-event-details')?.classList.contains('hidden');
+    if (!stillHere) { clearInterval(Store._eventDetailsPollInterval); Store._eventDetailsPollInterval = null; return; }
+    try {
+      const rows = await supabaseRequest(
+        `rsvps?event_id=eq.${eventId}&select=guest_name,attending,side,companions,kids,wants_gift,message,created_at,updated_at`
+      );
+      const event = Store.events.find(e => e.id === eventId);
+      if (!event || !Array.isArray(rows)) return;
+      const newConfirmations = rows.map(r => ({
+        name: r.guest_name,
+        attending: r.attending === true || r.attending === 'yes',
+        side: r.side ?? null,
+        companions: r.companions ? r.companions.split('|').filter(Boolean) : [],
+        kids: r.kids ? r.kids.split('|').filter(Boolean) : [],
+        wantsGift: r.wants_gift === true || r.wants_gift === 'yes',
+        message: r.message || ''
+      }));
+      // Só voltar a desenhar se algo realmente mudou — evita "tremer" a
+      // página (perder posição do scroll, etc.) a cada poucos segundos
+      // sem necessidade nenhuma.
+      if (JSON.stringify(newConfirmations) !== JSON.stringify(event.confirmations)) {
+        event.confirmations = newConfirmations;
+        renderEventDetails();
+      }
+    } catch (e) { /* falha silenciosa — tenta de novo no próximo ciclo */ }
+  }, 15000);
 }
 
 function copyEventLink(inputId = 'detail-link') {
@@ -2005,10 +2044,18 @@ function _fillEditForm(ev) {
     let deadline = document.getElementById('evt-deadline').value;
     const deadlineTime = document.getElementById('evt-deadline-time').value;
     
-    // ✅ CRÍTICO: Se deadline estiver vazio, usar a data do evento
+    // ✅ DEFINITIVO: se o campo aparecer vazio, NÃO assumir que é para usar
+    // a data do evento — o campo fica vazio sempre que o prazo coincide
+    // com a data (por estética), e isso fazia este "guardar" reescrever
+    // silenciosamente, todas as vezes, qualquer prazo diferente que
+    // tivesse sido definido no editor dedicado do Save the Date — mesmo
+    // sem o utilizador tocar em nada. Preservar o valor que já existia
+    // quando o formulário foi aberto (via "ev", capturado por clausura);
+    // só cair para a data do evento se não houver mesmo nenhum valor anterior.
     if (!deadline || deadline.trim() === '') {
-      deadline = date;
-      dlog('⚠️ Deadline vazio, usando data do evento:', deadline);
+      const existing = (ev && ev.confirm_by_date) ? String(ev.confirm_by_date).split(/[T ]/)[0] : '';
+      deadline = existing || date;
+      dlog('⚠️ Campo de prazo vazio — a preservar valor existente em vez da data do evento:', deadline);
     }
     
     // ✅ CRÍTICO: Combinar data + hora do deadline
