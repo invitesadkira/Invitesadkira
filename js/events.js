@@ -857,6 +857,7 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
           invite_layout: document.getElementById('evt-invite-layout')?.value || 'sections',
           bible_ornament_url: document.getElementById('evt-bible-ornament-url')?.value || null,
           bible_ornament_size: document.getElementById('evt-bible-ornament-size')?.value || '28',
+          std_music_continuous: document.getElementById('sw-std-music-continuous')?.classList.contains('active') ? 'yes' : 'no',
           couplemsg_size: document.getElementById('evt-couplemsg-size')?.value || '0.95',
           story_size: document.getElementById('evt-story-size')?.value || '0.88',
           groom_name: newGroomName, bride_name: newBrideName, couple_size: newCoupleSize,
@@ -1593,7 +1594,7 @@ async function editEvent() {
     if (dates.event_date)      evStore.date            = dates.event_date;
     if (dates.event_time)      evStore.time            = dates.event_time;
     if (dates.show_time)       evStore.show_time       = dates.show_time;
-    if (dates.confirm_by_date) evStore.confirm_by_date = dates.confirm_by_date;
+    if (!evStore.confirm_by_date && dates.confirm_by_date) evStore.confirm_by_date = dates.confirm_by_date;
   } catch(e) {}
 
   // Load venues from event_venues table
@@ -1625,7 +1626,7 @@ async function editEvent() {
       if (dates.event_date)      fresh.date            = dates.event_date;
       if (dates.event_time)      fresh.time            = dates.event_time;
       if (dates.show_time)       fresh.show_time       = dates.show_time;
-      if (dates.confirm_by_date) fresh.confirm_by_date = dates.confirm_by_date;
+      if (!fresh.confirm_by_date && dates.confirm_by_date) fresh.confirm_by_date = dates.confirm_by_date;
     } catch(e) {}
     // Load venues from event_venues table
     try {
@@ -1748,6 +1749,7 @@ function _fillEditForm(ev) {
   _setSwitch('sw-music', hasMusicUrl, 'music-extra');
   document.getElementById('evt-music-url').value  = ev.music_url   || '';
   document.getElementById('evt-music-title').value = ev.music_title || '';
+  _setSwitch('sw-std-music-continuous', ev.std_music_continuous !== 'no', null);
   // Reset upload area
   const uploadArea = document.getElementById('music-upload-area');
   if (uploadArea) uploadArea.innerHTML = '<i data-lucide="music" class="w-6 h-6 text-gray-400 mb-1"></i><span class="text-xs text-gray-500 font-semibold">Carregar ficheiro MP3 / OGG</span><span class="text-xs text-gray-400 mt-0.5">Máx. 10 MB</span>';
@@ -4026,7 +4028,7 @@ async function openIntakePreview(eventId) {
     if (dates.event_date) evData.date = dates.event_date;
     if (dates.event_time) evData.time = dates.event_time;
     if (dates.show_time)  evData.show_time = dates.show_time;
-    if (dates.confirm_by_date) evData.confirm_by_date = dates.confirm_by_date;
+    if (!evData.confirm_by_date && dates.confirm_by_date) evData.confirm_by_date = dates.confirm_by_date;
 
     evData.confirmations = (evBase.rsvps || []).map(r => ({
       name: r.guest_name, attending: r.attending, side: r.side,
@@ -4530,6 +4532,7 @@ async function _autoRenewExampleEventDates(ev, forceNow) {
       date: fmtDate(newEventDate),
       confirm_by_date: fmtDate(newDeadlineDate),
     });
+    try { await saveEventDates(ev.id, { event_date: fmtDate(newEventDate), confirm_by_date: fmtDate(newDeadlineDate) }); } catch(e) {}
     ev.date = fmtDate(newEventDate);
     ev.confirm_by_date = fmtDate(newDeadlineDate);
     dlog('🔄 Evento exemplar renovado automaticamente:', { id: ev.id, newDate: ev.date, newDeadline: ev.confirm_by_date });

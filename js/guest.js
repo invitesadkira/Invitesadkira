@@ -219,7 +219,14 @@ async function renderGuestView() {
     if (dates.event_date) eventData.date      = dates.event_date;
     if (dates.event_time) eventData.time      = dates.event_time;
     if (dates.show_time)  eventData.show_time = dates.show_time;
-    if (dates.confirm_by_date) eventData.confirm_by_date = dates.confirm_by_date;
+    // ✅ DEFINITIVO: a tabela events.confirm_by_date é escrita por TODOS os
+    // sítios que guardam este campo (criar evento, editar evento, editor
+    // dedicado do Save the Date, importação, etc.) — a tabela event_dates
+    // só é actualizada por ALGUNS desses sítios, por isso ficava
+    // facilmente desincronizada e "ganhava" por engano. Preferir sempre o
+    // valor de events quando existir; só usar o de event_dates como
+    // último recurso, nunca para substituir um valor já presente.
+    if (!eventData.confirm_by_date && dates.confirm_by_date) eventData.confirm_by_date = dates.confirm_by_date;
   } catch(e) { console.warn('loadEventDates failed:', e); }
 
   // ── Load visual settings from event_visuals table ──
@@ -477,10 +484,26 @@ async function renderGuestView() {
       if (titleEl) titleEl.textContent = eventData.music_title || 'Música do Evento';
       musicPlayerEl.classList.remove('hidden');
       const oldFrame = document.getElementById('yt-music-frame');
-      if (oldFrame) { oldFrame.src = ''; oldFrame.dataset.playing = '0'; }
-      if (guestAudio) { guestAudio.pause(); guestAudio.src = ''; }
-      const ytId = extractYouTubeId(musicUrl);
-      startMusicAutoplay(ytId || null, ytId ? null : musicUrl);
+      // ✅ Música contínua do Save the Date para o convite: se já estiver a
+      // tocar esta MESMA música (ex: o convidado já a estava a ouvir no
+      // Save the Date), não reiniciar do zero ao mostrar o convite
+      // completo — só continuar a tocar. O organizador pode desligar isto
+      // (std_music_continuous = 'no') se preferir o comportamento antigo.
+      const continuousOk = eventData.std_music_continuous !== 'no';
+      const alreadyPlayingSame =
+        (oldFrame && oldFrame.src && oldFrame.dataset.currentMusicUrl === musicUrl) ||
+        (guestAudio && guestAudio.src && guestAudio.dataset.currentMusicUrl === musicUrl);
+      if (continuousOk && alreadyPlayingSame) {
+        dlog('🎵 Música contínua — já a tocar a mesma faixa, sem reiniciar.');
+      } else {
+        if (oldFrame) { oldFrame.src = ''; oldFrame.dataset.playing = '0'; }
+        if (guestAudio) { guestAudio.pause(); guestAudio.src = ''; }
+        const ytId = extractYouTubeId(musicUrl);
+        startMusicAutoplay(ytId || null, ytId ? null : musicUrl);
+        const newFrame = document.getElementById('yt-music-frame');
+        if (newFrame) newFrame.dataset.currentMusicUrl = musicUrl;
+        if (guestAudio) guestAudio.dataset.currentMusicUrl = musicUrl;
+      }
     } else {
       musicPlayerEl.classList.add('hidden');
       if (guestAudio) { guestAudio.pause(); guestAudio.src = ''; }
@@ -3147,6 +3170,13 @@ function renderSaveTheDateScreen(ev, decision) {
   if (ev.music_url && !document.getElementById('guest-audio')?.src && !document.getElementById('yt-music-frame')?.src) {
     const ytId = extractYouTubeId(ev.music_url);
     startMusicAutoplay(ytId || null, ytId ? null : ev.music_url);
+    // ✅ Marca qual música está a tocar — usado depois pelo convite completo
+    // para saber se pode continuar a mesma faixa sem reiniciar (ver
+    // "Música contínua" em renderGuestView).
+    const _stdFrame = document.getElementById('yt-music-frame');
+    if (_stdFrame) _stdFrame.dataset.currentMusicUrl = ev.music_url;
+    const _stdAudio = document.getElementById('guest-audio');
+    if (_stdAudio) _stdAudio.dataset.currentMusicUrl = ev.music_url;
   }
 
   if (introEnabled) {
