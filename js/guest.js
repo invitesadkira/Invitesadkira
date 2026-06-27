@@ -3088,15 +3088,34 @@ function renderSaveTheDateScreen(ev, decision) {
   document.getElementById('std-screen-overlay')?.remove();
 
   const eventIdForRsvp = ev.id || Store.currentEventId;
-  const alreadyConfirmed = (() => {
-    const c = rsvpCheckConfirmed(eventIdForRsvp);
-    return c && c.attending === true;
-  })();
+  const _stdExistingResponse = (() => { try { return rsvpCheckConfirmed(eventIdForRsvp); } catch(e) { return null; } })();
+  const alreadyConfirmed = !!(_stdExistingResponse && _stdExistingResponse.attending === true);
+  // ✅ Declinar é UMA RESPOSTA, não "nenhuma resposta" — antes disto, quem
+  // dizia que não ia continuava a ver exactamente o mesmo botão "Confirmar
+  // Presença" e o mesmo prazo, como se nunca tivesse respondido nada.
+  const _stdHasDeclined = !!(_stdExistingResponse && _stdExistingResponse.attending === false);
+  const _stdAllowEdit = ev.allow_edit_rsvp !== false;
+  const _stdShowAsEdit = _stdHasDeclined && _stdAllowEdit;
+
+  let _stdBtnColor, _stdBtnLabel, _stdBtnIconSvg;
+  if (alreadyConfirmed) {
+    _stdBtnColor = '#16a34a'; _stdBtnLabel = 'Presença Confirmada';
+    _stdBtnIconSvg = '<path d="M20 6 9 17l-5-5"/>';
+  } else if (_stdShowAsEdit) {
+    _stdBtnColor = '#6b7280'; _stdBtnLabel = 'Editar Resposta';
+    _stdBtnIconSvg = '<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4Z"/>';
+  } else if (_stdHasDeclined) {
+    _stdBtnColor = '#9ca3af'; _stdBtnLabel = 'Resposta Registada';
+    _stdBtnIconSvg = '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>';
+  } else {
+    _stdBtnColor = evColor; _stdBtnLabel = 'Confirmar Presença';
+    _stdBtnIconSvg = '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>';
+  }
 
   const rsvpBtnHtml = rsvpAllowed ? `
-    <button id="std-rsvp-btn" class="std-rsvp-btn-anim" style="background:${alreadyConfirmed?'#16a34a':evColor};color:#fff;border:none;border-radius:999px;padding:0.9rem 2.4rem;font-weight:800;font-size:0.95rem;cursor:pointer;box-shadow:0 4px 16px ${alreadyConfirmed?'#16a34a':evColor}55;display:inline-flex;align-items:center;gap:0.5rem;font-family:'Quicksand',sans-serif">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${alreadyConfirmed?'<path d="M20 6 9 17l-5-5"/>':'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>'}</svg>
-      <span id="std-rsvp-btn-label">${alreadyConfirmed?'Presença Confirmada':'Confirmar Presença'}</span>
+    <button id="std-rsvp-btn" class="std-rsvp-btn-anim" style="background:${_stdBtnColor};color:#fff;border:none;border-radius:999px;padding:0.9rem 2.4rem;font-weight:800;font-size:0.95rem;cursor:pointer;box-shadow:0 4px 16px ${_stdBtnColor}55;display:inline-flex;align-items:center;gap:0.5rem;font-family:'Quicksand',sans-serif">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${_stdBtnIconSvg}</svg>
+      <span id="std-rsvp-btn-label">${_stdBtnLabel}</span>
     </button>` : '';
 
   const introEnabled = (ev.std_intro_enabled === true || ev.std_intro_enabled === 'true') && !!_pickIntroPhotoForDevice(ev);
@@ -3109,8 +3128,8 @@ function renderSaveTheDateScreen(ev, decision) {
     <style>${fontFaceCSS}</style>
     ${introEnabled ? _buildIntroScreenHtml(ev, evColor, 'std-intro-screen') : ''}
     ${showCover ? `
-    <div id="std-cover-wrap" class="std-cover-anim" style="position:relative;width:100%;height:42vh;max-height:380px;overflow:hidden;background:#1a1a2e;flex-shrink:0">
-      <img id="std-cover-img" src="${coverUrl}" loading="eager" style="width:100%;height:100%;object-fit:cover;object-position:center;display:block"
+    <div id="std-cover-wrap" class="std-cover-anim" style="position:relative;width:100%;height:48vh;max-height:440px;overflow:hidden;background:#1a1a2e;flex-shrink:0">
+      <img id="std-cover-img" src="${coverUrl}" loading="eager" style="width:100%;height:100%;object-fit:cover;object-position:center 22%;display:block"
         onerror="console.error('❌ Falha ao carregar a foto de capa do Save the Date. URL tentado:', this.src); this.style.display='none';"
         onload="dlog('✅ Foto de capa do Save the Date carregada com sucesso:', this.src);">
       <div style="position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,0.15) 0%,rgba(0,0,0,0.35) 100%)"></div>
@@ -3140,9 +3159,9 @@ function renderSaveTheDateScreen(ev, decision) {
           <div style="background:${evColor}12;border-radius:0.6rem;padding:0.5rem 0.2rem;flex:1;max-width:66px"><div id="std-secs" class="std-countdown-num" style="font-size:1.15rem;font-weight:900;color:${evColor}">--</div><div style="font-size:0.55rem;opacity:0.55;text-transform:uppercase">Seg</div></div>
         </div>
       </div>
-      <p id="std-rsvp-status-text" class="std-anim std-anim-6" style="font-size:0.82rem;color:#16a34a;margin-bottom:0.7rem;font-weight:600;min-height:1.1em">${alreadyConfirmed?'Obrigado por confirmar! Já contamos consigo. 🎉':''}</p>
+      <p id="std-rsvp-status-text" class="std-anim std-anim-6" style="font-size:0.82rem;color:${alreadyConfirmed ? '#16a34a' : '#6b7280'};margin-bottom:0.7rem;font-weight:600;min-height:1.1em">${alreadyConfirmed ? 'Obrigado por confirmar! Já contamos consigo. 🎉' : (_stdHasDeclined ? 'A sua resposta foi registada — obrigado por avisar.' : '')}</p>
       <div class="std-anim std-anim-6">${rsvpBtnHtml}</div>
-      ${countdownTarget ? `<p class="std-anim std-anim-7" style="font-size:0.73rem;color:#9ca3af;margin-top:0.5rem;font-weight:500">Confirmar até ${countdownTarget.label}</p>` : ''}
+      ${(countdownTarget && !_stdExistingResponse) ? `<p class="std-anim std-anim-7" style="font-size:0.73rem;color:#9ca3af;margin-top:0.5rem;font-weight:500">Confirmar até ${countdownTarget.label}</p>` : ''}
       ${(ev.std_show_iban === true && ev.iban_number) ? `
       <div class="std-anim std-anim-7" style="background:#fff;border-radius:0.85rem;padding:1rem 1.1rem;margin-top:1.5rem;max-width:320px;width:100%;border:1.5px solid color-mix(in srgb,${evColor} 22%,transparent);text-align:center">
         ${ev.iban_message ? ev.iban_message.split('\n').map(l => `<p style="font-size:0.82rem;font-weight:700;color:#1e293b;margin-bottom:0.4rem;line-height:1.4">${escapeHTML(l)}</p>`).join('') : `<p style="font-size:0.88rem;font-weight:800;color:${evColor};margin-bottom:0.6rem">Gostaria de nos presentear?</p>`}
@@ -3246,6 +3265,27 @@ function renderSaveTheDateScreen(ev, decision) {
       if(btn){btn.style.background='#16a34a';btn.style.boxShadow='0 4px 16px #16a34a55';btn.innerHTML='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span>Presença Confirmada</span>';}
       const st=document.getElementById('std-rsvp-status-text');
       if(st){st.textContent='Obrigado por confirmar! Já contamos consigo. 🎉';st.style.color='#16a34a';}
+    } else if (confirmed && confirmed.attending === false) {
+      // ✅ Declinar também é uma resposta — antes disto o botão ficava
+      // exactamente igual a "nunca respondido", como se a recusa não
+      // tivesse sido registada.
+      const allowEditNow = ev.allow_edit_rsvp !== false;
+      const btn=document.getElementById('std-rsvp-btn');
+      if (btn) {
+        if (allowEditNow) {
+          btn.style.background='#6b7280'; btn.style.boxShadow='0 4px 16px #6b728055';
+          btn.innerHTML='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg><span>Editar Resposta</span>';
+        } else {
+          btn.style.background='#9ca3af'; btn.style.boxShadow='0 4px 16px #9ca3af55';
+          btn.innerHTML='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg><span>Resposta Registada</span>';
+        }
+      }
+      const st=document.getElementById('std-rsvp-status-text');
+      if(st){st.textContent='A sua resposta foi registada — obrigado por avisar.';st.style.color='#6b7280';}
+      // Esconde o "Confirmar até..." — já não faz sentido depois de responder.
+      document.querySelectorAll('#std-screen-overlay p').forEach(p => {
+        if (p.textContent.startsWith('Confirmar até')) p.style.display = 'none';
+      });
     }
   };
 }

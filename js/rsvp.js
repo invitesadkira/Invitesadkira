@@ -73,6 +73,19 @@ function _rsvpRender(state) {
 function _rsvpRenderSuccess(panel, evColor) {
   const ev = Store.guestEventData || {};
   const allowEdit = ev.allow_edit_rsvp !== false;
+  // ✅ A mensagem e o ícone de sucesso têm de reflectir a resposta real —
+  // antes mostrava sempre "Presença Confirmada!" com um visto verde, mesmo
+  // quando o convidado tinha dito que NÃO vai.
+  const confirmed = rsvpCheckConfirmed(ev.id);
+  const isDeclined = confirmed && confirmed.attending === false;
+  const headerText = isDeclined ? 'Resposta Registada' : 'Presença Confirmada!';
+  const subText = isDeclined
+    ? 'Lamentamos que não possa estar presente — obrigado por nos avisar!'
+    : 'A sua resposta foi registada com sucesso.';
+  const iconSvg = isDeclined
+    ? '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>'
+    : '<polyline points="20 6 9 17 4 12"/>';
+  const iconColor = isDeclined ? '#9ca3af' : evColor;
   panel.innerHTML = `
     <div style="display:flex;flex-direction:column;align-items:center;padding:2.5rem 1.5rem 2rem;text-align:center">
       <!-- Close button top-right -->
@@ -80,13 +93,13 @@ function _rsvpRenderSuccess(panel, evColor) {
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
 
-      <!-- Check icon -->
-      <div style="width:64px;height:64px;border-radius:50%;background:color-mix(in srgb,${evColor} 12%,white);display:flex;align-items:center;justify-content:center;margin-bottom:1.25rem">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="${evColor}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      <!-- Check/X icon -->
+      <div style="width:64px;height:64px;border-radius:50%;background:color-mix(in srgb,${iconColor} 12%,white);display:flex;align-items:center;justify-content:center;margin-bottom:1.25rem">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="${iconColor}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">${iconSvg}</svg>
       </div>
 
-      <h2 style="font-size:1.2rem;font-weight:800;color:#1e293b;margin-bottom:0.35rem">Presença Confirmada!</h2>
-      <p style="font-size:0.88rem;color:#6b7280;margin-bottom:1.75rem;max-width:280px">A sua resposta foi registada com sucesso.</p>
+      <h2 style="font-size:1.2rem;font-weight:800;color:#1e293b;margin-bottom:0.35rem">${headerText}</h2>
+      <p style="font-size:0.88rem;color:#6b7280;margin-bottom:1.75rem;max-width:280px">${subText}</p>
 
       <!-- Action buttons -->
       ${allowEdit ? `<button onclick="rsvpEdit()" style="background:${evColor};color:#fff;border:none;border-radius:999px;padding:0.75rem 2rem;font-weight:700;font-size:0.92rem;cursor:pointer;font-family:inherit;width:100%;max-width:280px;margin-bottom:0.75rem">
