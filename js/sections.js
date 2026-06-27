@@ -670,16 +670,75 @@ function buildDateSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
 
 function buildCountdownSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
   if (!ev.date) return '';
+  const c = ev.event_color || '#007f9f';
+  const style = ev.countdown_style || 'cards';
+  const units = [['cd-days','Dias','DIAS'],['cd-hours','Horas','HORAS'],['cd-mins','Min','MIN'],['cd-secs','Seg','SEG']];
+
+  let inner;
+  if (style === 'continuous') {
+    // ── Contínua: "13 : 06 : 40 : 57" numa só linha, com pontos a separar ──
+    inner = `<div style="display:flex;align-items:flex-start;justify-content:center;gap:0.15rem">
+      ${units.map(([id,,lbl], i) => `${i>0?`<span style="font-size:2.4rem;font-weight:300;color:${c};opacity:0.4;line-height:1;font-family:Georgia,serif;padding:0 0.05rem">:</span>`:''}
+        <div style="display:flex;flex-direction:column;align-items:center">
+          <span style="font-size:2.4rem;font-weight:300;color:${c};font-family:Georgia,serif;line-height:1" id="${id}">--</span>
+          <span style="font-size:0.6rem;letter-spacing:0.15em;color:#6b7280;margin-top:0.4rem">${lbl}</span>
+        </div>`).join('')}
+    </div>`;
+  } else if (style === 'circles') {
+    // ── Círculos: cada unidade num círculo com contorno ──
+    inner = `<div style="display:flex;gap:0.8rem;justify-content:center;flex-wrap:wrap">
+      ${units.map(([id,,lbl]) => `<div style="width:64px;height:64px;border-radius:50%;border:2px solid ${c};display:flex;flex-direction:column;align-items:center;justify-content:center">
+        <span style="font-size:1.25rem;font-weight:800;color:${c};line-height:1" id="${id}">--</span>
+        <span style="font-size:0.48rem;letter-spacing:0.05em;color:#6b7280;margin-top:0.15rem">${lbl}</span>
+      </div>`).join('')}
+    </div>`;
+  } else if (style === 'minimal') {
+    // ── Minimalista: números finos, divididos por linhas finas ──
+    inner = `<div style="display:flex;justify-content:center;border-top:1px solid #e5e7eb;border-bottom:1px solid #e5e7eb;max-width:380px;margin:0 auto">
+      ${units.map(([id,,lbl], i) => `<div style="flex:1;text-align:center;padding:0.9rem 0.3rem;${i<3?'border-right:1px solid #e5e7eb':''}">
+        <div style="font-size:1.7rem;font-weight:300;color:#1e293b;line-height:1" id="${id}">--</div>
+        <div style="font-size:0.55rem;letter-spacing:0.15em;color:#9ca3af;margin-top:0.35rem">${lbl}</div>
+      </div>`).join('')}
+    </div>`;
+  } else if (style === 'flip') {
+    // ── Estilo "flip clock": cartões escuros com uma linha a meio ──
+    inner = `<div style="display:flex;gap:0.6rem;justify-content:center;flex-wrap:wrap">
+      ${units.map(([id,,lbl]) => `<div style="text-align:center">
+        <div style="background:linear-gradient(180deg,#1e293b,#334155);border-radius:0.45rem;padding:0.55rem 0.8rem;box-shadow:0 4px 10px rgba(0,0,0,0.25);position:relative;min-width:56px">
+          <span style="font-size:1.6rem;font-weight:800;color:#fff;font-family:'Courier New',monospace" id="${id}">--</span>
+          <div style="position:absolute;left:0;right:0;top:50%;height:1px;background:rgba(0,0,0,0.35)"></div>
+        </div>
+        <div style="font-size:0.55rem;letter-spacing:0.1em;color:#6b7280;margin-top:0.4rem">${lbl}</div>
+      </div>`).join('')}
+    </div>`;
+  } else if (style === 'outline') {
+    // ── Contorno: caixas só com borda, sem fundo ──
+    inner = `<div style="display:flex;gap:0.6rem;justify-content:center;flex-wrap:wrap">
+      ${units.map(([id,,lbl]) => `<div style="border:2px solid ${c};border-radius:0.6rem;padding:0.55rem 0.85rem;min-width:58px">
+        <div style="font-size:1.4rem;font-weight:800;color:${c};text-align:center;line-height:1" id="${id}">--</div>
+        <div style="font-size:0.5rem;letter-spacing:0.1em;color:${c};opacity:0.8;text-align:center;margin-top:0.2rem">${lbl}</div>
+      </div>`).join('')}
+    </div>`;
+  } else if (style === 'pills') {
+    // ── Pílulas: cápsulas coloridas, número e legenda lado a lado ──
+    inner = `<div style="display:flex;gap:0.5rem;justify-content:center;flex-wrap:wrap">
+      ${units.map(([id,lblFull]) => `<div style="background:${c};border-radius:999px;padding:0.45rem 1.1rem;display:inline-flex;align-items:baseline;gap:0.4rem">
+        <span style="font-size:1.1rem;font-weight:800;color:#fff;line-height:1" id="${id}">--</span>
+        <span style="font-size:0.6rem;color:#fff;opacity:0.9">${lblFull}</span>
+      </div>`).join('')}
+    </div>`;
+  } else {
+    // ── Cartões (padrão) ──
+    inner = `<div class="countdown-section-grid">
+      ${units.map(([id,lblFull]) => `<div class="countdown-section-box" style="background:${c}"><div class="cdb-num" id="${id}">--</div><div class="cdb-label">${lblFull}</div></div>`).join('')}
+    </div>`;
+  }
+
   return _SD + `<div class="event-section" style="background:linear-gradient(135deg,#f0f9fb,#e6f4f7)">
     <div class="section-inner" style="text-align:center">
       <div class="reveal">
         <span class="section-tag">Contagem Regressiva até ao Grande Dia</span>
-        <div class="countdown-section-grid">
-          <div class="countdown-section-box" style="background:${ev.event_color||'#007f9f'}"><div class="cdb-num" id="cd-days">--</div><div class="cdb-label">Dias</div></div>
-          <div class="countdown-section-box" style="background:${ev.event_color||'#007f9f'}"><div class="cdb-num" id="cd-hours">--</div><div class="cdb-label">Horas</div></div>
-          <div class="countdown-section-box" style="background:${ev.event_color||'#007f9f'}"><div class="cdb-num" id="cd-mins">--</div><div class="cdb-label">Min</div></div>
-          <div class="countdown-section-box" style="background:${ev.event_color||'#007f9f'}"><div class="cdb-num" id="cd-secs">--</div><div class="cdb-label">Seg</div></div>
-        </div>
+        ${inner}
       </div>
     </div>
   </div>`;

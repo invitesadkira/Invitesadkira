@@ -3133,7 +3133,7 @@ function renderSaveTheDateScreen(ev, decision) {
         onerror="console.error('❌ Falha ao carregar a foto de capa do Save the Date. URL tentado:', this.src); this.style.display='none';"
         onload="dlog('✅ Foto de capa do Save the Date carregada com sucesso:', this.src);">
       <div style="position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,0.15) 0%,rgba(0,0,0,0.35) 100%)"></div>
-      <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:0 1rem">
+      <div style="position:absolute;inset:0;display:flex;align-items:flex-end;justify-content:center;padding:0 1rem 1.5rem">
         <p style="font-size:${titleSize}rem;letter-spacing:0.3em;text-transform:uppercase;font-weight:800;color:#fff;font-family:'Quicksand',sans-serif;text-shadow:0 2px 12px rgba(0,0,0,0.5);margin:0">${escapeHTML(stdTitle)}</p>
       </div>
       ${ev.music_url ? `<button id="std-mute-btn" type="button" onclick="toggleStdMusicMute()" title="Som" style="position:absolute;top:0.85rem;right:0.85rem;z-index:3;width:38px;height:38px;border-radius:50%;background:rgba(0,0,0,0.42);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)">

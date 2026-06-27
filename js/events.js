@@ -858,6 +858,7 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
           bible_ornament_url: document.getElementById('evt-bible-ornament-url')?.value || null,
           bible_ornament_size: document.getElementById('evt-bible-ornament-size')?.value || '28',
           std_music_continuous: document.getElementById('sw-std-music-continuous')?.classList.contains('active') ? 'yes' : 'no',
+          countdown_style: document.getElementById('evt-countdown-style')?.value || 'cards',
           couplemsg_size: document.getElementById('evt-couplemsg-size')?.value || '0.95',
           story_size: document.getElementById('evt-story-size')?.value || '0.88',
           groom_name: newGroomName, bride_name: newBrideName, couple_size: newCoupleSize,
@@ -1789,6 +1790,7 @@ function _fillEditForm(ev) {
   document.getElementById('evt-music-url').value  = ev.music_url   || '';
   document.getElementById('evt-music-title').value = ev.music_title || '';
   _setSwitch('sw-std-music-continuous', ev.std_music_continuous !== 'no', null);
+  { const csEl = document.getElementById('evt-countdown-style'); if (csEl) csEl.value = ev.countdown_style || 'cards'; }
   // Reset upload area
   const uploadArea = document.getElementById('music-upload-area');
   if (uploadArea) uploadArea.innerHTML = '<i data-lucide="music" class="w-6 h-6 text-gray-400 mb-1"></i><span class="text-xs text-gray-500 font-semibold">Carregar ficheiro MP3 / OGG</span><span class="text-xs text-gray-400 mt-0.5">Máx. 10 MB</span>';
