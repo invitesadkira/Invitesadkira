@@ -13,6 +13,10 @@
 
 let _iwState = {};
 let _iwHistory = [];      // pilha de keys já visitadas, para o "Voltar"
+let _iwForwardStack = []; // o que foi "desfeito" ao clicar Voltar — se a
+                           // resposta não mudar ao confirmar outra vez,
+                           // continua-se por aqui em vez de recomeçar o
+                           // bloco de perguntas a partir do zero.
 let _iwEventId = null;
 let _iwSteps = [];         // recalculado a cada passo (por causa dos ramos)
 
@@ -88,6 +92,7 @@ async function openIntakeWizard(eventId) {
   _iwEventId = eventId || null;
   _iwState = {};
   _iwHistory = ['event_type'];
+  _iwForwardStack = [];
   if (_iwEventId) Store.currentEventId = _iwEventId;
 
   // ✅ Se a página recarregar a meio (telemóvel a suspender/restaurar a
@@ -102,6 +107,7 @@ async function openIntakeWizard(eventId) {
       if (saved && saved.token === (Store._intakeToken || null) && saved.eventId === (_iwEventId || null) && saved.history && saved.history.length) {
         _iwState = saved.state || {};
         _iwHistory = saved.history;
+        _iwForwardStack = saved.forward || [];
         _restoredProgress = true;
       }
     }
@@ -172,13 +178,15 @@ function _iwPersistProgress() {
       eventId: _iwEventId || null,
       state: _iwState,
       history: _iwHistory,
+      forward: _iwForwardStack,
     }));
   } catch(e) {}
 }
 
 function _iwGoBack() {
   if (_iwHistory.length <= 1) return;
-  _iwHistory.pop();
+  const poppedKey = _iwHistory.pop();
+  _iwForwardStack.push(poppedKey);
   const prevKey = _iwHistory[_iwHistory.length - 1];
   _iwPersistProgress();
   _iwRenderStep(prevKey);
@@ -187,22 +195,38 @@ function _iwGoBack() {
 function _iwSkip() {
   const step = _iwCurrentStep(_iwHistory[_iwHistory.length - 1]);
   delete _iwState[step.key];
+  _iwForwardStack = []; // saltar é uma alteração — o caminho à frente já não é garantido
   _iwAdvance(step);
 }
 
 async function _iwGoNext() {
   const step = _iwCurrentStep(_iwHistory[_iwHistory.length - 1]);
+  const oldValueStr = JSON.stringify(_iwState[step.key]);
   const { value, error } = _iwExtractValue(step);
   if (error) { toast(error); return; }
   if (value !== undefined) _iwState[step.key] = value;
   else if (!step.skippable) { toast('Por favor responde a esta pergunta, ou avança se não se aplicar.'); return; }
+  const unchanged = oldValueStr === JSON.stringify(_iwState[step.key]);
 
   const idx = _iwSteps.findIndex(s => s.key === step.key);
   if (idx === _iwSteps.length - 1) { await _iwFinish(); return; }
-  _iwAdvance(step);
+  _iwAdvance(step, unchanged);
 }
 
-function _iwAdvance(step) {
+function _iwAdvance(step, unchanged) {
+  // ✅ Se a pessoa usou "Voltar" para rever uma resposta e confirma a
+  // MESMA resposta de novo (sem mudar nada), continuar pelo caminho que já
+  // tinha percorrido antes — em vez de recalcular do zero, o que podia
+  // mandar de volta para o início de um bloco de perguntas (ex: Save the
+  // Date) só porque esse bloco volta a ser considerado "novo".
+  if (unchanged && _iwForwardStack.length) {
+    const next = _iwForwardStack.pop();
+    _iwHistory.push(next);
+    _iwPersistProgress();
+    _iwRenderStep(next);
+    return;
+  }
+  _iwForwardStack = []; // a resposta mudou (ou não há histórico à frente) — recalcular o caminho a partir de aqui
   const newSteps = _iwComputeSteps(_iwState);
   const idx = newSteps.findIndex(s => s.key === step.key);
   const next = newSteps[idx + 1] || newSteps[newSteps.length - 1];
