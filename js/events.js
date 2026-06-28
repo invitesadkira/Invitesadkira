@@ -859,6 +859,9 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
           bible_ornament_size: document.getElementById('evt-bible-ornament-size')?.value || '28',
           std_music_continuous: document.getElementById('sw-std-music-continuous')?.classList.contains('active') ? 'yes' : 'no',
           countdown_style: document.getElementById('evt-countdown-style')?.value || 'cards',
+          show_youtube_video: document.getElementById('sw-youtube-video')?.classList.contains('active') ? 'yes' : 'no',
+          youtube_video_url: document.getElementById('evt-youtube-video-url')?.value?.trim() || null,
+          youtube_video_title: document.getElementById('evt-youtube-video-title')?.value?.trim() || null,
           couplemsg_size: document.getElementById('evt-couplemsg-size')?.value || '0.95',
           story_size: document.getElementById('evt-story-size')?.value || '0.88',
           groom_name: newGroomName, bride_name: newBrideName, couple_size: newCoupleSize,
@@ -1798,6 +1801,9 @@ function _fillEditForm(ev) {
   document.getElementById('evt-music-title').value = ev.music_title || '';
   _setSwitch('sw-std-music-continuous', ev.std_music_continuous !== 'no', null);
   { const csEl = document.getElementById('evt-countdown-style'); if (csEl) csEl.value = ev.countdown_style || 'cards'; }
+  _setSwitch('sw-youtube-video', _yesOrTrue(ev.show_youtube_video) && !!ev.youtube_video_url, 'youtube-video-extra');
+  { const yvUrl = document.getElementById('evt-youtube-video-url'); if (yvUrl) yvUrl.value = ev.youtube_video_url || ''; }
+  { const yvTitle = document.getElementById('evt-youtube-video-title'); if (yvTitle) yvTitle.value = ev.youtube_video_title || ''; }
   // Reset upload area
   const uploadArea = document.getElementById('music-upload-area');
   if (uploadArea) uploadArea.innerHTML = '<i data-lucide="music" class="w-6 h-6 text-gray-400 mb-1"></i><span class="text-xs text-gray-500 font-semibold">Carregar ficheiro MP3 / OGG</span><span class="text-xs text-gray-400 mt-0.5">Máx. 10 MB</span>';
@@ -4435,15 +4441,12 @@ async function openDressGiftsEditor() {
 #2D6A4F" oninput="updateDressCodeSwatches(this.value)">${escapeHTML(d.dresscode_colors || '')}</textarea>
         <label class="text-xs font-semibold text-gray-600 block mb-1">Detalhe adicional (opcional)</label>
         <textarea id="dg2-dresscode-detail" class="input-field text-sm" rows="2" placeholder="Ex: Pedimos gentilmente que os convidados optem por um traje elegante...">${escapeHTML(d.dresscode_detail || '')}</textarea>
-        <label class="text-xs font-semibold text-gray-600 block mt-2 mb-1">Foto de referência (opcional)</label>
+        <label class="text-xs font-semibold text-gray-600 block mt-2 mb-1">Fotos de referência (opcional, pode ter várias)</label>
         <p class="text-xs text-gray-400 mb-2">Mostra aos convidados a cor/estilo exacto que tens em mente.</p>
-        <div id="dg2-dresscode-image-wrap" class="${d.dresscode_image_url ? '' : 'hidden'} relative mb-2" style="max-width:160px">
-          <img id="dg2-dresscode-image-preview" class="rounded-lg w-full" style="aspect-ratio:1;object-fit:cover" src="${d.dresscode_image_url || ''}">
-          <button type="button" onclick="document.getElementById('dg2-dresscode-image-url').value='';document.getElementById('dg2-dresscode-image-wrap').classList.add('hidden')" class="absolute top-1 right-1 bg-white rounded-full w-6 h-6 flex items-center justify-center shadow text-red-500 text-xs font-bold">✕</button>
-        </div>
-        <input type="hidden" id="dg2-dresscode-image-url" value="${d.dresscode_image_url || ''}">
-        <input type="file" id="dg2-dresscode-image-input" accept="image/*" class="input-field text-sm mb-1" onchange="handleDresscodeImageUpload(this)">
-        <button type="button" class="text-xs text-teal-600 font-semibold" onclick="openMediaLibraryPicker((url) => { document.getElementById('dg2-dresscode-image-url').value=url; document.getElementById('dg2-dresscode-image-preview').src=url; document.getElementById('dg2-dresscode-image-wrap').classList.remove('hidden'); })">📁 Escolher da Biblioteca</button>
+        <div id="dg2-dresscode-images-preview" class="flex gap-2 flex-wrap mb-2"></div>
+        <input type="hidden" id="dg2-dresscode-image-urls" value="${escapeHTML(d.dresscode_image_urls || d.dresscode_image_url || '')}">
+        <input type="file" id="dg2-dresscode-image-input" accept="image/*" multiple class="input-field text-sm mb-1" onchange="handleDresscodeImageUpload(this)">
+        <button type="button" class="text-xs text-teal-600 font-semibold" onclick="openMediaLibraryPicker((url) => { addDresscodeImageUrl(url); })">📁 Escolher da Biblioteca</button>
       </div>
 
       <div class="flex items-center justify-between mb-1 pt-2" style="border-top:1px solid #f1f5f9">
@@ -4460,28 +4463,52 @@ async function openDressGiftsEditor() {
   </div>`;
   document.body.appendChild(modal);
   updateDressCodeSwatches(d.dresscode_colors || '');
+  renderDresscodeImagesPreview();
   lucide.createIcons();
 }
 
+// ── Galeria de fotos do Dress Code (pode ter várias) ────────────────────
+function renderDresscodeImagesPreview() {
+  const input = document.getElementById('dg2-dresscode-image-urls');
+  const wrap = document.getElementById('dg2-dresscode-images-preview');
+  if (!input || !wrap) return;
+  const urls = input.value.split('\n').map(u => u.trim()).filter(Boolean);
+  wrap.innerHTML = urls.map((url, i) => `
+    <div style="position:relative;width:72px;height:72px">
+      <img src="${url}" style="width:100%;height:100%;object-fit:cover;border-radius:0.5rem;border:1px solid #e5e7eb" onerror="this.style.opacity='0.15'">
+      <button type="button" onclick="removeDresscodeImageAt(${i})" style="position:absolute;top:-6px;right:-6px;background:#ef4444;color:#fff;border:none;border-radius:50%;width:18px;height:18px;font-size:10px;cursor:pointer;line-height:1">✕</button>
+    </div>`).join('');
+}
+function addDresscodeImageUrl(url) {
+  const input = document.getElementById('dg2-dresscode-image-urls');
+  if (!input) return;
+  const urls = input.value.split('\n').map(u => u.trim()).filter(Boolean);
+  if (!urls.includes(url)) urls.push(url);
+  input.value = urls.join('\n');
+  renderDresscodeImagesPreview();
+}
+function removeDresscodeImageAt(index) {
+  const input = document.getElementById('dg2-dresscode-image-urls');
+  if (!input) return;
+  const urls = input.value.split('\n').map(u => u.trim()).filter(Boolean);
+  urls.splice(index, 1);
+  input.value = urls.join('\n');
+  renderDresscodeImagesPreview();
+}
+
 async function handleDresscodeImageUpload(input) {
-  const file = input.files[0];
-  if (!file) return;
-  if (file.size > 4*1024*1024) { toast('Imagem muito grande. Máx. 4 MB.'); return; }
+  const files = Array.from(input.files || []);
+  if (!files.length) return;
   const eventId = Store.currentEventId;
-  const label = 'Foto de referência do Dress Code';
-  const applyUrl = (url) => {
-    document.getElementById('dg2-dresscode-image-url').value = url;
-    document.getElementById('dg2-dresscode-image-preview').src = url;
-    document.getElementById('dg2-dresscode-image-wrap').classList.remove('hidden');
-  };
-  const proceed = await _confirmIfDuplicatePhoto(file, eventId, label, applyUrl);
-  if (!proceed) { input.value = ''; return; }
-  toast('A carregar foto...');
-  try {
-    const url = await uploadImageToStorage(file, 'event-covers', label);
-    applyUrl(url);
-    toast('Foto carregada!');
-  } catch(e) { toast('Erro ao carregar a foto.'); }
+  for (const file of files) {
+    if (file.size > 4*1024*1024) { toast(`"${file.name}" é muito grande (máx. 4 MB) — ignorada.`); continue; }
+    try {
+      const url = await uploadImageToStorage(file, 'event-covers', 'Foto de referência do Dress Code');
+      addDresscodeImageUrl(url);
+    } catch(e) { toast(`Erro ao carregar "${file.name}".`); }
+  }
+  input.value = '';
+  toast('Fotos carregadas!');
 }
 
 async function saveDressGiftsEditor() {
@@ -4494,7 +4521,8 @@ async function saveDressGiftsEditor() {
     dresscode_text: document.getElementById('dg2-dresscode-text')?.value?.trim() || null,
     dresscode_colors: document.getElementById('dg2-dresscode-colors')?.value?.trim() || null,
     dresscode_detail: document.getElementById('dg2-dresscode-detail')?.value?.trim() || null,
-    dresscode_image_url: document.getElementById('dg2-dresscode-image-url')?.value?.trim() || null,
+    dresscode_image_urls: document.getElementById('dg2-dresscode-image-urls')?.value?.trim() || null,
+    dresscode_image_url: null,
   };
 
   toast('A guardar...');

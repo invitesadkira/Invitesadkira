@@ -839,6 +839,7 @@ const EVENT_EDITOR_TABS = [
   { key: 'savethedate', label: 'Save the Date' },
   { key: 'midia-capa', label: 'Capa & Mídia' },
   { key: 'musica', label: 'Música' },
+  { key: 'video', label: 'Vídeo' },
   { key: 'tipo-estilo', label: 'Tipo & Estilo' },
   { key: 'texto-convite', label: 'Texto do Convite' },
   { key: 'mensagem-historia', label: 'Mensagem & História' },

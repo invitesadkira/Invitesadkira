@@ -159,6 +159,9 @@ function buildSimpleInviteTemplate(ev) {
       <!-- 4. Convidam ___ para a celebração -->
       <p style="text-align:center;font-size:0.98rem;color:#374151;line-height:1.7;max-width:380px;margin:0 auto 2.5rem;padding:0 1.5rem">${inviteLine}</p>
 
+      <!-- Vídeo do YouTube (se activo) -->
+      ${(_yesOrTrue(ev.show_youtube_video) && ev.youtube_video_url) ? buildYoutubeVideoSection(ev).replace('<!-- SECTION_DIVIDER -->','') : ''}
+
       <!-- 5. Data e horário -->
       <div style="text-align:center;margin-bottom:2.5rem">
         <p style="font-size:1.3rem;font-weight:800;color:${evColor};margin:0">${escapeHTML(longDate)}</p>
@@ -198,6 +201,256 @@ function buildSimpleInviteTemplate(ev) {
     </div>`;
 }
 
+// ── Layout "Elegante": capa cheia + letra script, secções com cabeçalhos
+//    cursivos (Ceremonia/Celebración/Regalos), contagem contínua com botão
+//    de calendário, e Dress Code + Presentes juntos no final. Opção nova e
+//    independente — usa a cor do evento, tal como "Completo" e "Simples". ──
+function _buildGoogleCalendarUrl(ev) {
+  try {
+    if (!ev.date) return '#';
+    const start = new Date(`${ev.date}T${ev.time || '00:00'}:00`);
+    if (isNaN(start.getTime())) return '#';
+    const end = new Date(start.getTime() + 3 * 60 * 60 * 1000);
+    const fmt = (d) => d.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+    const title = encodeURIComponent([ev.groom_name, ev.bride_name].filter(Boolean).join(' & ') || ev.title || 'Evento');
+    const location = encodeURIComponent(ev.venue_ceremony || ev.venue_reception || ev.venue_civil || '');
+    return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${fmt(start)}/${fmt(end)}&location=${location}`;
+  } catch(e) { return '#'; }
+}
+
+function buildElegantInviteTemplate(ev) {
+  const evColor = ev.event_color || '#007f9f';
+  const coupleNames = [ev.groom_name, ev.bride_name].filter(Boolean).join(' & ') || escapeHTML(ev.title || '');
+  const isBirthday = ev.event_type === 'birthday';
+  const eventTypeLabel = isBirthday ? 'ANIVERSÁRIO' : (ev.event_type === 'engagement' ? 'NOIVADO' : 'CASAMOS-NOS');
+
+  const coverPhoto = ev.cover_image || ev.bg_url_mobile || ev.bg_url;
+  const coverBlock = coverPhoto ? `
+    <div class="reveal" style="position:relative;width:100%;height:90vh;min-height:480px;max-height:760px;overflow:hidden;background:#1a1a2e">
+      <img src="${coverPhoto}" style="width:100%;height:100%;object-fit:cover;display:block" alt="">
+      <div style="position:absolute;inset:0;background:linear-gradient(to bottom, rgba(0,0,0,0.12) 0%, rgba(0,0,0,0.05) 45%, rgba(0,0,0,0.42) 100%)"></div>
+      <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:0 1.5rem">
+        <p style="font-family:'Great Vibes',cursive;font-size:clamp(2.6rem,11vw,4rem);color:#fff;text-shadow:0 2px 16px rgba(0,0,0,0.5);margin:0;line-height:1">${escapeHTML(coupleNames)}</p>
+        <p style="font-size:0.8rem;letter-spacing:0.35em;text-transform:uppercase;color:#fff;font-weight:700;margin-top:0.65rem;text-shadow:0 2px 8px rgba(0,0,0,0.5)">${eventTypeLabel}</p>
+      </div>
+      <div style="position:absolute;bottom:1.5rem;left:0;right:0;display:flex;justify-content:center">
+        <svg class="elegant-scroll-hint" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+    </div>` : '';
+
+  const introBlock = `
+    <div class="reveal" style="padding:3rem 1.5rem 2.5rem;text-align:center;max-width:480px;margin:0 auto">
+      <p style="font-size:0.74rem;letter-spacing:0.25em;text-transform:uppercase;color:#9ca3af;font-weight:700;margin-bottom:0.5rem">Estás Convidado Para</p>
+      <p style="font-family:'Great Vibes',cursive;font-size:clamp(1.9rem,8vw,2.5rem);color:${evColor};margin:0 0 1.1rem">${isBirthday ? 'o meu aniversário' : 'o nosso casamento'}</p>
+      ${ev.invite_text ? `<p style="font-size:0.9rem;color:#374151;line-height:1.85">${ev.invite_text.split('\n').filter(Boolean).map(l=>escapeHTML(l)).join('<br>')}</p>` : ''}
+    </div>`;
+
+  // Contagem — reaproveita a secção já existente (mesmos 7 estilos, mesmo
+  // motor de actualização a cada segundo), só com o título adaptado.
+  const countdownBlock = ev.date ? buildCountdownSection({ ...ev, countdown_style: ev.countdown_style || 'continuous' })
+    .replace('<!-- SECTION_DIVIDER -->', '')
+    .replace('Contagem Regressiva até ao Grande Dia', 'Falta pouco para o grande dia') : '';
+
+  // Agendar no calendário + data em destaque
+  const dateObj = ev.date ? new Date(ev.date + 'T00:00:00') : null;
+  const monthsPt = ['JANEIRO','FEVEREIRO','MARÇO','ABRIL','MAIO','JUNHO','JULHO','AGOSTO','SETEMBRO','OUTUBRO','NOVEMBRO','DEZEMBRO'];
+  const calendarBlock = dateObj ? `
+    <div class="reveal" style="text-align:center;padding:0 1.5rem 3rem;background:linear-gradient(135deg,#f0f9fb,#e6f4f7)">
+      <button onclick="window.open('${_buildGoogleCalendarUrl(ev)}','_blank')" style="background:#fff;color:${evColor};border:1.5px solid ${evColor};border-radius:999px;padding:0.65rem 1.4rem;font-weight:700;font-size:0.85rem;cursor:pointer;display:inline-flex;align-items:center;gap:0.5rem;margin-bottom:2rem">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        Agendar Recordatório
+      </button><br>
+      <p style="font-size:0.78rem;letter-spacing:0.2em;text-transform:uppercase;color:#6b7280;font-weight:700;margin:0">${monthsPt[dateObj.getMonth()]}</p>
+      <p style="font-family:'Playfair Display',serif;font-size:3.2rem;font-weight:700;color:${evColor};margin:0.1rem 0;line-height:1">${dateObj.getDate()}</p>
+      <p style="font-size:0.85rem;letter-spacing:0.15em;color:#9ca3af;margin:0">${dateObj.getFullYear()}</p>
+    </div>` : '';
+
+  // Locais — mesmos dados de sempre, com cabeçalhos cursivos
+  const venueBlocks = [];
+  if (ev.venue_ceremony) venueBlocks.push({ label: 'Ceremonia', name: ev.venue_ceremony, time: ev.time, maps: ev.venue_ceremony_maps });
+  if (ev.venue_reception) venueBlocks.push({ label: 'Celebración', name: ev.venue_reception, time: null, maps: ev.venue_reception_maps });
+  if (ev.venue_civil) venueBlocks.push({ label: 'Cerimónia Civil', name: ev.venue_civil, time: null, maps: ev.venue_civil_maps });
+  const venuesBlock = venueBlocks.length ? `
+    <div class="reveal" style="padding:3rem 1.5rem;text-align:center;max-width:480px;margin:0 auto">
+      ${venueBlocks.map(v => `
+        <div style="margin-bottom:2.5rem">
+          <p style="font-family:'Great Vibes',cursive;font-size:2.2rem;color:#1e293b;margin:0 0 0.6rem">${escapeHTML(v.label)}</p>
+          <p style="font-size:0.9rem;color:#374151;line-height:1.7;margin-bottom:0.3rem">Te esperamos en<br><strong>${escapeHTML(v.name)}</strong></p>
+          ${v.time ? `<p style="font-size:0.85rem;color:#6b7280;margin-bottom:1rem">às ${escapeHTML(v.time)}</p>` : ''}
+          ${v.maps ? `<a href="${escapeHTML(v.maps)}" target="_blank" style="display:inline-block;background:${evColor};color:#fff;border-radius:999px;padding:0.55rem 1.5rem;font-size:0.78rem;font-weight:700;text-decoration:none;letter-spacing:0.05em">VER UBICACIÓN</a>` : ''}
+        </div>`).join('')}
+    </div>` : '';
+
+  // Dress Code + Presentes, juntos numa só secção final
+  const showDress = _yesOrTrue(ev.show_dresscode);
+  const showGiftList = _yesOrTrue(ev.show_dress_gifts);
+  const hasIban = !!(ev.iban_number && ev.iban_number.trim());
+  const dressGiftsBlock = (showDress || showGiftList || hasIban) ? `
+    <div class="reveal" style="padding:3rem 1.5rem;text-align:center;max-width:480px;margin:0 auto;background:#faf9f7">
+      ${showDress ? `
+        <div style="margin-bottom:2.5rem">
+          <p style="font-size:0.78rem;letter-spacing:0.25em;text-transform:uppercase;color:#9ca3af;font-weight:700;margin-bottom:1rem">Dress Code</p>
+          ${_buildDresscodeContentHTML(ev)}
+        </div>` : ''}
+      ${(showGiftList || hasIban) ? `
+        <div>
+          <p style="font-family:'Great Vibes',cursive;font-size:2.2rem;color:#1e293b;margin:0 0 0.75rem">Regalos</p>
+          <p style="font-size:0.88rem;color:#374151;line-height:1.7;margin-bottom:1.25rem">Lo más importante es tu presencia,<br>pero si deseas hacernos un regalo aquí tienes nuestros datos.</p>
+          <div style="display:flex;flex-direction:column;gap:0.7rem;align-items:center">
+            ${hasIban ? `<button onclick="document.getElementById('elegant-iban-box').classList.toggle('hidden')" style="background:${evColor};color:#fff;border:none;border-radius:0.6rem;padding:0.75rem 2rem;font-weight:700;font-size:0.8rem;letter-spacing:0.04em;cursor:pointer;width:240px">VER DATOS BANCARIOS</button>` : ''}
+            ${showGiftList ? `<button onclick="typeof openGuestGiftsModal==='function' && openGuestGiftsModal()" style="background:transparent;color:${evColor};border:1.5px solid ${evColor};border-radius:0.6rem;padding:0.75rem 2rem;font-weight:700;font-size:0.8rem;letter-spacing:0.04em;cursor:pointer;width:240px">LISTA DE REGALOS</button>` : ''}
+          </div>
+          ${hasIban ? `
+          <div id="elegant-iban-box" class="hidden" style="margin-top:1.1rem;background:#fff;border-radius:0.6rem;padding:1rem;border:1px solid #e5e7eb;text-align:left;max-width:260px;margin-left:auto;margin-right:auto">
+            ${ev.iban_holder ? `<p style="font-size:0.7rem;color:#9ca3af;margin-bottom:0.15rem">Titular</p><p style="font-size:0.85rem;font-weight:700;color:#1e293b;margin-bottom:0.5rem">${escapeHTML(ev.iban_holder)}</p>` : ''}
+            <p style="font-size:0.7rem;color:#9ca3af;margin-bottom:0.15rem">IBAN</p>
+            <p style="font-size:0.82rem;font-weight:700;color:#1e293b;word-break:break-all;margin-bottom:0.6rem">${escapeHTML(ev.iban_number)}</p>
+            <button onclick="copyIban('${escapeHTML(ev.iban_number)}')" style="font-size:0.75rem;color:${evColor};font-weight:700;background:none;border:none;cursor:pointer;text-decoration:underline">Copiar IBAN</button>
+          </div>` : ''}
+        </div>` : ''}
+    </div>` : '';
+
+  return `<div class="elegant-invite" style="background:#fff">
+    ${coverBlock}
+    ${introBlock}
+    ${countdownBlock}
+    ${calendarBlock}
+    ${(_yesOrTrue(ev.show_youtube_video) && ev.youtube_video_url) ? buildYoutubeVideoSection(ev).replace('<!-- SECTION_DIVIDER -->','') : ''}
+    ${venuesBlock}
+    ${dressGiftsBlock}
+  </div>`;
+}
+
+// ── Layout "Calendário": tira de 3 fotos com a data sobreposta, calendário
+//    real do mês com o dia do evento marcado, e secções de Cerimónia/
+//    Banquete com ícone + botão de mapa. Opção nova e independente, usa a
+//    cor do evento (mesma escolha já feita para o layout "Elegante"). ──
+function _buildMonthCalendar(dateObj, evColor) {
+  const monthsPt = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  const year = dateObj.getFullYear(), month = dateObj.getMonth(), day = dateObj.getDate();
+  const firstDow = (new Date(year, month, 1).getDay() + 6) % 7; // Segunda = 0
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const dowLabels = ['SEG','TER','QUA','QUI','SEX','SÁB','DOM'];
+  let cells = '';
+  for (let i = 0; i < firstDow; i++) cells += `<span></span>`;
+  for (let d = 1; d <= daysInMonth; d++) {
+    const isDay = d === day;
+    cells += `<span style="width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-size:0.72rem;margin:0 auto;border-radius:50%;${isDay ? `background:${evColor};color:#fff;font-weight:800;` : 'color:#374151;'}">${d}</span>`;
+  }
+  return `<div style="max-width:280px;margin:0 auto">
+    <p style="font-family:'Great Vibes',cursive;font-size:1.7rem;color:${evColor};text-align:center;margin-bottom:0.6rem">${monthsPt[month]}</p>
+    <div style="display:grid;grid-template-columns:repeat(7,1fr);margin-bottom:0.5rem">
+      ${dowLabels.map(l => `<span style="font-size:0.58rem;color:#9ca3af;text-align:center;font-weight:700">${l}</span>`).join('')}
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(7,1fr);row-gap:0.35rem">${cells}</div>
+  </div>`;
+}
+
+function buildCalendarInviteTemplate(ev) {
+  const evColor = ev.event_color || '#007f9f';
+  const coupleNames = [ev.groom_name, ev.bride_name].filter(Boolean).join(' & ') || escapeHTML(ev.title || '');
+  const isBirthday = ev.event_type === 'birthday';
+  const subtitleLabel = isBirthday ? 'IT\'S MY BIRTHDAY' : (ev.event_type === 'engagement' ? 'WE GOT ENGAGED' : 'ARE GETTING MARRIED');
+  const dateObj = ev.date ? new Date(ev.date + 'T00:00:00') : null;
+
+  // Tira de 3 fotos com a data sobreposta (dia / mês / ano, a 2 dígitos)
+  let photoStripBlock = '';
+  if (dateObj) {
+    const dd = String(dateObj.getDate()).padStart(2,'0');
+    const mm = String(dateObj.getMonth()+1).padStart(2,'0');
+    const yy = String(dateObj.getFullYear()).slice(-2);
+    const galleryPhotos = (ev.gallery_urls || '').split('\n').map(u=>u.trim()).filter(Boolean);
+    const photos = [galleryPhotos[0], galleryPhotos[1], galleryPhotos[2]].map(p => p || ev.cover_image || '');
+    photoStripBlock = `
+      <div class="reveal" style="display:flex;gap:0.15rem;margin:0 1.25rem 1.75rem">
+        ${[dd,mm,yy].map((num,i) => `
+          <div style="position:relative;flex:1;aspect-ratio:3/4;overflow:hidden;background:#1a1a2e;border-radius:0.3rem">
+            ${photos[i] ? `<img src="${photos[i]}" style="width:100%;height:100%;object-fit:cover;display:block" alt="">` : ''}
+            <div style="position:absolute;inset:0;background:linear-gradient(to bottom,transparent 50%,rgba(0,0,0,0.6) 100%)"></div>
+            <span style="position:absolute;bottom:0.35rem;left:0;right:0;text-align:center;font-size:1.7rem;font-weight:800;color:#fff;font-family:'Playfair Display',serif">${num}</span>
+          </div>`).join('')}
+      </div>`;
+  }
+
+  const headerBlock = `
+    <div class="reveal" style="text-align:center;padding:2.5rem 1.5rem 1.5rem">
+      <p style="font-family:'Great Vibes',cursive;font-size:clamp(2rem,9vw,2.6rem);color:#1e293b;margin:0">Save The Date</p>
+    </div>
+    ${photoStripBlock}
+    <div class="reveal" style="text-align:center;padding:0 1.5rem 2.5rem">
+      <p style="font-family:'Great Vibes',cursive;font-size:clamp(2.2rem,9vw,2.8rem);color:${evColor};margin:0">${escapeHTML(coupleNames)}</p>
+      <p style="font-size:0.68rem;letter-spacing:0.3em;text-transform:uppercase;color:#9ca3af;font-weight:700;margin-top:0.5rem">${subtitleLabel}</p>
+    </div>`;
+
+  const introBlock = `
+    <div class="reveal" style="padding:0 1.5rem 2.5rem;text-align:center;max-width:460px;margin:0 auto">
+      <p style="font-size:1.15rem;font-weight:700;color:#1e293b;margin-bottom:0.9rem">Queridos convidados!</p>
+      ${ev.invite_text ? `<p style="font-size:0.9rem;color:#374151;line-height:1.85">${ev.invite_text.split('\n').filter(Boolean).map(l=>escapeHTML(l)).join('<br>')}</p>` : ''}
+    </div>`;
+
+  const calendarBlock = dateObj ? `<div class="reveal" style="padding:0 1.5rem 2.75rem">${_buildMonthCalendar(dateObj, evColor)}</div>` : '';
+
+  // Cerimónia + Banquete — ícone, data/hora, endereço, botão de mapa
+  const venueRows = [];
+  if (ev.venue_ceremony) venueRows.push({ icon:'church', label:'Cerimónia', name:ev.venue_ceremony, time:ev.time, maps:ev.venue_ceremony_maps });
+  if (ev.venue_reception) venueRows.push({ icon:'glass-water', label:'Banquete', name:ev.venue_reception, time:null, maps:ev.venue_reception_maps });
+  if (ev.venue_civil) venueRows.push({ icon:'file-text', label:'Cerimónia Civil', name:ev.venue_civil, time:null, maps:ev.venue_civil_maps });
+  const venuesBlock = venueRows.map(v => `
+    <div class="reveal" style="text-align:center;padding:0 1.5rem 2.5rem;max-width:420px;margin:0 auto">
+      <i data-lucide="${v.icon}" style="width:30px;height:30px;color:${evColor};margin-bottom:0.6rem"></i>
+      <p style="font-size:1.2rem;font-weight:700;color:#1e293b;margin-bottom:0.7rem">${escapeHTML(v.label)}</p>
+      ${(ev.date || v.time) ? `<p style="font-size:0.95rem;color:#374151;margin-bottom:0.5rem">${dateObj ? escapeHTML(String(dateObj.getDate()).padStart(2,'0')+'.'+String(dateObj.getMonth()+1).padStart(2,'0')) : ''}${v.time ? ` &nbsp;|&nbsp; ${escapeHTML(v.time)}` : ''}</p>` : ''}
+      <p style="font-size:0.85rem;color:#6b7280;margin-bottom:1rem">${escapeHTML(v.name)}</p>
+      ${v.maps ? `<a href="${escapeHTML(v.maps)}" target="_blank" style="display:inline-block;background:color-mix(in srgb,${evColor} 80%,#000);color:#fff;border-radius:0.5rem;padding:0.55rem 1.4rem;font-size:0.78rem;font-weight:700;text-decoration:none">VER NO MAPA</a>` : ''}
+    </div>`).join('');
+
+  // Dress code: paleta de cores (reaproveita dresscode_colors já existente)
+  const showDress = _yesOrTrue(ev.show_dresscode);
+  const dressColors = showDress && ev.dresscode_colors
+    ? ev.dresscode_colors.split(/\n|,/).map(c=>c.trim()).filter(c=>/^#[0-9a-fA-F]{3,6}$/.test(c)).slice(0,8) : [];
+  const dressBlock = showDress ? `
+    <div class="reveal" style="text-align:center;padding:0 1.5rem 2.5rem;max-width:420px;margin:0 auto">
+      <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="${evColor}" stroke-width="1.3" style="margin-bottom:0.6rem"><path d="M20.38 3.46 16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.57a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.57a2 2 0 0 0-1.34-2.23z"/></svg>
+      <p style="font-size:1.2rem;font-weight:700;color:#1e293b;margin-bottom:0.7rem">Dress Code</p>
+      ${ev.dresscode_text ? `<p style="font-size:0.9rem;color:#374151;line-height:1.7;margin-bottom:1rem">${escapeHTML(ev.dresscode_text)}</p>` : ''}
+      ${dressColors.length ? `<div style="display:flex;gap:0.5rem;justify-content:center;flex-wrap:wrap">
+        ${dressColors.map(c => `<div title="${c}" style="width:34px;height:34px;border-radius:50%;background:${c};border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.18)"></div>`).join('')}
+      </div>` : ''}
+    </div>` : '';
+
+  // Detalhes / presentes
+  const hasIban = !!(ev.iban_number && ev.iban_number.trim());
+  const detailsBlock = (hasIban || ev.iban_message) ? `
+    <div class="reveal" style="text-align:center;padding:0 1.5rem 3rem;max-width:420px;margin:0 auto">
+      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="${evColor}" stroke-width="1.5" style="margin-bottom:0.6rem"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+      <p style="font-size:1.2rem;font-weight:700;color:#1e293b;margin-bottom:0.9rem">Detalhes</p>
+      ${ev.iban_message ? `<p style="font-size:0.88rem;color:#374151;line-height:1.75;margin-bottom:1.1rem">${escapeHTML(ev.iban_message).split('\n').filter(Boolean).join('<br><br>')}</p>` : ''}
+      ${hasIban ? `<button onclick="document.getElementById('cal-iban-box').classList.toggle('hidden')" style="background:${evColor};color:#fff;border:none;border-radius:0.5rem;padding:0.65rem 1.6rem;font-weight:700;font-size:0.8rem;cursor:pointer">Ver Dados Bancários</button>
+      <div id="cal-iban-box" class="hidden" style="margin-top:1rem;background:#faf9f7;border-radius:0.6rem;padding:1rem;border:1px solid #e5e7eb;text-align:left">
+        <p style="font-size:0.7rem;color:#9ca3af;margin-bottom:0.15rem">IBAN</p>
+        <p style="font-size:0.82rem;font-weight:700;color:#1e293b;word-break:break-all;margin-bottom:0.6rem">${escapeHTML(ev.iban_number)}</p>
+        <button onclick="copyIban('${escapeHTML(ev.iban_number)}')" style="font-size:0.75rem;color:${evColor};font-weight:700;background:none;border:none;cursor:pointer;text-decoration:underline">Copiar IBAN</button>
+      </div>` : ''}
+    </div>` : '';
+
+  const closingBlock = `
+    <div class="reveal" style="text-align:center;padding:1rem 1.5rem 3.5rem">
+      <p style="font-size:0.85rem;color:#6b7280;margin-bottom:0.75rem">Esperamos por si com entusiasmo!</p>
+      <p style="font-family:'Great Vibes',cursive;font-size:1.6rem;color:${evColor};margin:0">${escapeHTML(coupleNames)}</p>
+    </div>`;
+
+  return `<div class="calendar-invite" style="background:#fff">
+    ${headerBlock}
+    ${introBlock}
+    ${(_yesOrTrue(ev.show_youtube_video) && ev.youtube_video_url) ? buildYoutubeVideoSection(ev).replace('<!-- SECTION_DIVIDER -->','') : ''}
+    ${calendarBlock}
+    ${venuesBlock}
+    ${dressBlock}
+    ${detailsBlock}
+    ${closingBlock}
+  </div>`;
+}
+
 async function renderGuestSections(eventData) {
   // Load venues from dedicated table
   try {
@@ -218,6 +471,18 @@ async function renderGuestSections(eventData) {
   if (eventData.invite_layout === 'simple') {
     if (heroBlock) heroBlock.style.display = 'none';
     container.innerHTML = buildSimpleInviteTemplate(eventData);
+    lucide.createIcons();
+    return;
+  } else if (eventData.invite_layout === 'elegant') {
+    if (heroBlock) heroBlock.style.display = 'none';
+    container.innerHTML = buildElegantInviteTemplate(eventData);
+    initScrollReveal();
+    lucide.createIcons();
+    return;
+  } else if (eventData.invite_layout === 'calendar') {
+    if (heroBlock) heroBlock.style.display = 'none';
+    container.innerHTML = buildCalendarInviteTemplate(eventData);
+    initScrollReveal();
     lucide.createIcons();
     return;
   } else if (heroBlock) {
@@ -311,6 +576,7 @@ async function renderGuestSections(eventData) {
             html += buildParentsSection(eventData);
           break;
         case 'story':    if (eventData.story_text && _yesOrTrue(eventData.show_story)) html += buildStorySection(eventData); break;
+        case 'youtube_video': if (_yesOrTrue(eventData.show_youtube_video) && eventData.youtube_video_url) html += buildYoutubeVideoSection(eventData); break;
         case 'iban':     if (eventData.iban_number) html += buildIbanSection(eventData); break;
         case 'gallery':  if (eventData.gallery_urls) html += buildGallerySection(eventData); break;
         case 'venues':   if (_yesOrTrue(eventData.show_venues) && (eventData.venue_ceremony || eventData.venue_civil || eventData.venue_reception)) html += buildVenueSection(eventData); break;
@@ -769,6 +1035,28 @@ function startCountdownInterval(dateStr, timeStr) {
   }
   update();
   window._countdownInterval = setInterval(update, 1000);
+}
+
+// ── Vídeo do YouTube — embutido no próprio convite, nunca a abrir o
+//    YouTube directamente. Usa youtube-nocookie.com (modo "privacidade
+//    melhorada" do próprio YouTube) + modestbranding/rel=0, para reduzir
+//    ao mínimo possível a marca do YouTube visível — o pequeno logótipo no
+//    canto do leitor é a única coisa que o YouTube nunca deixa remover,
+//    mesmo com estas opções todas; o resto (vídeos relacionados de outros
+//    canais, título grande, etc.) fica escondido. ──────────────────────
+function buildYoutubeVideoSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
+  const videoId = (typeof extractYouTubeId === 'function') ? extractYouTubeId(ev.youtube_video_url || '') : null;
+  if (!videoId) return '';
+  return _SD + `<div class="event-section" style="background:#0f172a">
+    <div class="section-inner reveal" style="text-align:center;padding-top:2.5rem;padding-bottom:2.5rem">
+      ${ev.youtube_video_title ? `<p style="font-size:1.05rem;font-weight:700;color:#fff;margin-bottom:1.1rem">${escapeHTML(ev.youtube_video_title)}</p>` : ''}
+      <div style="position:relative;width:100%;max-width:520px;margin:0 auto;border-radius:0.85rem;overflow:hidden;box-shadow:0 8px 30px rgba(0,0,0,0.4)">
+        <div style="position:relative;width:100%;aspect-ratio:16/9;background:#000">
+          <iframe src="https://www.youtube-nocookie.com/embed/${videoId}?modestbranding=1&rel=0&iv_load_policy=3&playsinline=1" title="${escapeHTML(ev.youtube_video_title || 'Vídeo')}" style="position:absolute;inset:0;width:100%;height:100%;border:0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe>
+        </div>
+      </div>
+    </div>
+  </div>`;
 }
 
 function buildStorySection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
@@ -1799,6 +2087,7 @@ const ALL_SECTION_DEFS = [
   { key: 'date',      label: 'Data do Evento',                       icon: 'calendar' },
   { key: 'countdown', label: 'Contagem Regressiva',                  icon: 'timer' },
   { key: 'story',     label: 'Nossa História',                       icon: 'heart' },
+  { key: 'youtube_video', label: 'Vídeo do YouTube',                 icon: 'play-circle' },
   { key: 'venues',    label: 'Locais do Evento',                     icon: 'map-pin' },
   { key: 'parents',   label: 'Nomes dos Pais',                       icon: 'users' },
   { key: 'iban',      label: 'Sugestão de Presente (IBAN)',           icon: 'credit-card' },
@@ -1997,13 +2286,25 @@ function buildDressGiftsSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
 // (ver openGuestDresscodeModal em guest.js).
 function _buildDresscodeContentHTML(ev) {
   const evColor = ev.event_color || '#007f9f';
-  return `<div style="text-align:center">
-      ${ev.dresscode_image_url ? `
-        <img src="${ev.dresscode_image_url}" style="width:100%;max-width:220px;border-radius:0.85rem;object-fit:cover;aspect-ratio:1;margin:0 auto 0.85rem;display:block">
-      ` : `
-      <div style="width:52px;height:52px;border-radius:50%;background:color-mix(in srgb,${evColor} 12%,white);display:flex;align-items:center;justify-content:center;margin:0 auto 0.75rem">
+  // ✅ Suporta várias imagens agora (dresscode_image_urls, uma por linha) —
+  // mantém compatibilidade com eventos antigos que só tinham uma única
+  // imagem guardada em dresscode_image_url.
+  const dressImages = (ev.dresscode_image_urls || ev.dresscode_image_url || '')
+    .split('\n').map(u => u.trim()).filter(Boolean);
+  let imagesHtml;
+  if (dressImages.length === 1) {
+    imagesHtml = `<img src="${dressImages[0]}" style="width:100%;max-width:220px;border-radius:0.85rem;object-fit:cover;aspect-ratio:1;margin:0 auto 0.85rem;display:block">`;
+  } else if (dressImages.length > 1) {
+    imagesHtml = `<div style="display:flex;gap:0.6rem;justify-content:center;flex-wrap:wrap;max-width:340px;margin:0 auto 0.85rem">
+      ${dressImages.map(url => `<img src="${url}" style="width:${dressImages.length===2?'140px':'100px'};height:${dressImages.length===2?'140px':'100px'};border-radius:0.7rem;object-fit:cover" loading="lazy">`).join('')}
+    </div>`;
+  } else {
+    imagesHtml = `<div style="width:52px;height:52px;border-radius:50%;background:color-mix(in srgb,${evColor} 12%,white);display:flex;align-items:center;justify-content:center;margin:0 auto 0.75rem">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="${evColor}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.38 3.46 16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.57a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.57a2 2 0 0 0-1.34-2.23z"/></svg>
-      </div>`}
+      </div>`;
+  }
+  return `<div style="text-align:center">
+      ${imagesHtml}
       ${ev.dresscode_text ? `<p style="font-size:1rem;font-weight:600;color:#1e293b;margin-bottom:0.5rem">${escapeHTML(ev.dresscode_text)}</p>` : ''}
       ${ev.dresscode_detail ? `<p style="font-size:0.85rem;color:#374151;line-height:1.6;max-width:420px;margin:0 auto 0.5rem">${escapeHTML(ev.dresscode_detail)}</p>` : ''}
       ${(() => {

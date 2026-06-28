@@ -6,7 +6,7 @@
   <title>AdKira — Confirmação de Presença</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,600;0,700;0,800;0,900;1,600;1,700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,600;0,700;0,800;0,900;1,600;1,700&family=Great+Vibes&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Bibliotecas de exportação em PDF (lista de confirmações + lista de presentes) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -14,7 +14,7 @@
   <script>tailwind.config = { theme: { extend: { colors: { teal: { 500: '#007f9f', 600: '#006b86' } } } } }</script>
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💌</text></svg>">
-  <link rel="stylesheet" href="css/main.css?v=1782581237">
+  <link rel="stylesheet" href="css/main.css?v=1782627509">
 </head>
 <body class="h-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
 
@@ -551,6 +551,20 @@
         </div>
        </div>
        </div><!-- /pane musica -->
+       <div class="event-tab-pane hidden" data-tab="video">
+        <!-- Vídeo do YouTube — secção própria, completamente independente
+             da Música (são duas coisas diferentes: uma é som de fundo, a
+             outra é um vídeo embutido que o convidado escolhe ver). -->
+        <div class="flex items-center justify-between">
+         <span class="text-sm font-semibold text-gray-700">Vídeo do YouTube</span>
+         <div id="sw-youtube-video" class="switch" onclick="toggleSwitch(this, 'youtube-video-extra')"></div>
+        </div>
+        <p class="text-xs text-gray-400 -mt-1 mb-1">O vídeo abre dentro do próprio convite — o convidado nunca é levado para o YouTube.</p>
+        <div id="youtube-video-extra" class="hidden pl-4 space-y-2">
+         <input id="evt-youtube-video-url" type="url" class="input-field" placeholder="https://www.youtube.com/watch?v=...">
+         <input id="evt-youtube-video-title" type="text" class="input-field" placeholder="Título acima do vídeo (opcional)">
+        </div>
+       </div><!-- /pane video -->
        <div class="event-tab-pane hidden" data-tab="presentes">
        <div class="space-y-3 mb-4">
         <div class="flex items-center justify-between">
@@ -589,8 +603,10 @@ A vossa presença neste dia tão especial é, para nós, o maior presente. No en
          <select id="evt-invite-layout" class="input-field">
           <option value="sections">Completo (secções configuráveis)</option>
           <option value="simple">Simples (1 só bloco, fluxo contínuo)</option>
+          <option value="elegant">Elegante (capa cheia, letra script)</option>
+          <option value="calendar">Calendário (fotos com data, mês ilustrado)</option>
          </select>
-         <p class="text-xs text-gray-400 mt-1">"Simples" mostra tudo numa só página contínua: capa, texto bíblico, nomes, convite, data, local, confirmação e cronograma — sem secções separadas. As flores de decoração ficam especialmente bem com este estilo.</p>
+         <p class="text-xs text-gray-400 mt-1">"Simples" mostra tudo numa só página contínua. "Elegante" usa uma capa cheia com letra cursiva. "Calendário" mostra 3 fotos com a data sobreposta e um calendário do mês com o dia do evento marcado.</p>
         </div>
        </div><!-- /pane tipo-estilo -->
        <div class="event-tab-pane hidden" data-tab="midia-capa">
@@ -1417,19 +1433,19 @@ para testemunhar o seu enlace matrimonial</textarea>
   </a>
 
   <!-- ===================== SCRIPTS (ordem importa) ===================== -->
-  <script src="js/config.js?v=1782581237"></script>
-  <script src="js/store.js?v=1782581237"></script>
-  <script src="js/visuals.js?v=1782581237"></script>
-  <script src="js/venues.js?v=1782581237"></script>
-  <script src="js/rsvp.js?v=1782581237"></script>
-  <script src="js/ui.js?v=1782581237"></script>
-  <script src="js/auth.js?v=1782581237"></script>
-  <script src="js/dashboard.js?v=1782581237"></script>
-  <script src="js/events.js?v=1782581237"></script>
-  <script src="js/guest.js?v=1782581237"></script>
-  <script src="js/sections.js?v=1782581237"></script>
-  <script src="js/admin.js?v=1782581237"></script>
-  <script src="js/router.js?v=1782581237"></script>
+  <script src="js/config.js?v=1782627509"></script>
+  <script src="js/store.js?v=1782627509"></script>
+  <script src="js/visuals.js?v=1782627509"></script>
+  <script src="js/venues.js?v=1782627509"></script>
+  <script src="js/rsvp.js?v=1782627509"></script>
+  <script src="js/ui.js?v=1782627509"></script>
+  <script src="js/auth.js?v=1782627509"></script>
+  <script src="js/dashboard.js?v=1782627509"></script>
+  <script src="js/events.js?v=1782627509"></script>
+  <script src="js/guest.js?v=1782627509"></script>
+  <script src="js/sections.js?v=1782627509"></script>
+  <script src="js/admin.js?v=1782627509"></script>
+  <script src="js/router.js?v=1782627509"></script>
 
 </body>
 </html>
