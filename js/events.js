@@ -927,6 +927,7 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
           venue_reception_maps: document.getElementById('evt-venue-reception-maps')?.value?.trim() || null,
           venue_reception_image: document.getElementById('evt-venue-reception-image')?.value || null,
           venues_title: document.getElementById('evt-venues-title')?.value?.trim() || null,
+          venue_image_fit: document.getElementById('evt-venue-image-fit')?.value || 'contain',
         });
         // Save dates to dedicated table
         if (typeof saveEventDates !== 'undefined') saveEventDates(eventId, {
@@ -2043,6 +2044,7 @@ function _fillEditForm(ev) {
   _sv('evt-venue-civil-date',     ev.venue_relig_date);
   _sv('evt-venue-reception',      ev.venue_reception);
   _sv('evt-venues-title',          ev.venues_title);
+  { const vifEl = document.getElementById('evt-venue-image-fit'); if (vifEl) vifEl.value = ev.venue_image_fit || 'contain'; }
   _sv('evt-venue-reception-maps', ev.venue_reception_maps);
   { const _vImg = (key, url) => {
       if (!url) return;
@@ -3317,8 +3319,8 @@ async function checkForIntakeMode() {
     }
 
     Store._intakeToken = token;
-    Store._intakeEventId = tkn.event_id;
-    openIntakeForm(tkn.event_id);
+    Store._intakeEventId = tkn.event_id || null;
+    openIntakeForm(tkn.event_id || null);
     return true;
   }
 
@@ -3342,8 +3344,7 @@ function _showIntakeError(title, msg) {
 }
 
 async function openIntakeForm(eventId) {
-  const result = await supabaseRequest(`events?id=eq.${eventId}&select=id,title,date&limit=1`);
-  const ev = result && result[0] ? result[0] : {};
+  const ev = eventId ? (await supabaseRequest(`events?id=eq.${eventId}&select=id,title,date&limit=1`))?.[0] || {} : {};
 
   // Store eventId for the continue button
   window._intakeEventId = eventId;
@@ -3969,6 +3970,34 @@ function intakeRemoveGalleryPhoto(idx) {
 }
 
 // ── Intake token management ──
+// ── Link de preenchimento SEM evento ainda criado — o cliente preenche
+// tudo primeiro; o admin associa as respostas a um evento depois (novo ou
+// já existente). ─────────────────────────────────────────────────────────
+async function generateStandaloneIntakeLink() {
+  if (!Store.currentUser || Store.currentUser.role !== 'admin') {
+    toast('Apenas o administrador pode gerar este link.');
+    return;
+  }
+  const result = await supabaseRequest('intake_tokens', 'POST', { event_id: null, used: false });
+  const token = result && result[0] && result[0].token;
+  if (!token) { toast('Erro ao gerar o link.'); return; }
+  const base = window.location.origin + window.location.pathname;
+  const link = base + '?intake_token=' + token;
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.innerHTML = `
+    <div class="modal-content bg-white rounded-2xl p-6" style="max-width:480px">
+      <h3 class="text-base font-bold text-gray-800 mb-2">Link de Preenchimento (sem evento)</h3>
+      <p class="text-xs text-gray-500 mb-3">Envia este link a quem ainda não tem evento criado. As respostas ficam guardadas como "pendentes" — associa-as a um evento depois, aqui no painel de administrador.</p>
+      <div id="iw-standalone-link-display" style="background:#f1f5f9;border-radius:0.5rem;padding:0.75rem;font-size:0.75rem;font-family:monospace;word-break:break-all;color:#1e293b;margin-bottom:1rem">${link}</div>
+      <div class="flex gap-2">
+        <button class="flex-1 btn-main" onclick="navigator.clipboard.writeText(document.getElementById('iw-standalone-link-display').textContent.trim()).then(()=>toast('Link copiado!'))">Copiar Link</button>
+        <button class="flex-1 btn-outline" onclick="this.closest('.modal-overlay').remove()">Fechar</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+}
+
 async function generateIntakeToken(eventId) {
   // Mark any existing tokens for this event as used (invalidate old links)
   await supabaseRequest(`intake_tokens?event_id=eq.${eventId}&used=eq.false`, 'PATCH', { used: true });

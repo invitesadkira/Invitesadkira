@@ -743,6 +743,8 @@ function handleLogout() {
   localStorage.removeItem('adminImpersonatingUserId');
   localStorage.removeItem('adminImpersonatingUserPhone');
   localStorage.removeItem('adminOriginalUserId');
+  sessionStorage.removeItem('lastScreen');
+  sessionStorage.removeItem('lastEventId');
   localStorage.removeItem('adminOriginalUserPhone');
   // Fase 3 (dormente até ser activada, mas limpa por precaução)
   localStorage.removeItem('sb_auth_session');

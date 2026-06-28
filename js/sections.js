@@ -2202,9 +2202,10 @@ function buildVenueSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
   if (ev.venue_reception)venues.push({ icon: 'glass-water', title: "Copo d'Água",          name: ev.venue_reception,maps: ev.venue_reception_maps, image: ev.venue_reception_image });
   if (!venues.length) return '';
 
+  const imgFit = ev.venue_image_fit === 'cover' ? 'cover' : 'contain';
   const cards = venues.map(v => `
     <div style="background:#fff;border-radius:1rem;overflow:hidden;border:1.5px solid color-mix(in srgb,${evColor} 20%,#e5e7eb);text-align:center;flex:1;min-width:180px">
-      ${v.image ? `<div style="width:100%;max-height:170px;overflow:hidden;display:flex;align-items:center;justify-content:center;background:color-mix(in srgb,${evColor} 6%,#fff)"><img src="${v.image}" style="width:100%;height:auto;max-height:170px;object-fit:contain" alt="${escapeHTML(v.title)}"></div>` : ''}
+      ${v.image ? `<div style="width:100%;height:170px;overflow:hidden;display:flex;align-items:center;justify-content:center;background:color-mix(in srgb,${evColor} 6%,#fff)"><img src="${v.image}" style="width:100%;height:100%;object-fit:${imgFit}" alt="${escapeHTML(v.title)}"></div>` : ''}
       <div style="padding:1.25rem 1rem">
         ${!v.image ? `<div style="width:44px;height:44px;border-radius:50%;background:color-mix(in srgb,${evColor} 12%,white);display:flex;align-items:center;justify-content:center;margin:0 auto 0.6rem">
           <i data-lucide="${v.icon}" style="width:20px;height:20px;color:${evColor}"></i>

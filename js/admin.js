@@ -103,6 +103,7 @@ function renderAdmin() {
   document.getElementById('admin-search-input').value = '';
   
   renderAdminAccountsList(nonAdminUsers);
+  if (typeof renderAdminPendingSubmissions === 'function') renderAdminPendingSubmissions();
   lucide.createIcons();
 }
 

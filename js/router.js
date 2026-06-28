@@ -1,6 +1,18 @@
 // ===================== ROUTER =====================
 const Router = {
   go(screen) {
+    // ✅ Guardar onde a pessoa estava, para um refresh a trazer de volta
+    // ao mesmo sítio em vez de saltar sempre para o dashboard. Não se
+    // guarda para ecrãs públicos/sem sessão — esses já têm o seu próprio
+    // comportamento natural (página inicial, convite por URL, etc.).
+    try {
+      const _noPersist = ['home','login','register','guest','pricing','faq','not-found','gift-confirmed'];
+      if (!_noPersist.includes(screen)) {
+        sessionStorage.setItem('lastScreen', screen);
+        sessionStorage.setItem('lastEventId', Store.currentEventId || '');
+      }
+    } catch(e) {}
+
     document.querySelectorAll('.page-section').forEach(s => s.classList.add('hidden'));
     const el = document.getElementById('screen-' + screen);
     if (el) {
@@ -420,7 +432,26 @@ async function loadEventosComDelay() {
     
     if (token && userId && sessaoCarregada) {
       dlog('✅ Sessão válida com', Store.events.length, 'evento(s)');
-      Router.go('dashboard');
+      // ✅ Voltar ao mesmo sítio onde a pessoa estava antes do refresh,
+      // em vez de saltar sempre para o dashboard.
+      let _restored = false;
+      try {
+        const savedScreen = sessionStorage.getItem('lastScreen');
+        const savedEventId = sessionStorage.getItem('lastEventId');
+        if (savedScreen && document.getElementById('screen-' + savedScreen)) {
+          if (savedEventId) Store.currentEventId = savedEventId;
+          if (savedScreen === 'create-event' && savedEventId) {
+            // O formulário de edição precisa de ser reaberto pela função
+            // própria, para vir preenchido — só mudar de ecrã mostraria
+            // o formulário vazio.
+            editEventWithLockCheck();
+          } else {
+            Router.go(savedScreen);
+          }
+          _restored = true;
+        }
+      } catch(e) {}
+      if (!_restored) Router.go('dashboard');
     } else {
       dlog('🏠 Navegando para home');
       Router.go('home');

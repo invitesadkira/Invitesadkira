@@ -14,7 +14,7 @@
   <script>tailwind.config = { theme: { extend: { colors: { teal: { 500: '#007f9f', 600: '#006b86' } } } } }</script>
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💌</text></svg>">
-  <link rel="stylesheet" href="css/main.css?v=1782644651">
+  <link rel="stylesheet" href="css/main.css?v=1782648965">
 </head>
 <body class="h-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
 
@@ -881,6 +881,13 @@ para testemunhar o seu enlace matrimonial</textarea>
           <label class="text-xs font-semibold text-gray-600 block mb-1">Título da secção</label>
           <input id="evt-venues-title" class="input-field text-sm" placeholder="Ex: Locais do Evento, O Grande Dia, ...">
          </div>
+         <div>
+          <label class="text-xs font-semibold text-gray-600 block mb-1">Como mostrar as fotos dos locais</label>
+          <select id="evt-venue-image-fit" class="input-field text-sm">
+           <option value="contain">Mostrar foto completa (pode deixar espaço vazio)</option>
+           <option value="cover">Preencher toda a área (pode cortar as bordas)</option>
+          </select>
+         </div>
          <p class="text-xs text-gray-500">Preenche apenas os locais que se aplicam ao teu evento.</p>
          <div>
           <label class="text-xs font-semibold text-gray-600 block mb-1">Cerimónia Religiosa</label>
@@ -1306,6 +1313,8 @@ para testemunhar o seu enlace matrimonial</textarea>
       <!-- JS preenche -->
      </div>
      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6" id="admin-stats"></div>
+     <button class="btn-outline text-sm mb-4" onclick="generateStandaloneIntakeLink()"><span class="flex items-center gap-1"><i data-lucide="link" class="w-4 h-4"></i> Gerar Link (sem evento criado)</span></button>
+     <div id="admin-pending-submissions"></div>
      <h3 class="font-bold mb-3" style="color:var(--app-ink)">Contas Registradas</h3>
      <div style="background:var(--app-card);border-radius:var(--app-radius);box-shadow:var(--app-shadow);border:1px solid var(--app-border)" class="p-4 mb-6">
       <div class="flex gap-2"><input id="admin-search-input" type="text" class="input-field text-sm flex-1" placeholder="Pesquisar por telefone/username..." onkeyup="filterAdminAccounts()"> <button class="btn-main px-4 text-sm" onclick="clearAdminSearch()">Limpar</button>
@@ -1441,20 +1450,20 @@ para testemunhar o seu enlace matrimonial</textarea>
   </a>
 
   <!-- ===================== SCRIPTS (ordem importa) ===================== -->
-  <script src="js/config.js?v=1782644651"></script>
-  <script src="js/store.js?v=1782644651"></script>
-  <script src="js/visuals.js?v=1782644651"></script>
-  <script src="js/venues.js?v=1782644651"></script>
-  <script src="js/rsvp.js?v=1782644651"></script>
-  <script src="js/ui.js?v=1782644651"></script>
-  <script src="js/auth.js?v=1782644651"></script>
-  <script src="js/dashboard.js?v=1782644651"></script>
-  <script src="js/events.js?v=1782644651"></script>
-  <script src="js/intake-wizard.js?v=1782644651"></script>
-  <script src="js/guest.js?v=1782644651"></script>
-  <script src="js/sections.js?v=1782644651"></script>
-  <script src="js/admin.js?v=1782644651"></script>
-  <script src="js/router.js?v=1782644651"></script>
+  <script src="js/config.js?v=1782648965"></script>
+  <script src="js/store.js?v=1782648965"></script>
+  <script src="js/visuals.js?v=1782648965"></script>
+  <script src="js/venues.js?v=1782648965"></script>
+  <script src="js/rsvp.js?v=1782648965"></script>
+  <script src="js/ui.js?v=1782648965"></script>
+  <script src="js/auth.js?v=1782648965"></script>
+  <script src="js/dashboard.js?v=1782648965"></script>
+  <script src="js/events.js?v=1782648965"></script>
+  <script src="js/intake-wizard.js?v=1782648965"></script>
+  <script src="js/guest.js?v=1782648965"></script>
+  <script src="js/sections.js?v=1782648965"></script>
+  <script src="js/admin.js?v=1782648965"></script>
+  <script src="js/router.js?v=1782648965"></script>
 
 </body>
 </html>

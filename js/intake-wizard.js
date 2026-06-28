@@ -85,13 +85,12 @@ function _iwComputeSteps(state) {
 
 // ── Entrada ──────────────────────────────────────────────────────────────
 async function openIntakeWizard(eventId) {
-  _iwEventId = eventId;
+  _iwEventId = eventId || null;
   _iwState = {};
   _iwHistory = ['event_type'];
-  Store.currentEventId = eventId;
+  if (_iwEventId) Store.currentEventId = _iwEventId;
 
-  const result = await supabaseRequest(`events?id=eq.${eventId}&select=id,title&limit=1`);
-  const ev = (result && result[0]) ? result[0] : {};
+  const ev = _iwEventId ? ((await supabaseRequest(`events?id=eq.${_iwEventId}&select=id,title&limit=1`))?.[0] || {}) : {};
 
   const modal = document.createElement('div');
   modal.id = 'iw-modal';
@@ -140,11 +139,12 @@ function _iwRenderStep(key) {
 
   const isFirst = idx === 0;
   const isLast = idx === _iwSteps.length - 1;
+  const autoAdvances = (step.type === 'select' || step.type === 'yesno');
   const nav = document.getElementById('iw-nav-bar');
   nav.innerHTML = `
     ${!isFirst ? `<button type="button" onclick="_iwGoBack()" class="btn-outline" style="flex:0 0 auto">Voltar</button>` : ''}
     ${step.skippable ? `<button type="button" onclick="_iwSkip()" class="btn-outline" style="flex:1">Saltar</button>` : ''}
-    <button type="button" onclick="_iwGoNext()" class="btn-main" style="flex:${step.skippable ? '1' : '2'}">${isLast ? 'Finalizar' : 'Avançar'}</button>
+    ${autoAdvances ? '' : `<button type="button" onclick="_iwGoNext()" class="btn-main" style="flex:${step.skippable ? '1' : '2'}">${isLast ? 'Finalizar' : 'Avançar'}</button>`}
   `;
 }
 
@@ -322,6 +322,11 @@ function _iwSelectOption(btn, isMaxType) {
   if (isMaxType) {
     const maxWrap = document.getElementById('iw-max-wrap');
     if (maxWrap) maxWrap.style.display = btn.dataset.val === 'yes' ? 'block' : 'none';
+  } else {
+    // ✅ Perguntas de escolha simples (Sim/Não, ou opções predefinidas) —
+    // ao escolher, avança logo por si. Não há nada para escrever, por
+    // isso o botão "Avançar" nem chega a aparecer para estas perguntas.
+    setTimeout(_iwGoNext, 180);
   }
 }
 
@@ -476,83 +481,21 @@ async function _iwFinish() {
   const status = (t) => { const el = document.getElementById('iw-finish-status'); if (el) el.textContent = t; };
 
   try {
-    // ── Tabela events ──
-    const eventsPatch = { event_type: s.event_type || null, invite_layout: s.layout || 'sections' };
-    if (s.names) { eventsPatch.groom_name = s.names.groom || null; eventsPatch.bride_name = s.names.bride || null; }
-    if (s.date) eventsPatch.date = s.date;
-    if (s.confirm_by_date) eventsPatch.confirm_by_date = s.confirm_by_date;
-    if (s.cover) eventsPatch.cover_image = s.cover;
-    if (s.music) { eventsPatch.music_url = s.music.url; }
-    eventsPatch.save_the_date_enabled = s.want_std === 'yes' ? 'yes' : 'no';
-    if (s.want_std === 'yes') {
-      if (s.std_cover) eventsPatch.std_cover_url = s.std_cover;
-      if (s.std_text) { eventsPatch.std_extra_phrase = s.std_text; eventsPatch.std_extra_phrase_enabled = 'yes'; }
-    }
-    if (s.companions) { eventsPatch.allow_companions = s.companions.yn === 'yes' ? 'yes' : 'no'; if (s.companions.max) eventsPatch.max_companions = s.companions.max; }
-    if (s.kids) { eventsPatch.allow_kids = s.kids.yn === 'yes' ? 'yes' : 'no'; if (s.kids.max) eventsPatch.max_kids = s.kids.max; }
-    if (s.messages) { eventsPatch.allow_messages = s.messages === 'yes' ? 'yes' : 'no'; eventsPatch.show_guest_messages = s.messages === 'yes' ? 'yes' : 'no'; }
-    if (s.edit_rsvp) eventsPatch.allow_edit_rsvp = s.edit_rsvp === 'yes' ? 'yes' : 'no';
-    eventsPatch.allow_gifts = s.gifts === 'yes' ? 'yes' : 'no';
-    if (s.gift_type === 'iban' && s.iban) {
-      eventsPatch.iban_message = s.iban.msg || null;
-      eventsPatch.iban_holder = s.iban.holder || null;
-      eventsPatch.iban_number = s.iban.number || null;
-    }
-
-    status('A guardar dados principais...');
-    await supabaseRequest(`events?id=eq.${_iwEventId}`, 'PATCH', eventsPatch);
-
-    // Sincronizar event_dates (mesma lógica usada noutros sítios do editor)
-    if ((s.date || s.confirm_by_date) && typeof saveEventDates === 'function') {
-      await saveEventDates(_iwEventId, { event_date: s.date || null, confirm_by_date: s.confirm_by_date || null }).catch(() => {});
-    }
-
-    // ── event_visuals ──
-    status('A guardar conteúdo do convite...');
-    const visualsPatch = {};
-    if (s.colors) visualsPatch.intake_color_notes = `Cor principal: ${s.colors.c1}${s.colors.c2 ? ` | 2ª cor: ${s.colors.c2}` : ''}`;
-    if (s.blessing) visualsPatch.invite_blessing = s.blessing;
-    if (s.bible) { visualsPatch.bible_text = s.bible.text; visualsPatch.bible_ref = s.bible.ref || null; visualsPatch.show_bible = 'yes'; }
-    if (s.invite_text) { visualsPatch.invite_text = s.invite_text; visualsPatch.show_invite = 'yes'; }
-    if (s.parents) { visualsPatch.groom_parents = s.parents.groomParents || null; visualsPatch.bride_parents = s.parents.brideParents || null; visualsPatch.show_parents = 'yes'; }
-    if (s.gallery && s.gallery.length) { visualsPatch.gallery_urls = s.gallery.join('\n'); visualsPatch.show_gallery = 'yes'; }
-    if (s.dresscode) { visualsPatch.dresscode_text = s.dresscode; visualsPatch.show_dresscode = 'yes'; }
-    if (s.manual) { visualsPatch.manual_items = s.manual; visualsPatch.show_manual = 'yes'; }
-    if (s.schedule) { visualsPatch.schedule_items = s.schedule; visualsPatch.show_schedule = 'yes'; }
-    if (s.story) { visualsPatch.story_text = s.story; visualsPatch.show_story = 'yes'; }
-    if (s.couplemsg) { visualsPatch.couplemsg_text = s.couplemsg; visualsPatch.show_couplemsg = 'yes'; }
-    if (s.faq) {
-      const items = s.faq.split('\n').map(l => l.trim()).filter(Boolean).map(l => {
-        const [q, a] = l.split('|').map(p => p && p.trim());
-        return { q: q || l, a: a || '' };
+    if (_iwEventId) {
+      // Já existe um evento — aplicar tudo directamente, como antes.
+      await _iwApplyStateToEvent(s, _iwEventId, status);
+    } else {
+      // ✅ Ainda não há evento (nem talvez conta de cliente) — guardar as
+      // respostas como "pendente". O admin associa isto a um evento mais
+      // tarde, no painel de administrador.
+      status('A guardar as respostas...');
+      await supabaseRequest('intake_submissions', 'POST', {
+        token: Store._intakeToken || null,
+        answers: s,
+        status: 'pending',
       });
-      if (items.length) { visualsPatch.event_faq_items = JSON.stringify(items); visualsPatch.show_event_faq = 'yes'; }
-    }
-    if (s.music) visualsPatch.music_title = [s.music.title, s.music.artist].filter(Boolean).join(' — ') || null;
-    if (s.youtube) { visualsPatch.youtube_video_url = s.youtube.url; visualsPatch.youtube_video_title = s.youtube.title || null; visualsPatch.show_youtube_video = 'yes'; }
-    if (s.final_photo) { visualsPatch.final_photo_url = s.final_photo; visualsPatch.show_final_photo = 'yes'; }
-    if (s.gift_type) visualsPatch.show_dress_gifts = s.gift_type === 'list' ? 'yes' : 'no';
-
-    if (Object.keys(visualsPatch).length) await saveEventVisuals(_iwEventId, visualsPatch);
-
-    // ── Lista de presentes (tabela dedicada "gifts") ──
-    if (s.gift_type === 'list' && s.gift_list) {
-      status('A guardar lista de presentes...');
-      const giftNames = s.gift_list.split('\n').map(l => l.trim().replace(/^[\s\-\*•\.]+/, '')).filter(l => l && l.length > 1);
-      for (const name of giftNames) {
-        await supabaseRequest('gifts', 'POST', { event_id: _iwEventId, name, category: 'Sem categoria', reserved: false }).catch(() => {});
-      }
     }
 
-    // ── event_venues ──
-    status('A guardar locais...');
-    const venuesPatch = {};
-    if (s.venue_civil) { venuesPatch.venue_civil = s.venue_civil.name; venuesPatch.venue_civil_date = s.venue_civil.date || null; venuesPatch.venue_civil_time = s.venue_civil.time || null; }
-    if (s.venue_ceremony) { venuesPatch.venue_ceremony = s.venue_ceremony.name; venuesPatch.venue_ceremony_date = s.venue_ceremony.date || null; venuesPatch.venue_ceremony_time = s.venue_ceremony.time || null; }
-    if (s.venue_reception) { venuesPatch.venue_reception = s.venue_reception.name; venuesPatch.venue_reception_time = s.venue_reception.time || null; }
-    if (Object.keys(venuesPatch).length) { venuesPatch.show_venues = 'yes'; await saveEventVenues(_iwEventId, venuesPatch).catch(() => {}); }
-
-    // Marcar o link como usado
     status('A finalizar...');
     if (Store._intakeToken) {
       await markIntakeTokenUsed(Store._intakeToken).catch(() => {});
@@ -572,6 +515,212 @@ async function _iwFinish() {
       <p style="color:#6b7280;font-size:0.85rem;margin-bottom:1rem">Verifica a tua ligação à internet e tenta novamente.</p>
       <button type="button" onclick="_iwFinish()" class="btn-main">Tentar de novo</button>
     </div>`;
+  }
+}
+
+// ── Aplicar um conjunto de respostas (do assistente) a um evento real —
+// reaproveitado tanto pelo fim do assistente (quando já há evento) como
+// pelo admin, mais tarde, ao associar uma submissão pendente a um evento
+// (novo ou já existente). ────────────────────────────────────────────────
+async function _iwApplyStateToEvent(s, eventId, statusFn) {
+  const status = statusFn || (() => {});
+
+  // ── Tabela events ──
+  const eventsPatch = { event_type: s.event_type || null, invite_layout: s.layout || 'sections' };
+  if (s.names) { eventsPatch.groom_name = s.names.groom || null; eventsPatch.bride_name = s.names.bride || null; }
+  if (s.date) eventsPatch.date = s.date;
+  if (s.confirm_by_date) eventsPatch.confirm_by_date = s.confirm_by_date;
+  if (s.cover) eventsPatch.cover_image = s.cover;
+  if (s.music) { eventsPatch.music_url = s.music.url; }
+  eventsPatch.save_the_date_enabled = s.want_std === 'yes' ? 'yes' : 'no';
+  if (s.want_std === 'yes') {
+    if (s.std_cover) eventsPatch.std_cover_url = s.std_cover;
+    if (s.std_text) { eventsPatch.std_extra_phrase = s.std_text; eventsPatch.std_extra_phrase_enabled = 'yes'; }
+  }
+  if (s.companions) { eventsPatch.allow_companions = s.companions.yn === 'yes' ? 'yes' : 'no'; if (s.companions.max) eventsPatch.max_companions = s.companions.max; }
+  if (s.kids) { eventsPatch.allow_kids = s.kids.yn === 'yes' ? 'yes' : 'no'; if (s.kids.max) eventsPatch.max_kids = s.kids.max; }
+  if (s.messages) { eventsPatch.allow_messages = s.messages === 'yes' ? 'yes' : 'no'; eventsPatch.show_guest_messages = s.messages === 'yes' ? 'yes' : 'no'; }
+  if (s.edit_rsvp) eventsPatch.allow_edit_rsvp = s.edit_rsvp === 'yes' ? 'yes' : 'no';
+  eventsPatch.allow_gifts = s.gifts === 'yes' ? 'yes' : 'no';
+  if (s.gift_type === 'iban' && s.iban) {
+    eventsPatch.iban_message = s.iban.msg || null;
+    eventsPatch.iban_holder = s.iban.holder || null;
+    eventsPatch.iban_number = s.iban.number || null;
+  }
+
+  status('A guardar dados principais...');
+  await supabaseRequest(`events?id=eq.${eventId}`, 'PATCH', eventsPatch);
+
+  if ((s.date || s.confirm_by_date) && typeof saveEventDates === 'function') {
+    await saveEventDates(eventId, { event_date: s.date || null, confirm_by_date: s.confirm_by_date || null }).catch(() => {});
+  }
+
+  // ── event_visuals ──
+  status('A guardar conteúdo do convite...');
+  const visualsPatch = {};
+  if (s.colors) visualsPatch.intake_color_notes = `Cor principal: ${s.colors.c1}${s.colors.c2 ? ` | 2ª cor: ${s.colors.c2}` : ''}`;
+  if (s.blessing) visualsPatch.invite_blessing = s.blessing;
+  if (s.bible) { visualsPatch.bible_text = s.bible.text; visualsPatch.bible_ref = s.bible.ref || null; visualsPatch.show_bible = 'yes'; }
+  if (s.invite_text) { visualsPatch.invite_text = s.invite_text; visualsPatch.show_invite = 'yes'; }
+  if (s.parents) { visualsPatch.groom_parents = s.parents.groomParents || null; visualsPatch.bride_parents = s.parents.brideParents || null; visualsPatch.show_parents = 'yes'; }
+  if (s.gallery && s.gallery.length) { visualsPatch.gallery_urls = s.gallery.join('\n'); visualsPatch.show_gallery = 'yes'; }
+  if (s.dresscode) { visualsPatch.dresscode_text = s.dresscode; visualsPatch.show_dresscode = 'yes'; }
+  if (s.manual) { visualsPatch.manual_items = s.manual; visualsPatch.show_manual = 'yes'; }
+  if (s.schedule) { visualsPatch.schedule_items = s.schedule; visualsPatch.show_schedule = 'yes'; }
+  if (s.story) { visualsPatch.story_text = s.story; visualsPatch.show_story = 'yes'; }
+  if (s.couplemsg) { visualsPatch.couplemsg_text = s.couplemsg; visualsPatch.show_couplemsg = 'yes'; }
+  if (s.faq) {
+    const items = s.faq.split('\n').map(l => l.trim()).filter(Boolean).map(l => {
+      const [q, a] = l.split('|').map(p => p && p.trim());
+      return { q: q || l, a: a || '' };
+    });
+    if (items.length) { visualsPatch.event_faq_items = JSON.stringify(items); visualsPatch.show_event_faq = 'yes'; }
+  }
+  if (s.music) visualsPatch.music_title = [s.music.title, s.music.artist].filter(Boolean).join(' — ') || null;
+  if (s.youtube) { visualsPatch.youtube_video_url = s.youtube.url; visualsPatch.youtube_video_title = s.youtube.title || null; visualsPatch.show_youtube_video = 'yes'; }
+  if (s.final_photo) { visualsPatch.final_photo_url = s.final_photo; visualsPatch.show_final_photo = 'yes'; }
+  if (s.gift_type) visualsPatch.show_dress_gifts = s.gift_type === 'list' ? 'yes' : 'no';
+
+  if (Object.keys(visualsPatch).length) await saveEventVisuals(eventId, visualsPatch);
+
+  // ── Lista de presentes (tabela dedicada "gifts") ──
+  if (s.gift_type === 'list' && s.gift_list) {
+    status('A guardar lista de presentes...');
+    const giftNames = s.gift_list.split('\n').map(l => l.trim().replace(/^[\s\-\*•\.]+/, '')).filter(l => l && l.length > 1);
+    for (const name of giftNames) {
+      await supabaseRequest('gifts', 'POST', { event_id: eventId, name, category: 'Sem categoria', reserved: false }).catch(() => {});
+    }
+  }
+
+  // ── event_venues ──
+  status('A guardar locais...');
+  const venuesPatch = {};
+  if (s.venue_civil) { venuesPatch.venue_civil = s.venue_civil.name; venuesPatch.venue_civil_date = s.venue_civil.date || null; venuesPatch.venue_civil_time = s.venue_civil.time || null; }
+  if (s.venue_ceremony) { venuesPatch.venue_ceremony = s.venue_ceremony.name; venuesPatch.venue_ceremony_date = s.venue_ceremony.date || null; venuesPatch.venue_ceremony_time = s.venue_ceremony.time || null; }
+  if (s.venue_reception) { venuesPatch.venue_reception = s.venue_reception.name; venuesPatch.venue_reception_time = s.venue_reception.time || null; }
+  if (Object.keys(venuesPatch).length) { venuesPatch.show_venues = 'yes'; await saveEventVenues(eventId, venuesPatch).catch(() => {}); }
+}
+
+// ── Painel do admin: submissões pendentes (ainda sem evento) ────────────
+async function renderAdminPendingSubmissions() {
+  const container = document.getElementById('admin-pending-submissions');
+  if (!container) return;
+  try {
+    const rows = await supabaseRequest(`intake_submissions?status=eq.pending&select=id,answers,created_at&order=created_at.desc`);
+    if (!rows || !rows.length) { container.innerHTML = ''; return; }
+    container.innerHTML = `<h3 class="text-sm font-bold text-gray-700 mb-2">Pedidos Pendentes — sem evento associado (${rows.length})</h3>` +
+      rows.map(r => {
+        const a = r.answers || {};
+        const names = a.names ? [a.names.groom, a.names.bride].filter(Boolean).join(' & ') : null;
+        const when = new Date(r.created_at).toLocaleDateString('pt-PT');
+        return `<div class="bg-white rounded-xl shadow-sm p-4 mb-2 flex items-center justify-between gap-3 flex-wrap">
+          <div>
+            <p class="font-semibold text-gray-800">${escapeHTML(names || '(nomes ainda não preenchidos)')}</p>
+            <p class="text-xs text-gray-400">Recebido em ${when}</p>
+          </div>
+          <div class="flex gap-2">
+            <button class="btn-outline text-xs" onclick="_iwViewSubmission('${r.id}')">Ver Respostas</button>
+            <button class="btn-outline text-xs" onclick="_iwOpenApplyToExisting('${r.id}')">Evento Existente</button>
+            <button class="btn-main text-xs" onclick="_iwCreateEventFromSubmission('${r.id}')">Criar Evento</button>
+          </div>
+        </div>`;
+      }).join('');
+    lucide.createIcons();
+  } catch(e) { console.warn('Erro ao carregar submissões pendentes:', e); }
+}
+
+function _iwViewSubmission(id) {
+  supabaseRequest(`intake_submissions?id=eq.${id}&select=answers&limit=1`).then(rows => {
+    const a = (rows && rows[0] && rows[0].answers) || {};
+    const lines = Object.keys(a).map(k => `<p style="margin-bottom:0.5rem"><strong style="color:#374151">${escapeHTML(k)}:</strong> <span style="color:#6b7280">${escapeHTML(JSON.stringify(a[k]))}</span></p>`).join('');
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.innerHTML = `<div class="modal-content bg-white rounded-2xl p-6" style="max-width:560px;max-height:80vh;overflow-y:auto">
+      <h3 class="text-base font-bold text-gray-800 mb-3">Respostas recebidas</h3>
+      <div style="font-size:0.82rem">${lines || '<p>Sem respostas.</p>'}</div>
+      <button class="btn-outline text-sm w-full mt-3" onclick="this.closest('.modal-overlay').remove()">Fechar</button>
+    </div>`;
+    document.body.appendChild(modal);
+  });
+}
+
+async function _iwCreateEventFromSubmission(submissionId) {
+  // ✅ Antes de criar, perguntar a que conta de cliente este evento
+  // pertence — em vez de assumir sempre a conta do próprio admin.
+  const clients = (Store.users || []).filter(u => u.role !== 'admin' && u.status !== 'deleted');
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.innerHTML = `<div class="modal-content bg-white rounded-2xl p-6" style="max-width:420px">
+    <h3 class="text-base font-bold text-gray-800 mb-2">A que conta pertence este evento?</h3>
+    <p class="text-xs text-gray-500 mb-3">Escolhe o cliente já registado, ou cria o evento na tua própria conta (podes transferir depois).</p>
+    <select id="iw-create-owner" class="input-field text-sm mb-3">
+      <option value="${Store.currentUser.id}">— A minha conta (admin) —</option>
+      ${clients.map(u => `<option value="${u.id}">${escapeHTML(u.phone || u.id)}${u.adminLabel ? ' — ' + escapeHTML(u.adminLabel) : ''}</option>`).join('')}
+    </select>
+    <div class="flex gap-2">
+      <button class="flex-1 btn-main" onclick="_iwConfirmCreateEvent('${submissionId}', document.getElementById('iw-create-owner').value, this.closest('.modal-overlay'))">Criar Evento</button>
+      <button class="flex-1 btn-outline" onclick="this.closest('.modal-overlay').remove()">Cancelar</button>
+    </div>
+  </div>`;
+  document.body.appendChild(modal);
+}
+
+async function _iwConfirmCreateEvent(submissionId, ownerUserId, modalEl) {
+  modalEl.remove();
+  toast('A criar evento...');
+  try {
+    const rows = await supabaseRequest(`intake_submissions?id=eq.${submissionId}&select=answers&limit=1`);
+    const s = (rows && rows[0] && rows[0].answers) || {};
+    const title = [s.names && s.names.groom, s.names && s.names.bride].filter(Boolean).join(' & ') || 'Novo Evento (assistente)';
+    const newId = uid();
+    await supabaseRequest('events', 'POST', {
+      id: newId, user_id: ownerUserId, title, event_code: newId,
+      date: s.date || null,
+    });
+    await _iwApplyStateToEvent(s, newId, () => {});
+    await supabaseRequest(`intake_submissions?id=eq.${submissionId}`, 'PATCH', { status: 'applied', applied_to_event_id: newId, applied_at: new Date().toISOString() });
+    toast('Evento criado com sucesso!');
+    if (typeof loadEvents === 'function') await loadEvents().catch(() => {});
+    renderAdmin();
+  } catch(e) {
+    console.error('Erro ao criar evento a partir da submissão:', e);
+    toast('Erro ao criar o evento. Tenta novamente.');
+  }
+}
+
+// ── Alternativa: aplicar a um evento JÁ existente, em vez de criar um novo ──
+function _iwOpenApplyToExisting(submissionId) {
+  const events = Store.events || [];
+  if (!events.length) { toast('Não há eventos existentes.'); return; }
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.innerHTML = `<div class="modal-content bg-white rounded-2xl p-6" style="max-width:420px">
+    <h3 class="text-base font-bold text-gray-800 mb-2">Aplicar a qual evento?</h3>
+    <p class="text-xs text-gray-500 mb-3">As respostas vão preencher/substituir os campos correspondentes nesse evento.</p>
+    <select id="iw-apply-target" class="input-field text-sm mb-3">
+      ${events.map(e => `<option value="${e.id}">${escapeHTML(e.title || e.id)}</option>`).join('')}
+    </select>
+    <div class="flex gap-2">
+      <button class="flex-1 btn-main" onclick="_iwConfirmApplyToExisting('${submissionId}', document.getElementById('iw-apply-target').value, this.closest('.modal-overlay'))">Aplicar</button>
+      <button class="flex-1 btn-outline" onclick="this.closest('.modal-overlay').remove()">Cancelar</button>
+    </div>
+  </div>`;
+  document.body.appendChild(modal);
+}
+
+async function _iwConfirmApplyToExisting(submissionId, eventId, modalEl) {
+  modalEl.remove();
+  toast('A aplicar respostas...');
+  try {
+    const rows = await supabaseRequest(`intake_submissions?id=eq.${submissionId}&select=answers&limit=1`);
+    const s = (rows && rows[0] && rows[0].answers) || {};
+    await _iwApplyStateToEvent(s, eventId, () => {});
+    await supabaseRequest(`intake_submissions?id=eq.${submissionId}`, 'PATCH', { status: 'applied', applied_to_event_id: eventId, applied_at: new Date().toISOString() });
+    toast('Respostas aplicadas com sucesso!');
+    renderAdmin();
+  } catch(e) {
+    console.error('Erro ao aplicar submissão a evento existente:', e);
+    toast('Erro ao aplicar. Tenta novamente.');
   }
 }
 
