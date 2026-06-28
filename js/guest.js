@@ -389,6 +389,15 @@ async function renderGuestView() {
   document.documentElement.style.setProperty('--ev-color-2', _evCol2 || _evCol);
   const _SILVER_FLAT = '#8c8c8c';
   const _SILVER_GRADIENT = 'linear-gradient(115deg, #4a4a4a 0%, #8c8c8c 7%, #f0f0f0 13%, #ffffff 18%, #b0b0b0 25%, #6b6b6b 34%, #a8a8a8 41%, #f5f5f5 47%, #ffffff 51%, #909090 58%, #555555 67%, #cfcfcf 75%, #ffffff 80%, #8a8a8a 88%, #4a4a4a 100%)';
+  // ✅ Dourado — uma cor própria e fixa, independente, ao mesmo nível que
+  // "Preto" e "Prateado": nunca é uma mistura com a Cor Principal nem com
+  // a 2ª Cor do evento. Mesma estrutura "papel metálico amassado" do
+  // Prateado (facetas claras/escuras alternadas, para o brilho parecer
+  // real), mas em tons de dourado — o ponto mais claro fica num champanhe
+  // suave (nunca branco puro), para continuar a ler-se como "dourado" e
+  // não como prateado com um tom amarelado por cima.
+  const _GOLD_FLAT = '#b8902f';
+  const _GOLD_GRADIENT = 'linear-gradient(115deg, #6b5512 0%, #a3842c 7%, #e8cf85 13%, #fff3c4 18%, #c9a227 25%, #8a6d1e 34%, #d4af37 41%, #f5e08a 47%, #fff3c4 51%, #b8902f 58%, #5e4a10 67%, #e0c66a 75%, #fff3c4 80%, #a3842c 88%, #6b5512 100%)';
   const _BLACK_SOLID = '#111111';
   // Valor "completo" — pode ser uma cor sólida OU uma string de gradiente.
   // Funciona bem em qualquer `background:` (fundos de botões, caixas, etc).
@@ -399,6 +408,7 @@ async function renderGuestView() {
     if (choice === 'custom' && customHex) return customHex;
     if (choice === 'black') return _BLACK_SOLID;
     if (choice === 'silver') return _SILVER_GRADIENT;
+    if (choice === 'gold') return _GOLD_GRADIENT;
     if (choice === 'secondary' && _evCol2) return _evCol2;
     return _evCol;
   };
@@ -408,6 +418,7 @@ async function renderGuestView() {
   const _pickFlatColor = (choice, customHex) => {
     if (choice === 'custom' && customHex) return customHex;
     if (choice === 'black') return _BLACK_SOLID;
+    if (choice === 'gold') return _GOLD_FLAT;
     if (choice === 'silver') return _SILVER_FLAT;
     if (choice === 'secondary' && _evCol2) return _evCol2;
     return _evCol;
@@ -420,10 +431,23 @@ async function renderGuestView() {
     document.documentElement.style.setProperty(varName, color);
     document.documentElement.style.setProperty(varName + '-flat', flat);
     document.documentElement.style.setProperty(varName + '-text', _readableTextColor(flat));
-    if (silverClass) document.documentElement.classList.toggle(silverClass, choice === 'silver');
+    if (silverClass) {
+      document.documentElement.classList.toggle(silverClass, choice === 'silver');
+      // O dourado usa exactamente a mesma técnica de "papel metálico" do
+      // prateado — só muda a classe (ev-gold-X em vez de ev-silver-X) e a
+      // cor do gradiente em CSS.
+      document.documentElement.classList.toggle(silverClass.replace('ev-silver-', 'ev-gold-'), choice === 'gold');
+    }
     return flat;
   };
   document.documentElement.style.setProperty('--ev-titles-size', (parseFloat(eventData.section_titles_size) || 1.6) + 'rem');
+  // ✅ Animação do brilho metálico (Dourado/Prateado) — pode desligar-se,
+  // mantendo a cor metálica mas parada (sem o brilho a mover-se).
+  if (eventData.metallic_animation === 'no') {
+    document.documentElement.style.setProperty('--ev-metallic-anim', 'none');
+  } else {
+    document.documentElement.style.removeProperty('--ev-metallic-anim');
+  }
   const _evButtonColor = _applyColorTarget('--ev-button-color', 'button_color_choice', 'ev-silver-button');
   _applyColorTarget('--ev-hero-names-color', 'color_hero_names', 'ev-silver-hero-names');
   _applyColorTarget('--ev-names-color', 'color_names', 'ev-silver-names');

@@ -102,7 +102,36 @@ html.ev-silver-countdown .std-countdown-num {
      Forçar opacity:1 aqui resolve isso em qualquer contexto, sem efeito
      nenhum onde isto não era um problema. */
   opacity: 1 !important;
-  animation: ev-silver-shimmer 11s linear infinite;
+  animation: var(--ev-metallic-anim, ev-silver-shimmer 11s linear infinite);
+}
+
+/* ── "Dourado": exactamente a mesma técnica do "Prateado" acima (papel
+   metálico amassado, facetas a alternar), só com tons dourados em vez de
+   cinzentos. O ponto mais claro fica num champanhe suave (#fff3c4), nunca
+   branco puro — assim continua a ler-se como dourado e não esvanece
+   contra fundos brancos. É uma cor própria e fixa, independente da Cor
+   Principal e da 2ª Cor do evento — nunca uma mistura entre elas. ── */
+html.ev-gold-hero-names #hero-couple-names,
+html.ev-gold-hero-names .hero-couple-names-simple,
+html.ev-gold-names .std-couple-names,
+html.ev-gold-names .bible-couple-names,
+html.ev-gold-titles .section-title,
+html.ev-gold-message .invitation-text,
+html.ev-gold-message .std-extra-message,
+html.ev-gold-date .std-date-value,
+html.ev-gold-countdown .std-countdown-num {
+  background-image: linear-gradient(115deg,
+    #6b5512 0%, #a3842c 7%, #e8cf85 13%, #fff3c4 18%, #c9a227 25%,
+    #8a6d1e 34%, #d4af37 41%, #f5e08a 47%, #fff3c4 51%, #b8902f 58%,
+    #5e4a10 67%, #e0c66a 75%, #fff3c4 80%, #a3842c 88%, #6b5512 100%) !important;
+  background-size: 280% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 1px 1px rgba(0,0,0,0.22));
+  color: transparent !important;
+  opacity: 1 !important;
+  animation: var(--ev-metallic-anim, ev-silver-shimmer 11s linear infinite);
 }
 
 /* ── Estilo "Redondo": ícone vira um círculo, com o nome do botão por baixo ── */

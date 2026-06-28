@@ -859,6 +859,7 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
           bible_ornament_size: document.getElementById('evt-bible-ornament-size')?.value || '28',
           std_music_continuous: document.getElementById('sw-std-music-continuous')?.classList.contains('active') ? 'yes' : 'no',
           countdown_style: document.getElementById('evt-countdown-style')?.value || 'cards',
+          metallic_animation: document.getElementById('sw-metallic-animation')?.classList.contains('active') ? 'yes' : 'no',
           show_youtube_video: document.getElementById('sw-youtube-video')?.classList.contains('active') ? 'yes' : 'no',
           youtube_video_url: document.getElementById('evt-youtube-video-url')?.value?.trim() || null,
           youtube_video_title: document.getElementById('evt-youtube-video-title')?.value?.trim() || null,
@@ -1801,6 +1802,7 @@ function _fillEditForm(ev) {
   document.getElementById('evt-music-title').value = ev.music_title || '';
   _setSwitch('sw-std-music-continuous', ev.std_music_continuous !== 'no', null);
   { const csEl = document.getElementById('evt-countdown-style'); if (csEl) csEl.value = ev.countdown_style || 'cards'; }
+  _setSwitch('sw-metallic-animation', ev.metallic_animation !== 'no', null);
   _setSwitch('sw-youtube-video', _yesOrTrue(ev.show_youtube_video) && !!ev.youtube_video_url, 'youtube-video-extra');
   { const yvUrl = document.getElementById('evt-youtube-video-url'); if (yvUrl) yvUrl.value = ev.youtube_video_url || ''; }
   { const yvTitle = document.getElementById('evt-youtube-video-title'); if (yvTitle) yvTitle.value = ev.youtube_video_title || ''; }
@@ -1930,7 +1932,7 @@ function _fillEditForm(ev) {
     const preview = document.getElementById('cover-video-preview');
     if (preview) { preview.src = ev.cover_video_url; document.getElementById('cover-video-preview-wrap')?.classList.remove('hidden'); }
   }
-  const _validColorChoices = ['primary','secondary','black','silver','custom'];
+  const _validColorChoices = ['primary','secondary','black','silver','gold','custom'];
   const btnColorChoiceEl = document.getElementById('evt-button-color-choice');
   if (btnColorChoiceEl) {
     btnColorChoiceEl.value = _validColorChoices.includes(ev.button_color_choice) ? ev.button_color_choice : 'primary';

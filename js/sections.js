@@ -1251,7 +1251,7 @@ function buildGallerySection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
     window._pendingCarousels.push({ id: galId, color: evColor });
     return _SD + `<div class="event-section" style="background:#fdfaf6;overflow:hidden">
       <div class="section-inner">
-        <h3 class="section-title reveal" style="text-align:center">Nossos Momentos</h3>
+        <h3 class="section-title reveal" style="text-align:center">Galeria de Fotos</h3>
         <div id="${galId}" class="g3d-wrap reveal">
           <div class="g3d-track">${slides}</div>
           ${urls.length > 1 ? `
@@ -1268,7 +1268,7 @@ function buildGallerySection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
   if (style === 'masonry') {
     const items = urls.map((u, i) => `<div class="gmasonry-item" style="background-image:url('${u}')" onclick="openLightbox('${u}')"></div>`).join('');
     return _SD + `<div class="event-section" style="background:#f8fafc"><div class="section-inner">
-      <h3 class="section-title reveal">Galeria</h3>
+      <h3 class="section-title reveal">Galeria de Fotos</h3>
       <div class="gmasonry-grid reveal-stagger">${items}</div>
     </div></div>`;
   }
@@ -1276,7 +1276,7 @@ function buildGallerySection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
   // ── Style: GRID (default) — classic uniform mosaic ──
   const items = urls.map(u => `<div class="gallery-item"><img src="${u}" data-url="${u}" alt="" loading="lazy" decoding="async" style="width:100%;height:100%;object-fit:cover" onerror="this.closest('.gallery-item').style.display='none'"></div>`).join('');
   return _SD + `<div class="event-section" style="background:#f8fafc"><div class="section-inner">
-    <h3 class="section-title reveal">Galeria</h3>
+    <h3 class="section-title reveal">Galeria de Fotos</h3>
     <div class="gallery-grid reveal-stagger">${items}</div>
   </div></div>`;
 }
