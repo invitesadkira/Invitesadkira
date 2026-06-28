@@ -90,6 +90,23 @@ async function openIntakeWizard(eventId) {
   _iwHistory = ['event_type'];
   if (_iwEventId) Store.currentEventId = _iwEventId;
 
+  // ✅ Se a página recarregar a meio (telemóvel a suspender/restaurar a
+  // aba, refresh acidental, etc.), recuperar de onde tinha ficado em vez
+  // de reiniciar do zero — antes disto, isso fazia parecer que as
+  // perguntas "se repetiam" ou voltavam sempre à primeira.
+  let _restoredProgress = false;
+  try {
+    const savedRaw = sessionStorage.getItem('iw_progress');
+    if (savedRaw) {
+      const saved = JSON.parse(savedRaw);
+      if (saved && saved.token === (Store._intakeToken || null) && saved.eventId === (_iwEventId || null) && saved.history && saved.history.length) {
+        _iwState = saved.state || {};
+        _iwHistory = saved.history;
+        _restoredProgress = true;
+      }
+    }
+  } catch(e) {}
+
   const ev = _iwEventId ? ((await supabaseRequest(`events?id=eq.${_iwEventId}&select=id,title&limit=1`))?.[0] || {}) : {};
 
   const modal = document.createElement('div');
@@ -112,7 +129,7 @@ async function openIntakeWizard(eventId) {
   `;
   document.body.innerHTML = '';
   document.body.appendChild(modal);
-  _iwRenderStep('event_type');
+  _iwRenderStep(_restoredProgress ? _iwHistory[_iwHistory.length - 1] : 'event_type');
 }
 
 function _iwCurrentStep(key) {
@@ -148,10 +165,22 @@ function _iwRenderStep(key) {
   `;
 }
 
+function _iwPersistProgress() {
+  try {
+    sessionStorage.setItem('iw_progress', JSON.stringify({
+      token: Store._intakeToken || null,
+      eventId: _iwEventId || null,
+      state: _iwState,
+      history: _iwHistory,
+    }));
+  } catch(e) {}
+}
+
 function _iwGoBack() {
   if (_iwHistory.length <= 1) return;
   _iwHistory.pop();
   const prevKey = _iwHistory[_iwHistory.length - 1];
+  _iwPersistProgress();
   _iwRenderStep(prevKey);
 }
 
@@ -178,6 +207,7 @@ function _iwAdvance(step) {
   const idx = newSteps.findIndex(s => s.key === step.key);
   const next = newSteps[idx + 1] || newSteps[newSteps.length - 1];
   _iwHistory.push(next.key);
+  _iwPersistProgress();
   _iwRenderStep(next.key);
 }
 
@@ -312,6 +342,7 @@ function _iwRenderBody(step) {
 }
 
 function _iwSelectOption(btn, isMaxType) {
+  if (btn.disabled) return;
   const wrap = btn.parentElement;
   wrap.querySelectorAll('button[data-val]').forEach(b => {
     const active = b === btn;
@@ -324,8 +355,9 @@ function _iwSelectOption(btn, isMaxType) {
     if (maxWrap) maxWrap.style.display = btn.dataset.val === 'yes' ? 'block' : 'none';
   } else {
     // ✅ Perguntas de escolha simples (Sim/Não, ou opções predefinidas) —
-    // ao escolher, avança logo por si. Não há nada para escrever, por
-    // isso o botão "Avançar" nem chega a aparecer para estas perguntas.
+    // ao escolher, avança logo por si. Desactivar os botões logo a seguir
+    // evita um duplo-toque acidental disparar dois avanços em fila.
+    wrap.querySelectorAll('button[data-val]').forEach(b => b.disabled = true);
     setTimeout(_iwGoNext, 180);
   }
 }
@@ -341,6 +373,7 @@ async function _iwUploadSingleImage(input, stepKey) {
     const wrap = document.getElementById('iw-img-wrap');
     if (wrap) wrap.innerHTML = `<img src="${url}" style="max-height:160px;border-radius:0.5rem;object-fit:cover;width:100%">`;
     if (status) status.textContent = 'Foto carregada!';
+    _iwPersistProgress();
   } catch(e) {
     if (status) status.textContent = 'Erro ao carregar — tenta de novo.';
   }
@@ -375,6 +408,7 @@ async function _iwUploadGalleryImages(input) {
   _iwRenderGalleryGrid(urls);
   if (status) status.textContent = urls.length + ' foto(s) carregada(s).';
   input.value = '';
+  _iwPersistProgress();
 }
 
 function _iwRemoveGalleryImage(index) {
@@ -384,6 +418,7 @@ function _iwRemoveGalleryImage(index) {
   body.dataset.urls = JSON.stringify(urls);
   _iwState['gallery'] = urls;
   _iwRenderGalleryGrid(urls);
+  _iwPersistProgress();
 }
 
 // ── Ler a resposta actual do ecrã ───────────────────────────────────────
@@ -500,6 +535,7 @@ async function _iwFinish() {
     if (Store._intakeToken) {
       await markIntakeTokenUsed(Store._intakeToken).catch(() => {});
     }
+    try { sessionStorage.removeItem('iw_progress'); } catch(e) {}
 
     card.innerHTML = `<div style="text-align:center;padding:1.5rem 0">
       <div style="width:60px;height:60px;border-radius:50%;background:#dcfce7;display:flex;align-items:center;justify-content:center;margin:0 auto 1rem">
@@ -622,11 +658,24 @@ async function renderAdminPendingSubmissions() {
             <button class="btn-outline text-xs" onclick="_iwViewSubmission('${r.id}')">Ver Respostas</button>
             <button class="btn-outline text-xs" onclick="_iwOpenApplyToExisting('${r.id}')">Evento Existente</button>
             <button class="btn-main text-xs" onclick="_iwCreateEventFromSubmission('${r.id}')">Criar Evento</button>
+            <button class="text-xs" style="background:#fee2e2;color:#dc2626;border:none;border-radius:0.5rem;padding:0.4rem 0.7rem;font-weight:700;cursor:pointer" onclick="_iwDeleteSubmission('${r.id}')">Eliminar</button>
           </div>
         </div>`;
       }).join('');
     lucide.createIcons();
   } catch(e) { console.warn('Erro ao carregar submissões pendentes:', e); }
+}
+
+async function _iwDeleteSubmission(id) {
+  if (!confirm('Eliminar este pedido permanentemente? Esta acção não pode ser desfeita — use isto quando o cliente não avançar com o pedido.')) return;
+  try {
+    await supabaseRequest(`intake_submissions?id=eq.${id}`, 'DELETE', {});
+    toast('Pedido eliminado.');
+    renderAdminPendingSubmissions();
+  } catch(e) {
+    console.error('Erro ao eliminar submissão:', e);
+    toast('Erro ao eliminar. Tenta novamente.');
+  }
 }
 
 function _iwViewSubmission(id) {
