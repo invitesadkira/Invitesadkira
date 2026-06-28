@@ -1036,6 +1036,28 @@ function renderEventDetails() {
   const intakeBtn = document.getElementById('btn-intake-link');
   if (intakeBtn) intakeBtn.style.display = (Store.currentUser?.role === 'admin') ? 'inline-flex' : 'none';
 
+  // ✅ Mostra a cor que o cliente indicou no assistente de preenchimento
+  // (é só uma indicação em texto — o admin define depois a cor real).
+  (async () => {
+    try {
+      const rows = await supabaseRequest(`event_visuals?event_id=eq.${event.id}&select=intake_color_notes&limit=1`);
+      const notes = rows && rows[0] && rows[0].intake_color_notes;
+      const banner = document.getElementById('detail-color-notes-banner');
+      if (banner) {
+        if (notes) {
+          banner.classList.remove('hidden');
+          banner.innerHTML = `<div style="background:#fef9c3;border:1px solid #fde68a;border-radius:0.6rem;padding:0.6rem 0.85rem;margin-bottom:0.75rem;display:flex;align-items:center;gap:0.5rem">
+            <i data-lucide="palette" class="w-4 h-4" style="color:#a16207;flex-shrink:0"></i>
+            <span style="font-size:0.82rem;color:#854d0e"><strong>O cliente indicou:</strong> ${escapeHTML(notes)}</span>
+          </div>`;
+          lucide.createIcons();
+        } else {
+          banner.classList.add('hidden');
+        }
+      }
+    } catch(e) {}
+  })();
+
   // ✅ Sempre usar cover_image do Supabase (é a fonte única da verdade)
   const coverImage = event.cover_image;
   const coverEl = document.getElementById('detail-cover');
@@ -3361,7 +3383,7 @@ async function openIntakeForm(eventId) {
   document.getElementById('btn-read-terms').onclick   = () => showTermsModal();
   document.getElementById('btn-intake-accept').onclick = () => {
     privacyPrompt.remove();
-    openIntakeFormMain(eventId);
+    openIntakeWizard(eventId);
   };
 }
 
