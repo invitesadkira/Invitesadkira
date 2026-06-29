@@ -1,4 +1,19 @@
 // ===================== GUEST VIEW =====================
+// ── Lista de fontes do Google disponíveis para o texto normal (corpo) e
+// para o texto bíblico. Carregadas só quando escolhidas, para não pesar a
+// página com fontes que ninguém usa. ──────────────────────────────────
+const GOOGLE_BODY_FONTS = ['Inter','Lato','Poppins','Montserrat','Nunito','Merriweather','Lora','Playfair Display','Cormorant Garamond','Quicksand','Roboto','Open Sans'];
+function _loadGoogleFontIfNeeded(fontName) {
+  if (!fontName || !GOOGLE_BODY_FONTS.includes(fontName)) return; // fonte própria carregada — já tem @font-face via loadAvailableFonts()
+  const id = 'gfont-' + fontName.replace(/\s/g, '-');
+  if (document.getElementById(id)) return;
+  const link = document.createElement('link');
+  link.id = id;
+  link.rel = 'stylesheet';
+  link.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(fontName).replace(/%20/g,'+')}:ital,wght@0,400;0,700;1,400;1,700&display=swap`;
+  document.head.appendChild(link);
+}
+
 // Calcula se o texto em cima desta cor deve ser branco ou escuro, para
 // nunca ficar "perdido" (ex: texto branco em cima de prata claro).
 function _readableTextColor(hex) {
@@ -494,6 +509,18 @@ async function renderGuestView() {
   } else {
     document.documentElement.style.removeProperty('--event-font');
   }
+
+  // ── Fonte do texto normal das secções (Presentes/IBAN, Manual,
+  // Cronograma, Dress Code, Mensagem dos Noivos, História, FAQ, Texto do
+  // Convite, Pais) — separada da fonte dos nomes, que já existia. ──
+  _loadGoogleFontIfNeeded(eventData.body_font_family);
+  document.documentElement.style.setProperty('--ev-body-font', eventData.body_font_family ? `'${eventData.body_font_family}', sans-serif` : 'inherit');
+
+  // ── Texto bíblico: negrito, itálico, e fonte própria (opcional) ──
+  _loadGoogleFontIfNeeded(eventData.bible_font_family);
+  document.documentElement.style.setProperty('--ev-bible-font', eventData.bible_font_family ? `'${eventData.bible_font_family}', serif` : 'inherit');
+  document.documentElement.style.setProperty('--ev-bible-weight', eventData.bible_bold === 'yes' ? '700' : '400');
+  document.documentElement.style.setProperty('--ev-bible-style', eventData.bible_italic === 'yes' ? 'italic' : 'normal');
 
   // ── Render couple names ──
   renderHeroCoupleNames(eventData);
@@ -2862,6 +2889,67 @@ function updateFontSelector() {
   if (sel) sel.innerHTML = opts;
   const stdSel = document.getElementById('evt-std-font-select');
   if (stdSel) stdSel.innerHTML = opts;
+
+  // ✅ Fonte do texto das secções e do versículo — mantém a lista de fontes
+  // já incluídas (Google Fonts), só acrescenta as fontes carregadas pelo
+  // utilizador a seguir, num grupo próprio.
+  if (fonts.length) {
+    const customOptsHtml = `<optgroup label="Fontes carregadas">` + fonts.map(f => `<option value="${f.name}">${f.name}</option>`).join('') + `</optgroup>`;
+    ['evt-body-font', 'evt-bible-font'].forEach((id) => {
+      const el = document.getElementById(id);
+      if (el && !el.querySelector('optgroup')) {
+        el.insertAdjacentHTML('beforeend', customOptsHtml);
+      }
+    });
+  }
+}
+
+async function handleBodyFontUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) { toast('Fonte muito grande. Máx. 5 MB.'); return; }
+  const name = file.name.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ').trim();
+  toast('A carregar fonte...');
+  try {
+    const ext = file.name.split('.').pop();
+    const fileName = `font_${name.replace(/\s+/g,'_')}_${Date.now()}.${ext}`;
+    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/event-covers/${fileName}`, {
+      method: 'POST',
+      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/octet-stream', 'x-upsert': 'true' },
+      body: file
+    });
+    if (!res.ok) throw new Error(await res.text());
+    const url = `${SUPABASE_URL}/storage/v1/object/public/event-covers/${fileName}`;
+    await supabaseRequest('fonts', 'POST', { name, url, created_by: Store.currentUser?.id || null });
+    toast(`Fonte "${name}" carregada!`);
+    await loadAvailableFonts();
+    const sel = document.getElementById('evt-body-font');
+    if (sel) sel.value = name;
+  } catch(e) { toast('Erro ao carregar fonte.'); }
+}
+
+async function handleBibleFontUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) { toast('Fonte muito grande. Máx. 5 MB.'); return; }
+  const name = file.name.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ').trim();
+  toast('A carregar fonte...');
+  try {
+    const ext = file.name.split('.').pop();
+    const fileName = `font_${name.replace(/\s+/g,'_')}_${Date.now()}.${ext}`;
+    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/event-covers/${fileName}`, {
+      method: 'POST',
+      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/octet-stream', 'x-upsert': 'true' },
+      body: file
+    });
+    if (!res.ok) throw new Error(await res.text());
+    const url = `${SUPABASE_URL}/storage/v1/object/public/event-covers/${fileName}`;
+    await supabaseRequest('fonts', 'POST', { name, url, created_by: Store.currentUser?.id || null });
+    toast(`Fonte "${name}" carregada!`);
+    await loadAvailableFonts();
+    const sel = document.getElementById('evt-bible-font');
+    if (sel) sel.value = name;
+  } catch(e) { toast('Erro ao carregar fonte.'); }
 }
 
 // ── Share guest event ──

@@ -859,6 +859,10 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
           bible_ornament_size: document.getElementById('evt-bible-ornament-size')?.value || '28',
           std_music_continuous: document.getElementById('sw-std-music-continuous')?.classList.contains('active') ? 'yes' : 'no',
           countdown_style: document.getElementById('evt-countdown-style')?.value || 'cards',
+          body_font_family: document.getElementById('evt-body-font')?.value || null,
+          bible_font_family: document.getElementById('evt-bible-font')?.value || null,
+          bible_bold: document.getElementById('evt-bible-bold')?.checked ? 'yes' : 'no',
+          bible_italic: document.getElementById('evt-bible-italic')?.checked ? 'yes' : 'no',
           metallic_animation: document.getElementById('sw-metallic-animation')?.classList.contains('active') ? 'yes' : 'no',
           show_youtube_video: document.getElementById('sw-youtube-video')?.classList.contains('active') ? 'yes' : 'no',
           youtube_video_url: document.getElementById('evt-youtube-video-url')?.value?.trim() || null,
@@ -1825,6 +1829,10 @@ function _fillEditForm(ev) {
   document.getElementById('evt-music-title').value = ev.music_title || '';
   _setSwitch('sw-std-music-continuous', ev.std_music_continuous !== 'no', null);
   { const csEl = document.getElementById('evt-countdown-style'); if (csEl) csEl.value = ev.countdown_style || 'cards'; }
+  { const bfEl = document.getElementById('evt-body-font'); if (bfEl) bfEl.value = ev.body_font_family || ''; }
+  { const blfEl = document.getElementById('evt-bible-font'); if (blfEl) blfEl.value = ev.bible_font_family || ''; }
+  { const bbEl = document.getElementById('evt-bible-bold'); if (bbEl) bbEl.checked = ev.bible_bold === 'yes'; }
+  { const biEl = document.getElementById('evt-bible-italic'); if (biEl) biEl.checked = ev.bible_italic !== 'no'; }
   _setSwitch('sw-metallic-animation', ev.metallic_animation !== 'no', null);
   _setSwitch('sw-youtube-video', _yesOrTrue(ev.show_youtube_video) && !!ev.youtube_video_url, 'youtube-video-extra');
   { const yvUrl = document.getElementById('evt-youtube-video-url'); if (yvUrl) yvUrl.value = ev.youtube_video_url || ''; }

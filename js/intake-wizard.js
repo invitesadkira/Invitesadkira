@@ -81,9 +81,6 @@ function _iwComputeSteps(state) {
     }
   }
 
-  steps.push({ key:'layout', q:'Que estilo de convite prefere?', type:'select', skippable:false,
-    options:[['sections','Completo (secções configuráveis)'],['simple','Simples (1 só bloco contínuo)'],['elegant','Elegante (capa cheia, letra script)'],['calendar','Calendário (fotos com data, mês ilustrado)']] });
-
   return steps;
 }
 

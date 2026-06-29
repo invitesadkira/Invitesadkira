@@ -107,10 +107,10 @@ function buildSimpleInviteTemplate(ev) {
 
   const bibleBlock = ev.bible_text ? `
     <div style="max-width:480px;margin:0 auto;text-align:center;padding:0 1.5rem">
-      ${ev.bible_text.split('\n').filter(Boolean).map(l => `<p style="font-style:italic;color:#4b5563;font-size:0.95rem;line-height:1.8;margin:0 0 0.4rem">${escapeHTML(l)}</p>`).join('')}
+      ${ev.bible_text.split('\n').filter(Boolean).map(l => `<p style="font-style:var(--ev-bible-style,italic);font-weight:var(--ev-bible-weight,400);font-family:var(--ev-bible-font,inherit);color:#4b5563;font-size:0.95rem;line-height:1.8;margin:0 0 0.4rem">${escapeHTML(l)}</p>`).join('')}
       ${ev.bible_ref ? `<p style="font-size:0.78rem;color:${evColor};font-weight:700;margin-top:0.5rem">${escapeHTML(ev.bible_ref)}</p>` : ''}
       ${ev.bible_ornament_url
-        ? `<img src="${ev.bible_ornament_url}" alt="" style="height:${parseFloat(ev.bible_ornament_size)||28}px;width:auto;margin:0.75rem auto 0;display:block" onerror="this.style.display='none'">`
+        ? `<img src="${ev.bible_ornament_url}" alt="" class="bible-ornament-anim" style="height:${parseFloat(ev.bible_ornament_size)||28}px;width:auto;margin:0.75rem auto 0;display:block" onerror="this.style.display='none'">`
         : ''}
     </div>` : '';
 
@@ -766,8 +766,8 @@ function applyGuestBackground(ev) {
 
 function buildBibleSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
   const bibleSize = parseFloat(ev.bible_size) || 0.92;
-  const lines = (ev.bible_text || '').split('\n').filter(Boolean).map(l => `<p class="bible-verse" style="font-size:${bibleSize}rem;line-height:1.8;font-style:italic">${escapeHTML(l)}</p>`).join('');
-  const lines2 = (ev.bible_text_2 || '').split('\n').filter(Boolean).map(l => `<p class="bible-verse" style="font-size:${bibleSize}rem;line-height:1.8;font-style:italic">${escapeHTML(l)}</p>`).join('');
+  const lines = (ev.bible_text || '').split('\n').filter(Boolean).map(l => `<p class="bible-verse" style="font-size:${bibleSize}rem;line-height:1.8;font-style:var(--ev-bible-style,italic);font-weight:var(--ev-bible-weight,400);font-family:var(--ev-bible-font,inherit)">${escapeHTML(l)}</p>`).join('');
+  const lines2 = (ev.bible_text_2 || '').split('\n').filter(Boolean).map(l => `<p class="bible-verse" style="font-size:${bibleSize}rem;line-height:1.8;font-style:var(--ev-bible-style,italic);font-weight:var(--ev-bible-weight,400);font-family:var(--ev-bible-font,inherit)">${escapeHTML(l)}</p>`).join('');
   const hasParents = ev.groom_parents || ev.bride_parents;
   // ✅ CORRIGIDO: agora usa mesmo o campo editável (evt-invite-blessing),
   // que já existia no formulário mas estava a ser ignorado de propósito.
@@ -812,7 +812,7 @@ function buildBibleSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
   const coupleFontFamily = ev.custom_font_family ? `'${ev.custom_font_family}', serif` : 'inherit';
   const coupleNamesHtml = (groomName || brideName) ? `
     <div class="reveal" style="margin-top:1.25rem;text-align:center">
-      <p class="bible-couple-names" style="font-size:${blessingCoupleFontSize};font-weight:700;color:${ev.event_color||'#007f9f'};letter-spacing:0.01em;font-family:${coupleFontFamily}">
+      <p class="bible-couple-names" style="font-size:${blessingCoupleFontSize};font-weight:700;letter-spacing:0.01em;font-family:${coupleFontFamily}">
         ${escapeHTML(groomName)}${groomName && brideName ? ' & ' : ''}${escapeHTML(brideName)}
       </p>
     </div>` : '';
@@ -840,7 +840,7 @@ function buildBibleSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
         ${ev.bible_ref ? `<p class="bible-ref" style="margin-top:0.75rem">${escapeHTML(ev.bible_ref)}</p>` : ''}
         ${lines2 ? `<div style="margin-top:1rem">${lines2}${ev.bible_ref_2 ? `<p class="bible-ref" style="margin-top:0.75rem">${escapeHTML(ev.bible_ref_2)}</p>` : ''}</div>` : ''}
         ${ev.bible_ornament_url
-          ? `<img src="${ev.bible_ornament_url}" alt="" style="height:${parseFloat(ev.bible_ornament_size)||28}px;width:auto;margin:0.75rem auto 0;display:block" onerror="this.style.display='none'">`
+          ? `<img src="${ev.bible_ornament_url}" alt="" class="bible-ornament-anim" style="height:${parseFloat(ev.bible_ornament_size)||28}px;width:auto;margin:0.75rem auto 0;display:block" onerror="this.style.display='none'">`
           : `<div style="font-size:1.2rem;color:${ev.event_color||'#c9a84c'};margin-top:0.75rem;letter-spacing:0.2em">✦</div>`}
       </div>
       ${parentsHtml}
@@ -1256,8 +1256,7 @@ function buildGallerySection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
           <div class="g3d-track">${slides}</div>
           ${urls.length > 1 ? `
           <button class="g3d-arrow prev" aria-label="Anterior"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1e293b" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
-          <button class="g3d-arrow next" aria-label="Seguinte"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1e293b" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
-          <span class="g3d-counter">1 / ${urls.length}</span>` : ''}
+          <button class="g3d-arrow next" aria-label="Seguinte"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1e293b" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>` : ''}
         </div>
         <div class="g3d-dots">${dots}</div>
       </div>
@@ -2514,12 +2513,11 @@ function initGalleryCarousels() {
   window._pendingCarousels.forEach(({ id, color }) => {
     const wrap = document.getElementById(id);
     if (!wrap) return;
-    const slides = wrap.querySelectorAll('.g3d-slide');
-    const counter = wrap.querySelector('.g3d-counter');
+    let slides = Array.from(wrap.querySelectorAll('.g3d-slide'));
     const prevBtn = wrap.querySelector('.g3d-arrow.prev');
     const nextBtn = wrap.querySelector('.g3d-arrow.next');
     const dotsWrap = wrap.parentElement.querySelector('.g3d-dots');
-    const dots = dotsWrap ? dotsWrap.querySelectorAll('.g3d-dot') : [];
+    let dots = dotsWrap ? Array.from(dotsWrap.querySelectorAll('.g3d-dot')) : [];
     let idx = 0;
 
     // ── Posicionamento com perspectiva 3D real (rotação + profundidade) ──
@@ -2549,14 +2547,40 @@ function initGalleryCarousels() {
         d.classList.toggle('active', i === idx);
         d.style.background = i === idx ? color : '#d1d5db';
       });
-      if (counter) counter.textContent = `${idx + 1} / ${slides.length}`;
-      if (prevBtn) prevBtn.style.opacity = idx === 0 ? '0.35' : '1';
-      if (nextBtn) nextBtn.style.opacity = idx === slides.length - 1 ? '0.35' : '1';
+      // ✅ Esconder a seta totalmente nos limites (não só esmaecer) — na
+      // primeira foto não há "Anterior", na última não há "Seguinte".
+      if (prevBtn) prevBtn.style.display = (idx === 0 || !slides.length) ? 'none' : 'flex';
+      if (nextBtn) nextBtn.style.display = (idx >= slides.length - 1) ? 'none' : 'flex';
     }
     function go(newIdx) {
       idx = Math.max(0, Math.min(slides.length - 1, newIdx));
       render();
     }
+
+    // ✅ Verificar se cada foto ainda existe — se tiver sido eliminada do
+    // armazenamento depois de já estar na galeria, a faceta e o ponto
+    // correspondente são removidos em vez de ficar um espaço em branco.
+    function removeSlide(slideEl) {
+      const i = slides.indexOf(slideEl);
+      if (i === -1) return;
+      const dotEl = dots[i];
+      slideEl.remove();
+      if (dotEl) dotEl.remove();
+      slides.splice(i, 1);
+      dots.splice(i, 1);
+      if (idx >= slides.length) idx = Math.max(0, slides.length - 1);
+      if (!slides.length) { wrap.closest('.event-section')?.remove(); return; }
+      render();
+    }
+    slides.forEach((slideEl) => {
+      const m = slideEl.style.backgroundImage.match(/url\(["']?(.*?)["']?\)/);
+      const url = m ? m[1] : null;
+      if (!url) return;
+      const probe = new Image();
+      probe.onerror = () => removeSlide(slideEl);
+      probe.src = url;
+    });
+
     render();
 
     // ── Arrastar: touch (telemóvel) e rato (computador) ──
@@ -2590,11 +2614,15 @@ function initGalleryCarousels() {
     window.addEventListener('keydown', keyHandler);
 
     // Clicar na imagem centrada abre o lightbox; clicar numa imagem lateral
-    // navega o carrossel até ela.
-    slides.forEach((s, i) => {
+    // navega o carrossel até ela. O índice é sempre recalculado no momento
+    // do clique (não fixado de antemão), para continuar correcto mesmo se
+    // alguma foto for removida (por já não existir) depois disto.
+    slides.forEach((s) => {
       s.style.cursor = 'pointer';
       s.addEventListener('click', () => {
         if (dragging) return;
+        const i = slides.indexOf(s);
+        if (i === -1) return;
         if (i === idx) {
           const url = s.style.backgroundImage.slice(5, -2); // strip url("...")
           if (typeof openLightbox === 'function') openLightbox(url);
@@ -2603,7 +2631,7 @@ function initGalleryCarousels() {
         }
       });
     });
-    dots.forEach((d, i) => { d.onclick = () => go(i); });
+    dots.forEach((d) => { d.onclick = () => { const i = dots.indexOf(d); if (i !== -1) go(i); }; });
   });
   window._pendingCarousels = [];
 }

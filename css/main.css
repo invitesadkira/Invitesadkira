@@ -526,6 +526,12 @@ html.ev-gold-countdown .std-countdown-num {
 .rsvp-cta-box .n { font-size: 1.6rem; font-weight: 900; color: #fff; line-height: 1; }
 .rsvp-cta-box .l { font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: rgba(255,255,255,0.75); margin-top: 2px; }
 .rsvp-cta-btn { display: inline-flex; align-items: center; gap: 0.6rem; background: #fff; color: var(--ev-color); font-weight: 800; font-size: 1rem; padding: 0.9rem 2.5rem; border-radius: 999px; border: none; cursor: pointer; box-shadow: 0 4px 20px rgba(0,0,0,0.2); transition: all 0.2s; }
+/* ✅ Esta regra (mais específica) garante que o texto deste botão usa a
+   mesma cor do botão (a cor do evento) — sem isto, a regra mais acima
+   pensada para os ícones redondos (".action-btn-label { color: ... }")
+   ganhava por ter mais especificidade, e o texto ficava branco em cima de
+   um fundo branco (só visível pela sombra), o que ficava feio e ilegível. */
+.rsvp-cta-btn .action-btn-label { color: inherit; }
 .rsvp-cta-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(0,0,0,0.25); }
 
 /* ── RSVP Drawer ── */
@@ -1353,11 +1359,6 @@ html.ev-gold-countdown .std-countdown-num {
 .g3d-arrow:active { transform: translateY(-50%) scale(0.95); }
 .g3d-arrow.prev { left: 0.6rem; }
 .g3d-arrow.next { right: 0.6rem; }
-.g3d-counter {
-  position: absolute; top: 0.7rem; right: 0.9rem; z-index: 3;
-  background: rgba(0,0,0,0.45); color: #fff; font-size: 0.68rem; font-weight: 700;
-  padding: 0.2rem 0.55rem; border-radius: 999px; backdrop-filter: blur(4px);
-}
 
 /* ── Gallery: Masonry style ── */
 .gmasonry-grid {
@@ -1584,3 +1585,25 @@ html.ev-gold-countdown .std-countdown-num {
 /* ── Layout "Elegante": indicador de scroll a saltar suavemente na capa ── */
 @keyframes elegantScrollBounce { 0%, 100% { transform: translateY(0); opacity: 0.7; } 50% { transform: translateY(8px); opacity: 1; } }
 .elegant-scroll-hint { animation: elegantScrollBounce 1.8s ease-in-out infinite; }
+
+/* ── Fonte do texto normal das secções (Presentes/IBAN, Manual, Cronograma,
+   Dress Code, Mensagem dos Noivos, História, FAQ, Texto do Convite, Pais).
+   Aplicada aqui no contentor principal — como font-family é uma
+   propriedade herdada, chega isto para cobrir os 4 layouts de uma vez,
+   sem precisar de tocar em cada secção uma a uma. A fonte dos NOMES (Hero,
+   Save the Date) continua separada, controlada por --event-font. */
+#guest-sections-container {
+  font-family: var(--ev-body-font, inherit);
+}
+
+/* ── Ornamento decorativo (junto ao texto bíblico): entrada suave —
+   aparece com um leve "pop" e uma rotação ligeira, em vez de aparecer
+   de repente sem transição. ── */
+@keyframes bibleOrnamentEntrance {
+  0% { opacity: 0; transform: scale(0.5) rotate(-12deg); }
+  60% { opacity: 1; transform: scale(1.08) rotate(3deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0deg); }
+}
+.bible-ornament-anim {
+  animation: bibleOrnamentEntrance 0.9s cubic-bezier(.34,1.56,.64,1) both;
+}
