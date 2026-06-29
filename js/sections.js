@@ -157,7 +157,7 @@ function buildSimpleInviteTemplate(ev) {
       ${blessingLine}
 
       <!-- 4. Convidam ___ para a celebração -->
-      <p style="text-align:center;font-size:0.98rem;color:#374151;line-height:1.7;max-width:380px;margin:0 auto 2.5rem;padding:0 1.5rem">${inviteLine}</p>
+      <p style="text-align:center;font-size:calc(0.98rem * var(--ev-body-scale,1));color:#374151;line-height:1.7;max-width:380px;margin:0 auto 2.5rem;padding:0 1.5rem">${inviteLine}</p>
 
       <!-- Vídeo do YouTube (se activo) -->
       ${(_yesOrTrue(ev.show_youtube_video) && ev.youtube_video_url) ? buildYoutubeVideoSection(ev).replace('<!-- SECTION_DIVIDER -->','') : ''}
@@ -195,7 +195,7 @@ function buildSimpleInviteTemplate(ev) {
         ${scheduleItems.map(it => `
           <div style="display:flex;align-items:baseline;gap:0.9rem;margin-bottom:0.85rem">
             <span style="flex-shrink:0;font-weight:800;font-size:0.85rem;color:${evColor};width:58px">${escapeHTML(it.time || '')}</span>
-            <span style="font-size:0.88rem;color:#374151;font-weight:600">${escapeHTML(it.label || '')}</span>
+            <span style="font-size:calc(0.88rem * var(--ev-body-scale,1));color:#374151;font-weight:600">${escapeHTML(it.label || '')}</span>
           </div>`).join('')}
       </div>` : ''}
     </div>`;
@@ -242,7 +242,7 @@ function buildElegantInviteTemplate(ev) {
     <div class="reveal" style="padding:3rem 1.5rem 2.5rem;text-align:center;max-width:480px;margin:0 auto">
       <p style="font-size:0.74rem;letter-spacing:0.25em;text-transform:uppercase;color:#9ca3af;font-weight:700;margin-bottom:0.5rem">Estás Convidado Para</p>
       <p style="font-family:'Great Vibes',cursive;font-size:clamp(1.9rem,8vw,2.5rem);color:${evColor};margin:0 0 1.1rem">${isBirthday ? 'o meu aniversário' : 'o nosso casamento'}</p>
-      ${ev.invite_text ? `<p style="font-size:0.9rem;color:#374151;line-height:1.85">${ev.invite_text.split('\n').filter(Boolean).map(l=>escapeHTML(l)).join('<br>')}</p>` : ''}
+      ${ev.invite_text ? `<p style="font-size:calc(0.9rem * var(--ev-body-scale,1));color:#374151;line-height:1.85">${ev.invite_text.split('\n').filter(Boolean).map(l=>escapeHTML(l)).join('<br>')}</p>` : ''}
     </div>`;
 
   // Contagem — reaproveita a secção já existente (mesmos 7 estilos, mesmo
@@ -275,7 +275,7 @@ function buildElegantInviteTemplate(ev) {
       ${venueBlocks.map(v => `
         <div style="margin-bottom:2.5rem">
           <p style="font-family:'Great Vibes',cursive;font-size:2.2rem;color:#1e293b;margin:0 0 0.6rem">${escapeHTML(v.label)}</p>
-          <p style="font-size:0.9rem;color:#374151;line-height:1.7;margin-bottom:0.3rem">Te esperamos en<br><strong>${escapeHTML(v.name)}</strong></p>
+          <p style="font-size:calc(0.9rem * var(--ev-body-scale,1));color:#374151;line-height:1.7;margin-bottom:0.3rem">Te esperamos en<br><strong>${escapeHTML(v.name)}</strong></p>
           ${v.time ? `<p style="font-size:0.85rem;color:#6b7280;margin-bottom:1rem">às ${escapeHTML(v.time)}</p>` : ''}
           ${v.maps ? `<a href="${escapeHTML(v.maps)}" target="_blank" style="display:inline-block;background:${evColor};color:#fff;border-radius:999px;padding:0.55rem 1.5rem;font-size:0.78rem;font-weight:700;text-decoration:none;letter-spacing:0.05em">VER UBICACIÓN</a>` : ''}
         </div>`).join('')}
@@ -295,7 +295,7 @@ function buildElegantInviteTemplate(ev) {
       ${(showGiftList || hasIban) ? `
         <div>
           <p style="font-family:'Great Vibes',cursive;font-size:2.2rem;color:#1e293b;margin:0 0 0.75rem">Regalos</p>
-          <p style="font-size:0.88rem;color:#374151;line-height:1.7;margin-bottom:1.25rem">Lo más importante es tu presencia,<br>pero si deseas hacernos un regalo aquí tienes nuestros datos.</p>
+          <p style="font-size:calc(0.88rem * var(--ev-body-scale,1));color:#374151;line-height:1.7;margin-bottom:1.25rem">Lo más importante es tu presencia,<br>pero si deseas hacernos un regalo aquí tienes nuestros datos.</p>
           <div style="display:flex;flex-direction:column;gap:0.7rem;align-items:center">
             ${hasIban ? `<button onclick="document.getElementById('elegant-iban-box').classList.toggle('hidden')" style="background:${evColor};color:#fff;border:none;border-radius:0.6rem;padding:0.75rem 2rem;font-weight:700;font-size:0.8rem;letter-spacing:0.04em;cursor:pointer;width:240px">VER DATOS BANCARIOS</button>` : ''}
             ${showGiftList ? `<button onclick="typeof openGuestGiftsModal==='function' && openGuestGiftsModal()" style="background:transparent;color:${evColor};border:1.5px solid ${evColor};border-radius:0.6rem;padding:0.75rem 2rem;font-weight:700;font-size:0.8rem;letter-spacing:0.04em;cursor:pointer;width:240px">LISTA DE REGALOS</button>` : ''}
@@ -385,7 +385,7 @@ function buildCalendarInviteTemplate(ev) {
   const introBlock = `
     <div class="reveal" style="padding:0 1.5rem 2.5rem;text-align:center;max-width:460px;margin:0 auto">
       <p style="font-size:1.15rem;font-weight:700;color:#1e293b;margin-bottom:0.9rem">Queridos convidados!</p>
-      ${ev.invite_text ? `<p style="font-size:0.9rem;color:#374151;line-height:1.85">${ev.invite_text.split('\n').filter(Boolean).map(l=>escapeHTML(l)).join('<br>')}</p>` : ''}
+      ${ev.invite_text ? `<p style="font-size:calc(0.9rem * var(--ev-body-scale,1));color:#374151;line-height:1.85">${ev.invite_text.split('\n').filter(Boolean).map(l=>escapeHTML(l)).join('<br>')}</p>` : ''}
     </div>`;
 
   const calendarBlock = dateObj ? `<div class="reveal" style="padding:0 1.5rem 2.75rem">${_buildMonthCalendar(dateObj, evColor)}</div>` : '';
@@ -399,7 +399,7 @@ function buildCalendarInviteTemplate(ev) {
     <div class="reveal" style="text-align:center;padding:0 1.5rem 2.5rem;max-width:420px;margin:0 auto">
       <i data-lucide="${v.icon}" style="width:30px;height:30px;color:${evColor};margin-bottom:0.6rem"></i>
       <p style="font-size:1.2rem;font-weight:700;color:#1e293b;margin-bottom:0.7rem">${escapeHTML(v.label)}</p>
-      ${(ev.date || v.time) ? `<p style="font-size:0.95rem;color:#374151;margin-bottom:0.5rem">${dateObj ? escapeHTML(String(dateObj.getDate()).padStart(2,'0')+'.'+String(dateObj.getMonth()+1).padStart(2,'0')) : ''}${v.time ? ` &nbsp;|&nbsp; ${escapeHTML(v.time)}` : ''}</p>` : ''}
+      ${(ev.date || v.time) ? `<p style="font-size:calc(0.95rem * var(--ev-body-scale,1));color:#374151;margin-bottom:0.5rem">${dateObj ? escapeHTML(String(dateObj.getDate()).padStart(2,'0')+'.'+String(dateObj.getMonth()+1).padStart(2,'0')) : ''}${v.time ? ` &nbsp;|&nbsp; ${escapeHTML(v.time)}` : ''}</p>` : ''}
       <p style="font-size:0.85rem;color:#6b7280;margin-bottom:1rem">${escapeHTML(v.name)}</p>
       ${v.maps ? `<a href="${escapeHTML(v.maps)}" target="_blank" style="display:inline-block;background:color-mix(in srgb,${evColor} 80%,#000);color:#fff;border-radius:0.5rem;padding:0.55rem 1.4rem;font-size:0.78rem;font-weight:700;text-decoration:none">VER NO MAPA</a>` : ''}
     </div>`).join('');
@@ -412,7 +412,7 @@ function buildCalendarInviteTemplate(ev) {
     <div class="reveal" style="text-align:center;padding:0 1.5rem 2.5rem;max-width:420px;margin:0 auto">
       <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="${evColor}" stroke-width="1.3" style="margin-bottom:0.6rem"><path d="M20.38 3.46 16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.57a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.57a2 2 0 0 0-1.34-2.23z"/></svg>
       <p style="font-size:1.2rem;font-weight:700;color:#1e293b;margin-bottom:0.7rem">Dress Code</p>
-      ${ev.dresscode_text ? `<p style="font-size:0.9rem;color:#374151;line-height:1.7;margin-bottom:1rem">${escapeHTML(ev.dresscode_text)}</p>` : ''}
+      ${ev.dresscode_text ? `<p style="font-size:calc(0.9rem * var(--ev-body-scale,1));color:#374151;line-height:1.7;margin-bottom:1rem">${escapeHTML(ev.dresscode_text)}</p>` : ''}
       ${dressColors.length ? `<div style="display:flex;gap:0.5rem;justify-content:center;flex-wrap:wrap">
         ${dressColors.map(c => `<div title="${c}" style="width:34px;height:34px;border-radius:50%;background:${c};border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.18)"></div>`).join('')}
       </div>` : ''}
@@ -424,7 +424,7 @@ function buildCalendarInviteTemplate(ev) {
     <div class="reveal" style="text-align:center;padding:0 1.5rem 3rem;max-width:420px;margin:0 auto">
       <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="${evColor}" stroke-width="1.5" style="margin-bottom:0.6rem"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
       <p style="font-size:1.2rem;font-weight:700;color:#1e293b;margin-bottom:0.9rem">Detalhes</p>
-      ${ev.iban_message ? `<p style="font-size:0.88rem;color:#374151;line-height:1.75;margin-bottom:1.1rem">${escapeHTML(ev.iban_message).split('\n').filter(Boolean).join('<br><br>')}</p>` : ''}
+      ${ev.iban_message ? `<p style="font-size:calc(0.88rem * var(--ev-body-scale,1));color:#374151;line-height:1.75;margin-bottom:1.1rem">${escapeHTML(ev.iban_message).split('\n').filter(Boolean).join('<br><br>')}</p>` : ''}
       ${hasIban ? `<button onclick="document.getElementById('cal-iban-box').classList.toggle('hidden')" style="background:${evColor};color:#fff;border:none;border-radius:0.5rem;padding:0.65rem 1.6rem;font-weight:700;font-size:0.8rem;cursor:pointer">Ver Dados Bancários</button>
       <div id="cal-iban-box" class="hidden" style="margin-top:1rem;background:#faf9f7;border-radius:0.6rem;padding:1rem;border:1px solid #e5e7eb;text-align:left">
         <p style="font-size:0.7rem;color:#9ca3af;margin-bottom:0.15rem">IBAN</p>
@@ -1193,7 +1193,7 @@ function buildParentsSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
 
 function buildIbanSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
   const evColor = ev.event_color || '#007f9f';
-  const msgLines = (ev.iban_message || '').split('\n').map(l => `<p style="color:#374151;font-size:0.92rem;line-height:1.7;text-align:center">${escapeHTML(l)}</p>`).join('');
+  const msgLines = (ev.iban_message || '').split('\n').map(l => `<p style="color:#374151;font-size:calc(0.92rem * var(--ev-body-scale,1));line-height:1.7;text-align:center">${escapeHTML(l)}</p>`).join('');
   return _SD + `<div class="event-section" style="background:#f0f9fb">
     <div class="section-inner reveal" style="text-align:center">
       <div style="background:#fff;border-radius:1rem;padding:1.5rem 1.25rem;max-width:480px;margin:0 auto;border:1.5px solid color-mix(in srgb,${evColor} 25%,transparent)">
@@ -1298,7 +1298,7 @@ function buildManualSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
         <div style="flex-shrink:0;width:34px;height:34px;border-radius:50%;background:color-mix(in srgb,${evColor} 14%,white);display:flex;align-items:center;justify-content:center">
           ${it.icon && it.icon.startsWith('http') ? `<img src="${it.icon}" style="width:16px;height:16px;object-fit:contain">` : `<i data-lucide="${it.icon}" style="width:15px;height:15px;color:${evColor}"></i>`}
         </div>
-        <p style="font-size:0.85rem;color:#374151;line-height:1.5;padding-top:0.3rem">${it.text.replace(/\n/g, '<br>')}</p>
+        <p style="font-size:calc(0.85rem * var(--ev-body-scale,1));color:#374151;line-height:1.5;padding-top:0.3rem">${it.text.replace(/\n/g, '<br>')}</p>
       </div>`).join('');
     return _SD + `<div class="event-section" style="background:#f8fafc"><div class="section-inner">
       <h3 class="section-title reveal" style="color:${evColor}">Manual do Bom Convidado</h3>
@@ -1311,7 +1311,7 @@ function buildManualSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
     const rows = items.map((it, i) => `
       <div class="reveal" style="display:flex;align-items:flex-start;gap:0.85rem;margin-bottom:1rem;max-width:480px;margin-left:auto;margin-right:auto">
         <div style="flex-shrink:0;width:30px;height:30px;border-radius:50%;background:${evColor};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:0.85rem">${i+1}</div>
-        <p style="font-size:0.85rem;color:#374151;line-height:1.5;padding-top:0.35rem">${it.text.replace(/\n/g, '<br>')}</p>
+        <p style="font-size:calc(0.85rem * var(--ev-body-scale,1));color:#374151;line-height:1.5;padding-top:0.35rem">${it.text.replace(/\n/g, '<br>')}</p>
       </div>`).join('');
     return _SD + `<div class="event-section" style="background:#f8fafc"><div class="section-inner">
       <h3 class="section-title reveal" style="color:${evColor}">Manual do Bom Convidado</h3>
@@ -1347,8 +1347,8 @@ function buildScheduleSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
   if (style === 'zigzag') {
     const rows = items.map((it, i) => {
       const isLeft = i % 2 === 0;
-      const timeLabel  = `<div style="font-size:0.72rem;font-weight:800;color:${evColor};text-transform:uppercase;letter-spacing:0.05em;margin-bottom:2px">${it.time}</div>`;
-      const textLabel  = `<div><div style="font-weight:700;color:#1e293b;font-size:0.88rem">${escapeHTML(it.label)}</div>${it.sub?`<div style="font-size:0.72rem;color:#6b7280;margin-top:1px">${escapeHTML(it.sub)}</div>`:''}</div>`;
+      const timeLabel  = `<div style="font-size:calc(0.72rem * var(--ev-body-scale,1));font-weight:800;color:${evColor};text-transform:uppercase;letter-spacing:0.05em;margin-bottom:2px">${it.time}</div>`;
+      const textLabel  = `<div><div style="font-weight:700;color:#1e293b;font-size:calc(0.88rem * var(--ev-body-scale,1))">${escapeHTML(it.label)}</div>${it.sub?`<div style="font-size:calc(0.72rem * var(--ev-body-scale,1));color:#6b7280;margin-top:1px">${escapeHTML(it.sub)}</div>`:''}</div>`;
       const node = `<div style="flex-shrink:0;width:44px;height:44px;border-radius:50%;background:${evColor};display:flex;align-items:center;justify-content:center;position:relative;z-index:2;box-shadow:0 2px 8px rgba(0,0,0,0.15)">${it.icon && it.icon.startsWith('http') ? `<img src="${it.icon}" style="width:20px;height:20px;object-fit:contain;filter:brightness(0) invert(1)">` : `<i data-lucide="${it.icon}" style="width:18px;height:18px;color:#fff"></i>`}</div>`;
       if (isLeft) {
         return `<div class="reveal" style="display:grid;grid-template-columns:1fr auto 1fr;align-items:center;margin-bottom:1.5rem;max-width:500px;margin-left:auto;margin-right:auto">
@@ -1379,8 +1379,8 @@ function buildScheduleSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
   if (style === 'compact') {
     const rows = items.map(it => `
       <div class="reveal" style="display:flex;align-items:baseline;gap:0.85rem;padding:0.6rem 0;border-bottom:1px solid #f1f5f9">
-        <span style="font-size:0.82rem;font-weight:800;color:${evColor};min-width:52px">${it.time}</span>
-        <div><span style="font-weight:700;color:#1e293b;font-size:0.85rem">${escapeHTML(it.label)}</span>${it.sub?` <span style="font-size:0.75rem;color:#9ca3af">— ${escapeHTML(it.sub)}</span>`:''}</div>
+        <span style="font-size:calc(0.82rem * var(--ev-body-scale,1));font-weight:800;color:${evColor};min-width:52px">${it.time}</span>
+        <div><span style="font-weight:700;color:#1e293b;font-size:calc(0.85rem * var(--ev-body-scale,1))">${escapeHTML(it.label)}</span>${it.sub?` <span style="font-size:calc(0.75rem * var(--ev-body-scale,1));color:#9ca3af">— ${escapeHTML(it.sub)}</span>`:''}</div>
       </div>`).join('');
     return _SD + `<div class="event-section">
       <div class="section-inner" style="max-width:480px;margin:0 auto">
@@ -1398,9 +1398,9 @@ function buildScheduleSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
           ${it.icon && it.icon.startsWith('http') ? `<img src="${it.icon}" style="width:22px;height:22px;object-fit:contain">` : `<i data-lucide="${it.icon}" style="width:20px;height:20px;color:${evColor}"></i>`}
         </div>
         <div>
-          <div style="font-size:0.7rem;font-weight:800;color:${evColor};text-transform:uppercase;letter-spacing:0.05em">${it.time}</div>
-          <div style="font-weight:700;color:#1e293b;font-size:0.92rem">${escapeHTML(it.label)}</div>
-          ${it.sub?`<div style="font-size:0.75rem;color:#6b7280">${escapeHTML(it.sub)}</div>`:''}
+          <div style="font-size:calc(0.7rem * var(--ev-body-scale,1));font-weight:800;color:${evColor};text-transform:uppercase;letter-spacing:0.05em">${it.time}</div>
+          <div style="font-weight:700;color:#1e293b;font-size:calc(0.92rem * var(--ev-body-scale,1))">${escapeHTML(it.label)}</div>
+          ${it.sub?`<div style="font-size:calc(0.75rem * var(--ev-body-scale,1));color:#6b7280">${escapeHTML(it.sub)}</div>`:''}
         </div>
       </div>`).join('');
     return _SD + `<div class="event-section">
@@ -1415,14 +1415,14 @@ function buildScheduleSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
   const rows = items.map(it => `
     <div class="reveal" style="display:flex;gap:1rem;margin-bottom:1.5rem;max-width:480px;margin-left:auto;margin-right:auto;position:relative">
       <div style="flex-shrink:0;width:70px;text-align:right">
-        <span style="font-size:1.05rem;font-weight:800;color:#1e293b">${it.time}</span>
+        <span style="font-size:calc(1.05rem * var(--ev-body-scale,1));font-weight:800;color:#1e293b">${it.time}</span>
       </div>
       <div style="flex-shrink:0;position:relative;display:flex;flex-direction:column;align-items:center">
         <div style="width:12px;height:12px;border-radius:50%;background:${evColor};margin-top:6px;flex-shrink:0;box-shadow:0 0 0 4px color-mix(in srgb,${evColor} 15%,white)"></div>
       </div>
       <div style="flex:1;padding-bottom:0.25rem">
-        <div style="font-weight:800;color:#1e293b;font-size:0.85rem;text-transform:uppercase;letter-spacing:0.03em">${escapeHTML(it.label)}</div>
-        ${it.sub?`<div style="font-size:0.82rem;color:#9ca3af;margin-top:1px">${escapeHTML(it.sub)}</div>`:''}
+        <div style="font-weight:800;color:#1e293b;font-size:calc(0.85rem * var(--ev-body-scale,1));text-transform:uppercase;letter-spacing:0.03em">${escapeHTML(it.label)}</div>
+        ${it.sub?`<div style="font-size:calc(0.82rem * var(--ev-body-scale,1));color:#9ca3af;margin-top:1px">${escapeHTML(it.sub)}</div>`:''}
       </div>
     </div>`).join('');
 
@@ -2305,8 +2305,8 @@ function _buildDresscodeContentHTML(ev) {
   }
   return `<div style="text-align:center">
       ${imagesHtml}
-      ${ev.dresscode_text ? `<p style="font-size:1rem;font-weight:600;color:#1e293b;margin-bottom:0.5rem">${escapeHTML(ev.dresscode_text)}</p>` : ''}
-      ${ev.dresscode_detail ? `<p style="font-size:0.85rem;color:#374151;line-height:1.6;max-width:420px;margin:0 auto 0.5rem">${escapeHTML(ev.dresscode_detail)}</p>` : ''}
+      ${ev.dresscode_text ? `<p style="font-size:calc(1rem * var(--ev-body-scale,1));font-weight:600;color:#1e293b;margin-bottom:0.5rem">${escapeHTML(ev.dresscode_text)}</p>` : ''}
+      ${ev.dresscode_detail ? `<p style="font-size:calc(0.85rem * var(--ev-body-scale,1));color:#374151;line-height:1.6;max-width:420px;margin:0 auto 0.5rem">${escapeHTML(ev.dresscode_detail)}</p>` : ''}
       ${(() => {
         if (!ev.dresscode_colors) return '';
         const cols = ev.dresscode_colors.split(/\n|,/).map(c => c.trim()).filter(c => /^#[0-9a-fA-F]{3,6}$/.test(c)).slice(0,4);
@@ -2440,10 +2440,10 @@ function buildEventFaqSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
         ${items.map((it, i) => `
         <div class="event-faq-block" style="background:#fff;border-radius:0.75rem;border:1px solid #e5e7eb;overflow:hidden">
           <button type="button" onclick="_toggleEventFaqAnswer(this)" style="width:100%;text-align:left;padding:0.85rem 1rem;background:none;border:none;display:flex;justify-content:space-between;align-items:center;cursor:pointer;font-family:inherit">
-            <span style="font-size:0.88rem;font-weight:700;color:#1e293b">${escapeHTML(it.q || '')}</span>
+            <span style="font-size:calc(0.88rem * var(--ev-body-scale,1));font-weight:700;color:#1e293b">${escapeHTML(it.q || '')}</span>
             <svg class="faq-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--ev-color)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-left:0.5rem;transition:transform 0.2s"><polyline points="6 9 12 15 18 9"/></svg>
           </button>
-          <div class="faq-answer hidden" style="padding:0 1rem 0.85rem;font-size:0.82rem;color:#6b7280;line-height:1.6">${escapeHTML(it.a || '')}</div>
+          <div class="faq-answer hidden" style="padding:0 1rem 0.85rem;font-size:calc(0.82rem * var(--ev-body-scale,1));color:#6b7280;line-height:1.6">${escapeHTML(it.a || '')}</div>
         </div>`).join('')}
       </div>
     </div>

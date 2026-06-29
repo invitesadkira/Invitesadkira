@@ -14,7 +14,7 @@
   <script>tailwind.config = { theme: { extend: { colors: { teal: { 500: '#007f9f', 600: '#006b86' } } } } }</script>
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💌</text></svg>">
-  <link rel="stylesheet" href="css/main.css?v=1782718913">
+  <link rel="stylesheet" href="css/main.css?v=1782720042">
 </head>
 <body class="h-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
 
@@ -1093,6 +1093,14 @@ para testemunhar o seu enlace matrimonial</textarea>
         </select>
         <input type="file" id="evt-body-font-file" accept=".ttf,.otf,.woff,.woff2" class="hidden" onchange="handleBodyFontUpload(this)">
         <button type="button" class="text-xs text-teal-600 font-semibold mt-1" onclick="document.getElementById('evt-body-font-file').click()">📤 Carregar a minha própria fonte</button>
+        <label class="text-xs font-semibold text-gray-600 block mt-3 mb-1">Tamanho do texto das secções</label>
+        <p class="text-xs text-gray-400 mb-1">Aplica-se ao texto normal — Texto do Convite, Dress Code, Manual, Cronograma, FAQ, Presentes/IBAN. Não afecta os títulos das secções (esse controlo fica mais abaixo).</p>
+        <div class="flex items-center gap-2">
+         <button type="button" class="w-8 h-8 rounded-lg border border-gray-300 flex items-center justify-center font-bold" onclick="changeBodyTextSize(-1)"><i data-lucide="minus" class="w-3 h-3"></i></button>
+         <span id="body-text-size-label" class="text-sm font-semibold w-16 text-center">100%</span>
+         <button type="button" class="w-8 h-8 rounded-lg border border-gray-300 flex items-center justify-center font-bold" onclick="changeBodyTextSize(1)"><i data-lucide="plus" class="w-3 h-3"></i></button>
+        </div>
+        <input id="evt-body-text-scale" type="hidden" value="100">
        </div><!-- /pane contagem -->
        <div class="event-tab-pane hidden" data-tab="cores-evento">
         <!-- Cor do evento -->
@@ -1495,20 +1503,20 @@ para testemunhar o seu enlace matrimonial</textarea>
   </a>
 
   <!-- ===================== SCRIPTS (ordem importa) ===================== -->
-  <script src="js/config.js?v=1782718913"></script>
-  <script src="js/store.js?v=1782718913"></script>
-  <script src="js/visuals.js?v=1782718913"></script>
-  <script src="js/venues.js?v=1782718913"></script>
-  <script src="js/rsvp.js?v=1782718913"></script>
-  <script src="js/ui.js?v=1782718913"></script>
-  <script src="js/auth.js?v=1782718913"></script>
-  <script src="js/dashboard.js?v=1782718913"></script>
-  <script src="js/events.js?v=1782718913"></script>
-  <script src="js/intake-wizard.js?v=1782718913"></script>
-  <script src="js/guest.js?v=1782718913"></script>
-  <script src="js/sections.js?v=1782718913"></script>
-  <script src="js/admin.js?v=1782718913"></script>
-  <script src="js/router.js?v=1782718913"></script>
+  <script src="js/config.js?v=1782720042"></script>
+  <script src="js/store.js?v=1782720042"></script>
+  <script src="js/visuals.js?v=1782720042"></script>
+  <script src="js/venues.js?v=1782720042"></script>
+  <script src="js/rsvp.js?v=1782720042"></script>
+  <script src="js/ui.js?v=1782720042"></script>
+  <script src="js/auth.js?v=1782720042"></script>
+  <script src="js/dashboard.js?v=1782720042"></script>
+  <script src="js/events.js?v=1782720042"></script>
+  <script src="js/intake-wizard.js?v=1782720042"></script>
+  <script src="js/guest.js?v=1782720042"></script>
+  <script src="js/sections.js?v=1782720042"></script>
+  <script src="js/admin.js?v=1782720042"></script>
+  <script src="js/router.js?v=1782720042"></script>
 
 </body>
 </html>

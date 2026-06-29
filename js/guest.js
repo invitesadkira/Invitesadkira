@@ -515,6 +515,7 @@ async function renderGuestView() {
   // Convite, Pais) — separada da fonte dos nomes, que já existia. ──
   _loadGoogleFontIfNeeded(eventData.body_font_family);
   document.documentElement.style.setProperty('--ev-body-font', eventData.body_font_family ? `'${eventData.body_font_family}', sans-serif` : 'inherit');
+  document.documentElement.style.setProperty('--ev-body-scale', (parseFloat(eventData.body_text_scale) || 100) / 100);
 
   // ── Texto bíblico: negrito, itálico, e fonte própria (opcional) ──
   _loadGoogleFontIfNeeded(eventData.bible_font_family);

@@ -1322,6 +1322,16 @@ function changeTitlesSize(delta) {
   if (lbl) lbl.textContent = v + 'rem';
 }
 
+function changeBodyTextSize(delta) {
+  const inp = document.getElementById('evt-body-text-scale');
+  const lbl = document.getElementById('body-text-size-label');
+  if (!inp) return;
+  let v = parseInt(inp.value, 10) || 100;
+  v = Math.max(60, Math.min(160, v + delta * 5));
+  inp.value = v;
+  if (lbl) lbl.textContent = v + '%';
+}
+
 function changeOrnamentSize(delta) {
   const inp = document.getElementById('evt-bible-ornament-size');
   const lbl = document.getElementById('ornament-size-label');

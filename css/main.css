@@ -394,7 +394,7 @@ html.ev-gold-countdown .std-countdown-num {
 .bible-ref { font-style: normal; font-weight: 700; color: var(--ev-color); font-size: 0.85rem; margin-top: 0.5rem; text-align: center; }
 
 /* ── Invitation ── */
-.invitation-text { text-align: center; color: #374151; line-height: 2; }
+.invitation-text { text-align: center; color: #374151; line-height: 2; font-size: calc(1rem * var(--ev-body-scale, 1)); }
 
 /* ── Parents: 2 names per row, two columns side-by-side ── */
 .parents-columns { display: flex; gap: 0; justify-content: center; flex-wrap: nowrap; text-align: center; margin-top: 1.5rem; width: 100%; }
@@ -476,7 +476,7 @@ html.ev-gold-countdown .std-countdown-num {
 .manual-item { display: flex; flex-direction: column; align-items: center; background: #fff; border-radius: 1rem; padding: 1rem 0.5rem; border: 1.5px solid #e5e7eb; text-align: center; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
 .manual-item .mi-icon { width: 48px; height: 48px; background: color-mix(in srgb, var(--ev-color) 12%, white); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 0.5rem; }
 .manual-item .mi-icon svg, .manual-item .mi-icon i { width: 26px; height: 26px; color: var(--ev-color); }
-.manual-item .mi-text { font-size: 0.75rem; font-weight: 600; color: #374151; line-height: 1.3; }
+.manual-item .mi-text { font-size: calc(0.75rem * var(--ev-body-scale, 1)); font-weight: 600; color: #374151; line-height: 1.3; }
 
 /* ── Zigzag Timeline (Itinerário) ── */
 .timeline-wrap { position: relative; padding: 0 0.5rem; max-width: 640px; margin: 0 auto; }

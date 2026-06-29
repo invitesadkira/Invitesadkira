@@ -860,6 +860,7 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
           std_music_continuous: document.getElementById('sw-std-music-continuous')?.classList.contains('active') ? 'yes' : 'no',
           countdown_style: document.getElementById('evt-countdown-style')?.value || 'cards',
           body_font_family: document.getElementById('evt-body-font')?.value || null,
+          body_text_scale: document.getElementById('evt-body-text-scale')?.value || '100',
           bible_font_family: document.getElementById('evt-bible-font')?.value || null,
           bible_bold: document.getElementById('evt-bible-bold')?.checked ? 'yes' : 'no',
           bible_italic: document.getElementById('evt-bible-italic')?.checked ? 'yes' : 'no',
@@ -1830,6 +1831,7 @@ function _fillEditForm(ev) {
   _setSwitch('sw-std-music-continuous', ev.std_music_continuous !== 'no', null);
   { const csEl = document.getElementById('evt-countdown-style'); if (csEl) csEl.value = ev.countdown_style || 'cards'; }
   { const bfEl = document.getElementById('evt-body-font'); if (bfEl) bfEl.value = ev.body_font_family || ''; }
+  { const bsEl = document.getElementById('evt-body-text-scale'); const bsLbl = document.getElementById('body-text-size-label'); const bsVal = ev.body_text_scale || '100'; if (bsEl) bsEl.value = bsVal; if (bsLbl) bsLbl.textContent = bsVal + '%'; }
   { const blfEl = document.getElementById('evt-bible-font'); if (blfEl) blfEl.value = ev.bible_font_family || ''; }
   { const bbEl = document.getElementById('evt-bible-bold'); if (bbEl) bbEl.checked = ev.bible_bold === 'yes'; }
   { const biEl = document.getElementById('evt-bible-italic'); if (biEl) biEl.checked = ev.bible_italic !== 'no'; }
