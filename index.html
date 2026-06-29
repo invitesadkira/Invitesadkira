@@ -14,7 +14,7 @@
   <script>tailwind.config = { theme: { extend: { colors: { teal: { 500: '#007f9f', 600: '#006b86' } } } } }</script>
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💌</text></svg>">
-  <link rel="stylesheet" href="css/main.css?v=1782720042">
+  <link rel="stylesheet" href="css/main.css?v=1782725752">
 </head>
 <body class="h-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
 
@@ -792,6 +792,23 @@ para testemunhar o seu enlace matrimonial</textarea>
          </div>
          <input id="evt-parents-size" type="hidden" value="0.88">
         </div>
+
+        <!-- Texto Personalizado — bloco livre, título opcional, organizado
+             onde quiser (Save the Date e/ou Convite). -->
+        <div class="flex items-center justify-between mt-4 pt-3" style="border-top:1px solid #f3f4f6">
+         <span class="text-sm font-semibold text-gray-700">Texto Personalizado</span>
+        </div>
+        <p class="text-xs text-gray-400 mb-2">Um bloco de texto livre, à sua escolha — com título ou sem título. Pode aparecer no Save the Date, no convite, ou nos dois. A posição dentro do convite organiza-se em "Ordenar Secções".</p>
+        <input id="evt-custom-text-title" type="text" class="input-field text-sm mb-2" placeholder="Título (opcional — deixe vazio para não ter título)">
+        <textarea id="evt-custom-text-body" class="input-field text-sm mb-2" rows="4" placeholder="Escreva aqui o texto que deseja mostrar..."></textarea>
+        <div class="flex items-center gap-4">
+         <label class="flex items-center gap-1.5 text-xs font-semibold text-gray-600 cursor-pointer">
+          <input type="checkbox" id="evt-custom-text-std" class="w-4 h-4"> Mostrar no Save the Date
+         </label>
+         <label class="flex items-center gap-1.5 text-xs font-semibold text-gray-600 cursor-pointer">
+          <input type="checkbox" id="evt-custom-text-invite" class="w-4 h-4" checked> Mostrar no Convite
+         </label>
+        </div>
        </div><!-- /pane pais -->
        <div class="event-tab-pane hidden" data-tab="midia-capa">
         <div class="flex items-center justify-between">
@@ -1503,20 +1520,20 @@ para testemunhar o seu enlace matrimonial</textarea>
   </a>
 
   <!-- ===================== SCRIPTS (ordem importa) ===================== -->
-  <script src="js/config.js?v=1782720042"></script>
-  <script src="js/store.js?v=1782720042"></script>
-  <script src="js/visuals.js?v=1782720042"></script>
-  <script src="js/venues.js?v=1782720042"></script>
-  <script src="js/rsvp.js?v=1782720042"></script>
-  <script src="js/ui.js?v=1782720042"></script>
-  <script src="js/auth.js?v=1782720042"></script>
-  <script src="js/dashboard.js?v=1782720042"></script>
-  <script src="js/events.js?v=1782720042"></script>
-  <script src="js/intake-wizard.js?v=1782720042"></script>
-  <script src="js/guest.js?v=1782720042"></script>
-  <script src="js/sections.js?v=1782720042"></script>
-  <script src="js/admin.js?v=1782720042"></script>
-  <script src="js/router.js?v=1782720042"></script>
+  <script src="js/config.js?v=1782725752"></script>
+  <script src="js/store.js?v=1782725752"></script>
+  <script src="js/visuals.js?v=1782725752"></script>
+  <script src="js/venues.js?v=1782725752"></script>
+  <script src="js/rsvp.js?v=1782725752"></script>
+  <script src="js/ui.js?v=1782725752"></script>
+  <script src="js/auth.js?v=1782725752"></script>
+  <script src="js/dashboard.js?v=1782725752"></script>
+  <script src="js/events.js?v=1782725752"></script>
+  <script src="js/intake-wizard.js?v=1782725752"></script>
+  <script src="js/guest.js?v=1782725752"></script>
+  <script src="js/sections.js?v=1782725752"></script>
+  <script src="js/admin.js?v=1782725752"></script>
+  <script src="js/router.js?v=1782725752"></script>
 
 </body>
 </html>

@@ -162,6 +162,9 @@ function buildSimpleInviteTemplate(ev) {
       <!-- Vídeo do YouTube (se activo) -->
       ${(_yesOrTrue(ev.show_youtube_video) && ev.youtube_video_url) ? buildYoutubeVideoSection(ev).replace('<!-- SECTION_DIVIDER -->','') : ''}
 
+      <!-- Texto Personalizado (se activo para o convite) -->
+      ${(_yesOrTrue(ev.custom_text_show_invite) && ev.custom_text_body) ? buildCustomTextSection(ev).replace('<!-- SECTION_DIVIDER -->','') : ''}
+
       <!-- 5. Data e horário -->
       <div style="text-align:center;margin-bottom:2.5rem">
         <p style="font-size:1.3rem;font-weight:800;color:${evColor};margin:0">${escapeHTML(longDate)}</p>
@@ -316,6 +319,7 @@ function buildElegantInviteTemplate(ev) {
     ${countdownBlock}
     ${calendarBlock}
     ${(_yesOrTrue(ev.show_youtube_video) && ev.youtube_video_url) ? buildYoutubeVideoSection(ev).replace('<!-- SECTION_DIVIDER -->','') : ''}
+    ${(_yesOrTrue(ev.custom_text_show_invite) && ev.custom_text_body) ? buildCustomTextSection(ev).replace('<!-- SECTION_DIVIDER -->','') : ''}
     ${venuesBlock}
     ${dressGiftsBlock}
   </div>`;
@@ -443,6 +447,7 @@ function buildCalendarInviteTemplate(ev) {
     ${headerBlock}
     ${introBlock}
     ${(_yesOrTrue(ev.show_youtube_video) && ev.youtube_video_url) ? buildYoutubeVideoSection(ev).replace('<!-- SECTION_DIVIDER -->','') : ''}
+    ${(_yesOrTrue(ev.custom_text_show_invite) && ev.custom_text_body) ? buildCustomTextSection(ev).replace('<!-- SECTION_DIVIDER -->','') : ''}
     ${calendarBlock}
     ${venuesBlock}
     ${dressBlock}
@@ -577,6 +582,7 @@ async function renderGuestSections(eventData) {
           break;
         case 'story':    if (eventData.story_text && _yesOrTrue(eventData.show_story)) html += buildStorySection(eventData); break;
         case 'youtube_video': if (_yesOrTrue(eventData.show_youtube_video) && eventData.youtube_video_url) html += buildYoutubeVideoSection(eventData); break;
+        case 'custom_text': if (_yesOrTrue(eventData.custom_text_show_invite) && eventData.custom_text_body) html += buildCustomTextSection(eventData); break;
         case 'iban':     if (eventData.iban_number) html += buildIbanSection(eventData); break;
         case 'gallery':  if (eventData.gallery_urls) html += buildGallerySection(eventData); break;
         case 'venues':   if (_yesOrTrue(eventData.show_venues) && (eventData.venue_ceremony || eventData.venue_civil || eventData.venue_reception)) html += buildVenueSection(eventData); break;
@@ -1055,6 +1061,19 @@ function buildYoutubeVideoSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
           <iframe src="https://www.youtube-nocookie.com/embed/${videoId}?modestbranding=1&rel=0&iv_load_policy=3&playsinline=1" title="${escapeHTML(ev.youtube_video_title || 'Vídeo')}" style="position:absolute;inset:0;width:100%;height:100%;border:0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy"></iframe>
         </div>
       </div>
+    </div>
+  </div>`;
+}
+
+// ── Texto Personalizado — bloco livre, com título opcional, que o
+// utilizador escreve e organiza onde quiser (Save the Date e/ou Convite,
+// e a posição dentro do convite via o reordenador de secções). ──────────
+function buildCustomTextSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
+  if (!ev.custom_text_body) return '';
+  return _SD + `<div class="event-section">
+    <div class="section-inner reveal" style="text-align:center;max-width:480px;margin:0 auto">
+      ${ev.custom_text_title ? `<h3 class="section-title">${escapeHTML(ev.custom_text_title)}</h3>` : ''}
+      <p style="font-size:calc(0.92rem * var(--ev-body-scale,1));color:#374151;line-height:1.85">${ev.custom_text_body.split('\n').filter(Boolean).map(l=>escapeHTML(l)).join('<br>')}</p>
     </div>
   </div>`;
 }
@@ -2098,6 +2117,7 @@ const ALL_SECTION_DEFS = [
   { key: 'final_photo', label: 'Foto Final dos Noivos',                 icon: 'image' },
   { key: 'event_faq',   label: 'Perguntas Frequentes',                  icon: 'help-circle' },
   { key: 'messages',    label: 'Recados / Correio do Amor',             icon: 'message-square-heart' },
+  { key: 'custom_text', label: 'Texto Personalizado',                   icon: 'file-text' },
 ];
 
 function getDefaultSectionOrder() {

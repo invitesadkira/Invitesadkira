@@ -3328,6 +3328,10 @@ function renderSaveTheDateScreen(ev, decision) {
       <p class="std-anim std-anim-3" style="font-size:0.9rem;font-weight:500;color:#6b7280;font-family:'Quicksand',sans-serif;margin-bottom:1.25rem">${escapeHTML(stdSubtitle)}</p>
       ${(_yesOrTrue(ev.std_extra_phrase_enabled) && ev.std_extra_phrase) ? `<p class="std-anim std-anim-3 std-extra-message" style="font-size:0.85rem;font-weight:500;color:${evColor};font-family:'Quicksand',sans-serif;margin:-0.5rem 0 1.25rem;max-width:340px">${escapeHTML(ev.std_extra_phrase)}</p>` : ''}
       <div class="std-anim std-anim-4">${_buildStdDateBlock(eventDateLabel, evColor, ev.std_date_style)}</div>
+      ${(_yesOrTrue(ev.custom_text_show_std) && ev.custom_text_body) ? `<div class="std-anim std-anim-4" style="max-width:360px;margin-bottom:1.1rem">
+        ${ev.custom_text_title ? `<p style="font-size:0.78rem;font-weight:800;color:${evColor};text-transform:uppercase;letter-spacing:0.05em;margin-bottom:0.3rem">${escapeHTML(ev.custom_text_title)}</p>` : ''}
+        <p style="font-size:0.85rem;color:#4b5563;line-height:1.6">${ev.custom_text_body.split('\n').filter(Boolean).map(l=>escapeHTML(l)).join('<br>')}</p>
+      </div>` : ''}
       <div id="std-countdown-wrap" class="std-anim std-anim-5" style="width:100%;margin-bottom:1.1rem">
         <p id="std-countdown-label" style="font-size:0.6rem;text-transform:uppercase;letter-spacing:0.1em;opacity:0.5;margin-bottom:0.4rem;font-weight:700">A calcular...</p>
         ${_buildStdCountdownUnits(evColor, ev.countdown_style || 'cards')}
