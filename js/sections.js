@@ -2216,9 +2216,9 @@ function resetSectionOrder() {
 function buildVenueSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
   const evColor = ev.event_color || '#007f9f';
   const venues = [];
-  if (ev.venue_ceremony) venues.push({ icon: 'church',      title: 'Cerimónia Religiosa', name: ev.venue_ceremony, maps: ev.venue_ceremony_maps, image: ev.venue_ceremony_image });
-  if (ev.venue_civil)    venues.push({ icon: 'file-text',   title: 'Cerimónia Civil',     name: ev.venue_civil,    maps: ev.venue_civil_maps,    image: ev.venue_civil_image });
-  if (ev.venue_reception)venues.push({ icon: 'glass-water', title: "Copo d'Água",          name: ev.venue_reception,maps: ev.venue_reception_maps, image: ev.venue_reception_image });
+  if (ev.venue_ceremony) venues.push({ icon: ev.venue_ceremony_icon || 'church',      title: 'Cerimónia Religiosa', name: ev.venue_ceremony, maps: ev.venue_ceremony_maps, image: ev.venue_ceremony_image });
+  if (ev.venue_civil)    venues.push({ icon: ev.venue_civil_icon || 'file-text',   title: 'Cerimónia Civil',     name: ev.venue_civil,    maps: ev.venue_civil_maps,    image: ev.venue_civil_image });
+  if (ev.venue_reception)venues.push({ icon: ev.venue_reception_icon || 'glass-water', title: "Copo d'Água",          name: ev.venue_reception,maps: ev.venue_reception_maps, image: ev.venue_reception_image });
   if (!venues.length) return '';
 
   const imgFit = ev.venue_image_fit === 'cover' ? 'cover' : 'contain';
@@ -2227,7 +2227,7 @@ function buildVenueSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
       ${v.image ? `<div style="width:100%;height:170px;overflow:hidden;display:flex;align-items:center;justify-content:center;background:color-mix(in srgb,${evColor} 6%,#fff)"><img src="${v.image}" style="width:100%;height:100%;object-fit:${imgFit}" alt="${escapeHTML(v.title)}"></div>` : ''}
       <div style="padding:1.25rem 1rem">
         ${!v.image ? `<div style="width:44px;height:44px;border-radius:50%;background:color-mix(in srgb,${evColor} 12%,white);display:flex;align-items:center;justify-content:center;margin:0 auto 0.6rem">
-          <i data-lucide="${v.icon}" style="width:20px;height:20px;color:${evColor}"></i>
+          ${v.icon && v.icon.startsWith('http') ? `<img src="${v.icon}" style="width:22px;height:22px;object-fit:contain">` : `<i data-lucide="${v.icon}" style="width:20px;height:20px;color:${evColor}"></i>`}
         </div>` : ''}
         <div style="font-size:0.7rem;font-weight:800;text-transform:uppercase;letter-spacing:0.1em;color:${evColor};margin-bottom:0.25rem">${escapeHTML(v.title)}</div>
         <div style="font-weight:700;color:#1e293b;font-size:0.9rem;margin-bottom:0.5rem">${escapeHTML(v.name)}</div>
@@ -2389,43 +2389,48 @@ async function loadIconLibrary(category) {
 }
 
 async function openIconPickerModal(category, onSelect) {
-  const icons = await loadIconLibrary(category);
+  // ✅ Mostrar de imediato, com loading, em vez de não aparecer nada até
+  // a biblioteca carregar (o que deixava só o fundo preto visível).
   const modal = document.createElement('div');
   modal.id = '_icon-picker-modal';
-  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:99999;display:flex;align-items:center;justify-content:center;padding:1rem';
-  modal.innerHTML = `<div style="background:#fff;border-radius:1.25rem;padding:1.5rem;max-width:480px;width:100%;max-height:80vh;overflow-y:auto">
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:99999;display:flex;align-items:center;justify-content:center;padding:1.25rem;box-sizing:border-box';
+  modal.innerHTML = `<div style="background:#fff;border-radius:1.25rem;padding:1.5rem;max-width:480px;width:100%;max-height:80vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.3)">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
       <h3 style="font-size:1rem;font-weight:800;color:#1e293b;margin:0">Escolher Ícone</h3>
-      <button id="_icon-picker-close" style="background:#f3f4f6;border:none;border-radius:50%;width:30px;height:30px;cursor:pointer">×</button>
+      <button id="_icon-picker-close" style="background:#f3f4f6;border:none;border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:1.1rem;line-height:1">×</button>
     </div>
     <label style="display:block;background:#f0f9fb;border:1.5px dashed #007f9f;border-radius:0.75rem;padding:0.75rem;text-align:center;cursor:pointer;margin-bottom:1rem;font-size:0.82rem;color:#007f9f;font-weight:600">
       + Carregar novo ícone SVG (ficará disponível para todos)
       <input type="file" accept=".svg,image/svg+xml" style="display:none" id="_icon-upload-input">
     </label>
     <div id="_icon-grid" style="display:grid;grid-template-columns:repeat(5,1fr);gap:0.6rem">
-      ${icons.map(ic => `<div onclick="window._iconPickerSelect('${ic.url}')" style="aspect-ratio:1;border:1px solid #e5e7eb;border-radius:0.6rem;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0.5rem;background:#f8fafc" title="${escapeHTML(ic.name)}">
-        <img src="${ic.url}" style="width:100%;height:100%;object-fit:contain" onerror="this.parentElement.style.display='none'">
-      </div>`).join('') || '<p style="grid-column:1/-1;text-align:center;color:#9ca3af;font-size:0.8rem;padding:1rem">Nenhum ícone na biblioteca ainda. Sê o primeiro a carregar um!</p>'}
+      <p style="grid-column:1/-1;text-align:center;color:#9ca3af;font-size:0.8rem;padding:1rem">A carregar...</p>
     </div>
   </div>`;
   document.body.appendChild(modal);
   document.getElementById('_icon-picker-close').onclick = () => modal.remove();
   modal.onclick = e => { if (e.target === modal) modal.remove(); };
 
-  window._iconPickerSelect = (url) => {
-    onSelect(url);
-    modal.remove();
-  };
+  window._iconPickerSelect = (url) => { onSelect(url); modal.remove(); };
 
   document.getElementById('_icon-upload-input').onchange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
     const url = await uploadIconToLibrary(file, category);
-    if (url) {
-      onSelect(url);
-      modal.remove();
-    }
+    if (url) { onSelect(url); modal.remove(); }
   };
+
+  // Carregar a biblioteca em segundo plano
+  const icons = await loadIconLibrary(category);
+  const grid = document.getElementById('_icon-grid');
+  if (!grid) return;
+  if (!icons || !icons.length) {
+    grid.innerHTML = '<p style="grid-column:1/-1;text-align:center;color:#9ca3af;font-size:0.8rem;padding:1rem">Nenhum ícone na biblioteca ainda. Carrega o primeiro!</p>';
+    return;
+  }
+  grid.innerHTML = icons.map(ic => `<div onclick="window._iconPickerSelect('${ic.url}')" style="aspect-ratio:1;border:1px solid #e5e7eb;border-radius:0.6rem;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0.5rem;background:#f8fafc;transition:border-color 0.15s" title="${escapeHTML(ic.name)}" onmouseover="this.style.borderColor='#007f9f'" onmouseout="this.style.borderColor='#e5e7eb'">
+    <img src="${ic.url}" style="width:100%;height:100%;object-fit:contain" onerror="this.parentElement.style.display='none'">
+  </div>`).join('');
 }
 
 // ── Foto final dos noivos ──────────────────────────────────────────────────

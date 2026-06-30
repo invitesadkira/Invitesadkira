@@ -14,7 +14,7 @@
   <script>tailwind.config = { theme: { extend: { colors: { teal: { 500: '#007f9f', 600: '#006b86' } } } } }</script>
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💌</text></svg>">
-  <link rel="stylesheet" href="css/main.css?v=1782725752">
+  <link rel="stylesheet" href="css/main.css?v=1782797175">
 </head>
 <body class="h-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
 
@@ -938,7 +938,7 @@ para testemunhar o seu enlace matrimonial</textarea>
           <input id="evt-venue-ceremony-date" class="input-field text-sm mb-1" type="date" placeholder="Data (se diferente)">
           <input id="evt-venue-ceremony-maps" class="input-field text-sm mb-1" placeholder="Link Google Maps (opcional)">
           <input type="file" id="evt-venue-ceremony-image-input" accept="image/*" class="input-field text-sm" onchange="handleVenueImageUpload(this,'ceremony')">
-          <input type="hidden" id="evt-venue-ceremony-image">
+          <input type="hidden" id="evt-venue-ceremony-image"><div class="flex items-center gap-2 mt-1"><img id="evt-venue-ceremony-icon-preview" class="w-7 h-7 object-contain rounded" style="display:none"><button type="button" class="text-xs text-teal-600 font-semibold" onclick="openIconPickerModal('venue',(url)=>{document.getElementById('evt-venue-ceremony-icon').value=url;const p=document.getElementById('evt-venue-ceremony-icon-preview');p.src=url;p.style.display='';})">🔁 Trocar ícone</button><input type="hidden" id="evt-venue-ceremony-icon"></div>
           <div id="venue-ceremony-image-wrap" class="hidden relative mt-1" style="max-width:160px">
            <img id="venue-ceremony-image-preview" class="rounded-lg max-h-24 object-cover w-full">
            <button type="button" onclick="removeVenueImage('ceremony')" class="absolute top-1 right-1 bg-white rounded-full w-5 h-5 flex items-center justify-center shadow text-red-500 text-xs font-bold">✕</button>
@@ -951,6 +951,11 @@ para testemunhar o seu enlace matrimonial</textarea>
           <input id="evt-venue-civil-maps" class="input-field text-sm mb-1" placeholder="Link Google Maps (opcional)">
           <input type="file" id="evt-venue-civil-image-input" accept="image/*" class="input-field text-sm" onchange="handleVenueImageUpload(this,'civil')">
           <input type="hidden" id="evt-venue-civil-image">
+          <div class="flex items-center gap-2 mt-1">
+           <img id="evt-venue-civil-icon-preview" class="w-7 h-7 object-contain rounded" style="display:none">
+           <button type="button" class="text-xs text-teal-600 font-semibold" onclick="openIconPickerModal('venue',(url)=>{document.getElementById('evt-venue-civil-icon').value=url;const p=document.getElementById('evt-venue-civil-icon-preview');p.src=url;p.style.display='';})">🔁 Trocar ícone</button>
+           <input type="hidden" id="evt-venue-civil-icon">
+          </div>
           <div id="venue-civil-image-wrap" class="hidden relative mt-1" style="max-width:160px">
            <img id="venue-civil-image-preview" class="rounded-lg max-h-24 object-cover w-full">
            <button type="button" onclick="removeVenueImage('civil')" class="absolute top-1 right-1 bg-white rounded-full w-5 h-5 flex items-center justify-center shadow text-red-500 text-xs font-bold">✕</button>
@@ -962,6 +967,11 @@ para testemunhar o seu enlace matrimonial</textarea>
           <input id="evt-venue-reception-maps" class="input-field text-sm mb-1" placeholder="Link Google Maps (opcional)">
           <input type="file" id="evt-venue-reception-image-input" accept="image/*" class="input-field text-sm" onchange="handleVenueImageUpload(this,'reception')">
           <input type="hidden" id="evt-venue-reception-image">
+          <div class="flex items-center gap-2 mt-1">
+           <img id="evt-venue-reception-icon-preview" class="w-7 h-7 object-contain rounded" style="display:none">
+           <button type="button" class="text-xs text-teal-600 font-semibold" onclick="openIconPickerModal('venue',(url)=>{document.getElementById('evt-venue-reception-icon').value=url;const p=document.getElementById('evt-venue-reception-icon-preview');p.src=url;p.style.display='';})">🔁 Trocar ícone</button>
+           <input type="hidden" id="evt-venue-reception-icon">
+          </div>
           <div id="venue-reception-image-wrap" class="hidden relative mt-1" style="max-width:160px">
            <img id="venue-reception-image-preview" class="rounded-lg max-h-24 object-cover w-full">
            <button type="button" onclick="removeVenueImage('reception')" class="absolute top-1 right-1 bg-white rounded-full w-5 h-5 flex items-center justify-center shadow text-red-500 text-xs font-bold">✕</button>
@@ -1520,20 +1530,20 @@ para testemunhar o seu enlace matrimonial</textarea>
   </a>
 
   <!-- ===================== SCRIPTS (ordem importa) ===================== -->
-  <script src="js/config.js?v=1782725752"></script>
-  <script src="js/store.js?v=1782725752"></script>
-  <script src="js/visuals.js?v=1782725752"></script>
-  <script src="js/venues.js?v=1782725752"></script>
-  <script src="js/rsvp.js?v=1782725752"></script>
-  <script src="js/ui.js?v=1782725752"></script>
-  <script src="js/auth.js?v=1782725752"></script>
-  <script src="js/dashboard.js?v=1782725752"></script>
-  <script src="js/events.js?v=1782725752"></script>
-  <script src="js/intake-wizard.js?v=1782725752"></script>
-  <script src="js/guest.js?v=1782725752"></script>
-  <script src="js/sections.js?v=1782725752"></script>
-  <script src="js/admin.js?v=1782725752"></script>
-  <script src="js/router.js?v=1782725752"></script>
+  <script src="js/config.js?v=1782797175"></script>
+  <script src="js/store.js?v=1782797175"></script>
+  <script src="js/visuals.js?v=1782797175"></script>
+  <script src="js/venues.js?v=1782797175"></script>
+  <script src="js/rsvp.js?v=1782797175"></script>
+  <script src="js/ui.js?v=1782797175"></script>
+  <script src="js/auth.js?v=1782797175"></script>
+  <script src="js/dashboard.js?v=1782797175"></script>
+  <script src="js/events.js?v=1782797175"></script>
+  <script src="js/intake-wizard.js?v=1782797175"></script>
+  <script src="js/guest.js?v=1782797175"></script>
+  <script src="js/sections.js?v=1782797175"></script>
+  <script src="js/admin.js?v=1782797175"></script>
+  <script src="js/router.js?v=1782797175"></script>
 
 </body>
 </html>

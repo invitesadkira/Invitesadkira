@@ -936,6 +936,9 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
           venue_reception_maps: document.getElementById('evt-venue-reception-maps')?.value?.trim() || null,
           venue_reception_image: document.getElementById('evt-venue-reception-image')?.value || null,
           venues_title: document.getElementById('evt-venues-title')?.value?.trim() || null,
+          venue_ceremony_icon: document.getElementById('evt-venue-ceremony-icon')?.value?.trim() || null,
+          venue_civil_icon: document.getElementById('evt-venue-civil-icon')?.value?.trim() || null,
+          venue_reception_icon: document.getElementById('evt-venue-reception-icon')?.value?.trim() || null,
           venue_image_fit: document.getElementById('evt-venue-image-fit')?.value || 'contain',
         });
         // Save dates to dedicated table
@@ -3362,10 +3365,30 @@ function _showIntakeError(title, msg) {
 }
 
 async function openIntakeForm(eventId) {
-  const ev = eventId ? (await supabaseRequest(`events?id=eq.${eventId}&select=id,title,date&limit=1`))?.[0] || {} : {};
+  const ev = eventId ? (await supabaseRequest(`events?id=eq.${eventId}&select=id,title,date,groom_name,bride_name,event_type&limit=1`))?.[0] || {} : {};
 
   // Store eventId for the continue button
   window._intakeEventId = eventId;
+
+  // ✅ Verificar se já existe uma submissão completa para este token,
+  // e se o evento já tem informações — mostrar opção de editar.
+  let _hasExistingData = false;
+  if (eventId && (ev.groom_name || ev.bride_name || ev.date)) _hasExistingData = true;
+  if (!_hasExistingData && Store._intakeToken) {
+    try {
+      const sub = await supabaseRequest(`intake_submissions?token=eq.${Store._intakeToken}&select=id&limit=1`);
+      if (sub && sub.length) _hasExistingData = true;
+    } catch(e) {}
+  }
+
+  // Pré-preencher o estado do assistente com os dados existentes do evento,
+  // para que as perguntas já respondidas apareçam com as respostas certas.
+  if (eventId && !sessionStorage.getItem('iw_progress')) {
+    Store._iwPreloadState = {};
+    if (ev.event_type) Store._iwPreloadState.event_type = ev.event_type;
+    if (ev.groom_name || ev.bride_name) Store._iwPreloadState.names = { groom: ev.groom_name || '', bride: ev.bride_name || '' };
+    if (ev.date) Store._iwPreloadState.date = ev.date;
+  }
 
   const privacyPrompt = document.createElement('div');
   privacyPrompt.id = 'intake-privacy-prompt';
@@ -3391,6 +3414,7 @@ async function openIntakeForm(eventId) {
     'Termos de Uso</button>',
     '</div>',
     '<button id="btn-intake-accept" style="background:#007f9f;color:#fff;border:none;border-radius:999px;padding:0.85rem 2rem;font-weight:800;font-size:1rem;cursor:pointer;width:100%;font-family:inherit">Aceito — Continuar</button>',
+  _hasExistingData ? '<button id="btn-intake-edit" style="background:transparent;color:#007f9f;border:1.5px solid #007f9f;border-radius:999px;padding:0.65rem 2rem;font-weight:700;font-size:0.9rem;cursor:pointer;width:100%;font-family:inherit;margin-top:0.5rem">Editar respostas anteriores</button>' : '',
     '<p style="font-size:0.72rem;color:#9ca3af;margin-top:0.75rem">Ao clicar em "Aceito", confirmas que leste e concordas com os nossos termos.</p>',
   ].join('');
 
@@ -3402,6 +3426,19 @@ async function openIntakeForm(eventId) {
   document.getElementById('btn-read-terms').onclick   = () => showTermsModal();
   document.getElementById('btn-intake-accept').onclick = () => {
     privacyPrompt.remove();
+    // Pré-popular com dados do evento, se existirem e não houver progresso guardado
+    if (Store._iwPreloadState && !sessionStorage.getItem('iw_progress')) {
+      _iwState = Store._iwPreloadState;
+      Store._iwPreloadState = null;
+    }
+    openIntakeWizard(eventId);
+  };
+  const editBtn = document.getElementById('btn-intake-edit');
+  if (editBtn) editBtn.onclick = () => {
+    privacyPrompt.remove();
+    // Limpar progresso guardado para recomeçar do início com dados já preenchidos
+    try { sessionStorage.removeItem('iw_progress'); } catch(e) {}
+    if (Store._iwPreloadState) { _iwState = Store._iwPreloadState; Store._iwPreloadState = null; }
     openIntakeWizard(eventId);
   };
 }
@@ -4325,6 +4362,17 @@ async function openStdEditor() {
       <option value="bignum" ${d.std_date_style==='bignum'?'selected':''}>Número grande em destaque</option>
     </select>
 
+    <label class="text-xs font-semibold text-gray-600 block mb-1">Estilo da contagem regressiva</label>
+    <select id="std2-countdown-style" class="input-field text-sm mb-3">
+      <option value="cards" ${!d.countdown_style||d.countdown_style==='cards'?'selected':''}>Cartões (clássico)</option>
+      <option value="continuous" ${d.countdown_style==='continuous'?'selected':''}>Contínua (13 : 06 : 40 : 57)</option>
+      <option value="circles" ${d.countdown_style==='circles'?'selected':''}>Círculos</option>
+      <option value="minimal" ${d.countdown_style==='minimal'?'selected':''}>Minimalista</option>
+      <option value="flip" ${d.countdown_style==='flip'?'selected':''}>Estilo "Flip Clock"</option>
+      <option value="outline" ${d.countdown_style==='outline'?'selected':''}>Contorno (sem fundo)</option>
+      <option value="pills" ${d.countdown_style==='pills'?'selected':''}>Pílulas</option>
+    </select>
+
     <div class="flex items-center justify-between mb-2">
       <span class="text-xs font-semibold text-gray-600">Foto de capa</span>
       <div id="std2-sw-cover" class="switch ${d.std_show_cover !== false ? 'active' : ''}" onclick="toggleSwitch(this,'std2-cover-extra')"></div>
@@ -4424,6 +4472,7 @@ async function saveStdEditor() {
     std_extra_phrase: document.getElementById('std2-extra-phrase')?.value?.trim() || '',
     std_extra_phrase_enabled: document.getElementById('std2-sw-extra-phrase')?.classList.contains('active') ? 'yes' : 'no',
     std_date_style: document.getElementById('std2-date-style')?.value || 'card',
+    countdown_style: document.getElementById('std2-countdown-style')?.value || 'cards',
     std_show_cover: document.getElementById('std2-sw-cover')?.classList.contains('active') || false,
     std_cover_mobile_url: document.getElementById('std2-cover-url-mobile')?.value?.trim() || null,
     std_cover_desktop_url: document.getElementById('std2-cover-url-desktop')?.value?.trim() || null,
