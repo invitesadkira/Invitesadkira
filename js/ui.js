@@ -1242,43 +1242,39 @@ function initScrollReveal() {
 
 // ── Ponto animado no cronograma — desliza ao longo da linha vertical
 // conforme o convidado faz scroll. Funciona para cima e para baixo.
-// O ponto fica exactamente na posição da linha que está no centro do ecrã
-// naquele momento — ligado ao scroll do <div id="screen-guest"> (que pode
-// ter scroll interno) ou da janela, o que existir. ────────────────────────
+// O ponto fica exactamente na posição que está no centro do ecrã naquele
+// momento. Pode ser desligado pelo admin em "Cores & Estilo". ───────────
 function initTimelineScrollDots() {
   const wraps = document.querySelectorAll('.timeline-scroll-wrap');
   if (!wraps.length) return;
 
-  const scroller = document.getElementById('screen-guest') || window;
+  // Limpar listeners anteriores para evitar acumulação
+  if (window._timelineDotScrollFn) window.removeEventListener('scroll', window._timelineDotScrollFn);
 
   function updateDots() {
-    const viewportMid = (scroller === window)
-      ? window.innerHeight / 2
-      : scroller.getBoundingClientRect().top + scroller.clientHeight / 2;
+    const viewportMid = window.scrollY + window.innerHeight * 0.5;
 
     wraps.forEach(wrap => {
       const dot = wrap.querySelector('.timeline-scroll-dot');
       const track = wrap.querySelector('.timeline-track');
       if (!dot || !track) return;
 
-      const wRect = wrap.getBoundingClientRect();
-      const trackTop    = parseFloat(track.style.top) || 8;
-      const trackBottom = wrap.offsetHeight - (parseFloat(track.style.bottom) || 8);
+      const wrapTop    = wrap.getBoundingClientRect().top + window.scrollY;
+      const trackTop   = parseFloat(track.style.top) || 8;
+      const trackEnd   = wrap.offsetHeight - (parseFloat(track.style.bottom) || 8);
 
-      // Posição relativa do meio do ecrã dentro do wrapper
-      const relMid = viewportMid - wRect.top;
-      // Clamp entre o início e o fim da linha
-      const clampedTop = Math.max(trackTop, Math.min(trackBottom - 6, relMid));
-
+      // Posição relativa ao início do wrapper
+      const relPos = viewportMid - wrapTop;
+      const clampedTop = Math.max(trackTop, Math.min(trackEnd, relPos));
       dot.style.top = clampedTop + 'px';
     });
   }
 
-  scroller.addEventListener('scroll', updateDots, { passive: true });
+  window._timelineDotScrollFn = updateDots;
+  window.addEventListener('scroll', updateDots, { passive: true });
   window.addEventListener('resize', updateDots, { passive: true });
-  updateDots();
-  // Garantir que a posição inicial está correcta após as imagens carregarem
-  setTimeout(updateDots, 800);
+  // Primeira execução após renderizar
+  requestAnimationFrame(() => { updateDots(); setTimeout(updateDots, 600); });
 }
 
 

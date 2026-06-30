@@ -485,13 +485,13 @@ async function renderGuestSections(eventData) {
   } else if (eventData.invite_layout === 'elegant') {
     if (heroBlock) heroBlock.style.display = 'none';
     container.innerHTML = buildElegantInviteTemplate(eventData);
-    initScrollReveal(); if (typeof initTimelineScrollDots === 'function') initTimelineScrollDots();
+    initScrollReveal(); if (typeof initTimelineScrollDots === 'function' && eventData.timeline_dot_enabled !== 'no') initTimelineScrollDots();
     lucide.createIcons();
     return;
   } else if (eventData.invite_layout === 'calendar') {
     if (heroBlock) heroBlock.style.display = 'none';
     container.innerHTML = buildCalendarInviteTemplate(eventData);
-    initScrollReveal(); if (typeof initTimelineScrollDots === 'function') initTimelineScrollDots();
+    initScrollReveal(); if (typeof initTimelineScrollDots === 'function' && eventData.timeline_dot_enabled !== 'no') initTimelineScrollDots();
     lucide.createIcons();
     return;
   } else if (heroBlock) {
@@ -692,7 +692,7 @@ async function renderGuestSections(eventData) {
   if (eventData.date) startCountdownInterval(eventData.date, eventData.time);
 
   // Initialise scroll reveal
-  initScrollReveal(); if (typeof initTimelineScrollDots === 'function') initTimelineScrollDots();
+  initScrollReveal(); if (typeof initTimelineScrollDots === 'function' && eventData.timeline_dot_enabled !== 'no') initTimelineScrollDots();
   // Init floating music button
   initFloatingMusicBtn();
   // Init any 3D gallery carousels (must run after their HTML is in the DOM)
@@ -2021,42 +2021,32 @@ function moveScheduleItem(i, dir) {
   if (j < 0 || j >= arr.length) return;
   [arr[i], arr[j]] = [arr[j], arr[i]]; refreshScheduleEditorList();
 }
+function _scIconPreviewHtml(icon, size) {
+  const s = size || '14px';
+  if (!icon) return '';
+  if (icon.startsWith('http')) return `<img src="${icon}" style="width:${s};height:${s};object-fit:contain" onerror="this.style.opacity='0.2'">`;
+  return `<i data-lucide="${icon}" style="width:${s};height:${s};color:#007f9f"></i>`;
+}
 function refreshScheduleEditorList() {
   const items = window._scheduleEditorItems;
   const clientMode = window._scheduleEditorClientMode;
-  document.getElementById('schedule-items-list').innerHTML = items.map((it, i) => clientMode ? `
+  document.getElementById('schedule-items-list').innerHTML = items.map((it, i) => `
     <div class="flex items-start gap-2 mb-3 bg-gray-50 rounded-xl p-2">
       <div class="flex flex-col gap-1 flex-1">
         <div class="flex gap-2">
-          <input class="input-field text-xs w-24" value="${it.time}" placeholder="Hora (ex: 21h00)" id="sc-time-${i}">
-          <input class="input-field text-xs flex-1" value="${it.label}" placeholder="Momento (ex: Entrada dos noivos)" id="sc-label-${i}">
+          <input class="input-field text-xs w-24" value="${escapeHTML(it.time||'')}" placeholder="Hora (ex: 21h00)" id="sc-time-${i}">
+          <input class="input-field text-xs flex-1" value="${escapeHTML(it.label||'')}" placeholder="Momento" id="sc-label-${i}">
         </div>
-        <div style="display:flex;align-items:center;gap:4px">
-          <div class="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0" style="background:rgba(0,127,159,0.12)" id="sc-prev-${i}">${it.icon && it.icon.startsWith('http') ? `<img src="${it.icon}" style="width:13px;height:13px;object-fit:contain">` : `<i data-lucide="${it.icon}" style="width:13px;height:13px;color:#007f9f"></i>`}</div>
-          <input class="input-field text-xs flex-1" value="${it.icon}" placeholder="nome Lucide ou URL de imagem" id="sc-icon-${i}" oninput="(function(inp,idx){let v=inp.value.trim();if(v.includes('<')||v.includes('>')||v.includes('href=')){inp.value='';v='';toast('Cole apenas o URL directo da imagem.');}const p=document.getElementById('sc-prev-'+idx);if(!p)return;if(v.startsWith('http'))p.innerHTML='<img src=\\''+v+'\\' style=\\'width:13px;height:13px;object-fit:contain\\'>';else p.innerHTML='<i data-lucide=\\''+v+'\\' style=\\'width:13px;height:13px;color:#007f9f\\'></i>';try{lucide.createIcons();}catch(e){};})(this,${i})">
-          <button type="button" onclick="openIconPickerModal('schedule', url => { const inp=document.getElementById('sc-icon-${i}'); if(inp) inp.value=url; const p=document.getElementById('sc-prev-${i}'); if(p) p.innerHTML='<img src=\\''+url+'\\' style=\\'width:13px;height:13px;object-fit:contain\\'>'; })" style="background:#f0f9fb;color:#007f9f;border:none;border-radius:0.4rem;padding:0.25rem 0.35rem;font-size:0.58rem;font-weight:700;cursor:pointer;flex-shrink:0" title="Escolher ícone">📁</button>
+        <div style="display:flex;align-items:center;gap:4px;width:100%">
+          <div class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style="background:rgba(0,127,159,0.12)" id="sc-prev-${i}">${_scIconPreviewHtml(it.icon,'14px')}</div>
+          <input class="input-field text-xs flex-1" value="${escapeHTML(it.icon||'')}" placeholder="nome Lucide ou URL de imagem" id="sc-icon-${i}"
+            oninput="(function(inp,idx){let v=inp.value.trim();if(v.includes('<')||v.includes('>')||v.includes('href=')){inp.value='';v='';toast('Cole o URL directo, não código HTML.');}const p=document.getElementById('sc-prev-'+idx);if(!p)return;p.innerHTML=v.startsWith('http')?'<img src=\''+v+'\' style=\'width:14px;height:14px;object-fit:contain\' onerror=\'this.style.opacity=0.2\'>':'<i data-lucide=\''+v+'\' style=\'width:14px;height:14px;color:#007f9f\'></i>';try{lucide.createIcons();}catch(e){};})(this,${i})">
+          <button type="button"
+            onclick="openIconPickerModal('schedule', url => { const inp=document.getElementById('sc-icon-${i}'); if(inp){inp.value=url;inp.dispatchEvent(new Event('input'));} })"
+            style="background:#f0f9fb;color:#007f9f;border:1px solid #007f9f33;border-radius:0.4rem;padding:0.3rem 0.5rem;font-size:0.65rem;font-weight:700;cursor:pointer;flex-shrink:0"
+            title="Escolher ícone da biblioteca (SVG/PNG)">📁</button>
         </div>
-      </div>
-      <div class="flex flex-col gap-1 flex-shrink-0">
-        <button type="button" class="text-red-400" onclick="removeScheduleItem(${i})"><i data-lucide="x" class="w-4 h-4"></i></button>
-        ${i > 0 ? `<button type="button" class="text-gray-400" onclick="moveScheduleItem(${i},-1)"><i data-lucide="arrow-up" class="w-3 h-3"></i></button>` : ''}
-        ${i < items.length-1 ? `<button type="button" class="text-gray-400" onclick="moveScheduleItem(${i},1)"><i data-lucide="arrow-down" class="w-3 h-3"></i></button>` : ''}
-      </div>
-    </div>` : `
-    <div class="flex items-start gap-2 mb-3 bg-gray-50 rounded-xl p-2">
-      <div class="flex flex-col gap-1 flex-1">
-        <div class="flex gap-2">
-          <input class="input-field text-xs w-20" value="${it.time}" placeholder="Hora" id="sc-time-${i}">
-          <input class="input-field text-xs flex-1" value="${it.label}" placeholder="Momento" id="sc-label-${i}">
-        </div>
-        <div class="flex gap-2">
-          <div style="display:flex;align-items:center;gap:4px;width:100%">
-        <div class="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0" style="background:rgba(0,127,159,0.12)" id="sc-prev-${i}">${it.icon && it.icon.startsWith('http') ? `<img src="${it.icon}" style="width:13px;height:13px;object-fit:contain">` : `<i data-lucide="${it.icon}" style="width:13px;height:13px;color:#007f9f"></i>`}</div>
-        <input class="input-field text-xs flex-1" value="${it.icon}" placeholder="nome ou URL" id="sc-icon-${i}" oninput="(function(inp,idx){let v=inp.value.trim();if(v.includes('<')||v.includes('>')||v.includes('href=')){inp.value='';v='';toast('Cole apenas o URL directo da imagem, não o código HTML.');}const p=document.getElementById('sc-prev-'+idx);if(!p)return;if(v.startsWith('http'))p.innerHTML='<img src=\\''+v+'\\' style=\\'width:13px;height:13px;object-fit:contain\\'>';else p.innerHTML='<i data-lucide=\\''+v+'\\' style=\\'width:13px;height:13px;color:#007f9f\\'></i>';try{lucide.createIcons();}catch(e){};})(this,${i})">
-        <button type="button" onclick="openIconPickerModal('schedule', url => { const inp=document.getElementById('sc-icon-${i}'); if(inp) inp.value=url; const p=document.getElementById('sc-prev-${i}'); if(p) p.innerHTML='<img src=\\''+url+'\\' style=\\'width:13px;height:13px;object-fit:contain\\'>'; })" style="background:#f0f9fb;color:#007f9f;border:none;border-radius:0.4rem;padding:0.25rem 0.35rem;font-size:0.58rem;font-weight:700;cursor:pointer;flex-shrink:0">SVG</button>
-      </div>
-          <input class="input-field text-xs flex-1" value="${it.sub || ''}" placeholder="Subtítulo" id="sc-sub-${i}">
-        </div>
+        ${!clientMode ? `<input class="input-field text-xs" value="${escapeHTML(it.sub||'')}" placeholder="Subtítulo (opcional)" id="sc-sub-${i}">` : ''}
       </div>
       <div class="flex flex-col gap-1 flex-shrink-0">
         <button type="button" class="text-red-400" onclick="removeScheduleItem(${i})"><i data-lucide="x" class="w-4 h-4"></i></button>
