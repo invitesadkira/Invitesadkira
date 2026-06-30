@@ -616,6 +616,12 @@ async function renderGuestView() {
   // ===== RENDER SECTIONS (awaited so venues load properly) =====
   await renderGuestSections(eventData);
 
+  // ✅ Questionário de captação de leads — só aparece no evento de exemplo.
+  // Depois de o visitante ver o convite, pergunta se gostou e se quer um.
+  if (eventData.is_example_event === true) {
+    _initLeadQuestionnaire(eventData);
+  }
+
   // Reveal the full invite now that everything below is ready, then continue
   // the rest of this function (RSVP drawer init, music, etc.) as normal.
   document.getElementById('screen-guest')?.classList.remove('std-pending');
@@ -3471,4 +3477,104 @@ function renderSaveTheDateScreen(ev, decision) {
       });
     }
   };
+}
+
+// ── Questionário de captação de leads — só no evento de exemplo ────────
+// Aparece no fundo da página depois de o visitante ter rolado o suficiente
+// para ver o convite. Três perguntas: gostou? quer um? quando?
+// As respostas ficam guardadas na tabela "lead_inquiries" (criada pela
+// migração 21_lead_inquiries.sql).
+function _initLeadQuestionnaire(ev) {
+  const evColor = ev.event_color || '#007f9f';
+  // Criar o cartão do questionário no fundo da página
+  const wrap = document.createElement('div');
+  wrap.id = 'lead-questionnaire';
+  wrap.style.cssText = `padding:2.5rem 1.25rem 4rem;max-width:520px;margin:0 auto;opacity:0;transition:opacity 0.5s`;
+  wrap.innerHTML = `
+    <div style="background:#fff;border-radius:1.5rem;padding:2rem 1.75rem;box-shadow:0 8px 40px rgba(0,0,0,0.1);text-align:center">
+      <div style="width:52px;height:52px;border-radius:50%;background:color-mix(in srgb,${evColor} 12%,white);display:flex;align-items:center;justify-content:center;margin:0 auto 1rem">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="${evColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      </div>
+      <p style="font-size:0.65rem;font-weight:800;letter-spacing:0.15em;text-transform:uppercase;color:${evColor};margin-bottom:0.4rem">ANTES DE IR EMBORA</p>
+      <h3 style="font-size:1.2rem;font-weight:800;color:#1e293b;margin-bottom:0.5rem">O que achou deste convite?</h3>
+      <p style="font-size:0.85rem;color:#6b7280;margin-bottom:1.5rem;line-height:1.6">Leva menos de 1 minuto. A sua opinião é muito importante para nós.</p>
+      <div id="lq-step-1">
+        <p style="font-size:0.92rem;font-weight:700;color:#1e293b;margin-bottom:0.85rem">Gostou deste tipo de convite digital?</p>
+        <div style="display:flex;gap:0.7rem;justify-content:center">
+          <button onclick="window._lqAnswer('liked','yes')" class="lq-btn" style="flex:1;max-width:140px;padding:0.8rem;border-radius:0.75rem;border:1.5px solid #e5e7eb;background:#fff;cursor:pointer;font-weight:700;font-size:0.9rem">😍 Sim!</button>
+          <button onclick="window._lqAnswer('liked','no')" class="lq-btn" style="flex:1;max-width:140px;padding:0.8rem;border-radius:0.75rem;border:1.5px solid #e5e7eb;background:#fff;cursor:pointer;font-weight:700;font-size:0.9rem">😐 Mais ou menos</button>
+        </div>
+      </div>
+      <div id="lq-step-2" style="display:none">
+        <p style="font-size:0.92rem;font-weight:700;color:#1e293b;margin-bottom:0.85rem">Teria interesse em adquirir um convite assim para o seu evento?</p>
+        <div style="display:flex;gap:0.7rem;justify-content:center">
+          <button onclick="window._lqAnswer('interested','yes')" class="lq-btn" style="flex:1;max-width:140px;padding:0.8rem;border-radius:0.75rem;border:1.5px solid #e5e7eb;background:#fff;cursor:pointer;font-weight:700;font-size:0.9rem">✅ Sim</button>
+          <button onclick="window._lqAnswer('interested','no')" class="lq-btn" style="flex:1;max-width:140px;padding:0.8rem;border-radius:0.75rem;border:1.5px solid #e5e7eb;background:#fff;cursor:pointer;font-weight:700;font-size:0.9rem">❌ Não</button>
+        </div>
+      </div>
+      <div id="lq-step-3" style="display:none">
+        <p style="font-size:0.92rem;font-weight:700;color:#1e293b;margin-bottom:0.85rem">Quando seria o seu evento?</p>
+        <div style="display:flex;flex-direction:column;gap:0.6rem;max-width:280px;margin:0 auto">
+          <input type="text" id="lq-contact" placeholder="O seu nome e contacto (WhatsApp / e-mail)" style="padding:0.75rem 1rem;border:1.5px solid #e5e7eb;border-radius:0.75rem;font-size:0.85rem;font-family:inherit;outline:none;text-align:center">
+          <input type="month" id="lq-when" style="padding:0.75rem 1rem;border:1.5px solid #e5e7eb;border-radius:0.75rem;font-size:0.85rem;font-family:inherit;outline:none;text-align:center">
+          <button onclick="window._lqSubmit('${ev.id}')" style="background:${evColor};color:#fff;border:none;border-radius:0.75rem;padding:0.85rem;font-weight:800;font-size:0.95rem;cursor:pointer;font-family:inherit">Enviar — quero saber mais!</button>
+        </div>
+      </div>
+      <div id="lq-done" style="display:none">
+        <p style="font-size:2rem;margin-bottom:0.5rem">🙏</p>
+        <p style="font-size:1rem;font-weight:700;color:#1e293b;margin-bottom:0.3rem">Obrigado pelo seu feedback!</p>
+        <p style="font-size:0.85rem;color:#6b7280">Entraremos em contacto consigo em breve.</p>
+      </div>
+    </div>`;
+  // Inserir mesmo no fim do screen-guest
+  const guestScreen = document.getElementById('screen-guest') || document.body;
+  guestScreen.appendChild(wrap);
+
+  window._lqData = { liked: '', interested: '', contact: '', when: '' };
+
+  window._lqAnswer = (key, value) => {
+    window._lqData[key] = value;
+    const step1 = document.getElementById('lq-step-1');
+    const step2 = document.getElementById('lq-step-2');
+    const step3 = document.getElementById('lq-step-3');
+    if (key === 'liked') {
+      step1.style.display = 'none';
+      step2.style.display = '';
+    } else if (key === 'interested') {
+      step2.style.display = 'none';
+      if (value === 'yes') {
+        step3.style.display = '';
+      } else {
+        // Não interessado — agradecer e guardar mesmo assim
+        window._lqSubmit(ev.id, true);
+      }
+    }
+  };
+
+  window._lqSubmit = async (eventId, skipForm) => {
+    if (!skipForm) {
+      window._lqData.contact = document.getElementById('lq-contact')?.value?.trim() || '';
+      window._lqData.when    = document.getElementById('lq-when')?.value || '';
+    }
+    ['lq-step-1','lq-step-2','lq-step-3'].forEach(id => {
+      const el = document.getElementById(id); if (el) el.style.display = 'none';
+    });
+    document.getElementById('lq-done').style.display = '';
+    // Guardar na base de dados
+    try {
+      await supabaseRequest('lead_inquiries', 'POST', {
+        event_id: eventId,
+        liked: window._lqData.liked,
+        interested: window._lqData.interested,
+        contact: window._lqData.contact || null,
+        when_month: window._lqData.when || null,
+      });
+    } catch(e) { console.warn('lead_inquiries save error:', e); }
+  };
+
+  // Mostrar o questionário só quando o convidado chegar perto do fim da página
+  const obs = new IntersectionObserver(entries => {
+    if (entries[0].isIntersecting) { wrap.style.opacity = '1'; obs.disconnect(); }
+  }, { threshold: 0.3 });
+  obs.observe(wrap);
 }

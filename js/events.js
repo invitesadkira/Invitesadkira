@@ -855,6 +855,7 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
           color_date: document.getElementById('evt-color-date')?.value || 'primary',
           color_date_custom: document.getElementById('evt-color-date-custom')?.value || null,
           invite_layout: document.getElementById('evt-invite-layout')?.value || 'sections',
+          card_bg_url: document.getElementById('evt-card-bg-url')?.value?.trim() || null,
           bible_ornament_url: document.getElementById('evt-bible-ornament-url')?.value || null,
           bible_ornament_size: document.getElementById('evt-bible-ornament-size')?.value || '28',
           std_music_continuous: document.getElementById('sw-std-music-continuous')?.classList.contains('active') ? 'yes' : 'no',
@@ -2001,7 +2002,17 @@ function _fillEditForm(ev) {
   const btnStyleEl = document.getElementById('evt-button-style');
   if (btnStyleEl) btnStyleEl.value = ev.button_style === 'round' ? 'round' : 'rounded';
   const layoutEl = document.getElementById('evt-invite-layout');
-  if (layoutEl) layoutEl.value = ev.invite_layout === 'simple' ? 'simple' : 'sections';
+  if (layoutEl) {
+    const knownLayouts = ['sections','simple','elegant','calendar','card'];
+    layoutEl.value = knownLayouts.includes(ev.invite_layout) ? ev.invite_layout : 'sections';
+    // Mostrar/esconder o campo de fundo do Cartão
+    const cardBgWrap = document.getElementById('card-bg-wrap');
+    if (cardBgWrap) cardBgWrap.classList.toggle('hidden', layoutEl.value !== 'card');
+  }
+  // Prefill card background
+  { const u = document.getElementById('evt-card-bg-url'); if (u) u.value = ev.card_bg_url || ''; }
+  { const p = document.getElementById('evt-card-bg-preview'); const c = document.getElementById('evt-card-bg-clear');
+    if (ev.card_bg_url && p) { p.src = ev.card_bg_url; p.style.display = ''; if (c) c.style.display = ''; } }
   _setSwitch('sw-story', _yesOrTrue(ev.show_story) || (ev.story_text ? true : false), 'story-extra');
   // Restore saved section order into Store.eventSectionOrder
   if (ev.section_order) {

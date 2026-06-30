@@ -329,6 +329,83 @@ function buildElegantInviteTemplate(ev) {
   </div>`;
 }
 
+// ── Layout "Cartão" — uma só página, como um cartão físico. Fundo de
+// imagem carregada pelo admin, tudo centrado numa única secção vertical.
+// Elementos: bênção, texto bíblico, nomes, datas, locais, música. ──────
+function buildCardInviteTemplate(ev) {
+  const evColor = ev.event_color || '#7c3d52';
+  const bgUrl   = ev.card_bg_url || ev.bg_url || '';
+  const coupleNames = [ev.groom_name, ev.bride_name].filter(Boolean).join(' & ')
+                      || escapeHTML(ev.title || '');
+  const MONTHS = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho',
+                  'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  let longDate = '';
+  if (ev.date) {
+    const d = new Date(ev.date + 'T00:00:00');
+    longDate = `${d.getDate()} de ${MONTHS[d.getMonth()]} de ${d.getFullYear()}`;
+  }
+  const venueRows = [];
+  if (ev.venue_civil)     venueRows.push({ label:'Cerimónia Civil',     name:ev.venue_civil,     time:ev.venue_civil_time,    maps:ev.venue_civil_maps     });
+  if (ev.venue_ceremony)  venueRows.push({ label:'Cerimónia Religiosa', name:ev.venue_ceremony,  time:ev.venue_ceremony_time, maps:ev.venue_ceremony_maps  });
+  if (ev.venue_reception) venueRows.push({ label:"Copo d'Água",         name:ev.venue_reception, time:ev.venue_reception_time,maps:ev.venue_reception_maps });
+  const venuesHtml = venueRows.map(v => `
+    <div style="margin-bottom:0.9rem">
+      <p style="font-size:0.6rem;font-weight:800;letter-spacing:0.18em;text-transform:uppercase;color:${evColor};margin-bottom:0.1rem">${escapeHTML(v.label)}</p>
+      <p style="font-size:0.88rem;font-weight:700;color:#1e293b">${escapeHTML(v.name)}${v.time ? ` &nbsp;·&nbsp; ${escapeHTML(v.time)}` : ''}</p>
+      ${v.maps ? `<a href="${escapeHTML(v.maps)}" target="_blank" style="font-size:0.72rem;color:${evColor};font-weight:600;text-decoration:underline">Ver no mapa</a>` : ''}
+    </div>`).join('');
+
+  return `<div class="card-invite" style="min-height:100vh;position:relative;overflow:hidden;background:#fdf8f4">
+    ${bgUrl ? `<div style="position:fixed;inset:0;background-image:url('${bgUrl}');background-size:cover;background-position:center;z-index:0;pointer-events:none"></div><div style="position:fixed;inset:0;background:rgba(255,255,255,0.52);z-index:0;pointer-events:none"></div>` : ''}
+    <div style="position:relative;z-index:1;max-width:480px;margin:0 auto;padding:4rem 2rem 5rem;text-align:center">
+      ${ev.invite_blessing ? `<p class="reveal" style="font-size:0.78rem;color:#6b7280;font-style:italic;line-height:1.7;margin-bottom:2rem">${escapeHTML(ev.invite_blessing)}</p>` : ''}
+      ${ev.bible_text ? `<div class="reveal" style="margin-bottom:2rem">
+        <p style="font-size:0.75rem;font-weight:800;color:${evColor};margin-bottom:0.5rem">✦</p>
+        ${ev.bible_text.split('\n').filter(Boolean).map(l=>`<p style="font-style:var(--ev-bible-style,italic);font-weight:var(--ev-bible-weight,400);font-family:var(--ev-bible-font,inherit);font-size:0.9rem;color:#374151;line-height:1.9;margin:0">${escapeHTML(l)}</p>`).join('')}
+        ${ev.bible_ref ? `<p style="font-size:0.7rem;color:#9ca3af;margin-top:0.5rem;font-weight:700">${escapeHTML(ev.bible_ref)}</p>` : ''}
+      </div>` : ''}
+      ${(ev.show_parents !== 'no' && (ev.groom_parents || ev.bride_parents)) ? `<div class="reveal" style="margin-bottom:1.5rem">
+        ${ev.groom_parents ? `<p style="font-size:0.8rem;color:#6b7280;line-height:1.6">${ev.groom_parents.split('\n').filter(Boolean).map(l=>escapeHTML(l)).join(' &amp; ')}</p>` : ''}
+        ${ev.bride_parents ? `<p style="font-size:0.8rem;color:#6b7280;line-height:1.6">${ev.bride_parents.split('\n').filter(Boolean).map(l=>escapeHTML(l)).join(' &amp; ')}</p>` : ''}
+        <p style="font-size:0.7rem;color:#9ca3af;margin-top:0.3rem">convidam para o casamento de</p>
+      </div>` : (ev.invite_text ? `<div class="reveal" style="margin-bottom:1.5rem"><p style="font-size:0.85rem;color:#4b5563;line-height:1.8">${ev.invite_text.split('\n').filter(Boolean).map(l=>escapeHTML(l)).join('<br>')}</p></div>` : '')}
+      <div class="reveal" style="margin-bottom:2rem">
+        <h2 style="font-family:'Great Vibes',cursive;font-size:clamp(2.4rem,10vw,3.2rem);color:${evColor};line-height:1.15;margin:0">${escapeHTML(coupleNames)}</h2>
+      </div>
+      <div class="reveal" style="display:flex;align-items:center;gap:0.75rem;margin-bottom:2rem;justify-content:center;opacity:0.35">
+        <div style="height:1px;width:60px;background:${evColor}"></div>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="${evColor}"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.27 2 8.5 2 5.41 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.08C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.41 22 8.5c0 3.77-3.4 6.86-8.55 11.53L12 21.35z"/></svg>
+        <div style="height:1px;width:60px;background:${evColor}"></div>
+      </div>
+      ${longDate ? `<div class="reveal" style="margin-bottom:2rem">
+        <p style="font-size:0.62rem;font-weight:800;letter-spacing:0.18em;text-transform:uppercase;color:${evColor};margin-bottom:0.3rem">DATA</p>
+        <p style="font-size:1.05rem;font-weight:700;color:#1e293b">${escapeHTML(longDate)}</p>
+        ${ev.time ? `<p style="font-size:0.85rem;color:#6b7280">às ${escapeHTML(ev.time)}</p>` : ''}
+      </div>` : ''}
+      ${venueRows.length ? `<div class="reveal" style="margin-bottom:2rem;padding:1.25rem 1.5rem;background:rgba(255,255,255,0.65);border-radius:1rem;backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.8)">${venuesHtml}</div>` : ''}
+      ${ev.music_url ? `<div class="reveal" style="margin-top:1rem;display:flex;align-items:center;gap:0.6rem;justify-content:center;opacity:0.65">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="${evColor}"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+        <p style="font-size:0.75rem;color:#6b7280;margin:0">${escapeHTML(ev.music_title||'A tocar...')}</p>
+        <button onclick="_cardToggleMute()" style="background:none;border:none;cursor:pointer;padding:0" title="Silenciar">
+          <svg id="card-mute-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="${evColor}" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+        </button>
+        <audio id="card-audio" loop src="${escapeHTML(ev.music_url)}" autoplay></audio>
+      </div>` : ''}
+    </div>
+  </div>`;
+}
+window._cardMuted = false;
+window._cardToggleMute = function() {
+  const a = document.getElementById('card-audio'); if (!a) return;
+  window._cardMuted = !window._cardMuted; a.muted = window._cardMuted;
+  const ic = document.getElementById('card-mute-icon');
+  if (ic) ic.style.opacity = window._cardMuted ? '0.3' : '1';
+};
+function _initCardMusic(ev) {
+  const a = document.getElementById('card-audio');
+  if (a) a.play().catch(() => {});
+}
+
 // ── Layout "Calendário": tira de 3 fotos com a data sobreposta, calendário
 //    real do mês com o dia do evento marcado, e secções de Cerimónia/
 //    Banquete com ícone + botão de mapa. Opção nova e independente, usa a
@@ -493,6 +570,13 @@ async function renderGuestSections(eventData) {
     container.innerHTML = buildCalendarInviteTemplate(eventData);
     initScrollReveal();
     lucide.createIcons();
+    return;
+  } else if (eventData.invite_layout === 'card') {
+    if (heroBlock) heroBlock.style.display = 'none';
+    container.innerHTML = buildCardInviteTemplate(eventData);
+    initScrollReveal();
+    lucide.createIcons();
+    _initCardMusic(eventData);
     return;
   } else if (heroBlock) {
     heroBlock.style.display = '';

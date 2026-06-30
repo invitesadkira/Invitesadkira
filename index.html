@@ -14,7 +14,7 @@
   <script>tailwind.config = { theme: { extend: { colors: { teal: { 500: '#007f9f', 600: '#006b86' } } } } }</script>
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💌</text></svg>">
-  <link rel="stylesheet" href="css/main.css?v=1782820602">
+  <link rel="stylesheet" href="css/main.css?v=1782835561">
 </head>
 <body class="h-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
 
@@ -605,8 +605,19 @@ A vossa presença neste dia tão especial é, para nós, o maior presente. No en
           <option value="simple">Simples (1 só bloco, fluxo contínuo)</option>
           <option value="elegant">Elegante (capa cheia, letra script)</option>
           <option value="calendar">Calendário (fotos com data, mês ilustrado)</option>
+          <option value="card">Cartão (página única com fundo de imagem)</option>
          </select>
-         <p class="text-xs text-gray-400 mt-1">"Simples" mostra tudo numa só página contínua. "Elegante" usa uma capa cheia com letra cursiva. "Calendário" mostra 3 fotos com a data sobreposta e um calendário do mês com o dia do evento marcado.</p>
+         <p class="text-xs text-gray-400 mt-1">"Cartão" usa uma só página com fundo de imagem — ideal para um look de papel floral ou textura. Configure a imagem de fundo abaixo.</p>
+         <div id="card-bg-wrap" class="mt-2 hidden">
+          <label class="text-xs font-semibold text-gray-600 block mb-1">Imagem de fundo do Cartão</label>
+          <input type="file" id="evt-card-bg-file" accept="image/*" class="hidden" onchange="handleCardBgUpload(this)">
+          <div class="flex gap-2 items-center">
+           <img id="evt-card-bg-preview" class="h-16 w-16 object-cover rounded-lg" style="display:none">
+           <button type="button" class="btn-outline text-xs" onclick="document.getElementById('evt-card-bg-file').click()">📤 Carregar imagem de fundo</button>
+           <button type="button" class="text-xs text-red-400" id="evt-card-bg-clear" style="display:none" onclick="clearCardBg()">Remover</button>
+          </div>
+          <input type="hidden" id="evt-card-bg-url">
+         </div>
         </div>
        </div><!-- /pane tipo-estilo -->
        <div class="event-tab-pane hidden" data-tab="midia-capa">
@@ -1395,6 +1406,7 @@ para testemunhar o seu enlace matrimonial</textarea>
      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6" id="admin-stats"></div>
      <button class="btn-outline text-sm mb-4" onclick="generateStandaloneIntakeLink()"><span class="flex items-center gap-1"><i data-lucide="link" class="w-4 h-4"></i> Gerar Link (sem evento criado)</span></button>
      <div id="admin-pending-submissions"></div>
+     <div id="admin-leads-panel"></div>
      <h3 class="font-bold mb-3" style="color:var(--app-ink)">Contas Registradas</h3>
      <div style="background:var(--app-card);border-radius:var(--app-radius);box-shadow:var(--app-shadow);border:1px solid var(--app-border)" class="p-4 mb-6">
       <div class="flex gap-2"><input id="admin-search-input" type="text" class="input-field text-sm flex-1" placeholder="Pesquisar por telefone/username..." onkeyup="filterAdminAccounts()"> <button class="btn-main px-4 text-sm" onclick="clearAdminSearch()">Limpar</button>
@@ -1530,20 +1542,20 @@ para testemunhar o seu enlace matrimonial</textarea>
   </a>
 
   <!-- ===================== SCRIPTS (ordem importa) ===================== -->
-  <script src="js/config.js?v=1782820602"></script>
-  <script src="js/store.js?v=1782820602"></script>
-  <script src="js/visuals.js?v=1782820602"></script>
-  <script src="js/venues.js?v=1782820602"></script>
-  <script src="js/rsvp.js?v=1782820602"></script>
-  <script src="js/ui.js?v=1782820602"></script>
-  <script src="js/auth.js?v=1782820602"></script>
-  <script src="js/dashboard.js?v=1782820602"></script>
-  <script src="js/events.js?v=1782820602"></script>
-  <script src="js/intake-wizard.js?v=1782820602"></script>
-  <script src="js/guest.js?v=1782820602"></script>
-  <script src="js/sections.js?v=1782820602"></script>
-  <script src="js/admin.js?v=1782820602"></script>
-  <script src="js/router.js?v=1782820602"></script>
+  <script src="js/config.js?v=1782835561"></script>
+  <script src="js/store.js?v=1782835561"></script>
+  <script src="js/visuals.js?v=1782835561"></script>
+  <script src="js/venues.js?v=1782835561"></script>
+  <script src="js/rsvp.js?v=1782835561"></script>
+  <script src="js/ui.js?v=1782835561"></script>
+  <script src="js/auth.js?v=1782835561"></script>
+  <script src="js/dashboard.js?v=1782835561"></script>
+  <script src="js/events.js?v=1782835561"></script>
+  <script src="js/intake-wizard.js?v=1782835561"></script>
+  <script src="js/guest.js?v=1782835561"></script>
+  <script src="js/sections.js?v=1782835561"></script>
+  <script src="js/admin.js?v=1782835561"></script>
+  <script src="js/router.js?v=1782835561"></script>
 
 </body>
 </html>

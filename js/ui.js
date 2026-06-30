@@ -1322,6 +1322,37 @@ function changeTitlesSize(delta) {
   if (lbl) lbl.textContent = v + 'rem';
 }
 
+// ── Layout "Cartão" — toggle do campo de fundo ───────────────────────
+document.addEventListener('change', function(e) {
+  if (e.target && e.target.id === 'evt-invite-layout') {
+    const wrap = document.getElementById('card-bg-wrap');
+    if (wrap) wrap.classList.toggle('hidden', e.target.value !== 'card');
+  }
+});
+
+async function handleCardBgUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+  toast('A carregar imagem de fundo...');
+  try {
+    const url = await uploadImageToStorage(file, 'event-covers', 'Fundo cartão');
+    document.getElementById('evt-card-bg-url').value = url;
+    const p = document.getElementById('evt-card-bg-preview');
+    if (p) { p.src = url; p.style.display = ''; }
+    const c = document.getElementById('evt-card-bg-clear');
+    if (c) c.style.display = '';
+    toast('Imagem carregada!');
+  } catch(e) { toast('Erro ao carregar imagem.'); }
+}
+
+function clearCardBg() {
+  document.getElementById('evt-card-bg-url').value = '';
+  const p = document.getElementById('evt-card-bg-preview');
+  if (p) { p.src = ''; p.style.display = 'none'; }
+  const c = document.getElementById('evt-card-bg-clear');
+  if (c) c.style.display = 'none';
+}
+
 function changeBodyTextSize(delta) {
   const inp = document.getElementById('evt-body-text-scale');
   const lbl = document.getElementById('body-text-size-label');

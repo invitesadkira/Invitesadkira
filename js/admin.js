@@ -104,6 +104,7 @@ function renderAdmin() {
   
   renderAdminAccountsList(nonAdminUsers);
   if (typeof renderAdminPendingSubmissions === 'function') renderAdminPendingSubmissions();
+  if (typeof renderAdminLeadsPanel === 'function') renderAdminLeadsPanel();
   lucide.createIcons();
 }
 
@@ -4098,4 +4099,36 @@ async function adminSaveDemoEvents() {
   toast('Eventos de demonstração actualizados!');
   document.querySelector('.modal-overlay')?.remove();
   if (typeof renderLandingDemos === 'function') renderLandingDemos();
+}
+
+// ── Painel de leads — respostas ao questionário do evento de exemplo ──
+async function renderAdminLeadsPanel() {
+  const container = document.getElementById('admin-leads-panel');
+  if (!container) return;
+  try {
+    const rows = await supabaseRequest(`lead_inquiries?select=id,liked,interested,contact,when_month,created_at&order=created_at.desc&limit=50`);
+    if (!rows || !rows.length) { container.innerHTML = ''; return; }
+    const interested = rows.filter(r => r.interested === 'yes');
+    const notInterested = rows.filter(r => r.interested === 'no');
+    container.innerHTML = `
+      <h3 class="text-sm font-bold text-gray-700 mb-1 mt-4">Leads do Evento de Exemplo (${rows.length} respostas)</h3>
+      <p class="text-xs text-gray-400 mb-3">${interested.length} interessados · ${notInterested.length} não interessados · ${rows.length - interested.length - notInterested.length} sem resposta</p>
+      ${rows.map(r => {
+        const date = new Date(r.created_at).toLocaleDateString('pt-PT');
+        return `<div class="bg-white rounded-xl shadow-sm p-3 mb-2 flex items-center justify-between gap-3 flex-wrap">
+          <div>
+            <div class="flex items-center gap-2">
+              <span style="font-size:0.8rem;font-weight:700;color:${r.interested==='yes'?'#16a34a':r.interested==='no'?'#dc2626':'#6b7280'}">
+                ${r.interested==='yes'?'✅ Interessado':r.interested==='no'?'❌ Não interessado':'—'}
+              </span>
+              <span class="text-xs text-gray-400">${date}</span>
+            </div>
+            ${r.contact ? `<p class="text-xs text-gray-700 mt-0.5 font-semibold">${escapeHTML(r.contact)}</p>` : '<p class="text-xs text-gray-400 mt-0.5">Sem contacto</p>'}
+            ${r.when_month ? `<p class="text-xs text-gray-500">Evento: ${r.when_month}</p>` : ''}
+            <p class="text-xs text-gray-400">Gostou: ${r.liked==='yes'?'😍 Sim':'😐 Mais ou menos'}</p>
+          </div>
+          <button class="text-xs text-red-400 font-semibold" onclick="(async()=>{await supabaseRequest('lead_inquiries?id=eq.${r.id}','DELETE',{});renderAdminLeadsPanel();toast('Eliminado.');})()">Eliminar</button>
+        </div>`;
+      }).join('')}`;
+  } catch(e) { console.warn('Erro ao carregar leads:', e); }
 }
