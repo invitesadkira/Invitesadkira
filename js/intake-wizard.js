@@ -22,62 +22,92 @@ let _iwSteps = [];         // recalculado a cada passo (por causa dos ramos)
 
 // ── Construção dos passos, em ordem, respeitando os ramos ──────────────
 function _iwComputeSteps(state) {
-  const steps = [];
+  const isEngagement = state.event_type === 'engagement';
+  const isBirthday   = state.event_type === 'birthday';
+  const isWedding    = !isEngagement && !isBirthday;
 
-  steps.push({ key:'event_type', q:'Que tipo de evento é?', type:'select', skippable:false,
+  const steps = [];
+  const seen  = new Set(); // ✅ nunca duplicar uma key — era isso que causava
+                            // o loop de "voltar à pergunta 1": quando a lista
+                            // de passos era recalculada a meio do fluxo, passos
+                            // com a mesma key podiam aparecer 2× (ex: 'names'
+                            // dentro do bloco STD E depois de novo no fluxo
+                            // principal), e a navegação perdia-se.
+  const add = (step) => {
+    if (seen.has(step.key)) return; // ignorar duplicados silenciosamente
+    seen.add(step.key);
+    steps.push(step);
+  };
+
+  add({ key:'event_type', q:'Que tipo de evento é?', type:'select', skippable:false,
     options:[['wedding','Casamento'],['engagement','Noivado'],['birthday','Aniversário']] });
 
-  steps.push({ key:'colors', q:'Que cor (ou cores) gostaria para o evento?', sub:'Pode escrever o nome da cor ou descrever (ex: "verde-oliva e dourado"). É só uma indicação — o administrador define depois as cores exactas.', type:'colors_notes', skippable:false });
+  add({ key:'colors', q:'Que cor (ou cores) gostaria para o evento?',
+    sub:'Pode escrever o nome da cor ou descrever. É só uma indicação — o administrador define depois as cores exactas.',
+    type:'colors_notes', skippable:false });
 
-  steps.push({ key:'want_std', q:'Quer ter uma página de "Save the Date" separada?', sub:'Mostra-se primeiro aos convidados, antes do convite completo.', type:'yesno', skippable:false });
+  // ── Nomes ─────────────────────────────────────────────────────────────
+  add({ key:'names', q: isEngagement ? 'Nomes dos noivos' : isBirthday ? 'Nome do/a aniversariante' : 'Nomes dos noivos', type:'names', skippable:false });
 
-  if (state.want_std === 'yes') {
-    steps.push({ key:'std_cover', q:'Foto de capa do Save the Date', sub:'Opcional — uma foto vertical do casal.', type:'image', skippable:true });
-    steps.push({ key:'names', q:'Nomes dos noivos', type:'names', skippable:false });
-    steps.push({ key:'date', q:'Data do evento', type:'date', skippable:false });
-    steps.push({ key:'confirm_by_date', q:'Até quando os convidados podem confirmar presença?', type:'date', skippable:true });
-    steps.push({ key:'std_text', q:'Frase extra no Save the Date (opcional)', sub:'Aparece entre o subtítulo e a data.', type:'text', skippable:true });
+  // ── Data ──────────────────────────────────────────────────────────────
+  add({ key:'date', q:'Data do evento', type:'date', skippable:false });
+  add({ key:'confirm_by_date', q:'Até quando os convidados podem confirmar presença?', type:'date', skippable:true });
+
+  // ── Texto do convite ───────────────────────────────────────────────────
+  if (!isBirthday) {
+    add({ key:'blessing', q:'Frase de bênção (opcional)', sub:'Ex: "Com a bênção de Deus e das nossas famílias"', type:'text', skippable:true });
+    add({ key:'bible', q:'Texto bíblico (opcional)', type:'bible', skippable:true });
+  }
+  add({ key:'invite_text', q:'Texto do convite', sub:'Ex: "Temos a honra de convidar..."', type:'textarea', skippable:false });
+
+  // Nomes dos pais — só para casamentos
+  if (isWedding) {
+    add({ key:'parents', q:'Nomes dos pais', type:'parents', skippable:true });
   }
 
-  steps.push({ key:'blessing', q:'Frase de bênção (opcional)', sub:'Ex: "Com a bênção de Deus e das nossas famílias"', type:'text', skippable:true });
-  steps.push({ key:'bible', q:'Texto bíblico (opcional)', type:'bible', skippable:true });
-  steps.push({ key:'invite_text', q:'Texto do convite', sub:'Ex: "Temos a honra de convidar para a celebração do nosso..."', type:'textarea', skippable:false });
-  steps.push({ key:'parents', q:'Nomes dos pais', type:'parents', skippable:true });
+  // ── Foto e galeria ─────────────────────────────────────────────────────
+  add({ key:'cover', q:'Foto de capa do convite', type:'image', skippable:true });
+  add({ key:'gallery', q:'Fotos para a galeria', sub:'Até 8 fotos.', type:'images_multi', skippable:true });
 
-  if (!state.names) steps.push({ key:'names', q:'Nomes dos noivos', type:'names', skippable:false });
-  if (!state.date)  steps.push({ key:'date', q:'Data do evento', type:'date', skippable:false });
+  // ── Locais ─────────────────────────────────────────────────────────────
+  if (isWedding) {
+    add({ key:'venue_civil',     q:'Cerimónia Civil',      sub:'Local, data e horário (se houver).', type:'venue',        skippable:true });
+    add({ key:'venue_ceremony',  q:'Cerimónia Religiosa',  sub:'Local, data e horário (se houver).', type:'venue',        skippable:true });
+  }
+  if (isEngagement) {
+    add({ key:'venue_reception', q:'Local do convívio (onde será a conversa/sentada)?', sub:'Local e horário.', type:'venue_simple', skippable:true });
+  } else {
+    add({ key:'venue_reception', q:"Copo d'Água / Receção", sub:'Local e horário.', type:'venue_simple', skippable:true });
+  }
 
-  steps.push({ key:'cover', q:'Foto de capa do convite', type:'image', skippable:true });
-  steps.push({ key:'gallery', q:'Fotos para a galeria', sub:'Até 8 fotos.', type:'images_multi', skippable:true });
+  // ── Estilo e detalhes ─────────────────────────────────────────────────
+  add({ key:'dresscode', q:'Dress Code (opcional)', type:'dresscode', skippable:true });
+  add({ key:'manual',    q:'Manual do bom convidado (opcional)', sub:'Um item por linha.', type:'lines', skippable:true });
+  add({ key:'schedule',  q:'Cronograma do dia (opcional)', sub:'Um momento por linha. Ex: "16h00 — Cerimónia"', type:'lines', skippable:true });
+  if (!isBirthday) {
+    add({ key:'story',   q:'A vossa história (opcional)', type:'textarea', skippable:true });
+  }
+  add({ key:'couplemsg', q:'Mensagem dos anfitriões para os convidados (opcional)', type:'textarea', skippable:true });
+  add({ key:'faq',       q:'Perguntas frequentes (opcional)', sub:'Uma pergunta e resposta por linha, separadas por " | ".', type:'lines', skippable:true });
+  add({ key:'music',     q:'Música do evento (opcional)', type:'music', skippable:true });
+  add({ key:'youtube',   q:'Vídeo do YouTube (opcional)', sub:'Aparece embutido no convite — o convidado não é levado para o YouTube.', type:'youtube', skippable:true });
+  add({ key:'final_photo', q:'Foto final (opcional)', sub:'Aparece no final do convite.', type:'image', skippable:true });
 
-  steps.push({ key:'venue_civil', q:'Cerimónia Civil', sub:'Local, data e horário (se houver).', type:'venue', skippable:true });
-  steps.push({ key:'venue_ceremony', q:'Cerimónia Religiosa', sub:'Local, data e horário (se houver).', type:'venue', skippable:true });
-  steps.push({ key:'venue_reception', q:"Copo d'Água / Receção", sub:'Local e horário.', type:'venue_simple', skippable:true });
+  // ── RSVP ──────────────────────────────────────────────────────────────
+  add({ key:'companions', q:'Os convidados podem trazer acompanhantes?', type:'yesno_max', skippable:true });
+  add({ key:'kids',       q:'Os convidados podem trazer crianças?',      type:'yesno_max', skippable:true });
+  add({ key:'messages',   q:'Os convidados podem deixar felicitações/recados?', type:'yesno', skippable:true });
+  add({ key:'edit_rsvp',  q:'Os convidados podem editar a resposta depois de confirmar?', type:'yesno', skippable:true });
 
-  steps.push({ key:'dresscode', q:'Dress Code (opcional)', type:'dresscode', skippable:true });
-  steps.push({ key:'manual', q:'Manual do bom convidado (opcional)', sub:'Um item por linha. Ex: "Chegar com 15 min de antecedência"', type:'lines', skippable:true });
-  steps.push({ key:'schedule', q:'Cronograma do dia (opcional)', sub:'Um momento por linha. Ex: "16h00 — Cerimónia"', type:'lines', skippable:true });
-  steps.push({ key:'story', q:'A vossa história (opcional)', type:'textarea', skippable:true });
-  steps.push({ key:'couplemsg', q:'Mensagem dos noivos para os convidados (opcional)', type:'textarea', skippable:true });
-  steps.push({ key:'faq', q:'Perguntas frequentes (opcional)', sub:'Uma pergunta e resposta por linha, separadas por " | ". Ex: "Posso levar crianças? | Sim, são bem-vindas!"', type:'lines', skippable:true });
-
-  steps.push({ key:'music', q:'Música do evento (opcional)', type:'music', skippable:true });
-  steps.push({ key:'youtube', q:'Vídeo do YouTube (opcional)', sub:'Aparece embutido no convite — o convidado não é levado para o YouTube.', type:'youtube', skippable:true });
-  steps.push({ key:'final_photo', q:'Foto final dos noivos (opcional)', sub:'Aparece no final do convite, antes da confirmação de presença.', type:'image', skippable:true });
-
-  steps.push({ key:'companions', q:'Os convidados podem trazer acompanhantes?', type:'yesno_max', skippable:true });
-  steps.push({ key:'kids', q:'Os convidados podem trazer crianças?', type:'yesno_max', skippable:true });
-  steps.push({ key:'messages', q:'Os convidados podem deixar felicitações/recados?', type:'yesno', skippable:true });
-  steps.push({ key:'edit_rsvp', q:'Os convidados podem editar a resposta depois de confirmar?', type:'yesno', skippable:true });
-
-  steps.push({ key:'gifts', q:'Vai ter sugestões de presentes?', type:'yesno', skippable:false });
+  // ── Presentes ─────────────────────────────────────────────────────────
+  add({ key:'gifts', q:'Vai ter sugestões de presentes?', type:'yesno', skippable:false });
   if (state.gifts === 'yes') {
-    steps.push({ key:'gift_type', q:'Prefere indicar um IBAN, ou uma lista de presentes?', type:'select', skippable:false,
+    add({ key:'gift_type', q:'Prefere indicar um IBAN, ou uma lista de presentes?', type:'select', skippable:false,
       options:[['iban','Dados Bancários (IBAN)'],['list','Lista de Presentes']] });
     if (state.gift_type === 'iban') {
-      steps.push({ key:'iban', q:'Dados bancários', type:'iban', skippable:false });
+      add({ key:'iban', q:'Dados bancários', type:'iban', skippable:false });
     } else if (state.gift_type === 'list') {
-      steps.push({ key:'gift_list', q:'Lista de presentes', sub:'Um presente por linha.', type:'lines', skippable:false });
+      add({ key:'gift_list', q:'Lista de presentes', sub:'Um presente por linha.', type:'lines', skippable:false });
     }
   }
 

@@ -2360,24 +2360,44 @@ function buildCoupleMsgSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
 // Icons uploaded by ANY user become available to ALL users (shared library)
 async function uploadIconToLibrary(file, category) {
   if (!file) return null;
-  if (file.type !== 'image/svg+xml' && !file.name.endsWith('.svg')) {
-    toast('Apenas ficheiros SVG são permitidos.');
+  const isSvg = file.type === 'image/svg+xml' || file.name.toLowerCase().endsWith('.svg');
+  const isPng = file.type === 'image/png' || file.name.toLowerCase().endsWith('.png');
+  if (!isSvg && !isPng) {
+    toast('Apenas ficheiros SVG ou PNG são permitidos.');
     return null;
   }
-  if (file.size > 100 * 1024) {
-    toast('Ícone muito grande. Máx. 100 KB.');
+  if (file.size > 500 * 1024) {
+    toast('Ícone muito grande. Máx. 500 KB.');
     return null;
   }
   try {
-    const url = await uploadImageToStorage(file, 'event-covers');
-    if (!url) return null;
+    // ✅ Carregar directamente com o Content-Type correcto — o SVG em
+    // particular precisa de ser enviado como 'image/svg+xml' ou o Supabase
+    // Storage serve-o como texto e os browsers recusam mostrá-lo numa <img>.
+    const contentType = isSvg ? 'image/svg+xml' : 'image/png';
+    const ext = isSvg ? 'svg' : 'png';
+    const fileName = `icon_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g,'_')}`;
+    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/event-covers/${fileName}`, {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': contentType,
+        'x-upsert': 'true',
+        'Cache-Control': '3600',
+      },
+      body: file,
+    });
+    if (!res.ok) { const t = await res.text(); console.error('Erro upload ícone:', t); toast('Erro ao carregar ícone.'); return null; }
+    const url = `${SUPABASE_URL}/storage/v1/object/public/event-covers/${fileName}`;
     await supabaseRequest('icon_library', 'POST', {
-      name: file.name.replace(/\.svg$/i, ''), url, category: category || 'manual',
+      name: file.name.replace(/\.(svg|png)$/i, ''), url, category: category || 'manual',
       uploaded_by: Store.currentUser?.id || null
     });
-    toast('Ícone adicionado à biblioteca partilhada!');
+    toast('Ícone adicionado à biblioteca!');
     return url;
   } catch(e) {
+    console.error('uploadIconToLibrary error:', e);
     toast('Erro ao carregar ícone.');
     return null;
   }
@@ -2400,8 +2420,8 @@ async function openIconPickerModal(category, onSelect) {
       <button id="_icon-picker-close" style="background:#f3f4f6;border:none;border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:1.1rem;line-height:1">×</button>
     </div>
     <label style="display:block;background:#f0f9fb;border:1.5px dashed #007f9f;border-radius:0.75rem;padding:0.75rem;text-align:center;cursor:pointer;margin-bottom:1rem;font-size:0.82rem;color:#007f9f;font-weight:600">
-      + Carregar novo ícone SVG (ficará disponível para todos)
-      <input type="file" accept=".svg,image/svg+xml" style="display:none" id="_icon-upload-input">
+      + Carregar novo ícone SVG ou PNG (ficará disponível para todos)
+      <input type="file" accept=".svg,.png,image/svg+xml,image/png" style="display:none" id="_icon-upload-input">
     </label>
     <div id="_icon-grid" style="display:grid;grid-template-columns:repeat(5,1fr);gap:0.6rem">
       <p style="grid-column:1/-1;text-align:center;color:#9ca3af;font-size:0.8rem;padding:1rem">A carregar...</p>
