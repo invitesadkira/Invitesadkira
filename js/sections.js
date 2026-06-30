@@ -485,13 +485,13 @@ async function renderGuestSections(eventData) {
   } else if (eventData.invite_layout === 'elegant') {
     if (heroBlock) heroBlock.style.display = 'none';
     container.innerHTML = buildElegantInviteTemplate(eventData);
-    initScrollReveal();
+    initScrollReveal(); if (typeof initTimelineScrollDots === 'function') initTimelineScrollDots();
     lucide.createIcons();
     return;
   } else if (eventData.invite_layout === 'calendar') {
     if (heroBlock) heroBlock.style.display = 'none';
     container.innerHTML = buildCalendarInviteTemplate(eventData);
-    initScrollReveal();
+    initScrollReveal(); if (typeof initTimelineScrollDots === 'function') initTimelineScrollDots();
     lucide.createIcons();
     return;
   } else if (heroBlock) {
@@ -692,7 +692,7 @@ async function renderGuestSections(eventData) {
   if (eventData.date) startCountdownInterval(eventData.date, eventData.time);
 
   // Initialise scroll reveal
-  initScrollReveal();
+  initScrollReveal(); if (typeof initTimelineScrollDots === 'function') initTimelineScrollDots();
   // Init floating music button
   initFloatingMusicBtn();
   // Init any 3D gallery carousels (must run after their HTML is in the DOM)
@@ -1390,8 +1390,9 @@ function buildScheduleSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
     return _SD + `<div class="event-section">
       <div class="section-inner" style="text-align:center">
         <h3 class="section-title reveal">Itinerário</h3>
-        <div style="position:relative;max-width:500px;margin:0 auto">
-          <div style="position:absolute;left:50%;top:8px;bottom:8px;width:2px;background:linear-gradient(to bottom,transparent,${evColor} 5%,${evColor} 95%,transparent);transform:translateX(-50%);z-index:1"></div>
+        <div id="timeline-wrap-${Date.now().toString(36)}" class="timeline-scroll-wrap" style="position:relative;max-width:500px;margin:0 auto" data-color="${evColor}" data-center="true">
+          <div class="timeline-track" style="position:absolute;left:50%;top:8px;bottom:8px;width:2px;background:linear-gradient(to bottom,transparent,${evColor} 5%,${evColor} 95%,transparent);transform:translateX(-50%);z-index:1"></div>
+          <div class="timeline-scroll-dot timeline-scroll-dot-center" style="position:absolute;left:50%;top:8px;width:14px;height:14px;border-radius:50%;background:${evColor};box-shadow:0 0 0 3px color-mix(in srgb,${evColor} 30%,white),0 2px 8px rgba(0,0,0,0.2);z-index:5;transition:top 0.12s linear;transform:translateX(-50%);pointer-events:none"></div>
           ${rows}
         </div>
       </div>
@@ -1452,8 +1453,9 @@ function buildScheduleSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
   return _SD + `<div class="event-section">
     <div class="section-inner">
       <h3 class="section-title reveal" style="text-align:center">Itinerário</h3>
-      <div style="position:relative;max-width:480px;margin:0 auto;text-align:left">
-        <div style="position:absolute;left:76px;top:14px;bottom:14px;width:2px;background:linear-gradient(to bottom,transparent,${evColor}55 5%,${evColor}55 95%,transparent)"></div>
+      <div id="timeline-wrap-${Date.now().toString(36)}" class="timeline-scroll-wrap" style="position:relative;max-width:480px;margin:0 auto;text-align:left" data-color="${evColor}">
+        <div class="timeline-track" style="position:absolute;left:76px;top:14px;bottom:14px;width:2px;background:linear-gradient(to bottom,transparent,${evColor}55 5%,${evColor}55 95%,transparent)"></div>
+        <div class="timeline-scroll-dot" style="position:absolute;left:calc(76px - 5px);top:14px;width:12px;height:12px;border-radius:50%;background:${evColor};box-shadow:0 0 0 3px color-mix(in srgb,${evColor} 30%,white),0 2px 8px rgba(0,0,0,0.2);z-index:3;transition:top 0.12s linear;pointer-events:none"></div>
         ${rows}
       </div>
     </div>
@@ -2024,9 +2026,16 @@ function refreshScheduleEditorList() {
   const clientMode = window._scheduleEditorClientMode;
   document.getElementById('schedule-items-list').innerHTML = items.map((it, i) => clientMode ? `
     <div class="flex items-start gap-2 mb-3 bg-gray-50 rounded-xl p-2">
-      <div class="flex gap-2 flex-1">
-        <input class="input-field text-xs w-24" value="${it.time}" placeholder="Hora (ex: 21h00)" id="sc-time-${i}">
-        <input class="input-field text-xs flex-1" value="${it.label}" placeholder="Momento (ex: Entrada dos noivos)" id="sc-label-${i}">
+      <div class="flex flex-col gap-1 flex-1">
+        <div class="flex gap-2">
+          <input class="input-field text-xs w-24" value="${it.time}" placeholder="Hora (ex: 21h00)" id="sc-time-${i}">
+          <input class="input-field text-xs flex-1" value="${it.label}" placeholder="Momento (ex: Entrada dos noivos)" id="sc-label-${i}">
+        </div>
+        <div style="display:flex;align-items:center;gap:4px">
+          <div class="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0" style="background:rgba(0,127,159,0.12)" id="sc-prev-${i}">${it.icon && it.icon.startsWith('http') ? `<img src="${it.icon}" style="width:13px;height:13px;object-fit:contain">` : `<i data-lucide="${it.icon}" style="width:13px;height:13px;color:#007f9f"></i>`}</div>
+          <input class="input-field text-xs flex-1" value="${it.icon}" placeholder="nome Lucide ou URL de imagem" id="sc-icon-${i}" oninput="(function(inp,idx){let v=inp.value.trim();if(v.includes('<')||v.includes('>')||v.includes('href=')){inp.value='';v='';toast('Cole apenas o URL directo da imagem.');}const p=document.getElementById('sc-prev-'+idx);if(!p)return;if(v.startsWith('http'))p.innerHTML='<img src=\\''+v+'\\' style=\\'width:13px;height:13px;object-fit:contain\\'>';else p.innerHTML='<i data-lucide=\\''+v+'\\' style=\\'width:13px;height:13px;color:#007f9f\\'></i>';try{lucide.createIcons();}catch(e){};})(this,${i})">
+          <button type="button" onclick="openIconPickerModal('schedule', url => { const inp=document.getElementById('sc-icon-${i}'); if(inp) inp.value=url; const p=document.getElementById('sc-prev-${i}'); if(p) p.innerHTML='<img src=\\''+url+'\\' style=\\'width:13px;height:13px;object-fit:contain\\'>'; })" style="background:#f0f9fb;color:#007f9f;border:none;border-radius:0.4rem;padding:0.25rem 0.35rem;font-size:0.58rem;font-weight:700;cursor:pointer;flex-shrink:0" title="Escolher ícone">📁</button>
+        </div>
       </div>
       <div class="flex flex-col gap-1 flex-shrink-0">
         <button type="button" class="text-red-400" onclick="removeScheduleItem(${i})"><i data-lucide="x" class="w-4 h-4"></i></button>

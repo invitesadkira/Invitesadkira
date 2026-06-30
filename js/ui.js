@@ -1240,6 +1240,47 @@ function initScrollReveal() {
   document.querySelectorAll('.reveal, .reveal-stagger').forEach(el => obs.observe(el));
 }
 
+// ── Ponto animado no cronograma — desliza ao longo da linha vertical
+// conforme o convidado faz scroll. Funciona para cima e para baixo.
+// O ponto fica exactamente na posição da linha que está no centro do ecrã
+// naquele momento — ligado ao scroll do <div id="screen-guest"> (que pode
+// ter scroll interno) ou da janela, o que existir. ────────────────────────
+function initTimelineScrollDots() {
+  const wraps = document.querySelectorAll('.timeline-scroll-wrap');
+  if (!wraps.length) return;
+
+  const scroller = document.getElementById('screen-guest') || window;
+
+  function updateDots() {
+    const viewportMid = (scroller === window)
+      ? window.innerHeight / 2
+      : scroller.getBoundingClientRect().top + scroller.clientHeight / 2;
+
+    wraps.forEach(wrap => {
+      const dot = wrap.querySelector('.timeline-scroll-dot');
+      const track = wrap.querySelector('.timeline-track');
+      if (!dot || !track) return;
+
+      const wRect = wrap.getBoundingClientRect();
+      const trackTop    = parseFloat(track.style.top) || 8;
+      const trackBottom = wrap.offsetHeight - (parseFloat(track.style.bottom) || 8);
+
+      // Posição relativa do meio do ecrã dentro do wrapper
+      const relMid = viewportMid - wRect.top;
+      // Clamp entre o início e o fim da linha
+      const clampedTop = Math.max(trackTop, Math.min(trackBottom - 6, relMid));
+
+      dot.style.top = clampedTop + 'px';
+    });
+  }
+
+  scroller.addEventListener('scroll', updateDots, { passive: true });
+  window.addEventListener('resize', updateDots, { passive: true });
+  updateDots();
+  // Garantir que a posição inicial está correcta após as imagens carregarem
+  setTimeout(updateDots, 800);
+}
+
 
 // ===================== GUEST CONFIRMATION PERSISTENCE =====================
 function saveGuestConfirmationToStorage(eventId, guestName) {
