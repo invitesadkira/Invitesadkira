@@ -129,7 +129,11 @@ function buildSimpleInviteTemplate(ev) {
   const venue2Maps = hasSecondVenue ? ev.venue_reception_maps : '';
 
   let scheduleItems = [];
-  if (ev.schedule_items) { try { scheduleItems = JSON.parse(ev.schedule_items); } catch(e) {} }
+  if (ev.schedule_items) {
+    try { scheduleItems = JSON.parse(ev.schedule_items); } catch(e) {}
+  }
+  // Sanitizar ícones com HTML por engano — impede que apareçam na tela
+  if (Array.isArray(scheduleItems)) scheduleItems.forEach(it => { if (it.icon) it.icon = _sanitizeIconValue(it.icon); });
 
   // Flor de canto sobre a capa — pedido explicitamente para este modelo
   const decorOn = _yesOrTrue(ev.show_decor);
@@ -1499,6 +1503,8 @@ async function openManualEditor() {
     const evForType = eventId ? Store.events.find(e => e.id === eventId) : null;
     items = JSON.parse(JSON.stringify(getDefaultManualItems(evForType && evForType.event_type)));
   }
+  // Sanitizar ícones com HTML colado por engano
+  items.forEach(it => { it.icon = _sanitizeIconValue(it.icon); });
   const modal = document.createElement('div');
   modal.className = 'modal-overlay';
   modal.id = 'manual-editor-modal';
@@ -1562,9 +1568,19 @@ function refreshManualEditorList() {
         ${it.icon && it.icon.startsWith('http') ? `<img src="${it.icon}" style="width:16px;height:16px;object-fit:contain">` : `<i data-lucide="${it.icon}" style="width:16px;height:16px;color:#007f9f"></i>`}
       </div>
       <input class="input-field text-xs flex-1" value="${it.text.replace(/\n/g,' ')}" placeholder="Texto" id="mi-text-${i}">
-      <input class="input-field text-xs w-20" value="${it.icon}" placeholder="lucide icon" id="mi-icon-${i}"
-        oninput="const p=document.getElementById('mi-prev-'+${i});if(p){p.innerHTML='<i data-lucide=\''+this.value+'\' style=\'width:16px;height:16px;color:#007f9f\'></i>';try{lucide.createIcons();}catch(e){}}">
-      <button type="button" onclick="openIconPickerModal('manual', url => { const inp=document.getElementById('mi-icon-${i}'); if(inp) inp.value=url; const p=document.getElementById('mi-prev-${i}'); if(p) p.innerHTML='<img src=\\''+url+'\\' style=\\'width:16px;height:16px;object-fit:contain\\'>'; })" style="background:#f0f9fb;color:#007f9f;border:none;border-radius:0.4rem;padding:0.3rem;font-size:0.6rem;font-weight:700;cursor:pointer;flex-shrink:0" title="Escolher SVG da biblioteca">SVG</button>
+      <input class="input-field text-xs w-20" value="${it.icon}" placeholder="nome ou URL" id="mi-icon-${i}"
+        oninput="(function(inp,idx){
+          let v=inp.value.trim();
+          // ✅ Rejeitar HTML colado (ex: atribuição do Flaticon) — o campo
+          // só aceita um nome de ícone Lucide ou um URL directo de imagem.
+          if(v.includes('<')||v.includes('>')||v.includes('href=')){inp.value='';v='';toast('Cole apenas o URL directo da imagem, não o código HTML de atribuição.');}
+          const p=document.getElementById('mi-prev-'+idx);
+          if(!p)return;
+          if(v.startsWith('http'))p.innerHTML='<img src=\\''+v+'\\' style=\\'width:16px;height:16px;object-fit:contain\\'>';
+          else p.innerHTML='<i data-lucide=\\''+v+'\\' style=\\'width:16px;height:16px;color:#007f9f\\'></i>';
+          try{lucide.createIcons();}catch(e){}
+        })(this,${i})">
+      <button type="button" onclick="openIconPickerModal('manual', url => { const inp=document.getElementById('mi-icon-${i}'); if(inp) inp.value=url; const p=document.getElementById('mi-prev-${i}'); if(p) p.innerHTML='<img src=\\''+url+'\\' style=\\'width:16px;height:16px;object-fit:contain\\'>'; })" style="background:#f0f9fb;color:#007f9f;border:none;border-radius:0.4rem;padding:0.3rem;font-size:0.6rem;font-weight:700;cursor:pointer;flex-shrink:0" title="Escolher ícone da biblioteca (SVG/PNG)">📁</button>
       <button type="button" class="text-red-400" onclick="removeManualItem(${i})"><i data-lucide="x" class="w-4 h-4"></i></button>
       ${i > 0 ? `<button type="button" class="text-gray-400" onclick="moveManualItem(${i},-1)"><i data-lucide="arrow-up" class="w-3 h-3"></i></button>` : '<div class="w-5"></div>'}
       ${i < items.length-1 ? `<button type="button" class="text-gray-400" onclick="moveManualItem(${i},1)"><i data-lucide="arrow-down" class="w-3 h-3"></i></button>` : '<div class="w-5"></div>'}
@@ -1616,6 +1632,14 @@ function resetManualItems() {
 
 
 // ===================== SCHEDULE EDITOR =====================
+function _sanitizeIconValue(v) {
+  if (!v) return v;
+  // ✅ Se contiver HTML (ex: código de atribuição do Flaticon colado por
+  // engano), limpar em vez de guardar e mostrar o código na tela.
+  if (v.includes('<') || v.includes('>') || v.includes('href=')) return 'star';
+  return v;
+}
+
 function openScheduleEditor(clientMode) {
   clientMode = clientMode || (typeof Store._isClientIntakeContext !== 'undefined' && Store._isClientIntakeContext);
   let items;
@@ -1631,6 +1655,8 @@ function openScheduleEditor(clientMode) {
       items = JSON.parse(JSON.stringify(DEFAULT_SCHEDULE_ITEMS));
     }
   }
+  // Sanitizar ícones que possam ter HTML colado por engano
+  items.forEach(it => { it.icon = _sanitizeIconValue(it.icon); });
   const modal = document.createElement('div');
   modal.className = 'modal-overlay';
   modal.id = 'schedule-editor-modal';
@@ -2017,7 +2043,7 @@ function refreshScheduleEditorList() {
         <div class="flex gap-2">
           <div style="display:flex;align-items:center;gap:4px;width:100%">
         <div class="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0" style="background:rgba(0,127,159,0.12)" id="sc-prev-${i}">${it.icon && it.icon.startsWith('http') ? `<img src="${it.icon}" style="width:13px;height:13px;object-fit:contain">` : `<i data-lucide="${it.icon}" style="width:13px;height:13px;color:#007f9f"></i>`}</div>
-        <input class="input-field text-xs flex-1" value="${it.icon}" placeholder="lucide icon" id="sc-icon-${i}" oninput="const p=document.getElementById('sc-prev-'+${i});if(p){p.innerHTML='<i data-lucide=\''+this.value+'\' style=\'width:13px;height:13px;color:#007f9f\'></i>';try{lucide.createIcons();}catch(e){}}">
+        <input class="input-field text-xs flex-1" value="${it.icon}" placeholder="nome ou URL" id="sc-icon-${i}" oninput="(function(inp,idx){let v=inp.value.trim();if(v.includes('<')||v.includes('>')||v.includes('href=')){inp.value='';v='';toast('Cole apenas o URL directo da imagem, não o código HTML.');}const p=document.getElementById('sc-prev-'+idx);if(!p)return;if(v.startsWith('http'))p.innerHTML='<img src=\\''+v+'\\' style=\\'width:13px;height:13px;object-fit:contain\\'>';else p.innerHTML='<i data-lucide=\\''+v+'\\' style=\\'width:13px;height:13px;color:#007f9f\\'></i>';try{lucide.createIcons();}catch(e){};})(this,${i})">
         <button type="button" onclick="openIconPickerModal('schedule', url => { const inp=document.getElementById('sc-icon-${i}'); if(inp) inp.value=url; const p=document.getElementById('sc-prev-${i}'); if(p) p.innerHTML='<img src=\\''+url+'\\' style=\\'width:13px;height:13px;object-fit:contain\\'>'; })" style="background:#f0f9fb;color:#007f9f;border:none;border-radius:0.4rem;padding:0.25rem 0.35rem;font-size:0.58rem;font-weight:700;cursor:pointer;flex-shrink:0">SVG</button>
       </div>
           <input class="input-field text-xs flex-1" value="${it.sub || ''}" placeholder="Subtítulo" id="sc-sub-${i}">
