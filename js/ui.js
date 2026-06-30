@@ -1240,43 +1240,6 @@ function initScrollReveal() {
   document.querySelectorAll('.reveal, .reveal-stagger').forEach(el => obs.observe(el));
 }
 
-// ── Ponto animado no cronograma — desliza ao longo da linha vertical
-// conforme o convidado faz scroll. Funciona para cima e para baixo.
-// O ponto fica exactamente na posição que está no centro do ecrã naquele
-// momento. Pode ser desligado pelo admin em "Cores & Estilo". ───────────
-function initTimelineScrollDots() {
-  const wraps = document.querySelectorAll('.timeline-scroll-wrap');
-  if (!wraps.length) return;
-
-  // Limpar listeners anteriores para evitar acumulação
-  if (window._timelineDotScrollFn) window.removeEventListener('scroll', window._timelineDotScrollFn);
-
-  function updateDots() {
-    const viewportMid = window.scrollY + window.innerHeight * 0.5;
-
-    wraps.forEach(wrap => {
-      const dot = wrap.querySelector('.timeline-scroll-dot');
-      const track = wrap.querySelector('.timeline-track');
-      if (!dot || !track) return;
-
-      const wrapTop    = wrap.getBoundingClientRect().top + window.scrollY;
-      const trackTop   = parseFloat(track.style.top) || 8;
-      const trackEnd   = wrap.offsetHeight - (parseFloat(track.style.bottom) || 8);
-
-      // Posição relativa ao início do wrapper
-      const relPos = viewportMid - wrapTop;
-      const clampedTop = Math.max(trackTop, Math.min(trackEnd, relPos));
-      dot.style.top = clampedTop + 'px';
-    });
-  }
-
-  window._timelineDotScrollFn = updateDots;
-  window.addEventListener('scroll', updateDots, { passive: true });
-  window.addEventListener('resize', updateDots, { passive: true });
-  // Primeira execução após renderizar
-  requestAnimationFrame(() => { updateDots(); setTimeout(updateDots, 600); });
-}
-
 
 // ===================== GUEST CONFIRMATION PERSISTENCE =====================
 function saveGuestConfirmationToStorage(eventId, guestName) {

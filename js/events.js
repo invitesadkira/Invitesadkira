@@ -869,7 +869,6 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
           bible_bold: document.getElementById('evt-bible-bold')?.checked ? 'yes' : 'no',
           bible_italic: document.getElementById('evt-bible-italic')?.checked ? 'yes' : 'no',
           metallic_animation: document.getElementById('sw-metallic-animation')?.classList.contains('active') ? 'yes' : 'no',
-          timeline_dot_enabled: document.getElementById('sw-timeline-dot')?.classList.contains('active') ? 'yes' : 'no',
           show_youtube_video: document.getElementById('sw-youtube-video')?.classList.contains('active') ? 'yes' : 'no',
           youtube_video_url: document.getElementById('evt-youtube-video-url')?.value?.trim() || null,
           youtube_video_title: document.getElementById('evt-youtube-video-title')?.value?.trim() || null,
@@ -1848,7 +1847,6 @@ function _fillEditForm(ev) {
   { const bbEl = document.getElementById('evt-bible-bold'); if (bbEl) bbEl.checked = ev.bible_bold === 'yes'; }
   { const biEl = document.getElementById('evt-bible-italic'); if (biEl) biEl.checked = ev.bible_italic !== 'no'; }
   _setSwitch('sw-metallic-animation', ev.metallic_animation !== 'no', null);
-  _setSwitch('sw-timeline-dot', ev.timeline_dot_enabled === 'yes', null);
   _setSwitch('sw-youtube-video', _yesOrTrue(ev.show_youtube_video) && !!ev.youtube_video_url, 'youtube-video-extra');
   { const yvUrl = document.getElementById('evt-youtube-video-url'); if (yvUrl) yvUrl.value = ev.youtube_video_url || ''; }
   { const yvTitle = document.getElementById('evt-youtube-video-title'); if (yvTitle) yvTitle.value = ev.youtube_video_title || ''; }
