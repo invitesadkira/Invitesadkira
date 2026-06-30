@@ -485,13 +485,13 @@ async function renderGuestSections(eventData) {
   } else if (eventData.invite_layout === 'elegant') {
     if (heroBlock) heroBlock.style.display = 'none';
     container.innerHTML = buildElegantInviteTemplate(eventData);
-    initScrollReveal(); if (typeof initTimelineScrollDots === 'function' && eventData.timeline_dot_enabled !== 'no') initTimelineScrollDots();
+    initScrollReveal(); if (typeof initTimelineScrollDots === 'function' && eventData.timeline_dot_enabled === 'yes') initTimelineScrollDots();
     lucide.createIcons();
     return;
   } else if (eventData.invite_layout === 'calendar') {
     if (heroBlock) heroBlock.style.display = 'none';
     container.innerHTML = buildCalendarInviteTemplate(eventData);
-    initScrollReveal(); if (typeof initTimelineScrollDots === 'function' && eventData.timeline_dot_enabled !== 'no') initTimelineScrollDots();
+    initScrollReveal(); if (typeof initTimelineScrollDots === 'function' && eventData.timeline_dot_enabled === 'yes') initTimelineScrollDots();
     lucide.createIcons();
     return;
   } else if (heroBlock) {
@@ -692,7 +692,7 @@ async function renderGuestSections(eventData) {
   if (eventData.date) startCountdownInterval(eventData.date, eventData.time);
 
   // Initialise scroll reveal
-  initScrollReveal(); if (typeof initTimelineScrollDots === 'function' && eventData.timeline_dot_enabled !== 'no') initTimelineScrollDots();
+  initScrollReveal(); if (typeof initTimelineScrollDots === 'function' && eventData.timeline_dot_enabled === 'yes') initTimelineScrollDots();
   // Init floating music button
   initFloatingMusicBtn();
   // Init any 3D gallery carousels (must run after their HTML is in the DOM)
@@ -1392,7 +1392,7 @@ function buildScheduleSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
         <h3 class="section-title reveal">Itinerário</h3>
         <div id="timeline-wrap-${Date.now().toString(36)}" class="timeline-scroll-wrap" style="position:relative;max-width:500px;margin:0 auto" data-color="${evColor}" data-center="true">
           <div class="timeline-track" style="position:absolute;left:50%;top:8px;bottom:8px;width:2px;background:linear-gradient(to bottom,transparent,${evColor} 5%,${evColor} 95%,transparent);transform:translateX(-50%);z-index:1"></div>
-          <div class="timeline-scroll-dot timeline-scroll-dot-center" style="position:absolute;left:50%;top:8px;width:14px;height:14px;border-radius:50%;background:${evColor};box-shadow:0 0 0 3px color-mix(in srgb,${evColor} 30%,white),0 2px 8px rgba(0,0,0,0.2);z-index:5;transition:top 0.12s linear;transform:translateX(-50%);pointer-events:none"></div>
+          <div class="timeline-scroll-dot timeline-scroll-dot-center" style="position:absolute;left:50%;top:8px;width:14px;height:14px;border-radius:50%;background:${evColor};box-shadow:0 0 0 3px color-mix(in srgb,${evColor} 30%,white),0 2px 8px rgba(0,0,0,0.15);z-index:1;transition:top 0.12s linear;transform:translateX(-50%);pointer-events:none"></div>
           ${rows}
         </div>
       </div>
@@ -1442,7 +1442,7 @@ function buildScheduleSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
         <span style="font-size:calc(1.05rem * var(--ev-body-scale,1));font-weight:800;color:#1e293b">${it.time}</span>
       </div>
       <div style="flex-shrink:0;position:relative;display:flex;flex-direction:column;align-items:center">
-        <div style="width:12px;height:12px;border-radius:50%;background:${evColor};margin-top:6px;flex-shrink:0;box-shadow:0 0 0 4px color-mix(in srgb,${evColor} 15%,white)"></div>
+        <div style="width:12px;height:12px;border-radius:50%;background:${evColor};margin-top:6px;flex-shrink:0;position:relative;z-index:2;box-shadow:0 0 0 4px color-mix(in srgb,${evColor} 15%,white)"></div>
       </div>
       <div style="flex:1;padding-bottom:0.25rem">
         <div style="font-weight:800;color:#1e293b;font-size:calc(0.85rem * var(--ev-body-scale,1));text-transform:uppercase;letter-spacing:0.03em">${escapeHTML(it.label)}</div>
@@ -1455,7 +1455,7 @@ function buildScheduleSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
       <h3 class="section-title reveal" style="text-align:center">Itinerário</h3>
       <div id="timeline-wrap-${Date.now().toString(36)}" class="timeline-scroll-wrap" style="position:relative;max-width:480px;margin:0 auto;text-align:left" data-color="${evColor}">
         <div class="timeline-track" style="position:absolute;left:76px;top:14px;bottom:14px;width:2px;background:linear-gradient(to bottom,transparent,${evColor}55 5%,${evColor}55 95%,transparent)"></div>
-        <div class="timeline-scroll-dot" style="position:absolute;left:calc(76px - 5px);top:14px;width:12px;height:12px;border-radius:50%;background:${evColor};box-shadow:0 0 0 3px color-mix(in srgb,${evColor} 30%,white),0 2px 8px rgba(0,0,0,0.2);z-index:3;transition:top 0.12s linear;pointer-events:none"></div>
+        <div class="timeline-scroll-dot" style="position:absolute;left:calc(76px - 5px);top:14px;width:12px;height:12px;border-radius:50%;background:${evColor};box-shadow:0 0 0 3px color-mix(in srgb,${evColor} 30%,white),0 2px 8px rgba(0,0,0,0.2);z-index:1;transition:top 0.12s linear;pointer-events:none"></div>
         ${rows}
       </div>
     </div>

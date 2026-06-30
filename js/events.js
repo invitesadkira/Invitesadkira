@@ -1848,7 +1848,7 @@ function _fillEditForm(ev) {
   { const bbEl = document.getElementById('evt-bible-bold'); if (bbEl) bbEl.checked = ev.bible_bold === 'yes'; }
   { const biEl = document.getElementById('evt-bible-italic'); if (biEl) biEl.checked = ev.bible_italic !== 'no'; }
   _setSwitch('sw-metallic-animation', ev.metallic_animation !== 'no', null);
-  _setSwitch('sw-timeline-dot', ev.timeline_dot_enabled !== 'no', null);
+  _setSwitch('sw-timeline-dot', ev.timeline_dot_enabled === 'yes', null);
   _setSwitch('sw-youtube-video', _yesOrTrue(ev.show_youtube_video) && !!ev.youtube_video_url, 'youtube-video-extra');
   { const yvUrl = document.getElementById('evt-youtube-video-url'); if (yvUrl) yvUrl.value = ev.youtube_video_url || ''; }
   { const yvTitle = document.getElementById('evt-youtube-video-title'); if (yvTitle) yvTitle.value = ev.youtube_video_title || ''; }
