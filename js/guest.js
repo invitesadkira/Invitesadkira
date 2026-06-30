@@ -674,34 +674,33 @@ async function renderGuestView() {
   renderGuestMessageWall(eventData);
 }
 
-async function replyToGuestMessage(confIndex) {
-  const ev = Store.events.find(e => e.id === Store.currentEventId);
-  if (!ev || !ev.confirmations || !ev.confirmations[confIndex]) return;
-
-  const conf = ev.confirmations[confIndex];
-  if (!conf.message) {
-    toast('Este convidado nao deixou recado.');
-    return;
-  }
-
-  const reply = prompt('Responder ao recado de ' + conf.name + ':', conf.ownerReply || '');
-  if (reply === null) return;
-
-  const cleanReply = reply.trim();
-  const response = await supabaseRequest(
-    `rsvps?event_id=eq.${ev.id}&guest_name=eq.${encodeURIComponent(conf.name)}`,
-    'PATCH',
-    { user_reply: cleanReply }
-  );
-
-  if (!response) {
-    toast('Nao foi possivel guardar a resposta.');
-    return;
-  }
-
-  conf.ownerReply = cleanReply;
-  toast(cleanReply ? 'Resposta guardada!' : 'Resposta removida.');
-  renderEventDetails();
+async function replyToGuestMessage(guestName, currentReply, eventId) {
+  const evId = eventId || Store.currentEventId;
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.innerHTML = `
+    <div class="modal-content bg-white rounded-2xl p-6" style="max-width:420px">
+      <h3 class="text-base font-bold text-gray-800 mb-1">Responder a ${escapeHTML(guestName)}</h3>
+      <p class="text-xs text-gray-400 mb-3">A resposta aparece visível por baixo do recado, no mural de mensagens.</p>
+      <textarea id="owner-reply-text" class="input-field" rows="3" placeholder="Escreva a sua resposta...">${escapeHTML(currentReply || '')}</textarea>
+      <div class="flex gap-2 mt-3">
+        <button class="flex-1 btn-main" onclick="(async ()=>{
+          const txt = document.getElementById('owner-reply-text').value.trim();
+          const btn = this; btn.disabled = true; btn.textContent = 'A guardar...';
+          const res = await supabaseRequest('rsvps?event_id=eq.${evId}&guest_name=eq.'+encodeURIComponent('${guestName.replace(/'/g,"\\'")}'),'PATCH',{owner_reply:txt});
+          if (res) { toast(txt ? 'Resposta guardada!' : 'Resposta removida.'); document.querySelector('.modal-overlay')?.remove(); renderEventDetails(); renderGuestMessageWall(Store.guestEventData || Store.events.find(e=>e.id===Store.currentEventId)); }
+          else { toast('Erro ao guardar.'); btn.disabled=false; btn.textContent='Guardar'; }
+        })()">Guardar</button>
+        <button class="flex-1 btn-outline" onclick="this.closest('.modal-overlay').remove()">Cancelar</button>
+        ${currentReply ? `<button class="text-xs text-red-400 px-2" onclick="(async()=>{
+          await supabaseRequest('rsvps?event_id=eq.${evId}&guest_name=eq.'+encodeURIComponent('${guestName.replace(/'/g,"\\'")}'),'PATCH',{owner_reply:''});
+          toast('Resposta removida.'); document.querySelector('.modal-overlay')?.remove(); renderEventDetails();
+        })()">Remover</button>` : ''}
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+  modal.onclick = e => { if (e.target === modal) modal.remove(); };
+  setTimeout(() => document.getElementById('owner-reply-text')?.focus(), 50);
 }
 
 function renderGuestMessageWall(eventData) {
@@ -755,6 +754,13 @@ function renderGuestMessageWall(eventData) {
               <div style="margin-top:0.75rem;padding-top:0.6rem;border-top:1px solid #e5e7eb">
                 <p style="font-size:0.7rem;font-weight:700;color:#9ca3af;margin-bottom:0.2rem">Resposta do organizador</p>
                 <p style="font-size:0.82rem;color:#374151;font-style:italic">${escapeHTML(item.ownerReply)}</p>
+              </div>` : ''}
+            ${(Store.currentUser && (Store.currentUser.role === 'admin' || Store.currentUser.id === (Store.events.find(e=>e.id===Store.currentEventId)||{}).user_id)) ? `
+              <div style="margin-top:0.6rem;text-align:right">
+                <button onclick="replyToGuestMessage('${escapeHTML(item.name).replace(/'/g,"\\'")}','${escapeHTML(item.ownerReply||'').replace(/'/g,"\\'")}','${Store.currentEventId}')"
+                  style="font-size:0.7rem;color:${evColor};font-weight:700;background:none;border:1px solid ${evColor}33;border-radius:999px;padding:0.2rem 0.7rem;cursor:pointer">
+                  ${item.ownerReply ? '✏️ Editar resposta' : '↩ Responder'}
+                </button>
               </div>` : ''}
           </div>
         `).join('')}
