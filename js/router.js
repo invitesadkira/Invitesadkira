@@ -106,6 +106,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (isScanner) return;
   }
 
+  // Mostrar link "Leitor QR" no menu se o URL tiver ?scanner=
+  if (new URLSearchParams(window.location.search).get('scanner')) {
+    const navLink = document.getElementById('nav-scanner-link');
+    if (navLink) navLink.style.display = '';
+  }
+
   // Load fonts early so they're available for guest pages
   if (typeof loadAvailableFonts === 'function') {
     loadAvailableFonts().catch(() => {});

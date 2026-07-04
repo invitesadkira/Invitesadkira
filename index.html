@@ -20,7 +20,7 @@
   <script>tailwind.config = { theme: { extend: { colors: { teal: { 500: '#007f9f', 600: '#006b86' } } } } }</script>
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💌</text></svg>">
-  <link rel="stylesheet" href="css/main.css?v=1783167191">
+  <link rel="stylesheet" href="css/main.css?v=1783168037">
 </head>
 <body class="h-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
 
@@ -74,6 +74,7 @@
           <a href="#" class="landing-nav-link" onclick="closeLandingMenu();document.querySelector('.landing-hero').scrollIntoView({behavior:'smooth'});return false">Início</a>
           <a href="#" class="landing-nav-link" onclick="closeLandingMenu();Router.go('pricing');return false">Preços</a>
           <a href="#" class="landing-nav-link" onclick="closeLandingMenu();Router.go('faq');return false">FAQ</a>
+          <a href="#" class="landing-nav-link" id="nav-scanner-link" style="display:none" onclick="closeLandingMenu();checkAndInitScanner();return false">🔍 Leitor QR</a>
           <button class="landing-nav-cta" onclick="closeLandingMenu();Router.go('login')">Entrar</button>
         </div>
 
@@ -1556,21 +1557,21 @@ para testemunhar o seu enlace matrimonial</textarea>
   </a>
 
   <!-- ===================== SCRIPTS (ordem importa) ===================== -->
-  <script src="js/config.js?v=1783167191"></script>
-  <script src="js/store.js?v=1783167191"></script>
-  <script src="js/visuals.js?v=1783167191"></script>
-  <script src="js/venues.js?v=1783167191"></script>
-  <script src="js/rsvp.js?v=1783167191"></script>
-  <script src="js/ui.js?v=1783167191"></script>
-  <script src="js/auth.js?v=1783167191"></script>
-  <script src="js/dashboard.js?v=1783167191"></script>
-  <script src="js/events.js?v=1783167191"></script>
-  <script src="js/intake-wizard.js?v=1783167191"></script>
-  <script src="js/tickets.js?v=1783167191"></script>
-  <script src="js/guest.js?v=1783167191"></script>
-  <script src="js/sections.js?v=1783167191"></script>
-  <script src="js/admin.js?v=1783167191"></script>
-  <script src="js/router.js?v=1783167191"></script>
+  <script src="js/config.js?v=1783168037"></script>
+  <script src="js/store.js?v=1783168037"></script>
+  <script src="js/visuals.js?v=1783168037"></script>
+  <script src="js/venues.js?v=1783168037"></script>
+  <script src="js/rsvp.js?v=1783168037"></script>
+  <script src="js/ui.js?v=1783168037"></script>
+  <script src="js/auth.js?v=1783168037"></script>
+  <script src="js/dashboard.js?v=1783168037"></script>
+  <script src="js/events.js?v=1783168037"></script>
+  <script src="js/intake-wizard.js?v=1783168037"></script>
+  <script src="js/tickets.js?v=1783168037"></script>
+  <script src="js/guest.js?v=1783168037"></script>
+  <script src="js/sections.js?v=1783168037"></script>
+  <script src="js/admin.js?v=1783168037"></script>
+  <script src="js/router.js?v=1783168037"></script>
 
 </body>
 </html>

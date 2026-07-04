@@ -79,6 +79,7 @@ function renderDashboard() {
               <p class="text-sm" style="color:var(--app-muted)">${formatDate(ev.date)} às ${ev.time}</p>
             </div>
             <span class="text-xs font-semibold px-3 py-1 rounded-full" style="background:#eaf6f4;color:var(--app-teal-deep)">${confirmed} confirmados</span>
+            ${ev.scanner_token ? `<button onclick="event.stopPropagation();_copyScanner('${ev.scanner_token}')" title="Copiar link do leitor QR para o porteiro" style="background:#f0fdf4;border:1px solid #4ade80;border-radius:0.5rem;padding:0.3rem 0.5rem;cursor:pointer;font-size:0.7rem;font-weight:700;color:#166534;white-space:nowrap">📲 Leitor</button>` : ''}
           </div>
         </div>`;
     }).join('');
@@ -190,4 +191,23 @@ async function renderUserOrdersPanel(accountId) {
         ${deliveryCountdownHtml ? `<div style="font-size:0.78rem;border-top:1px solid #e5e7eb;padding-top:0.4rem">${deliveryCountdownHtml}</div>` : ''}
       </div>`;
     }).join('')}`;
+}
+
+function _copyScanner(scannerToken) {
+  const base = window.location.origin + window.location.pathname;
+  const link = `${base}?scanner=${scannerToken}`;
+  navigator.clipboard.writeText(link).then(() => {
+    toast('Link do leitor copiado! Envia ao porteiro.');
+  }).catch(() => {
+    // Fallback para dispositivos sem clipboard API
+    const ta = document.createElement('textarea');
+    ta.value = link;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    toast('Link do leitor copiado!');
+  });
 }
