@@ -137,10 +137,9 @@ async function handleTicketTemplateUpload(input) {
   if (file.size > 10 * 1024 * 1024) { toast('PDF muito grande. Máx. 10MB.'); return; }
   toast('A carregar template...');
   try {
-    // ✅ Upload directo com Content-Type application/pdf — o helper
-    // uploadImageToStorage só aceita imagens, por isso fazemos o fetch aqui.
-    const fileName = `ticket_template_${Store.currentEventId}_${Date.now()}.pdf`;
-    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/event-covers/${fileName}`, {
+    // ✅ Upload para bucket dedicado 'ticket-templates' que aceita PDFs
+    const fileName = `template_${Store.currentEventId}_${Date.now()}.pdf`;
+    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/ticket-templates/${fileName}`, {
       method: 'POST',
       headers: {
         'apikey': SUPABASE_ANON_KEY,
@@ -151,8 +150,8 @@ async function handleTicketTemplateUpload(input) {
       },
       body: file,
     });
-    if (!res.ok) { const t = await res.text(); console.error('PDF upload error:', t); toast('Erro ao carregar PDF.'); return; }
-    const url = `${SUPABASE_URL}/storage/v1/object/public/event-covers/${fileName}`;
+    if (!res.ok) { const t = await res.text(); console.error('PDF upload error:', t); toast('Erro ao carregar PDF. Certifica-te de ter corrido o SQL 22_tickets_and_scanner.sql'); return; }
+    const url = `${SUPABASE_URL}/storage/v1/object/public/ticket-templates/${fileName}`;
     await supabaseRequest(`events?id=eq.${Store.currentEventId}`, 'PATCH', { ticket_template_url: url });
     const ev = Store.events.find(e => e.id === Store.currentEventId);
     if (ev) ev.ticket_template_url = url;
