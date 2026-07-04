@@ -292,10 +292,12 @@ async function generateGuestTicket(guestName, rsvpToken, eventId) {
     // 2. Gerar QR code com token encriptado — não contém URL legível
     // Um leitor genérico vê só "ADK:" + base64 aleatório.
     // Só o nosso scanner (que tem o scanner_token do evento) consegue ler.
-    const scannerToken = ev.scanner_token;
+    let scannerToken = ev.scanner_token;
     if (!scannerToken) {
-      toast('Este evento ainda não tem token de scanner. Abre "Scanner Porta" primeiro.');
-      return;
+      // ✅ Gerar automaticamente — não deve obrigar a abrir "Scanner Porta" primeiro
+      scannerToken = (crypto.randomUUID ? crypto.randomUUID() : uid() + '-' + uid());
+      await supabaseRequest(`events?id=eq.${ev.id}`, 'PATCH', { scanner_token: scannerToken });
+      ev.scanner_token = scannerToken;
     }
     const encryptedPayload = await _encryptToken(rsvpToken, scannerToken);
     const qrDataUrl = await QRCode.toDataURL(
