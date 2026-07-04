@@ -792,7 +792,7 @@ async function _iwConfirmCreateEvent(submissionId, ownerUserId, modalEl) {
     // que o evento novo apareça imediatamente no painel, mesmo que pertença
     // a outro utilizador.
     try {
-      const freshEvents = await supabaseRequest('events?select=id,user_id,title,date,event_code,is_example_event&order=created_at.desc&limit=500');
+      const freshEvents = await supabaseRequest('events?select=id,user_id,title,date,event_code,is_example_event,scanner_token,ticket_template_url,ticket_name_x,ticket_name_y,ticket_qr_x,ticket_qr_y,ticket_name_size,ticket_qr_size&order=created_at.desc&limit=500');
       if (freshEvents) Store.events = freshEvents;
     } catch(e) {}
 
@@ -809,7 +809,7 @@ async function _iwOpenApplyToExisting(submissionId) {
   // Recarregar eventos frescos — o evento criado para este cliente pode
   // ainda não estar no Store.events se foi criado nesta sessão
   try {
-    const freshEvents = await supabaseRequest('events?select=id,user_id,title,date,event_code&order=created_at.desc&limit=500');
+    const freshEvents = await supabaseRequest('events?select=id,user_id,title,date,event_code,scanner_token,ticket_template_url,ticket_name_x,ticket_name_y,ticket_qr_x,ticket_qr_y,ticket_name_size,ticket_qr_size&order=created_at.desc&limit=500');
     if (freshEvents) Store.events = freshEvents;
   } catch(e) {}
 

@@ -100,6 +100,12 @@ const Router = {
 
 // ===================== INIT =====================
 document.addEventListener('DOMContentLoaded', async () => {
+  // ✅ Verificar se é o scanner QR da porta — se sim, renderizar e parar tudo o resto
+  if (typeof checkAndInitScanner === 'function') {
+    const isScanner = await checkAndInitScanner();
+    if (isScanner) return;
+  }
+
   // Load fonts early so they're available for guest pages
   if (typeof loadAvailableFonts === 'function') {
     loadAvailableFonts().catch(() => {});
