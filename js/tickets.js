@@ -83,14 +83,12 @@ async function openTicketTemplateEditor() {
         <p class="text-xs text-gray-400 mb-2">🔵 = Nome do convidado &nbsp;|&nbsp; 🟢 = QR Code</p>
         <div id="ticket-canvas-wrap" style="position:relative;border:1px solid #e5e7eb;border-radius:0.5rem;overflow:hidden;background:#f8fafc;display:inline-block;max-width:100%">
           <canvas id="ticket-preview-canvas" style="display:block;max-width:100%"></canvas>
-          <!-- Marcador do Nome -->
-          <div id="ticket-mark-name" draggable="true" style="position:absolute;background:#3b82f6;color:#fff;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;cursor:grab;user-select:none;white-space:nowrap;left:${(ev.ticket_name_x||0.5)*100}%;top:${(ev.ticket_name_y||0.75)*100}%;transform:translate(-50%,-50%)">
-            Nome do Convidado
-          </div>
-          <!-- Marcador do QR -->
-          <div id="ticket-mark-qr" draggable="true" style="position:absolute;background:#16a34a;color:#fff;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;cursor:grab;user-select:none;left:${(ev.ticket_qr_x||0.5)*100}%;top:${(ev.ticket_qr_y||0.85)*100}%;transform:translate(-50%,-50%)">
-            QR Code
-          </div>
+      <!-- Marcador do Nome -->
+      <div id="ticket-mark-name" style="position:absolute;background:rgba(59,130,246,0.85);color:#fff;border-radius:6px;padding:4px 10px;font-size:13px;font-weight:700;cursor:grab;user-select:none;white-space:nowrap;left:${(ev.ticket_name_x||0.5)*100}%;top:${(ev.ticket_name_y||0.75)*100}%;transform:translate(-50%,-50%);backdrop-filter:blur(2px);border:2px solid #3b82f6">
+        María da Silva
+      </div>
+      <!-- Marcador do QR (mostra QR real de exemplo) -->
+      <canvas id="ticket-mark-qr-canvas" style="position:absolute;left:${(ev.ticket_qr_x||0.5)*100}%;top:${(ev.ticket_qr_y||0.85)*100}%;transform:translate(-50%,-50%);border:2px solid #16a34a;border-radius:4px;cursor:grab;background:#fff" width="${ev.ticket_qr_size||80}" height="${ev.ticket_qr_size||80}"></canvas>
         </div>
         <div class="flex gap-3 mt-2 flex-wrap">
           <div>
@@ -127,6 +125,14 @@ async function openTicketTemplateEditor() {
 
   if (ev.ticket_template_url) {
     await _renderTicketPreview(ev.ticket_template_url);
+    // Renderizar QR de exemplo no marcador
+    const qrCanvas = document.getElementById('ticket-mark-qr-canvas');
+    if (qrCanvas && typeof QRCode !== 'undefined') {
+      QRCode.toCanvas(qrCanvas, 'ADK:EXEMPLO', {
+        width: ev.ticket_qr_size || 80, margin: 1,
+        color: { dark: '#000000', light: '#ffffff' }
+      }).catch(() => {});
+    }
     _initTicketDrag();
   }
 }
@@ -201,26 +207,40 @@ async function _renderTicketPreview(pdfUrl) {
 }
 
 function _initTicketDrag() {
-  ['ticket-mark-name','ticket-mark-qr'].forEach(id => {
-    const el = document.getElementById(id);
-    const wrap = document.getElementById('ticket-canvas-wrap');
-    if (!el || !wrap) return;
+  const wrap = document.getElementById('ticket-canvas-wrap');
+  if (!wrap) return;
 
-    el.addEventListener('dragstart', e => {
-      e.dataTransfer.setData('markerId', id);
-      e.dataTransfer.effectAllowed = 'move';
-    });
-    wrap.addEventListener('dragover', e => e.preventDefault());
-    wrap.addEventListener('drop', e => {
+  ['ticket-mark-name', 'ticket-mark-qr-canvas'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+
+    // Touch support (mobile)
+    el.addEventListener('touchstart', e => { el._dragging = true; e.preventDefault(); }, { passive: false });
+    el.addEventListener('touchmove', e => {
+      if (!el._dragging) return;
       e.preventDefault();
-      const markId = e.dataTransfer.getData('markerId');
-      const mark = document.getElementById(markId);
-      if (!mark) return;
+      const touch = e.touches[0];
       const rect = wrap.getBoundingClientRect();
-      const x = (e.clientX - rect.left) / rect.width;
-      const y = (e.clientY - rect.top)  / rect.height;
-      mark.style.left = (x * 100) + '%';
-      mark.style.top  = (y * 100) + '%';
+      const x = Math.max(0, Math.min(1, (touch.clientX - rect.left) / rect.width));
+      const y = Math.max(0, Math.min(1, (touch.clientY - rect.top)  / rect.height));
+      el.style.left = (x * 100) + '%';
+      el.style.top  = (y * 100) + '%';
+    }, { passive: false });
+    el.addEventListener('touchend', () => { el._dragging = false; });
+
+    // Mouse drag
+    el.addEventListener('mousedown', e => {
+      e.preventDefault();
+      const onMove = (ev) => {
+        const rect = wrap.getBoundingClientRect();
+        const x = Math.max(0, Math.min(1, (ev.clientX - rect.left) / rect.width));
+        const y = Math.max(0, Math.min(1, (ev.clientY - rect.top)  / rect.height));
+        el.style.left = (x * 100) + '%';
+        el.style.top  = (y * 100) + '%';
+      };
+      const onUp = () => { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); };
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
     });
   });
 }
@@ -228,7 +248,7 @@ function _initTicketDrag() {
 async function saveTicketTemplate() {
   const eventId = Store.currentEventId;
   const nameEl = document.getElementById('ticket-mark-name');
-  const qrEl   = document.getElementById('ticket-mark-qr');
+  const qrEl   = document.getElementById('ticket-mark-qr-canvas');
   const wrap    = document.getElementById('ticket-canvas-wrap');
   if (!nameEl || !qrEl || !wrap) { toast('Configure o template primeiro.'); return; }
 
