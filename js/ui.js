@@ -1231,13 +1231,29 @@ function renderHeroCoupleNames(ev) {
 // ===================== SCROLL REVEAL =====================
 function initScrollReveal() {
   if (!('IntersectionObserver' in window)) {
-    document.querySelectorAll('.reveal, .reveal-stagger').forEach(el => el.classList.add('visible'));
+    document.querySelectorAll('.reveal, .reveal-stagger, .sc-item-reveal').forEach(el => el.classList.add('visible'));
     return;
   }
   const obs = new IntersectionObserver((entries) => {
     entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); obs.unobserve(e.target); } });
   }, { threshold: 0.1, rootMargin: '0px 0px -30px 0px' });
   document.querySelectorAll('.reveal, .reveal-stagger').forEach(el => obs.observe(el));
+
+  // ✅ Scroll-reveal com stagger para as linhas do cronograma (timeline)
+  // Cada linha aparece com um pequeno atraso depois da anterior, criando
+  // um efeito de "acordeão" enquanto o convidado rola para baixo.
+  const scObs = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        const allItems = Array.from(e.target.closest('[data-sc-wrap]')?.querySelectorAll('.sc-item-reveal') || [e.target]);
+        allItems.forEach((el, i) => {
+          setTimeout(() => el.classList.add('visible'), i * 80);
+        });
+        scObs.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.05, rootMargin: '0px 0px -20px 0px' });
+  document.querySelectorAll('.sc-item-reveal').forEach(el => scObs.observe(el));
 }
 
 
@@ -1663,4 +1679,127 @@ function syncStdMirrorsFromMain() {
   const mirrorDeadline = document.getElementById('evt-std-deadline-mirror');
   if (mirrorDate && mainDate) mirrorDate.value = mainDate;
   if (mirrorDeadline && mainDeadline) mirrorDeadline.value = mainDeadline;
+}
+
+// ── Flores nas secções — gestor e renderização ───────────────────────
+// O admin carrega uma imagem PNG (flores, folhas, etc.) e escolhe em
+// que canto de que secção aparece. Ficam guardadas em event_visuals
+// como JSON no campo section_florals. ──────────────────────────────────
+function openSectionFloralPicker() {
+  let florals = [];
+  try { florals = JSON.parse(document.getElementById('evt-section-florals')?.value || '[]'); } catch(e) {}
+  const SECTIONS = ['Abertura / Bênção','Texto Bíblico','Nomes dos Noivos','Texto do Convite','Nomes dos Pais','Galeria de Fotos','Locais','Dress Code','Cronograma','Manual do Bom Convidado','Presentes / IBAN','Recados'];
+  const CORNERS = ['Topo esquerdo','Topo direito','Baixo esquerdo','Baixo direito'];
+  const CORNER_VALS = ['top-left','top-right','bottom-left','bottom-right'];
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.innerHTML = `<div class="modal-content bg-white rounded-2xl p-5" style="max-width:500px;max-height:85vh;overflow-y:auto">
+    <h3 class="text-base font-bold mb-3">Flores nas Secções</h3>
+    <p class="text-xs text-gray-500 mb-3">Carregue uma imagem PNG com fundo transparente (flores, folhas, etc.) e escolha onde aparece em cada secção.</p>
+    <div id="sf-list">${_sfRenderList(florals, SECTIONS, CORNERS, CORNER_VALS)}</div>
+    <button type="button" class="btn-outline text-xs mt-2 w-full" onclick="window._sfAddRow(document.getElementById('sf-list'))">+ Adicionar</button>
+    <div class="flex gap-2 mt-3">
+      <button class="flex-1 btn-main" onclick="(()=>{
+        const rows = Array.from(document.querySelectorAll('.sf-row'));
+        const data = rows.map(r => ({
+          url: r.querySelector('.sf-url').value,
+          section: r.querySelector('.sf-section').value,
+          corner: r.querySelector('.sf-corner').value,
+          size: r.querySelector('.sf-size').value || '120',
+        })).filter(d => d.url);
+        document.getElementById('evt-section-florals').value = JSON.stringify(data);
+        document.querySelector('.modal-overlay')?.remove();
+        toast('Flores guardadas — guarda o evento para aplicar.');
+      })()">Guardar</button>
+      <button class="flex-1 btn-outline" onclick="this.closest('.modal-overlay').remove()">Cancelar</button>
+    </div>
+  </div>`;
+  document.body.appendChild(modal);
+  window._sfAddRow = (list) => {
+    const div = document.createElement('div');
+    div.innerHTML = _sfRenderRow({ url:'', section: SECTIONS[0], corner:'top-right', size:'120' }, SECTIONS, CORNERS, CORNER_VALS);
+    list.insertAdjacentHTML('beforeend', _sfRenderRow({ url:'', section: SECTIONS[0], corner:'top-right', size:'120' }, SECTIONS, CORNERS, CORNER_VALS));
+  };
+}
+
+function _sfRenderRow(item, SECTIONS, CORNERS, CORNER_VALS) {
+  return `<div class="sf-row bg-gray-50 rounded-xl p-3 mb-2">
+    <div class="flex gap-2 items-start">
+      <div style="flex:1">
+        <label class="text-xs text-gray-500 block mb-1">URL da imagem (PNG)</label>
+        <div class="flex gap-2">
+          <input class="sf-url input-field text-xs flex-1" value="${escapeHTML(item.url||'')}" placeholder="Cole o URL ou carregue abaixo">
+          <input type="file" accept="image/png,image/svg+xml,image/jpeg,image/webp" class="hidden" onchange="(async(inp,row)=>{
+            const u = await uploadImageToStorage(inp.files[0],'event-covers');
+            if (u) row.querySelector('.sf-url').value=u;
+          })(this, this.closest('.sf-row'))">
+          <button type="button" class="btn-outline text-xs" onclick="this.previousElementSibling.click()">📤</button>
+        </div>
+        <div class="flex gap-2 mt-2">
+          <select class="sf-section input-field text-xs flex-1">
+            ${SECTIONS.map(s=>`<option value="${s}" ${item.section===s?'selected':''}>${s}</option>`).join('')}
+          </select>
+          <select class="sf-corner input-field text-xs" style="width:130px">
+            ${CORNER_VALS.map((v,i)=>`<option value="${v}" ${item.corner===v?'selected':''}>${CORNERS[i]}</option>`).join('')}
+          </select>
+          <input class="sf-size input-field text-xs" style="width:60px" type="number" value="${item.size||120}" min="40" max="400" placeholder="px">
+        </div>
+      </div>
+      <button type="button" class="text-red-400 text-lg leading-none mt-1" onclick="this.closest('.sf-row').remove()">×</button>
+    </div>
+  </div>`;
+}
+
+function _sfRenderList(florals, SECTIONS, CORNERS, CORNER_VALS) {
+  if (!florals.length) return '<p class="text-xs text-gray-400 text-center py-3">Nenhuma flor adicionada ainda.</p>';
+  return florals.map(f => _sfRenderRow(f, SECTIONS, CORNERS, CORNER_VALS)).join('');
+}
+
+// Aplicar as flores nas secções após renderizar
+function applySectionFlorals(floralsJson) {
+  let florals = [];
+  try { florals = JSON.parse(floralsJson || '[]'); } catch(e) {}
+  if (!florals.length) return;
+
+  const SECTION_SELECTORS = {
+    'Abertura / Bênção':       '.bible-section, .invite-section, .parents-section',
+    'Texto Bíblico':           '.bible-section',
+    'Nomes dos Noivos':        '.std-couple-section, .hero-section',
+    'Texto do Convite':        '.invite-section',
+    'Nomes dos Pais':          '.parents-section',
+    'Galeria de Fotos':        '.gallery-section',
+    'Locais':                  '.venues-section',
+    'Dress Code':              '.dresscode-section',
+    'Cronograma':              '.schedule-section',
+    'Manual do Bom Convidado': '.manual-section',
+    'Presentes / IBAN':        '.iban-section, .gifts-section',
+    'Recados':                 '.messages-section',
+  };
+  const CORNER_CSS = {
+    'top-left':     { top:'-1rem', left:'-0.5rem', transform:'none' },
+    'top-right':    { top:'-1rem', right:'-0.5rem', transform:'none' },
+    'bottom-left':  { bottom:'-1rem', left:'-0.5rem', transform:'none' },
+    'bottom-right': { bottom:'-1rem', right:'-0.5rem', transform:'none' },
+  };
+
+  // Fallback: se os selectores CSS não encontrarem, usar os .event-section por índice
+  const allSections = Array.from(document.querySelectorAll('#guest-sections-container .event-section'));
+
+  florals.forEach(f => {
+    if (!f.url) return;
+    const size = parseInt(f.size) || 120;
+    const css = CORNER_CSS[f.corner] || CORNER_CSS['top-right'];
+    const img = document.createElement('img');
+    img.src = f.url;
+    img.style.cssText = `position:absolute;width:${size}px;height:${size}px;object-fit:contain;z-index:0;pointer-events:none;opacity:0.85;${Object.entries(css).map(([k,v])=>k+':'+v).join(';')}`;
+    // Tentar pelo selector; se falhar, usar a primeira secção disponível
+    const sel = SECTION_SELECTORS[f.section];
+    let target = sel ? document.querySelector(sel) : null;
+    if (!target && allSections.length) target = allSections[0];
+    if (target) {
+      if (getComputedStyle(target).position === 'static') target.style.position = 'relative';
+      target.style.overflow = 'visible';
+      target.appendChild(img);
+    }
+  });
 }

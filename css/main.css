@@ -1607,3 +1607,22 @@ html.ev-gold-countdown .std-countdown-num {
 .bible-ornament-anim {
   animation: bibleOrnamentEntrance 0.9s cubic-bezier(.34,1.56,.64,1) both;
 }
+
+/* ── Scroll-reveal no cronograma (timeline style) ── */
+.sc-item-reveal {
+  opacity: 0;
+  transform: translateX(-28px);
+  transition: opacity 0.55s ease, transform 0.55s ease;
+}
+.sc-item-reveal.alt { transform: translateX(28px); }
+.sc-item-reveal.visible { opacity: 1; transform: none; }
+
+/* ── Decorações florais por secção ── */
+.section-decor {
+  position: absolute;
+  pointer-events: none;
+  z-index: 0;
+  background-size: contain;
+  background-repeat: no-repeat;
+}
+.event-section { position: relative; overflow: visible; }

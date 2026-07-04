@@ -777,6 +777,8 @@ async function renderGuestSections(eventData) {
 
   // Initialise scroll reveal
   initScrollReveal();
+  // Apply section floral decorations
+  if (typeof applySectionFlorals === 'function') applySectionFlorals(eventData.section_florals);
   // Init floating music button
   initFloatingMusicBtn();
   // Init any 3D gallery carousels (must run after their HTML is in the DOM)
@@ -1520,7 +1522,7 @@ function buildScheduleSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
 
   // ── Style: TIMELINE (default) — vertical line on the left, dot + time/label to the right ──
   const rows = items.map(it => `
-    <div class="reveal" style="display:flex;gap:1rem;margin-bottom:1.5rem;max-width:480px;margin-left:auto;margin-right:auto;position:relative">
+    <div class="sc-item-reveal" style="display:flex;gap:1rem;margin-bottom:1.5rem;max-width:480px;margin-left:auto;margin-right:auto;position:relative">
       <div style="flex-shrink:0;width:70px;text-align:right">
         <span style="font-size:calc(1.05rem * var(--ev-body-scale,1));font-weight:800;color:#1e293b">${it.time}</span>
       </div>
@@ -1530,13 +1532,16 @@ function buildScheduleSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
       <div style="flex:1;padding-bottom:0.25rem">
         <div style="font-weight:800;color:#1e293b;font-size:calc(0.85rem * var(--ev-body-scale,1));text-transform:uppercase;letter-spacing:0.03em">${escapeHTML(it.label)}</div>
         ${it.sub?`<div style="font-size:calc(0.82rem * var(--ev-body-scale,1));color:#9ca3af;margin-top:1px">${escapeHTML(it.sub)}</div>`:''}
+        ${it.icon && (it.icon.startsWith('http'))
+          ? `<img src="${it.icon}" style="width:30px;height:30px;object-fit:contain;margin-top:0.4rem">`
+          : (it.icon && it.icon !== 'star' ? `<i data-lucide="${it.icon}" style="width:18px;height:18px;color:${evColor};margin-top:0.4rem"></i>` : '')}
       </div>
     </div>`).join('');
 
   return _SD + `<div class="event-section">
     <div class="section-inner">
       <h3 class="section-title reveal" style="text-align:center">Itinerário</h3>
-      <div style="position:relative;max-width:480px;margin:0 auto;text-align:left">
+      <div data-sc-wrap="1" style="position:relative;max-width:480px;margin:0 auto;text-align:left">
         <div style="position:absolute;left:76px;top:14px;bottom:14px;width:2px;background:linear-gradient(to bottom,transparent,${evColor}55 5%,${evColor}55 95%,transparent)"></div>
         ${rows}
       </div>

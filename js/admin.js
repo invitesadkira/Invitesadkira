@@ -3827,11 +3827,22 @@ async function openAnalyticsPanel() {
       supabaseRequest('visit_log?visit_type=eq.commercial_view&select=created_at&limit=5000').catch(() => []),
     ]);
 
+    // ✅ Encontrar o(s) evento(s) de exemplo para filtrar as visitas de demo
+    const demoEvents = (Store.events || []).filter(e => e.is_example_event === true);
+    const demoEventIds = new Set(demoEvents.map(e => e.id));
+    const demoViews = (guestRows || []).filter(r => demoEventIds.has(r.event_id));
+    const regularViews = (guestRows || []).filter(r => !demoEventIds.has(r.event_id));
+
     const totalLogins = (loginRows || []).length;
     const uniqueUsers = new Set((loginRows || []).map(r => r.account_id)).size;
     const totalGuestViews = (guestRows || []).length;
     const uniqueEventsViewed = new Set((guestRows || []).map(r => r.event_id)).size;
     const totalCommercialViews = (commercialRows || []).length;
+    // Demo stats
+    const totalDemoViews = demoViews.length;
+    // Last 7 days of demo views
+    const sevenDaysAgo = new Date(Date.now() - 7*24*60*60*1000);
+    const demoLast7 = demoViews.filter(r => new Date(r.created_at) > sevenDaysAgo).length;
 
     // Per-user login counts (top 10)
     const perUserCounts = {};
@@ -3867,6 +3878,14 @@ async function openAnalyticsPanel() {
         <div style="background:#dcfce7;border-radius:0.75rem;padding:1rem;text-align:center;grid-column:1/-1">
           <p style="font-size:1.6rem;font-weight:800;color:#166534;margin:0">${totalCommercialViews}</p>
           <p style="font-size:0.72rem;color:#6b7280;margin:0.2rem 0 0">Visitas ao site comercial (total)</p>
+        </div>
+        <div style="background:#ede9fe;border-radius:0.75rem;padding:1rem;text-align:center">
+          <p style="font-size:1.6rem;font-weight:800;color:#5b21b6;margin:0">${totalDemoViews}</p>
+          <p style="font-size:0.72rem;color:#6b7280;margin:0.2rem 0 0">Visitas ao evento demo (total)</p>
+        </div>
+        <div style="background:#ede9fe;border-radius:0.75rem;padding:1rem;text-align:center">
+          <p style="font-size:1.6rem;font-weight:800;color:#5b21b6;margin:0">${demoLast7}</p>
+          <p style="font-size:0.72rem;color:#6b7280;margin:0.2rem 0 0">Visitas ao demo (últimos 7 dias)</p>
         </div>
       </div>
       <p style="font-size:0.82rem;font-weight:700;color:#374151;margin-bottom:0.6rem">Top utilizadores por nº de entradas</p>

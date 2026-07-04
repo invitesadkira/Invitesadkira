@@ -856,6 +856,7 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
           color_date_custom: document.getElementById('evt-color-date-custom')?.value || null,
           invite_layout: document.getElementById('evt-invite-layout')?.value || 'sections',
           card_bg_url: document.getElementById('evt-card-bg-url')?.value?.trim() || null,
+          section_florals: document.getElementById('evt-section-florals')?.value?.trim() || null,
           bible_ornament_url: document.getElementById('evt-bible-ornament-url')?.value || null,
           bible_ornament_size: document.getElementById('evt-bible-ornament-size')?.value || '28',
           std_music_continuous: document.getElementById('sw-std-music-continuous')?.classList.contains('active') ? 'yes' : 'no',
@@ -2011,6 +2012,7 @@ function _fillEditForm(ev) {
   }
   // Prefill card background
   { const u = document.getElementById('evt-card-bg-url'); if (u) u.value = ev.card_bg_url || ''; }
+  { const sf = document.getElementById('evt-section-florals'); if (sf) sf.value = ev.section_florals || '[]'; }
   { const p = document.getElementById('evt-card-bg-preview'); const c = document.getElementById('evt-card-bg-clear');
     if (ev.card_bg_url && p) { p.src = ev.card_bg_url; p.style.display = ''; if (c) c.style.display = ''; } }
   _setSwitch('sw-story', _yesOrTrue(ev.show_story) || (ev.story_text ? true : false), 'story-extra');
