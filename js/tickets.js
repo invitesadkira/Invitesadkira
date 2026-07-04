@@ -58,8 +58,20 @@ async function _decryptToken(qrText, scannerToken) {
 // ── 1. EDITOR DO TEMPLATE ─────────────────────────────────────────────────
 async function openTicketTemplateEditor() {
   const eventId = Store.currentEventId;
-  const ev = Store.events.find(e => e.id === eventId);
+  let ev = Store.events.find(e => e.id === eventId);
   if (!ev) return;
+
+  // ✅ Recarregar dados frescos do evento para garantir que ticket_template_url
+  // está actualizado — sem isto, um refresh da página podia limpar o valor
+  // do Store mesmo que já estivesse guardado no Supabase.
+  try {
+    const fresh = await supabaseRequest(
+      `events?id=eq.${eventId}&select=ticket_template_url,ticket_name_x,ticket_name_y,ticket_qr_x,ticket_qr_y,ticket_name_size,ticket_qr_size,ticket_name_color,ticket_name_font,scanner_token&limit=1`
+    );
+    if (fresh && fresh[0]) {
+      Object.assign(ev, fresh[0]);
+    }
+  } catch(e) { /* continua com o que já tem */ }
 
   const modal = document.createElement('div');
   modal.className = 'modal-overlay';
@@ -296,13 +308,27 @@ async function generateGuestTicket(guestName, rsvpToken, eventId, skipNameEdit) 
     });
   }
   const ev = Store.events.find(e => e.id === (eventId || Store.currentEventId));
-  if (!ev || !ev.ticket_template_url) {
+  if (!ev) { toast('Evento não encontrado.'); return; }
+
+  // Garantir que os campos do ticket estão actualizados
+  if (!ev.ticket_template_url) {
+    try {
+      const fresh = await supabaseRequest(`events?id=eq.${ev.id}&select=ticket_template_url,ticket_name_x,ticket_name_y,ticket_qr_x,ticket_qr_y,ticket_name_size,ticket_qr_size,ticket_name_color,ticket_name_font,scanner_token&limit=1`);
+      if (fresh && fresh[0]) Object.assign(ev, fresh[0]);
+    } catch(e) {}
+  }
+
+  if (!ev.ticket_template_url) {
     toast('Configure o template PDF primeiro.');
     return;
   }
 
   toast('A gerar ticket...');
   try {
+    // Verificar se as bibliotecas estão carregadas
+    if (typeof PDFLib === 'undefined') { toast('Biblioteca PDF não carregada. Aguarda e tenta novamente.'); return; }
+    if (typeof QRCode === 'undefined') { toast('Biblioteca QR não carregada. Aguarda e tenta novamente.'); return; }
+
     const { PDFDocument, rgb, StandardFonts } = PDFLib;
 
     // 1. Carregar template
@@ -311,23 +337,22 @@ async function generateGuestTicket(guestName, rsvpToken, eventId, skipNameEdit) 
     const page = doc.getPages()[0];
     const { width, height } = page.getSize();
 
-    // 2. Gerar QR code com token encriptado — não contém URL legível
-    // Um leitor genérico vê só "ADK:" + base64 aleatório.
-    // Só o nosso scanner (que tem o scanner_token do evento) consegue ler.
+    // 2. Gerar QR code com token encriptado
     let scannerToken = ev.scanner_token;
     if (!scannerToken) {
-      // ✅ Gerar automaticamente — não deve obrigar a abrir "Scanner Porta" primeiro
       scannerToken = (crypto.randomUUID ? crypto.randomUUID() : uid() + '-' + uid());
       await supabaseRequest(`events?id=eq.${ev.id}`, 'PATCH', { scanner_token: scannerToken });
       ev.scanner_token = scannerToken;
     }
     const encryptedPayload = await _encryptToken(rsvpToken, scannerToken);
-    const qrDataUrl = await QRCode.toDataURL(
-      encryptedPayload,
-      { width: 256, margin: 1, color: { dark: '#000000', light: '#ffffff' } }
-    );
-    const qrBytes   = _dataUrlToBytes(qrDataUrl);
-    const qrImage   = await doc.embedPng(qrBytes);
+
+    // ✅ QRCode.toDataURL — API do npm qrcode@1.5.3: primeiro o texto, depois as opções
+    const qrDataUrl = await QRCode.toDataURL(encryptedPayload, {
+      width: 256, margin: 1,
+      color: { dark: '#000000', light: '#ffffff' }
+    });
+    const qrBytes = _dataUrlToBytes(qrDataUrl);
+    const qrImage = await doc.embedPng(qrBytes);
 
     // 3. Escrever nome com a fonte e cor escolhidas
     const fontName = ev.ticket_name_font || 'Helvetica';
@@ -374,18 +399,17 @@ async function generateGuestTicket(guestName, rsvpToken, eventId, skipNameEdit) 
     a.click();
     setTimeout(() => URL.revokeObjectURL(url), 5000);
 
-    // ✅ Marcar como "ticket emitido" — só a partir daqui este convidado
-    // aparece no leitor da porta. Convidados sem ticket não são aceites.
+    // ✅ Marcar como "ticket emitido"
     supabaseRequest(
       `rsvps?rsvp_token=eq.${rsvpToken}&event_id=eq.${ev.id}`,
       'PATCH',
       { ticket_issued: true, ticket_issued_at: new Date().toISOString() }
     ).catch(() => {});
 
-    toast('Ticket gerado!');
+    toast(`Ticket gerado: ${guestName}`);
   } catch(e) {
     console.error('generateGuestTicket error:', e);
-    toast('Erro ao gerar ticket. Verifica o template PDF.');
+    toast('Erro ao gerar ticket: ' + (e.message || String(e)));
   }
 }
 
@@ -693,6 +717,13 @@ async function openTicketManager() {
   const eventId = Store.currentEventId;
   const ev = Store.events.find(e => e.id === eventId);
   if (!ev) return;
+
+  // Recarregar campos do ticket
+  try {
+    const fresh = await supabaseRequest(`events?id=eq.${eventId}&select=ticket_template_url,ticket_name_x,ticket_name_y,ticket_qr_x,ticket_qr_y,ticket_name_size,ticket_qr_size,ticket_name_color,ticket_name_font,scanner_token&limit=1`);
+    if (fresh && fresh[0]) Object.assign(ev, fresh[0]);
+  } catch(e) {}
+
   if (!ev.ticket_template_url) {
     toast('Configura o template PDF primeiro (botão "Template Ticket").');
     return;
@@ -767,11 +798,12 @@ async function generateAllTickets() {
   for (let i = 0; i < rsvps.length; i++) {
     const r = rsvps[i];
     if (btn) btn.textContent = `A gerar ${i+1} de ${rsvps.length}...`;
-    await generateGuestTicket(r.guest_name, r.rsvp_token);
-    await new Promise(res => setTimeout(res, 300)); // pequena pausa entre downloads
+    await generateGuestTicket(r.guest_name, r.rsvp_token, null, true);
+    await new Promise(res => setTimeout(res, 400));
   }
 
   toast(`${rsvps.length} ticket(s) gerados!`);
   document.getElementById('ticket-manager-modal')?.remove();
-  openTicketManager(); // Reabrir actualizado
+  // ✅ Reabrir com try/catch para não deixar o erro aparecer
+  try { await openTicketManager(); } catch(e) { console.warn('openTicketManager refresh error:', e); }
 }
