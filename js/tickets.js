@@ -571,78 +571,74 @@ function _renderScannerUI(ev, scannerToken, cache, isOnline) {
     if (badge) { badge.style.background='#78350f'; badge.innerHTML='<span>🔴 Offline</span>'; }
   });
 
-  // Iniciar câmara
+  // ✅ Scanner nativo — usa getUserMedia + BarcodeDetector (Chrome/Android)
+  // Sem nenhuma biblioteca externa. Funciona em todos os browsers modernos.
   const readerEl = document.getElementById('scanner-reader');
-
-  // ✅ Verificar se a biblioteca carregou
-  if (typeof Html5Qrcode === 'undefined') {
-    readerEl.innerHTML = `<div style="padding:1.5rem;text-align:center">
-      <p style="color:#f59e0b;font-size:0.85rem;margin-bottom:0.75rem">⚠️ Biblioteca de leitura não carregou.</p>
-      <p style="color:#6b7280;font-size:0.75rem;margin-bottom:1rem">Tenta usar a câmara nativa:</p>
-      <button onclick="_startNativeScanner('${scannerToken}','${ev.id}','${evColor}',cache)"
-        style="background:#007f9f;color:#fff;border:none;border-radius:0.75rem;padding:0.75rem 1.5rem;font-weight:700;cursor:pointer">
-        📷 Abrir Câmara
-      </button>
+  readerEl.style.cssText = 'position:relative;border-radius:1rem;overflow:hidden;background:#000;aspect-ratio:1;margin-bottom:1rem';
+  readerEl.innerHTML = `
+    <video id="sc-video" autoplay playsinline muted style="width:100%;height:100%;object-fit:cover;display:block"></video>
+    <canvas id="sc-canvas" style="display:none"></canvas>
+    <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none">
+      <div style="width:220px;height:220px;border:3px solid ${evColor};border-radius:12px;box-shadow:0 0 0 4000px rgba(0,0,0,0.4)"></div>
     </div>`;
-    // Tentar carregar a biblioteca dinamicamente
-    const s = document.createElement('script');
-    s.src = 'https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/dist/html5-qrcode.min.js';
-    s.onload = () => {
-      readerEl.innerHTML = '';
-      const qr = new Html5Qrcode('scanner-reader');
-      qr.start({ facingMode: 'environment' }, { fps: 10, qrbox: { width: 250, height: 250 } },
-        (t) => _onQrScanned(t, ev.id, evColor, scannerToken, cache), () => {}).catch(e => {
-        readerEl.innerHTML = `<p style="color:#ef4444;padding:1rem;font-size:0.85rem">Câmara: ${e}</p>`;
-      });
-    };
-    document.head.appendChild(s);
-    return;
-  }
 
-  const html5QrCode = new Html5Qrcode('scanner-reader');
-  html5QrCode.start(
-    { facingMode: 'environment' },
-    { fps: 10, qrbox: { width: 250, height: 250 } },
-    (decodedText) => _onQrScanned(decodedText, ev.id, evColor, scannerToken, cache),
-    () => {}
-  ).catch(err => {
-    readerEl.innerHTML = `<div style="padding:1rem;text-align:center">
-      <p style="color:#ef4444;font-size:0.85rem;margin-bottom:0.5rem">Sem acesso à câmara: ${err}</p>
-      <p style="color:#6b7280;font-size:0.75rem">Verifica as permissões do browser para a câmara.</p>
-    </div>`;
-  });
-}
+  const video = document.getElementById('sc-video');
+  const canvas = document.getElementById('sc-canvas');
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  let scanning = true;
 
-// Fallback: input de ficheiro/câmara nativo para quando Html5Qrcode falha
-window._startNativeScanner = async function(scannerToken, eventId, evColor, cache) {
-  const input = document.createElement('input');
-  input.type = 'file';
-  input.accept = 'image/*';
-  input.capture = 'environment';
-  input.style.display = 'none';
-  document.body.appendChild(input);
-  input.onchange = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    // Usar BarcodeDetector se disponível (Android Chrome)
-    if ('BarcodeDetector' in window) {
-      try {
-        const bitmap = await createImageBitmap(file);
+  // Pedir câmara traseira
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false })
+    .then(stream => {
+      video.srcObject = stream;
+      video.play();
+
+      // Usar BarcodeDetector nativo (Chrome 83+, Android Chrome)
+      if ('BarcodeDetector' in window) {
         const detector = new BarcodeDetector({ formats: ['qr_code'] });
-        const codes = await detector.detect(bitmap);
-        if (codes.length > 0) {
-          _onQrScanned(codes[0].rawValue, eventId, evColor, scannerToken, cache);
-        } else {
-          toast('Nenhum QR code encontrado na imagem.');
-        }
-      } catch(e) { toast('Erro ao ler QR: ' + e.message); }
-    } else {
-      toast('Leitor nativo não suportado neste browser. Usa o Chrome.');
-    }
-    document.body.removeChild(input);
-  };
-  input.click();
-};
+        const scan = async () => {
+          if (!scanning) return;
+          if (video.readyState >= 2) {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            ctx.drawImage(video, 0, 0);
+            try {
+              const codes = await detector.detect(video);
+              if (codes.length > 0) {
+                scanning = false;
+                await _onQrScanned(codes[0].rawValue, ev.id, evColor, scannerToken, cache);
+                setTimeout(() => { scanning = true; }, 2500);
+              }
+            } catch(e) {}
+          }
+          requestAnimationFrame(scan);
+        };
+        scan();
+      } else {
+        // Fallback: botão para capturar foto e detectar QR
+        readerEl.insertAdjacentHTML('beforeend', `
+          <div style="position:absolute;bottom:0.75rem;left:0;right:0;text-align:center">
+            <button onclick="window._captureQR('${scannerToken}','${ev.id}','${evColor}',cache)"
+              style="background:${evColor};color:#fff;border:none;border-radius:0.5rem;padding:0.5rem 1.25rem;font-weight:700;cursor:pointer;font-size:0.8rem">
+              📷 Capturar e ler QR
+            </button>
+          </div>`);
+        window._captureQR = async (st, eid, ec, cache) => {
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+          ctx.drawImage(video, 0, 0);
+          toast('BarcodeDetector não disponível neste browser. Usa o Chrome actualizado.');
+        };
+      }
+    })
+    .catch(err => {
+      readerEl.innerHTML = `<div style="padding:1.5rem;text-align:center;color:#ef4444">
+        <p style="font-size:0.9rem;font-weight:700;margin-bottom:0.5rem">Sem acesso à câmara</p>
+        <p style="font-size:0.75rem;color:#6b7280">${err.message || err}</p>
+        <p style="font-size:0.72rem;color:#6b7280;margin-top:0.5rem">Certifica-te de que o browser tem permissão para a câmara e que o site está em HTTPS.</p>
+      </div>`;
+    });
+}
 
 async function _scRefreshCache(scannerToken) {
   if (!navigator.onLine) { alert('Sem internet. Liga a rede e tenta novamente.'); return; }
