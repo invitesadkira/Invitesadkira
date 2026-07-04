@@ -101,6 +101,20 @@ async function openTicketTemplateEditor() {
             <label class="text-xs text-gray-500 block">Tamanho do QR (px)</label>
             <input id="ticket-qr-size" type="number" value="${ev.ticket_qr_size||80}" min="40" max="300" class="input-field text-xs" style="width:80px">
           </div>
+          <div>
+            <label class="text-xs text-gray-500 block">Cor do nome</label>
+            <input id="ticket-name-color" type="color" value="${ev.ticket_name_color||'#000000'}" class="input-field" style="width:50px;height:32px;padding:2px">
+          </div>
+          <div>
+            <label class="text-xs text-gray-500 block">Fonte do nome</label>
+            <select id="ticket-name-font" class="input-field text-xs" style="width:140px">
+              <option value="Helvetica" ${(ev.ticket_name_font||'Helvetica')==='Helvetica'?'selected':''}>Helvetica (padrão)</option>
+              <option value="Times-Roman" ${ev.ticket_name_font==='Times-Roman'?'selected':''}>Times Roman</option>
+              <option value="Courier" ${ev.ticket_name_font==='Courier'?'selected':''}>Courier</option>
+              <option value="Helvetica-Bold" ${ev.ticket_name_font==='Helvetica-Bold'?'selected':''}>Helvetica Bold</option>
+              <option value="Times-Bold" ${ev.ticket_name_font==='Times-Bold'?'selected':''}>Times Bold</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -122,52 +136,68 @@ async function handleTicketTemplateUpload(input) {
   if (!file || file.type !== 'application/pdf') { toast('Ficheiro deve ser um PDF.'); return; }
   if (file.size > 10 * 1024 * 1024) { toast('PDF muito grande. Máx. 10MB.'); return; }
   toast('A carregar template...');
-  const url = await uploadImageToStorage(file, 'event-covers', 'Template ticket');
-  if (!url) return;
-  // Guardar imediatamente
-  await supabaseRequest(`events?id=eq.${Store.currentEventId}`, 'PATCH', { ticket_template_url: url });
-  const ev = Store.events.find(e => e.id === Store.currentEventId);
-  if (ev) ev.ticket_template_url = url;
-  toast('Template carregado!');
-  document.querySelector('#ticket-editor-modal .modal-content').innerHTML = '';
-  document.getElementById('ticket-editor-modal').remove();
-  openTicketTemplateEditor();
+  try {
+    // ✅ Upload directo com Content-Type application/pdf — o helper
+    // uploadImageToStorage só aceita imagens, por isso fazemos o fetch aqui.
+    const fileName = `ticket_template_${Store.currentEventId}_${Date.now()}.pdf`;
+    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/event-covers/${fileName}`, {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/pdf',
+        'x-upsert': 'true',
+        'Cache-Control': '3600',
+      },
+      body: file,
+    });
+    if (!res.ok) { const t = await res.text(); console.error('PDF upload error:', t); toast('Erro ao carregar PDF.'); return; }
+    const url = `${SUPABASE_URL}/storage/v1/object/public/event-covers/${fileName}`;
+    await supabaseRequest(`events?id=eq.${Store.currentEventId}`, 'PATCH', { ticket_template_url: url });
+    const ev = Store.events.find(e => e.id === Store.currentEventId);
+    if (ev) ev.ticket_template_url = url;
+    toast('Template carregado!');
+    document.getElementById('ticket-editor-modal')?.remove();
+    openTicketTemplateEditor();
+  } catch(e) { console.error('handleTicketTemplateUpload error:', e); toast('Erro ao carregar PDF.'); }
 }
 
 async function _renderTicketPreview(pdfUrl) {
   try {
-    const { PDFDocument } = PDFLib;
-    const bytes = await fetch(pdfUrl).then(r => r.arrayBuffer());
-    const doc = await PDFDocument.load(bytes);
-    const page = doc.getPages()[0];
-    const { width, height } = page.getSize();
+    // ✅ Renderizar a 1ª página do PDF com PDF.js para o utilizador ver
+    // o layout real e posicionar os marcadores correctamente.
+    if (typeof pdfjsLib === 'undefined') {
+      console.warn('PDF.js não carregado — usando placeholder');
+      return;
+    }
+    pdfjsLib.GlobalWorkerOptions.workerSrc =
+      'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-    // Renderizar via canvas usando pdf.js se disponível, senão só mostrar dimensões
+    const loadingTask = pdfjsLib.getDocument(pdfUrl);
+    const pdf  = await loadingTask.promise;
+    const page = await pdf.getPage(1);
+    const viewport = page.getViewport({ scale: 1 });
+
     const canvas = document.getElementById('ticket-preview-canvas');
-    const wrap = document.getElementById('ticket-canvas-wrap');
-    if (!canvas) return;
+    const wrap   = document.getElementById('ticket-canvas-wrap');
+    if (!canvas || !wrap) return;
 
-    // Usar uma escala que caiba no modal
-    const maxW = 500;
-    const scale = Math.min(maxW / width, maxW / height, 1);
-    canvas.width  = width  * scale;
-    canvas.height = height * scale;
-    canvas.style.width  = canvas.width  + 'px';
-    canvas.style.height = canvas.height + 'px';
+    // Escalar para caber no modal (máx 480px de largura)
+    const maxW  = Math.min(480, window.innerWidth - 48);
+    const scale = maxW / viewport.width;
+    const scaledVP = page.getViewport({ scale });
+
+    canvas.width  = scaledVP.width;
+    canvas.height = scaledVP.height;
+    canvas.style.width  = scaledVP.width  + 'px';
+    canvas.style.height = scaledVP.height + 'px';
 
     const ctx = canvas.getContext('2d');
-    ctx.fillStyle = '#fff';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = '#f0f0f0';
-    ctx.fillRect(10, 10, canvas.width - 20, canvas.height - 20);
-    ctx.fillStyle = '#9ca3af';
-    ctx.font = '14px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText(`Template PDF carregado (${Math.round(width)}×${Math.round(height)} pt)`, canvas.width/2, canvas.height/2);
-    ctx.fillText('Arrasta os marcadores para posicionar', canvas.width/2, canvas.height/2 + 24);
+    await page.render({ canvasContext: ctx, viewport: scaledVP }).promise;
 
-    wrap._pdfWidth  = width;
-    wrap._pdfHeight = height;
+    // Guardar dimensões reais (em pts) para calcular coordenadas correctas
+    wrap._pdfWidth  = viewport.width;
+    wrap._pdfHeight = viewport.height;
   } catch(e) { console.error('_renderTicketPreview error:', e); }
 }
 
@@ -209,10 +239,12 @@ async function saveTicketTemplate() {
   const qy = parseFloat(qrEl.style.top)    / 100;
 
   await supabaseRequest(`events?id=eq.${eventId}`, 'PATCH', {
-    ticket_name_x:   nx,  ticket_name_y:   ny,
-    ticket_qr_x:     qx,  ticket_qr_y:     qy,
+    ticket_name_x:    nx,  ticket_name_y:    ny,
+    ticket_qr_x:      qx,  ticket_qr_y:      qy,
     ticket_name_size: parseInt(document.getElementById('ticket-name-size')?.value || '24'),
     ticket_qr_size:   parseInt(document.getElementById('ticket-qr-size')?.value   || '80'),
+    ticket_name_color: document.getElementById('ticket-name-color')?.value || '#000000',
+    ticket_name_font:  document.getElementById('ticket-name-font')?.value  || 'Helvetica',
   });
   const ev = Store.events.find(e => e.id === eventId);
   if (ev) { ev.ticket_name_x=nx; ev.ticket_name_y=ny; ev.ticket_qr_x=qx; ev.ticket_qr_y=qy; }
@@ -254,18 +286,33 @@ async function generateGuestTicket(guestName, rsvpToken, eventId) {
     const qrBytes   = _dataUrlToBytes(qrDataUrl);
     const qrImage   = await doc.embedPng(qrBytes);
 
-    // 3. Escrever nome
-    const font = await doc.embedFont(StandardFonts.HelveticaBold);
+    // 3. Escrever nome com a fonte e cor escolhidas
+    const fontName = ev.ticket_name_font || 'Helvetica';
+    const fontMap = {
+      'Helvetica': StandardFonts.Helvetica,
+      'Helvetica-Bold': StandardFonts.HelveticaBold,
+      'Times-Roman': StandardFonts.TimesRoman,
+      'Times-Bold': StandardFonts.TimesRomanBold,
+      'Courier': StandardFonts.Courier,
+    };
+    const font = await doc.embedFont(fontMap[fontName] || StandardFonts.Helvetica);
     const nameSize = ev.ticket_name_size || 24;
+
+    // Converter cor hex para rgb (0-1)
+    const hexColor = ev.ticket_name_color || '#000000';
+    const hr = parseInt(hexColor.slice(1,3),16)/255;
+    const hg = parseInt(hexColor.slice(3,5),16)/255;
+    const hb = parseInt(hexColor.slice(5,7),16)/255;
+
     const nx = (ev.ticket_name_x || 0.5) * width;
-    const ny = height - (ev.ticket_name_y || 0.75) * height; // PDF coordenadas de baixo para cima
+    const ny = height - (ev.ticket_name_y || 0.75) * height;
     const textW = font.widthOfTextAtSize(guestName, nameSize);
     page.drawText(guestName, {
       x: nx - textW / 2,
       y: ny - nameSize / 2,
       size: nameSize,
       font,
-      color: rgb(0, 0, 0),
+      color: rgb(hr, hg, hb),
     });
 
     // 4. Desenhar QR code
