@@ -4326,7 +4326,7 @@ async function openStdEditor() {
   toast('A carregar dados do Save the Date...');
   let fresh;
   try {
-    fresh = await supabaseRequest(`events?id=eq.${eventId}&select=date,confirm_by_date,save_the_date_enabled,release_type,release_date,is_invite_released,std_title,std_subtitle,std_name_size,std_title_size,std_show_cover,std_cover_url,std_cover_mobile_url,std_cover_desktop_url,std_date_style,std_scratch_enabled,std_scratch_mode,std_scratch_photo_url,std_scratch_text,std_show_iban,event_color&limit=1`);
+    fresh = await supabaseRequest(`events?id=eq.${eventId}&select=date,confirm_by_date,save_the_date_enabled,release_type,release_date,is_invite_released,std_title,std_subtitle,std_name_size,std_title_size,std_show_cover,std_cover_url,std_cover_mobile_url,std_cover_desktop_url,std_date_style,std_scratch_enabled,std_scratch_mode,std_scratch_photo_url,std_scratch_text,std_show_iban,event_color,gallery_urls&limit=1`);
   } catch(e) { fresh = null; }
   const d = (fresh && fresh[0]) ? fresh[0] : ev;
 
@@ -4403,6 +4403,10 @@ async function openStdEditor() {
         <img id="std2-cover-preview-mobile" class="rounded-lg max-h-40 object-cover w-full" src="${d.std_cover_mobile_url || ''}">
         <button type="button" onclick="document.getElementById('std2-cover-url-mobile').value='';document.getElementById('std2-cover-preview-mobile-wrap').classList.add('hidden')" class="absolute top-1 right-1 bg-white rounded-full w-6 h-6 flex items-center justify-center shadow text-red-500 text-xs font-bold">✕</button>
       </div>
+      ${d.gallery_urls ? `<p class="text-xs font-semibold text-gray-600 mt-2 mb-1">Ou escolher da galeria do evento:</p>
+      <div style="display:flex;gap:0.4rem;flex-wrap:wrap">
+        ${d.gallery_urls.split('\n').filter(u=>u.trim()).map(url=>`<img src="${url.trim()}" onclick="document.getElementById('std2-cover-url-mobile').value='${url.trim()}';document.getElementById('std2-cover-preview-mobile').src='${url.trim()}';document.getElementById('std2-cover-preview-mobile-wrap').classList.remove('hidden');toast('Foto seleccionada!')" style="width:52px;height:52px;object-fit:cover;border-radius:0.4rem;cursor:pointer;border:2px solid transparent" onmouseover="this.style.borderColor='#007f9f'" onmouseout="this.style.borderColor='transparent'">`).join('')}
+      </div>` : ''}
 
       <label class="text-xs font-semibold text-gray-600 block mt-2 mb-1">Foto para computador (1920×1080px, horizontal)</label>
       <p class="text-xs font-semibold mb-1" style="color:${d.std_cover_desktop_url ? '#16a34a' : '#ef4444'}">
@@ -4414,6 +4418,10 @@ async function openStdEditor() {
         <img id="std2-cover-preview-desktop" class="rounded-lg max-h-24 object-cover w-full" src="${d.std_cover_desktop_url || ''}">
         <button type="button" onclick="document.getElementById('std2-cover-url-desktop').value='';document.getElementById('std2-cover-preview-desktop-wrap').classList.add('hidden')" class="absolute top-1 right-1 bg-white rounded-full w-6 h-6 flex items-center justify-center shadow text-red-500 text-xs font-bold">✕</button>
       </div>
+      ${d.gallery_urls ? `<p class="text-xs font-semibold text-gray-600 mt-2 mb-1">Ou escolher da galeria do evento:</p>
+      <div style="display:flex;gap:0.4rem;flex-wrap:wrap">
+        ${d.gallery_urls.split('\n').filter(u=>u.trim()).map(url=>`<img src="${url.trim()}" onclick="document.getElementById('std2-cover-url-desktop').value='${url.trim()}';document.getElementById('std2-cover-preview-desktop').src='${url.trim()}';document.getElementById('std2-cover-preview-desktop-wrap').classList.remove('hidden');toast('Foto seleccionada!')" style="width:52px;height:52px;object-fit:cover;border-radius:0.4rem;cursor:pointer;border:2px solid transparent" onmouseover="this.style.borderColor='#007f9f'" onmouseout="this.style.borderColor='transparent'">`).join('')}
+      </div>` : ''}
       <p class="text-xs text-gray-400 mt-1">Se carregares só uma das duas, essa é usada em todos os dispositivos.</p>
     </div>
 

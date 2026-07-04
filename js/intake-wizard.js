@@ -745,8 +745,15 @@ function _iwViewSubmission(id) {
 }
 
 async function _iwCreateEventFromSubmission(submissionId) {
-  // ✅ Antes de criar, perguntar a que conta de cliente este evento
-  // pertence — em vez de assumir sempre a conta do próprio admin.
+  // ✅ Recarregar lista de utilizadores do Supabase em vez de usar o cache
+  // — o admin pode ter criado uma conta nova nesta mesma sessão, e essa
+  // conta só existe no Supabase, não no Store.users em memória.
+  toast('A carregar contas...');
+  try {
+    const freshUsers = await supabaseRequest('accounts?select=id,phone,role,status,admin_label&order=created_at.desc');
+    if (freshUsers) Store.users = freshUsers;
+  } catch(e) {}
+
   const clients = (Store.users || []).filter(u => u.role !== 'admin' && u.status !== 'deleted');
   const modal = document.createElement('div');
   modal.className = 'modal-overlay';
@@ -755,7 +762,7 @@ async function _iwCreateEventFromSubmission(submissionId) {
     <p class="text-xs text-gray-500 mb-3">Escolhe o cliente já registado, ou cria o evento na tua própria conta (podes transferir depois).</p>
     <select id="iw-create-owner" class="input-field text-sm mb-3">
       <option value="${Store.currentUser.id}">— A minha conta (admin) —</option>
-      ${clients.map(u => `<option value="${u.id}">${escapeHTML(u.phone || u.id)}${u.adminLabel ? ' — ' + escapeHTML(u.adminLabel) : ''}</option>`).join('')}
+      ${clients.map(u => `<option value="${u.id}">${escapeHTML(u.phone || u.id)}${u.admin_label ? ' — ' + escapeHTML(u.admin_label) : ''}</option>`).join('')}
     </select>
     <div class="flex gap-2">
       <button class="flex-1 btn-main" onclick="_iwConfirmCreateEvent('${submissionId}', document.getElementById('iw-create-owner').value, this.closest('.modal-overlay'))">Criar Evento</button>
@@ -773,14 +780,23 @@ async function _iwConfirmCreateEvent(submissionId, ownerUserId, modalEl) {
     const s = (rows && rows[0] && rows[0].answers) || {};
     const title = [s.names && s.names.groom, s.names && s.names.bride].filter(Boolean).join(' & ') || 'Novo Evento (assistente)';
     const newId = uid();
-    await supabaseRequest('events', 'POST', {
+    const created = await supabaseRequest('events', 'POST', {
       id: newId, user_id: ownerUserId, title, event_code: newId,
       date: s.date || null,
     });
+    if (!created) { toast('Erro ao criar o evento. Tenta novamente.'); return; }
     await _iwApplyStateToEvent(s, newId, () => {});
     await supabaseRequest(`intake_submissions?id=eq.${submissionId}`, 'PATCH', { status: 'applied', applied_to_event_id: newId, applied_at: new Date().toISOString() });
-    toast('Evento criado com sucesso!');
-    if (typeof loadEvents === 'function') await loadEvents().catch(() => {});
+
+    // ✅ Recarregar TODOS os eventos do Supabase (não só os do admin) para
+    // que o evento novo apareça imediatamente no painel, mesmo que pertença
+    // a outro utilizador.
+    try {
+      const freshEvents = await supabaseRequest('events?select=id,user_id,title,date,event_code,is_example_event&order=created_at.desc&limit=500');
+      if (freshEvents) Store.events = freshEvents;
+    } catch(e) {}
+
+    toast('Evento criado e associado com sucesso!');
     renderAdmin();
   } catch(e) {
     console.error('Erro ao criar evento a partir da submissão:', e);
@@ -788,8 +804,15 @@ async function _iwConfirmCreateEvent(submissionId, ownerUserId, modalEl) {
   }
 }
 
-// ── Alternativa: aplicar a um evento JÁ existente, em vez de criar um novo ──
-function _iwOpenApplyToExisting(submissionId) {
+async function _iwOpenApplyToExisting(submissionId) {
+  toast('A carregar eventos...');
+  // Recarregar eventos frescos — o evento criado para este cliente pode
+  // ainda não estar no Store.events se foi criado nesta sessão
+  try {
+    const freshEvents = await supabaseRequest('events?select=id,user_id,title,date,event_code&order=created_at.desc&limit=500');
+    if (freshEvents) Store.events = freshEvents;
+  } catch(e) {}
+
   const events = Store.events || [];
   if (!events.length) { toast('Não há eventos existentes.'); return; }
   const modal = document.createElement('div');
@@ -798,7 +821,7 @@ function _iwOpenApplyToExisting(submissionId) {
     <h3 class="text-base font-bold text-gray-800 mb-2">Aplicar a qual evento?</h3>
     <p class="text-xs text-gray-500 mb-3">As respostas vão preencher/substituir os campos correspondentes nesse evento.</p>
     <select id="iw-apply-target" class="input-field text-sm mb-3">
-      ${events.map(e => `<option value="${e.id}">${escapeHTML(e.title || e.id)}</option>`).join('')}
+      ${events.map(e => `<option value="${e.id}">${escapeHTML(e.title || e.id)}${e.date ? ' — ' + e.date : ''}</option>`).join('')}
     </select>
     <div class="flex gap-2">
       <button class="flex-1 btn-main" onclick="_iwConfirmApplyToExisting('${submissionId}', document.getElementById('iw-apply-target').value, this.closest('.modal-overlay'))">Aplicar</button>
