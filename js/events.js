@@ -1051,6 +1051,37 @@ function renderEventDetails() {
   const intakeBtn = document.getElementById('btn-intake-link');
   if (intakeBtn) intakeBtn.style.display = (Store.currentUser?.role === 'admin') ? 'inline-flex' : 'none';
 
+  // ✅ Aplicar permissões de funcionalidades — esconder botões desactivados
+  // pelo admin god para este utilizador específico.
+  // Excepção: quando o admin god está em modo impersonação, vê SEMPRE tudo.
+  const isRealAdmin = Store.currentUser?.role === 'admin' || Store.adminModeActive;
+  if (typeof userHasFeature === 'function' && !isRealAdmin) {
+    const featureButtonMap = {
+      'view_as_guest':      ['[onclick="viewAsGuest()"]'],
+      'export_list':        ['[onclick="downloadGuestListCSV()"]'],
+      'download_pdf':       ['[onclick="downloadPDF()"]'],
+      'download_gifts_pdf': ['#btn-download-gifts-pdf'],
+      'edit_gifts':         ['#btn-manage-gifts'],
+      'upload_gifts':       ['#btn-upload-gifts'],
+      'change_code':        ['[onclick*="editEventURL"]'],
+      'ticket_template':    ['[onclick="openTicketTemplateEditor()"]'],
+      'manage_tickets':     ['[onclick="openTicketManager()"]'],
+      'scanner':            ['[onclick="showScannerToken()"]'],
+      'edit_event':         ['[onclick="editEventWithLockCheck()"]'],
+      'save_the_date':      ['[onclick="openStdEditor()"]'],
+      'dresscode':          ['[onclick="openDressGiftsEditor()"]'],
+      'mark_example':       ['#btn-example-event'],
+    };
+    Object.entries(featureButtonMap).forEach(([feat, sels]) => {
+      const allowed = userHasFeature(feat);
+      sels.forEach(sel => {
+        document.querySelectorAll(sel).forEach(el => {
+          el.style.display = allowed ? '' : 'none';
+        });
+      });
+    });
+  }
+
   // ✅ Mostra a cor que o cliente indicou no assistente de preenchimento
   // (é só uma indicação em texto — o admin define depois a cor real).
   (async () => {

@@ -272,7 +272,29 @@ async function saveTicketTemplate() {
 }
 
 // ── 2. GERAÇÃO DO TICKET NO BROWSER (download directo) ───────────────────
-async function generateGuestTicket(guestName, rsvpToken, eventId) {
+async function generateGuestTicket(guestName, rsvpToken, eventId, skipNameEdit) {
+  // ✅ Permitir editar o nome antes de gerar o ticket
+  if (!skipNameEdit) {
+    return new Promise(resolve => {
+      const modal = document.createElement('div');
+      modal.className = 'modal-overlay';
+      modal.innerHTML = `<div class="modal-content bg-white rounded-2xl p-5" style="max-width:380px">
+        <h3 class="text-sm font-bold text-gray-800 mb-1">Nome no ticket</h3>
+        <p class="text-xs text-gray-500 mb-2">Pode editar antes de gerar — ex: "Araújo e esposa", "Araújo e acompanhante"</p>
+        <input id="ticket-name-edit" class="input-field mb-3" value="${escapeHTML(guestName)}">
+        <div class="flex gap-2">
+          <button class="flex-1 btn-main" onclick="(()=>{
+            const n=document.getElementById('ticket-name-edit').value.trim()||'${escapeHTML(guestName)}';
+            this.closest('.modal-overlay').remove();
+            generateGuestTicket(n,'${rsvpToken}','${eventId||''}',true);
+          })()">Gerar Ticket</button>
+          <button class="flex-1 btn-outline" onclick="this.closest('.modal-overlay').remove()">Cancelar</button>
+        </div>
+      </div>`;
+      document.body.appendChild(modal);
+      setTimeout(() => document.getElementById('ticket-name-edit')?.select(), 50);
+    });
+  }
   const ev = Store.events.find(e => e.id === (eventId || Store.currentEventId));
   if (!ev || !ev.ticket_template_url) {
     toast('Configure o template PDF primeiro.');
@@ -348,7 +370,7 @@ async function generateGuestTicket(guestName, rsvpToken, eventId) {
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement('a');
     a.href = url;
-    a.download = `Ticket_${guestName.replace(/\s+/g,'_')}.pdf`;
+    a.download = `${guestName}.pdf`;  // ✅ Apenas o nome, sem prefixo
     a.click();
     setTimeout(() => URL.revokeObjectURL(url), 5000);
 

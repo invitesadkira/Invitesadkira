@@ -186,6 +186,7 @@ function renderAdminAccountsList(users) {
     html += '<button class="text-xs bg-purple-500 hover:bg-purple-600 text-white rounded-lg py-1.5 px-3 font-semibold transition" onclick="toggleModeratorRole(\'' + u.id + '\')">' + (userRole === 'moderator' ? 'Utilizador' : 'Moderador') + '</button>';
     html += '<button class="text-xs bg-slate-500 hover:bg-slate-600 text-white rounded-lg py-1.5 px-3 font-semibold transition" onclick="changeUserPassword(\'' + u.id + '\')">Senha</button>';
     html += '<button class="text-xs bg-orange-500 hover:bg-orange-600 text-white rounded-lg py-1.5 px-3 font-semibold transition" onclick="changeUserPhone(\'' + u.id + '\')">Username</button>';
+    html += '<button class="text-xs bg-violet-600 hover:bg-violet-700 text-white rounded-lg py-1.5 px-3 font-semibold transition" onclick="openUserFeaturesModal(\'' + u.id + '\')">🔐 Permissões</button>';
     html += '<button class="text-xs ' + (u.edit_locked ? 'bg-green-600 hover:bg-green-700' : 'bg-yellow-600 hover:bg-yellow-700') + ' text-white rounded-lg py-1.5 px-3 font-semibold transition" onclick="adminToggleEditLock(\'' + u.id + '\',' + !!u.edit_locked + ')">' + (u.edit_locked ? '🔓 Desbloquear Edição' : '🔒 Bloquear Edição') + '</button>';
     
     if (Store.events.some(e => e.userId === u.id)) {
@@ -2727,7 +2728,7 @@ async function createUserAccount(btn) {
     setTimeout(() => btn.closest('.modal-overlay')?.remove(), 1500);
     // Refresh user list
     if (typeof Store !== 'undefined') {
-      const users = await supabaseRequest('accounts?select=id,phone,role,status,event_limit,admin_label,created_at&order=created_at.desc');
+      const users = await supabaseRequest('accounts?select=id,phone,role,status,event_limit,admin_label,allowed_features,created_at&order=created_at.desc');
       if (users) Store.users = users;
     }
   } else {
@@ -4150,4 +4151,75 @@ async function renderAdminLeadsPanel() {
         </div>`;
       }).join('')}`;
   } catch(e) { console.warn('Erro ao carregar leads:', e); }
+}
+
+// ── Sistema de permissões por utilizador ─────────────────────────────────
+// Admin God pode activar/desactivar funcionalidades individualmente ou
+// em bloco para cada utilizador. Sem restrições definidas = tudo activo.
+const FEATURE_DEFS = [
+  { key:'view_as_guest',  label:'Ver como Convidado' },
+  { key:'export_list',    label:'Exportar Lista' },
+  { key:'download_pdf',   label:'Baixar PDF' },
+  { key:'download_gifts_pdf', label:'Baixar Presentes PDF' },
+  { key:'edit_gifts',     label:'Editar Presentes' },
+  { key:'upload_gifts',   label:'Carregar Presentes' },
+  { key:'change_code',    label:'Trocar Código' },
+  { key:'ticket_template',label:'Template Ticket' },
+  { key:'manage_tickets', label:'Gerir Tickets' },
+  { key:'scanner',        label:'Scanner Porta' },
+  { key:'edit_event',     label:'Editar' },
+  { key:'save_the_date',  label:'Save the Date' },
+  { key:'dresscode',      label:'Dress Code + Presentes' },
+  { key:'mark_example',   label:'Marcar como Exemplo' },
+];
+
+function _getFeaturePerms(user) {
+  try { return typeof user.allowed_features === 'string' ? JSON.parse(user.allowed_features) : (user.allowed_features || {}); }
+  catch(e) { return {}; }
+}
+
+async function openUserFeaturesModal(userId) {
+  const user = (Store.users || []).find(u => u.id === userId);
+  if (!user) return;
+  const perms = _getFeaturePerms(user);
+
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.innerHTML = `<div class="modal-content bg-white rounded-2xl p-5" style="max-width:420px;max-height:85vh;overflow-y:auto">
+    <h3 class="text-base font-bold text-gray-800 mb-1">Funcionalidades — ${escapeHTML(user.phone || user.id)}</h3>
+    <p class="text-xs text-gray-500 mb-3">Desmarcar = funcionalidade desactivada para este utilizador.</p>
+    <div class="flex gap-2 mb-3">
+      <button class="btn-main text-xs flex-1" onclick="document.querySelectorAll('.feat-cb').forEach(c=>c.checked=true)">Activar tudo</button>
+      <button class="btn-outline text-xs flex-1" onclick="document.querySelectorAll('.feat-cb').forEach(c=>c.checked=false)">Desactivar tudo</button>
+    </div>
+    <div class="space-y-2 mb-4">
+      ${FEATURE_DEFS.map(f => `
+        <label class="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 cursor-pointer">
+          <input type="checkbox" class="feat-cb w-4 h-4" data-key="${f.key}" ${perms[f.key]===false?'':'checked'}>
+          <span class="text-sm text-gray-700">${escapeHTML(f.label)}</span>
+        </label>`).join('')}
+    </div>
+    <div class="flex gap-2">
+      <button class="flex-1 btn-main" onclick="(async()=>{
+        const cbs = document.querySelectorAll('.feat-cb');
+        const p = {};
+        cbs.forEach(c => { if (!c.checked) p[c.dataset.key] = false; });
+        await supabaseRequest('accounts?id=eq.${userId}','PATCH',{allowed_features:JSON.stringify(p)});
+        const u = (Store.users||[]).find(u=>u.id==='${userId}');
+        if (u) u.allowed_features = p;
+        toast('Permissões guardadas!');
+        this.closest('.modal-overlay').remove();
+      })()">Guardar</button>
+      <button class="flex-1 btn-outline" onclick="this.closest('.modal-overlay').remove()">Cancelar</button>
+    </div>
+  </div>`;
+  document.body.appendChild(modal);
+}
+
+// Verificar se o utilizador actual tem acesso a uma funcionalidade
+function userHasFeature(featureKey) {
+  if (!Store.currentUser || Store.currentUser.role === 'admin') return true;
+  const user = (Store.users || []).find(u => u.id === Store.currentUser.id) || Store.currentUser;
+  const perms = _getFeaturePerms(user);
+  return perms[featureKey] !== false; // por omissão, tudo activo
 }
