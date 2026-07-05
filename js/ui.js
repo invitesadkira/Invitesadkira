@@ -1369,6 +1369,19 @@ function clearCardBg() {
   if (c) c.style.display = 'none';
 }
 
+async function handleCouplePhotoUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+  toast('A carregar foto do casal...');
+  const url = await uploadImageToStorage(file, 'event-covers', 'Foto casal');
+  if (url) {
+    document.getElementById('evt-couple-photo-url').value = url;
+    const p = document.getElementById('couple-photo-preview');
+    if (p) { p.src = url; p.style.display = ''; }
+    toast('Foto carregada!');
+  }
+}
+
 function changeBodyTextSize(delta) {
   const inp = document.getElementById('evt-body-text-scale');
   const lbl = document.getElementById('body-text-size-label');

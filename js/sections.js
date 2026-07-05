@@ -679,6 +679,7 @@ async function renderGuestSections(eventData) {
         case 'dresscode': if (_yesOrTrue(eventData.show_dress_gifts ?? 'yes')) html += buildDressGiftsSection(eventData); break;
         case 'couplemsg': if (_yesOrTrue(eventData.show_couplemsg) && eventData.couplemsg_text) html += buildCoupleMsgSection(eventData); break;
         case 'final_photo': if (_yesOrTrue(eventData.show_final_photo) && eventData.final_photo_url) html += buildFinalPhotoSection(eventData); break;
+        case 'couple_photo': if (eventData.couple_photo_url) html += buildCouplePhotoSection(eventData); break;
         case 'event_faq': if (_yesOrTrue(eventData.show_event_faq) && eventData.event_faq_items) html += buildEventFaqSection(eventData); break;
         case 'messages':
           // ✅ Independente da confirmação de presença: aparece sempre que
@@ -1300,6 +1301,36 @@ function buildParentsSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
   </div>`;
 }
 
+function buildGiftStoresHTML(ev, evColor) {
+  let stores = [];
+  try { stores = JSON.parse(ev.gift_stores || '[]'); } catch(e) {}
+  if (!stores.length) return '';
+  return `<div style="margin-top:1.5rem">
+    <p style="font-size:0.7rem;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:${evColor};margin-bottom:0.75rem;text-align:center">Lojas sugeridas</p>
+    <div style="display:flex;flex-direction:column;gap:0.75rem">
+      ${stores.map(s => `
+        <div class="gift-store-card" style="background:#fff;border:1px solid #e5e7eb;border-radius:1rem;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.06)">
+          <div style="display:flex;align-items:center;gap:0.75rem;padding:0.85rem 1rem;cursor:pointer" onclick="this.closest('.gift-store-card').querySelector('.store-items').classList.toggle('hidden')">
+            ${s.logo_url ? `<img src="${escapeHTML(s.logo_url)}" style="width:40px;height:40px;object-fit:contain;border-radius:0.4rem;flex-shrink:0">` : `<div style="width:40px;height:40px;background:color-mix(in srgb,${evColor} 12%,white);border-radius:0.4rem;flex-shrink:0;display:flex;align-items:center;justify-content:center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="${evColor}" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg></div>`}
+            <div style="flex:1">
+              <p style="font-weight:700;color:#1e293b;font-size:0.9rem;margin:0">${escapeHTML(s.name||'Loja')}</p>
+              ${s.url ? `<p style="font-size:0.7rem;color:${evColor};margin:0">Ver loja →</p>` : ''}
+            </div>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+          <div class="store-items hidden" style="border-top:1px solid #f3f4f6;padding:0.5rem 1rem 0.75rem">
+            ${(s.items||[]).map(it => `
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:0.4rem 0;border-bottom:1px solid #f9fafb">
+                <span style="font-size:0.82rem;color:#374151">${escapeHTML(it.name||'')}</span>
+                ${it.price ? `<span style="font-size:0.78rem;font-weight:700;color:${evColor}">${escapeHTML(it.price)}</span>` : ''}
+              </div>`).join('')}
+            ${s.url ? `<a href="${escapeHTML(s.url)}" target="_blank" style="display:block;text-align:center;margin-top:0.6rem;font-size:0.78rem;font-weight:700;color:${evColor};text-decoration:none;padding:0.5rem;background:color-mix(in srgb,${evColor} 10%,white);border-radius:0.5rem">Visitar loja completa →</a>` : ''}
+          </div>
+        </div>`).join('')}
+    </div>
+  </div>`;
+}
+
 function buildIbanSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
   const evColor = ev.event_color || '#007f9f';
   const msgLines = (ev.iban_message || '').split('\n').map(l => `<p style="color:#374151;font-size:calc(0.92rem * var(--ev-body-scale,1));line-height:1.7;text-align:center">${escapeHTML(l)}</p>`).join('');
@@ -1335,6 +1366,7 @@ function buildIbanSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
         </button>
         ${ev.iban_footer ? `<p class="text-xs text-gray-400 mt-3 text-right italic">${escapeHTML(ev.iban_footer)}</p>` : ''}
       </div>
+      ${ev.gift_stores ? buildGiftStoresHTML(ev, ev.event_color||'#007f9f') : ''}
     </div>
   </div>`;
 }
@@ -2227,6 +2259,7 @@ const ALL_SECTION_DEFS = [
   { key: 'dresscode',  label: 'Dress Code + Sugestão de Presentes',     icon: 'shirt' },
   { key: 'couplemsg',   label: 'Mensagem dos Noivos',                   icon: 'message-circle' },
   { key: 'final_photo', label: 'Foto Final dos Noivos',                 icon: 'image' },
+  { key: 'couple_photo', label: 'Foto de Fundo do Casal',               icon: 'heart' },
   { key: 'event_faq',   label: 'Perguntas Frequentes',                  icon: 'help-circle' },
   { key: 'messages',    label: 'Recados / Correio do Amor',             icon: 'message-square-heart' },
   { key: 'custom_text', label: 'Texto Personalizado',                   icon: 'file-text' },
@@ -2566,6 +2599,15 @@ async function openIconPickerModal(category, onSelect) {
 }
 
 // ── Foto final dos noivos ──────────────────────────────────────────────────
+function buildCouplePhotoSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
+  if (!ev.couple_photo_url) return '';
+  return _SD + `<div class="event-section" style="padding:0;overflow:hidden">
+    <div style="width:100%;height:280px;background-image:url('${ev.couple_photo_url}');background-size:cover;background-position:center;position:relative">
+      <div style="position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,0.1),rgba(0,0,0,0.35))"></div>
+    </div>
+  </div>`;
+}
+
 function buildFinalPhotoSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
   const hasNames = !!(ev.groom_name || ev.bride_name);
   const namesHtml = `${escapeHTML(ev.groom_name||'')}${ev.groom_name&&ev.bride_name?' &amp; ':''}${escapeHTML(ev.bride_name||'')}`;

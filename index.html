@@ -16,11 +16,11 @@
   <!-- PDF.js: renderizar PDFs como canvas (pré-visualização do template) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <!-- QRCode: gerador local, sem dependência CDN -->
-  <script src="js/qrcode-mini.js?v=1783237555"></script>
+  <script src="js/qrcode-mini.js?v=1783253847"></script>
   <script>tailwind.config = { theme: { extend: { colors: { teal: { 500: '#007f9f', 600: '#006b86' } } } } }</script>
   <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.js"></script>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💌</text></svg>">
-  <link rel="stylesheet" href="css/main.css?v=1783237555">
+  <link rel="stylesheet" href="css/main.css?v=1783253847">
 </head>
 <body class="h-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
 
@@ -883,6 +883,18 @@ para testemunhar o seu enlace matrimonial</textarea>
          </div>
         </div>
        </div><!-- /pane foto-final -->
+       <div class="event-tab-pane hidden" data-tab="foto-casal">
+        <!-- Foto de fundo do casal -->
+        <div class="flex items-center justify-between mb-1">
+         <span class="text-sm font-semibold text-gray-700">Secção com Foto do Casal</span>
+        </div>
+        <p class="text-xs text-gray-400 mb-3">Uma secção com a foto do casal a ocupar todo o fundo — aparece entre as secções do convite como um momento visual de destaque. Ideal para uma foto horizontal do casal.</p>
+        <input type="file" id="evt-couple-photo-input" accept="image/*" class="input-field text-sm mb-1" onchange="handleCouplePhotoUpload(this)">
+        <button type="button" class="text-xs text-teal-600 font-semibold mb-2 block" onclick="openMediaLibraryPicker((url) => { document.getElementById('evt-couple-photo-url').value=url; const p=document.getElementById('couple-photo-preview'); if(p){p.src=url;p.style.display='';} })">📁 Escolher da Biblioteca</button>
+        <input type="hidden" id="evt-couple-photo-url">
+        <img id="couple-photo-preview" class="rounded-lg max-h-32 object-cover w-full" style="display:none;max-width:240px">
+        <p class="text-xs text-gray-400 mt-1">Deixe vazio para não mostrar esta secção.</p>
+       </div><!-- /pane foto-casal -->
        <div class="event-tab-pane hidden" data-tab="faq">
         <!-- Perguntas Frequentes -->
         <div class="flex items-center justify-between">
@@ -1558,21 +1570,21 @@ para testemunhar o seu enlace matrimonial</textarea>
   </a>
 
   <!-- ===================== SCRIPTS (ordem importa) ===================== -->
-  <script src="js/config.js?v=1783237555"></script>
-  <script src="js/store.js?v=1783237555"></script>
-  <script src="js/visuals.js?v=1783237555"></script>
-  <script src="js/venues.js?v=1783237555"></script>
-  <script src="js/rsvp.js?v=1783237555"></script>
-  <script src="js/ui.js?v=1783237555"></script>
-  <script src="js/auth.js?v=1783237555"></script>
-  <script src="js/dashboard.js?v=1783237555"></script>
-  <script src="js/events.js?v=1783237555"></script>
-  <script src="js/intake-wizard.js?v=1783237555"></script>
-  <script src="js/tickets.js?v=1783237555"></script>
-  <script src="js/guest.js?v=1783237555"></script>
-  <script src="js/sections.js?v=1783237555"></script>
-  <script src="js/admin.js?v=1783237555"></script>
-  <script src="js/router.js?v=1783237555"></script>
+  <script src="js/config.js?v=1783253847"></script>
+  <script src="js/store.js?v=1783253847"></script>
+  <script src="js/visuals.js?v=1783253847"></script>
+  <script src="js/venues.js?v=1783253847"></script>
+  <script src="js/rsvp.js?v=1783253847"></script>
+  <script src="js/ui.js?v=1783253847"></script>
+  <script src="js/auth.js?v=1783253847"></script>
+  <script src="js/dashboard.js?v=1783253847"></script>
+  <script src="js/events.js?v=1783253847"></script>
+  <script src="js/intake-wizard.js?v=1783253847"></script>
+  <script src="js/tickets.js?v=1783253847"></script>
+  <script src="js/guest.js?v=1783253847"></script>
+  <script src="js/sections.js?v=1783253847"></script>
+  <script src="js/admin.js?v=1783253847"></script>
+  <script src="js/router.js?v=1783253847"></script>
 
 </body>
 </html>

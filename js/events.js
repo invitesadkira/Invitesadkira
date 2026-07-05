@@ -904,6 +904,7 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
           couplemsg_text: document.getElementById('evt-couplemsg-text')?.value?.trim() || null,
           show_final_photo: document.getElementById('sw-final-photo')?.classList.contains('active') ? 'yes' : 'no',
           final_photo_url: document.getElementById('evt-final-photo-url')?.value || null,
+          couple_photo_url: document.getElementById('evt-couple-photo-url')?.value || null,
           show_event_faq: document.getElementById('sw-event-faq')?.classList.contains('active') ? 'yes' : 'no',
           event_faq_items: (Store.eventFaqItems && Store.eventFaqItems.length) ? JSON.stringify(Store.eventFaqItems) : null,
           schedule_style: document.getElementById('evt-schedule-style')?.value || 'timeline',
@@ -1047,12 +1048,13 @@ function renderEventDetails() {
   const event = Store.events.find(e => e.id === Store.currentEventId);
   if (!event) { Router.go('not-found'); return; }
 
-  // ✅ Delegação de eventos para botões de ticket — evita onclick inline
-  // com JSON.stringify que quebra com nomes que têm aspas ou carateres especiais
+  // ✅ Delegação de eventos para botões de ticket
   document.getElementById('confirmations-list')?.addEventListener('click', e => {
     const btn = e.target.closest('.ticket-gen-btn');
     if (btn) generateGuestTicket(btn.dataset.name, btn.dataset.token);
   });
+
+  // Show intake link only for admin
   const intakeBtn = document.getElementById('btn-intake-link');
   if (intakeBtn) intakeBtn.style.display = (Store.currentUser?.role === 'admin') ? 'inline-flex' : 'none';
 
@@ -2072,6 +2074,8 @@ function _fillEditForm(ev) {
   _setSwitch('sw-final-photo', _yesOrTrue(ev.show_final_photo), 'final-photo-extra');
   { const fpUrl=document.getElementById('evt-final-photo-url'); const fpPrev=document.getElementById('final-photo-preview'); const fpWrap=document.getElementById('final-photo-preview-wrap');
     if(ev.final_photo_url){if(fpUrl)fpUrl.value=ev.final_photo_url;if(fpPrev)fpPrev.src=ev.final_photo_url;fpWrap?.classList.remove('hidden');} }
+  { const cp=document.getElementById('evt-couple-photo-url'); const cpP=document.getElementById('couple-photo-preview');
+    if(ev.couple_photo_url){if(cp)cp.value=ev.couple_photo_url;if(cpP){cpP.src=ev.couple_photo_url;cpP.style.display='';}} }
   _setSwitch('sw-event-faq', _yesOrTrue(ev.show_event_faq), 'event-faq-extra');
   try { Store.eventFaqItems = ev.event_faq_items ? JSON.parse(ev.event_faq_items) : []; } catch(e) { Store.eventFaqItems = []; }
   renderEventFaqList();
@@ -4634,6 +4638,15 @@ async function openDressGiftsEditor() {
         <span class="text-xs font-semibold ${allowGifts ? 'text-green-600' : 'text-gray-400'}">${allowGifts ? '✓ Activo' : '✗ Desligado'}</span>
       </div>
       <p class="text-xs text-gray-400 mb-3">Segue a opção "Permitir Presentes" do formulário principal do evento — ${allowGifts ? 'está activa, o botão aparece.' : 'está desligada, o botão não aparece. Liga "Permitir Presentes" no formulário principal para activar.'}</p>
+
+      <!-- Lista de Lojas -->
+      <div style="border-top:1px solid #f3f4f6;padding-top:0.75rem;margin-top:0.5rem">
+        <p class="text-xs font-bold text-gray-700 mb-1">Lojas de Presentes</p>
+        <p class="text-xs text-gray-400 mb-2">Adicione uma ou mais lojas. Cada loja pode ter o seu logo, link e uma lista de artigos. O convidado clica na loja e vê os artigos disponíveis.</p>
+        <div id="dg2-stores-list"></div>
+        <button type="button" class="btn-outline text-xs w-full mt-1" onclick="addGiftStore()">+ Adicionar Loja</button>
+        <input type="hidden" id="dg2-gift-stores" value="${escapeHTML(JSON.stringify(d.gift_stores ? (typeof d.gift_stores === 'string' ? JSON.parse(d.gift_stores) : d.gift_stores) : []))}">
+      </div>
     </div>
 
     <div class="flex gap-2 mt-2">
@@ -4644,7 +4657,47 @@ async function openDressGiftsEditor() {
   document.body.appendChild(modal);
   updateDressCodeSwatches(d.dresscode_colors || '');
   renderDresscodeImagesPreview();
+  // Renderizar lojas
+  _renderGiftStoresList();
   lucide.createIcons();
+}
+
+// ── Lista de Lojas de Presentes ─────────────────────────────────────────
+function _getGiftStores() {
+  try { return JSON.parse(document.getElementById('dg2-gift-stores')?.value || '[]'); } catch(e) { return []; }
+}
+function _saveGiftStores(stores) {
+  const el = document.getElementById('dg2-gift-stores');
+  if (el) el.value = JSON.stringify(stores);
+}
+function _renderGiftStoresList() {
+  const stores = _getGiftStores();
+  const list   = document.getElementById('dg2-stores-list');
+  if (!list) return;
+  list.innerHTML = stores.map((s, si) => `
+    <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:0.75rem;padding:0.75rem;margin-bottom:0.6rem">
+      <div class="flex items-center gap-2 mb-2">
+        ${s.logo_url ? `<img src="${escapeHTML(s.logo_url)}" style="width:32px;height:32px;object-fit:contain;border-radius:4px">` : '<div style="width:32px;height:32px;background:#e5e7eb;border-radius:4px"></div>'}
+        <input class="input-field text-xs flex-1" placeholder="Nome da loja" value="${escapeHTML(s.name||'')}" oninput="(()=>{const st=_getGiftStores();st[${si}].name=this.value;_saveGiftStores(st)})()">
+        <button type="button" onclick="(()=>{const st=_getGiftStores();st.splice(${si},1);_saveGiftStores(st);_renderGiftStoresList()})()" style="color:#ef4444;background:none;border:none;cursor:pointer;font-size:1rem">×</button>
+      </div>
+      <input class="input-field text-xs mb-1" placeholder="Link da loja (URL)" value="${escapeHTML(s.url||'')}" oninput="(()=>{const st=_getGiftStores();st[${si}].url=this.value;_saveGiftStores(st)})()">
+      <input class="input-field text-xs mb-2" placeholder="URL do logo (imagem)" value="${escapeHTML(s.logo_url||'')}" oninput="(()=>{const st=_getGiftStores();st[${si}].logo_url=this.value;_saveGiftStores(st);_renderGiftStoresList()})()">
+      <p class="text-xs text-gray-500 mb-1 font-semibold">Artigos desta loja:</p>
+      ${(s.items||[]).map((it,ii) => `
+        <div class="flex gap-1 mb-1">
+          <input class="input-field text-xs flex-1" placeholder="Nome do artigo" value="${escapeHTML(it.name||'')}" oninput="(()=>{const st=_getGiftStores();st[${si}].items[${ii}].name=this.value;_saveGiftStores(st)})()">
+          <input class="input-field text-xs" style="width:70px" placeholder="Preço" value="${escapeHTML(it.price||'')}" oninput="(()=>{const st=_getGiftStores();st[${si}].items[${ii}].price=this.value;_saveGiftStores(st)})()">
+          <button type="button" onclick="(()=>{const st=_getGiftStores();st[${si}].items.splice(${ii},1);_saveGiftStores(st);_renderGiftStoresList()})()" style="color:#ef4444;background:none;border:none;cursor:pointer">×</button>
+        </div>`).join('')}
+      <button type="button" class="text-xs text-teal-600 font-semibold mt-1" onclick="(()=>{const st=_getGiftStores();if(!st[${si}].items)st[${si}].items=[];st[${si}].items.push({name:'',price:'',url:''});_saveGiftStores(st);_renderGiftStoresList()})()">+ Artigo</button>
+    </div>`).join('');
+}
+function addGiftStore() {
+  const stores = _getGiftStores();
+  stores.push({ name:'', logo_url:'', url:'', items:[] });
+  _saveGiftStores(stores);
+  _renderGiftStoresList();
 }
 
 // ── Galeria de fotos do Dress Code (pode ter várias) ────────────────────
@@ -4703,6 +4756,7 @@ async function saveDressGiftsEditor() {
     dresscode_detail: document.getElementById('dg2-dresscode-detail')?.value?.trim() || null,
     dresscode_image_urls: document.getElementById('dg2-dresscode-image-urls')?.value?.trim() || null,
     dresscode_image_url: null,
+    gift_stores: document.getElementById('dg2-gift-stores')?.value || '[]',
   };
 
   toast('A guardar...');
