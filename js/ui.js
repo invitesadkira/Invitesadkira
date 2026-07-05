@@ -958,6 +958,27 @@ function toggleStdMusicMute() {
 }
 
 function startMusicAutoplay(ytId, audioSrc) {
+  // ✅ Retomar música automaticamente quando o utilizador volta ao separador
+  // O browser pausa o áudio quando a aba vai para segundo plano — ao voltar,
+  // tentamos retomar. Só regista o listener uma vez.
+  if (!window._musicVisibilityListenerAdded) {
+    window._musicVisibilityListenerAdded = true;
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState !== 'visible') return;
+      // Retomar áudio directo
+      const audio = document.getElementById('guest-music-audio');
+      if (audio && audio.src && !audio.paused === false) {
+        audio.play().catch(() => {});
+      }
+      // Retomar YouTube
+      const ytFrame = document.getElementById('yt-music-frame');
+      if (ytFrame && ytFrame.dataset.playing === '1') {
+        try {
+          ytFrame.contentWindow?.postMessage(JSON.stringify({ event:'command', func:'playVideo', args:[] }), '*');
+        } catch(e) {}
+      }
+    });
+  }
   const icon = document.getElementById('music-play-icon');
   const eq   = document.getElementById('music-equalizer');
   const sub  = document.getElementById('music-sub-text');

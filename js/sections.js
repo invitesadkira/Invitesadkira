@@ -1208,51 +1208,62 @@ function buildStorySection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
     </div>`;
   }
 
-  // Parse story text: chapters separated by double newline
-  // Each chapter: first line = date/title, rest = body text
-  const chapters = ev.story_text.split(/\n\n+/).filter(c => c.trim());
+  // Parse story text — detectar capítulos mesmo sem parágrafos duplos.
+  // Suporta separadores escritos numa só linha como "2020 - texto 2021 - texto"
+  let rawText = ev.story_text;
+  // Primeiro tentar por parágrafo duplo
+  let chapters = rawText.split(/\n\n+/).filter(c => c.trim());
 
-  const heartSvg = `<svg width="18" height="18" viewBox="0 0 24 24" fill="${evColor}" xmlns="http://www.w3.org/2000/svg"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>`;
-
+  // Se só tiver 1 bloco, tentar detectar padrão "ANO - texto" ou "ANO — texto"
   if (chapters.length <= 1) {
-    // Plain text fallback
+    // Dividir antes de dígitos (4) que aparecem após texto, ex: "...vidas 2023 - "
+    const autoSplit = rawText.split(/(?=\b\d{4}\s*[-–—])/).filter(c => c.trim());
+    if (autoSplit.length > 1) chapters = autoSplit;
+  }
+
+  const heartSvg = `<svg width="18" height="18" viewBox="0 0 24 24" fill="${evColor}"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>`;
+
+  // ✅ Estilo ZIGZAG — ativado pelo selector ou quando há múltiplos capítulos
+  if (storyStyle === 'zigzag' || (storyStyle !== 'centered' && chapters.length > 1) || (storyStyle === 'centered' && chapters.length > 1)) {
+    const rows = chapters.map((ch, i) => {
+      const trimmed = ch.trim();
+      const lines = trimmed.split('\n');
+      // Se for uma linha só, tentar separar "ANO - Título" do resto
+      let titleLine = lines[0] || '';
+      let body = lines.slice(1).join(' ').trim();
+
+      // Se o título for muito longo (toda a história numa linha), tentar separar pelo primeiro " - " ou " — "
+      if (!body && titleLine.length > 60) {
+        const sepMatch = titleLine.match(/^(.{4,40}?)\s*[-–—]\s*(.+)$/);
+        if (sepMatch) { titleLine = sepMatch[1].trim(); body = sepMatch[2].trim(); }
+      }
+      const isLeft = i % 2 === 0;
+      const card = `<div class="story-card ${isLeft ? 'story-left' : 'story-right'} reveal" style="background:transparent;border:none;box-shadow:none;padding:0.5rem 0.9rem">
+        <div class="story-date" style="font-size:0.65rem;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:${evColor};margin-bottom:0.2rem">${escapeHTML(titleLine)}</div>
+        ${body ? `<p class="story-body" style="font-size:${(storySize*0.89).toFixed(2)}rem;color:#4b5563;line-height:1.55;margin:0">${escapeHTML(body)}</p>` : ''}
+      </div>`;
+      const node = `<div class="story-node" style="width:10px;height:10px;border-radius:50%;background:${evColor};flex-shrink:0;position:relative;z-index:3;box-shadow:0 0 0 3px #fff,0 0 0 4px color-mix(in srgb,${evColor} 30%,transparent)"></div>`;
+      const empty = `<div></div>`;
+      return `<div class="story-row">${isLeft ? card : empty}${node}${isLeft ? empty : card}</div>`;
+    }).join('');
+
     return _SD + `<div class="event-section story-section">
-      <div class="section-inner" style="text-align:center">
-        <div class="reveal">
-          <h2 class="section-title">Nossa História</h2>
-          <p class="story-text" style="font-size:${storySize}rem">${escapeHTML(ev.story_text)}</p>
+      <div class="section-inner">
+        <h2 class="section-title reveal" style="text-align:center;margin-bottom:2.5rem">Nossa História</h2>
+        <div class="story-timeline" style="--ev-color:${evColor}">
+          <div class="story-line"></div>
+          ${rows}
         </div>
       </div>
     </div>`;
   }
 
-  // Zigzag timeline
-  const rows = chapters.map((ch, i) => {
-    const lines = ch.trim().split('\n');
-    const titleLine = lines[0] || '';
-    const body = lines.slice(1).join(' ').trim();
-    const isLeft = i % 2 === 0;
-
-    const card = `<div class="story-card ${isLeft ? 'story-left' : 'story-right'} reveal" style="background:transparent;border:none;box-shadow:none;padding:0.5rem 0.9rem">
-      <div class="story-date" style="font-size:0.65rem;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:${evColor};margin-bottom:0.2rem">${escapeHTML(titleLine)}</div>
-      ${body ? `<p class="story-body" style="font-size:${(storySize*0.89).toFixed(2)}rem;color:#4b5563;line-height:1.55;margin:0">${escapeHTML(body)}</p>` : ''}
-    </div>`;
-    const node = `<div class="story-node" style="width:10px;height:10px;border-radius:50%;background:${evColor};flex-shrink:0;position:relative;z-index:3;box-shadow:0 0 0 3px #fff,0 0 0 4px color-mix(in srgb,${evColor} 30%,transparent);transition:width 0.3s ease,height 0.3s ease;"></div>`;
-    const empty = `<div></div>`;
-
-    return `<div class="story-row">
-      ${isLeft ? card : empty}
-      ${node}
-      ${isLeft ? empty : card}
-    </div>`;
-  }).join('');
-
+  // Fallback: texto centrado simples
   return _SD + `<div class="event-section story-section">
-    <div class="section-inner">
-      <h2 class="section-title reveal" style="text-align:center;margin-bottom:2.5rem">Nossa História</h2>
-      <div class="story-timeline" style="--ev-color:${evColor}">
-        <div class="story-line"></div>
-        ${rows}
+    <div class="section-inner" style="text-align:center">
+      <div class="reveal">
+        <h2 class="section-title">Nossa História</h2>
+        <p class="story-text" style="font-size:${storySize}rem">${escapeHTML(ev.story_text)}</p>
       </div>
     </div>
   </div>`;
@@ -1304,6 +1315,17 @@ function buildParentsSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
   </div>`;
 }
 
+
+// Detecta se um URL é do Google Maps e escolhe o label certo
+function _storeUrlLabel(url) {
+  if (!url) return '';
+  const isMaps = url.includes('maps.google') || url.includes('maps.app.goo') || 
+                 url.includes('goo.gl/maps') || url.includes('google.com/maps');
+  return isMaps 
+    ? '📍 Localização no Google Maps'
+    : '🏪 Visitar loja completa';
+}
+
 function buildGiftStoresHTML(ev, evColor) {
   let stores = [];
   try { stores = JSON.parse(ev.gift_stores || '[]'); } catch(e) {}
@@ -1325,7 +1347,7 @@ function buildGiftStoresHTML(ev, evColor) {
             <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:${items.length?'0.6rem':'0'}">
               ${s.logo_url ? `<img src="${escapeHTML(s.logo_url)}" style="width:36px;height:36px;object-fit:contain;border-radius:4px;flex-shrink:0">` : ''}
               <span style="font-weight:700;color:#1e293b;font-size:0.9rem">${escapeHTML(s.name||'')}</span>
-              ${s.url ? `<a href="${escapeHTML(s.url)}" target="_blank" style="margin-left:auto;font-size:0.7rem;color:${evColor};font-weight:700;text-decoration:none">Ver loja →</a>` : ''}
+              ${s.url ? `<a href="${escapeHTML(s.url)}" target="_blank" style="display:inline-flex;align-items:center;gap:0.3rem;font-size:0.75rem;color:${evColor};font-weight:700;text-decoration:none;background:color-mix(in srgb,${evColor} 8%,white);padding:0.3rem 0.65rem;border-radius:0.4rem">${_storeUrlLabel(s.url)}</a>` : ''}
             </div>
             ${items.map(it => `<div style="display:flex;justify-content:space-between;padding:0.3rem 0;border-bottom:1px solid #f3f4f6">
               ${it.url ? `<a href="${escapeHTML(it.url)}" target="_blank" style="font-size:0.82rem;color:#374151;text-decoration:none">${escapeHTML(it.name)}</a>` : `<span style="font-size:0.82rem;color:#374151">${escapeHTML(it.name)}</span>`}
@@ -1378,7 +1400,7 @@ window._openGiftStoresModal = function(btn) {
               ${s.logo_url ? `<img src="${escapeHTML(s.logo_url)}" style="width:44px;height:44px;object-fit:contain;border-radius:0.5rem;flex-shrink:0;background:#fff;border:1px solid #f3f4f6">` : `<div style="width:44px;height:44px;background:color-mix(in srgb,${color} 10%,white);border-radius:0.5rem;flex-shrink:0;display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg></div>`}
               <div style="flex:1">
                 <p style="font-weight:800;color:#1e293b;font-size:1rem;margin:0">${escapeHTML(s.name||'')}</p>
-                ${s.url ? `<a href="${escapeHTML(s.url)}" target="_blank" style="font-size:0.72rem;color:${color};font-weight:700;text-decoration:none">Visitar loja completa →</a>` : ''}
+                ${s.url ? `<a href="${escapeHTML(s.url)}" target="_blank" style="display:inline-flex;align-items:center;gap:0.35rem;font-size:0.78rem;color:${color};font-weight:700;text-decoration:none;background:color-mix(in srgb,${color} 10%,white);padding:0.4rem 0.85rem;border-radius:0.5rem;border:1px solid color-mix(in srgb,${color} 25%,transparent);margin-top:0.5rem">${_storeUrlLabel(s.url)}</a>` : ''}
               </div>
             </div>
             ${items.length ? `<div style="border-top:1px solid #f3f4f6;padding:0.5rem 1rem 0.75rem">

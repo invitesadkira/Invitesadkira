@@ -516,6 +516,13 @@ async function renderGuestView() {
   _loadGoogleFontIfNeeded(eventData.body_font_family);
   document.documentElement.style.setProperty('--ev-body-font', eventData.body_font_family ? `'${eventData.body_font_family}', sans-serif` : 'inherit');
   document.documentElement.style.setProperty('--ev-body-scale', (parseFloat(eventData.body_text_scale) || 100) / 100);
+  // ✅ Cor de fundo personalizada — aplica à página toda do convidado
+  if (eventData.bg_color) {
+    document.body.style.background = eventData.bg_color;
+    document.getElementById('screen-guest')?.style.setProperty('background', eventData.bg_color);
+    const gsc = document.getElementById('guest-sections-container');
+    if (gsc) gsc.style.background = eventData.bg_color;
+  }
 
   // ── Texto bíblico: negrito, itálico, e fonte própria (opcional) ──
   _loadGoogleFontIfNeeded(eventData.bible_font_family);
