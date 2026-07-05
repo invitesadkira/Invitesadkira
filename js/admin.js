@@ -4230,67 +4230,93 @@ async function renderStorageBar() {
   const container = document.getElementById('admin-storage-bar');
   if (!container) return;
   container.innerHTML = `<div style="background:#fff;border-radius:1rem;padding:1rem 1.25rem;margin-bottom:0.5rem;border:1px solid #e5e7eb">
-    <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.6rem">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-      <span style="font-size:0.8rem;font-weight:700;color:#374151">Armazenamento Supabase</span>
-      <span id="storage-refreshing" style="font-size:0.7rem;color:#9ca3af">A calcular...</span>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.6rem">
+      <div style="display:flex;align-items:center;gap:0.5rem">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        <span style="font-size:0.8rem;font-weight:700;color:#374151">Armazenamento Supabase</span>
+      </div>
+      <button onclick="renderStorageBar()" style="font-size:0.65rem;color:#6b7280;background:none;border:none;cursor:pointer">🔄 Actualizar</button>
     </div>
-    <div id="storage-bar-wrap"></div>
+    <div id="storage-bar-wrap"><p style="font-size:0.75rem;color:#9ca3af">A calcular...</p></div>
   </div>`;
 
   try {
-    // Listar todos os ficheiros nos buckets públicos
     const buckets = ['event-covers', 'ticket-templates'];
     let totalBytes = 0;
     const bucketStats = [];
 
     for (const bucket of buckets) {
       let bucketBytes = 0;
-      let page = 0;
+      let offset = 0;
       let hasMore = true;
-      while (hasMore) {
-        const files = await fetch(`${SUPABASE_URL}/storage/v1/object/list/${bucket}`, {
-          method: 'POST',
-          headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ limit: 100, offset: page * 100 })
-        }).then(r => r.json()).catch(() => []);
 
-        if (!Array.isArray(files) || !files.length) { hasMore = false; break; }
-        files.forEach(f => { if (f.metadata && f.metadata.size) bucketBytes += f.metadata.size; });
+      while (hasMore) {
+        const res = await fetch(`${SUPABASE_URL}/storage/v1/object/list/${bucket}`, {
+          method: 'POST',
+          headers: {
+            'apikey': SUPABASE_ANON_KEY,
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ limit: 100, offset, prefix: '', sortBy: { column: 'name', order: 'asc' } })
+        });
+
+        if (!res.ok) { hasMore = false; break; }
+        const files = await res.json();
+        if (!Array.isArray(files) || files.length === 0) { hasMore = false; break; }
+
+        files.forEach(f => {
+          // Supabase retorna o tamanho em f.metadata.size OU f.metadata.contentLength
+          const sz = f.metadata?.size || f.metadata?.contentLength || 0;
+          bucketBytes += sz;
+        });
+
         if (files.length < 100) hasMore = false;
-        page++;
+        else offset += 100;
       }
+
       totalBytes += bucketBytes;
       bucketStats.push({ name: bucket, bytes: bucketBytes });
     }
 
-    // Supabase free tier: 1GB storage (1,073,741,824 bytes)
+    // Supabase Free tier: 1GB ficheiros (1,073,741,824 bytes)
+    // Nota: este valor é só para ficheiros (Storage). A base de dados (PostgreSQL)
+    // tem um limite separado de 500MB que não é possível consultar aqui.
     const LIMIT = 1 * 1024 * 1024 * 1024;
     const usedPct = Math.min(100, (totalBytes / LIMIT) * 100);
     const color = usedPct > 85 ? '#ef4444' : usedPct > 60 ? '#f59e0b' : '#22c55e';
 
-    const fmt = (b) => b < 1024 ? b + ' B' : b < 1024*1024 ? (b/1024).toFixed(1) + ' KB' : b < 1024*1024*1024 ? (b/1024/1024).toFixed(1) + ' MB' : (b/1024/1024/1024).toFixed(2) + ' GB';
+    const fmt = (b) => {
+      if (b === 0) return '0 B';
+      if (b < 1024) return b + ' B';
+      if (b < 1024*1024) return (b/1024).toFixed(1) + ' KB';
+      if (b < 1024*1024*1024) return (b/1024/1024).toFixed(1) + ' MB';
+      return (b/1024/1024/1024).toFixed(2) + ' GB';
+    };
 
-    document.getElementById('storage-refreshing').textContent = '';
     document.getElementById('storage-bar-wrap').innerHTML = `
       <div style="display:flex;justify-content:space-between;font-size:0.72rem;color:#6b7280;margin-bottom:0.35rem">
-        <span>${fmt(totalBytes)} usados</span>
-        <span>${fmt(LIMIT - totalBytes)} livres de 1 GB</span>
+        <span><strong style="color:#1e293b">${fmt(totalBytes)}</strong> usados de ficheiros</span>
+        <span><strong style="color:#1e293b">${fmt(LIMIT - totalBytes)}</strong> livres</span>
       </div>
-      <div style="height:18px;background:#f3f4f6;border-radius:999px;overflow:hidden;position:relative">
-        <div style="height:100%;width:${usedPct.toFixed(1)}%;background:linear-gradient(90deg,${color},${color}cc);border-radius:999px;transition:width 0.8s ease;display:flex;align-items:center;justify-content:flex-end;padding-right:6px">
-          ${usedPct > 10 ? `<span style="font-size:0.6rem;font-weight:800;color:#fff">${usedPct.toFixed(1)}%</span>` : ''}
+      <div style="height:18px;background:#f3f4f6;border-radius:999px;overflow:hidden">
+        <div style="height:100%;width:${Math.max(1,usedPct).toFixed(1)}%;background:linear-gradient(90deg,${color},${color}cc);border-radius:999px;display:flex;align-items:center;justify-content:flex-end;padding-right:6px;transition:width 0.8s ease">
+          ${usedPct > 8 ? `<span style="font-size:0.6rem;font-weight:800;color:#fff">${usedPct.toFixed(1)}%</span>` : ''}
         </div>
       </div>
-      <div style="display:flex;gap:0.75rem;margin-top:0.5rem;flex-wrap:wrap">
-        ${bucketStats.map(b => `<span style="font-size:0.68rem;color:#6b7280">
-          <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${color};margin-right:3px;vertical-align:middle"></span>
-          ${b.name}: ${fmt(b.bytes)}
-        </span>`).join('')}
+      <div style="display:flex;gap:1rem;margin-top:0.5rem;flex-wrap:wrap">
+        ${bucketStats.map(b => `
+          <span style="font-size:0.68rem;color:#6b7280">
+            📁 ${b.name}: <strong style="color:#374151">${fmt(b.bytes)}</strong>
+          </span>`).join('')}
       </div>
-      ${usedPct > 80 ? `<p style="font-size:0.72rem;color:#ef4444;margin-top:0.4rem;font-weight:600">⚠️ Pouco espaço. Considera apagar ficheiros antigos ou actualizar para o plano Pro ($25/mês).</p>` : ''}`;
+      <p style="font-size:0.65rem;color:#9ca3af;margin-top:0.4rem">
+        ⚠️ Apenas ficheiros (fotos, PDFs). O espaço da base de dados (500MB) é calculado separadamente pelo Supabase.
+      </p>
+      ${usedPct > 80 ? `<p style="font-size:0.72rem;color:#ef4444;margin-top:0.4rem;font-weight:600">🔴 Pouco espaço disponível. Considera o plano Pro ($25/mês).</p>` : ''}`;
+
   } catch(e) {
-    const wrap = document.getElementById('storage-bar-wrap');
-    if (wrap) wrap.innerHTML = '<p style="font-size:0.72rem;color:#9ca3af">Não foi possível calcular o espaço usado.</p>';
+    document.getElementById('storage-bar-wrap').innerHTML =
+      `<p style="font-size:0.72rem;color:#ef4444">Erro ao calcular: ${e.message}</p>`;
   }
 }
