@@ -857,6 +857,7 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
           invite_layout: document.getElementById('evt-invite-layout')?.value || 'sections',
           card_bg_url: document.getElementById('evt-card-bg-url')?.value?.trim() || null,
           section_florals: document.getElementById('evt-section-florals')?.value?.trim() || null,
+          section_bgs: document.getElementById('evt-section-bgs')?.value?.trim() || null,
           bible_ornament_url: document.getElementById('evt-bible-ornament-url')?.value || null,
           bible_ornament_size: document.getElementById('evt-bible-ornament-size')?.value || '28',
           std_music_continuous: document.getElementById('sw-std-music-continuous')?.classList.contains('active') ? 'yes' : 'no',
@@ -2051,6 +2052,7 @@ function _fillEditForm(ev) {
   // Prefill card background
   { const u = document.getElementById('evt-card-bg-url'); if (u) u.value = ev.card_bg_url || ''; }
   { const sf = document.getElementById('evt-section-florals'); if (sf) sf.value = ev.section_florals || '[]'; }
+  { const sb = document.getElementById('evt-section-bgs'); if (sb) sb.value = ev.section_bgs || '[]'; }
   { const p = document.getElementById('evt-card-bg-preview'); const c = document.getElementById('evt-card-bg-clear');
     if (ev.card_bg_url && p) { p.src = ev.card_bg_url; p.style.display = ''; if (c) c.style.display = ''; } }
   _setSwitch('sw-story', _yesOrTrue(ev.show_story) || (ev.story_text ? true : false), 'story-extra');
@@ -4642,7 +4644,17 @@ async function openDressGiftsEditor() {
       <!-- Lista de Lojas -->
       <div style="border-top:1px solid #f3f4f6;padding-top:0.75rem;margin-top:0.5rem">
         <p class="text-xs font-bold text-gray-700 mb-1">Lojas de Presentes</p>
-        <p class="text-xs text-gray-400 mb-2">Adicione uma ou mais lojas. Cada loja pode ter o seu logo, link e uma lista de artigos. O convidado clica na loja e vê os artigos disponíveis.</p>
+        <label class="text-xs font-semibold text-gray-600 block mb-1">Título da secção</label>
+        <input id="dg2-stores-title" class="input-field text-sm mb-2" placeholder="Ex: Sugestões de Presentes, Lista de Presentes..." value="${escapeHTML(d.gift_stores_title||'Lojas sugeridas')}">
+        <label class="text-xs font-semibold text-gray-600 block mb-1">Texto explicativo para os convidados (opcional)</label>
+        <textarea id="dg2-stores-message" class="input-field text-sm mb-2" rows="2" placeholder="Ex: Escolhemos alguns presentes que nos fariam muito felizes. Pode adquirir em qualquer uma das lojas abaixo.">${escapeHTML(d.gift_stores_message||'')}</textarea>
+        <label class="text-xs font-semibold text-gray-600 block mb-1">Estilo de apresentação</label>
+        <select id="dg2-stores-style" class="input-field text-xs mb-3">
+          <option value="modal" ${(!d.gift_stores_style||d.gift_stores_style==='modal'||d.gift_stores_style==='interactive')?'selected':''}>Ecrã completo — abre uma página com as lojas ao clicar no botão</option>
+          <option value="list" ${d.gift_stores_style==='list'?'selected':''}>Lista simples — artigos visíveis directamente no convite</option>
+          <option value="hidden" ${d.gift_stores_style==='hidden'?'selected':''}>Não mostrar (desactivado)</option>
+        </select>
+        <p class="text-xs text-gray-400 mb-2">Todos os campos das lojas são opcionais — pode ter só o nome.</p>
         <div id="dg2-stores-list"></div>
         <button type="button" class="btn-outline text-xs w-full mt-1" onclick="addGiftStore()">+ Adicionar Loja</button>
         <input type="hidden" id="dg2-gift-stores" value="${escapeHTML(JSON.stringify(d.gift_stores ? (typeof d.gift_stores === 'string' ? JSON.parse(d.gift_stores) : d.gift_stores) : []))}">
@@ -4674,23 +4686,44 @@ function _renderGiftStoresList() {
   const stores = _getGiftStores();
   const list   = document.getElementById('dg2-stores-list');
   if (!list) return;
+  if (!stores.length) {
+    list.innerHTML = '<p class="text-xs text-gray-400 text-center py-2">Nenhuma loja adicionada ainda.</p>';
+    return;
+  }
   list.innerHTML = stores.map((s, si) => `
     <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:0.75rem;padding:0.75rem;margin-bottom:0.6rem">
       <div class="flex items-center gap-2 mb-2">
-        ${s.logo_url ? `<img src="${escapeHTML(s.logo_url)}" style="width:32px;height:32px;object-fit:contain;border-radius:4px">` : '<div style="width:32px;height:32px;background:#e5e7eb;border-radius:4px"></div>'}
-        <input class="input-field text-xs flex-1" placeholder="Nome da loja" value="${escapeHTML(s.name||'')}" oninput="(()=>{const st=_getGiftStores();st[${si}].name=this.value;_saveGiftStores(st)})()">
-        <button type="button" onclick="(()=>{const st=_getGiftStores();st.splice(${si},1);_saveGiftStores(st);_renderGiftStoresList()})()" style="color:#ef4444;background:none;border:none;cursor:pointer;font-size:1rem">×</button>
+        <span class="text-xs font-bold text-gray-500">Loja ${si+1}</span>
+        <input class="input-field text-xs flex-1" placeholder="Nome da loja *" value="${escapeHTML(s.name||'')}"
+          oninput="(()=>{const st=_getGiftStores();st[${si}].name=this.value;_saveGiftStores(st)})()">
+        <button type="button" onclick="(()=>{const st=_getGiftStores();st.splice(${si},1);_saveGiftStores(st);_renderGiftStoresList()})()"
+          style="color:#ef4444;background:none;border:none;cursor:pointer;font-size:1.1rem;line-height:1">×</button>
       </div>
-      <input class="input-field text-xs mb-1" placeholder="Link da loja (URL)" value="${escapeHTML(s.url||'')}" oninput="(()=>{const st=_getGiftStores();st[${si}].url=this.value;_saveGiftStores(st)})()">
-      <input class="input-field text-xs mb-2" placeholder="URL do logo (imagem)" value="${escapeHTML(s.logo_url||'')}" oninput="(()=>{const st=_getGiftStores();st[${si}].logo_url=this.value;_saveGiftStores(st);_renderGiftStoresList()})()">
-      <p class="text-xs text-gray-500 mb-1 font-semibold">Artigos desta loja:</p>
-      ${(s.items||[]).map((it,ii) => `
-        <div class="flex gap-1 mb-1">
-          <input class="input-field text-xs flex-1" placeholder="Nome do artigo" value="${escapeHTML(it.name||'')}" oninput="(()=>{const st=_getGiftStores();st[${si}].items[${ii}].name=this.value;_saveGiftStores(st)})()">
-          <input class="input-field text-xs" style="width:70px" placeholder="Preço" value="${escapeHTML(it.price||'')}" oninput="(()=>{const st=_getGiftStores();st[${si}].items[${ii}].price=this.value;_saveGiftStores(st)})()">
-          <button type="button" onclick="(()=>{const st=_getGiftStores();st[${si}].items.splice(${ii},1);_saveGiftStores(st);_renderGiftStoresList()})()" style="color:#ef4444;background:none;border:none;cursor:pointer">×</button>
-        </div>`).join('')}
-      <button type="button" class="text-xs text-teal-600 font-semibold mt-1" onclick="(()=>{const st=_getGiftStores();if(!st[${si}].items)st[${si}].items=[];st[${si}].items.push({name:'',price:'',url:''});_saveGiftStores(st);_renderGiftStoresList()})()">+ Artigo</button>
+      <details class="mb-2">
+        <summary class="text-xs text-teal-600 font-semibold cursor-pointer">Logo, link e artigos (opcional)</summary>
+        <div class="mt-2 space-y-1">
+          <input class="input-field text-xs" placeholder="URL do logo (imagem — opcional)" value="${escapeHTML(s.logo_url||'')}"
+            oninput="(()=>{const st=_getGiftStores();st[${si}].logo_url=this.value;_saveGiftStores(st)})()">
+          <input class="input-field text-xs" placeholder="Link da loja (URL — opcional)" value="${escapeHTML(s.url||'')}"
+            oninput="(()=>{const st=_getGiftStores();st[${si}].url=this.value;_saveGiftStores(st)})()">
+          <p class="text-xs text-gray-500 font-semibold mt-2 mb-1">Artigos (opcional):</p>
+          ${(s.items||[]).map((it,ii) => `
+            <div class="flex gap-1">
+              <input class="input-field text-xs flex-1" placeholder="Nome do artigo" value="${escapeHTML(it.name||'')}"
+                oninput="(()=>{const st=_getGiftStores();st[${si}].items[${ii}].name=this.value;_saveGiftStores(st)})()">
+              <input class="input-field text-xs" style="width:80px" placeholder="Preço (opt.)" value="${escapeHTML(it.price||'')}"
+                oninput="(()=>{const st=_getGiftStores();st[${si}].items[${ii}].price=this.value;_saveGiftStores(st)})()">
+              <input class="input-field text-xs" style="width:90px" placeholder="Link (opt.)" value="${escapeHTML(it.url||'')}"
+                oninput="(()=>{const st=_getGiftStores();st[${si}].items[${ii}].url=this.value;_saveGiftStores(st)})()">
+              <button type="button" onclick="(()=>{const st=_getGiftStores();st[${si}].items.splice(${ii},1);_saveGiftStores(st);_renderGiftStoresList()})()"
+                style="color:#ef4444;background:none;border:none;cursor:pointer">×</button>
+            </div>`).join('')}
+          <button type="button" class="text-xs text-teal-600 font-semibold mt-1"
+            onclick="(()=>{const st=_getGiftStores();if(!st[${si}].items)st[${si}].items=[];st[${si}].items.push({name:'',price:'',url:''});_saveGiftStores(st);_renderGiftStoresList()})()">
+            + Artigo
+          </button>
+        </div>
+      </details>
     </div>`).join('');
 }
 function addGiftStore() {
@@ -4757,6 +4790,9 @@ async function saveDressGiftsEditor() {
     dresscode_image_urls: document.getElementById('dg2-dresscode-image-urls')?.value?.trim() || null,
     dresscode_image_url: null,
     gift_stores: document.getElementById('dg2-gift-stores')?.value || '[]',
+    gift_stores_style: document.getElementById('dg2-stores-style')?.value || 'modal',
+    gift_stores_title: document.getElementById('dg2-stores-title')?.value?.trim() || 'Lojas sugeridas',
+    gift_stores_message: document.getElementById('dg2-stores-message')?.value?.trim() || null,
   };
 
   toast('A guardar...');

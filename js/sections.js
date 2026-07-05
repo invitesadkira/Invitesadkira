@@ -780,6 +780,8 @@ async function renderGuestSections(eventData) {
   initScrollReveal();
   // Apply section floral decorations
   if (typeof applySectionFlorals === 'function') applySectionFlorals(eventData.section_florals);
+  // Apply section background images
+  if (typeof applySectionBgs === 'function') applySectionBgs(eventData.section_bgs);
   // Init floating music button
   initFloatingMusicBtn();
   // Init any 3D gallery carousels (must run after their HTML is in the DOM)
@@ -1304,32 +1306,91 @@ function buildParentsSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
 function buildGiftStoresHTML(ev, evColor) {
   let stores = [];
   try { stores = JSON.parse(ev.gift_stores || '[]'); } catch(e) {}
-  if (!stores.length) return '';
-  return `<div style="margin-top:1.5rem">
-    <p style="font-size:0.7rem;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:${evColor};margin-bottom:0.75rem;text-align:center">Lojas sugeridas</p>
-    <div style="display:flex;flex-direction:column;gap:0.75rem">
-      ${stores.map(s => `
-        <div class="gift-store-card" style="background:#fff;border:1px solid #e5e7eb;border-radius:1rem;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.06)">
-          <div style="display:flex;align-items:center;gap:0.75rem;padding:0.85rem 1rem;cursor:pointer" onclick="this.closest('.gift-store-card').querySelector('.store-items').classList.toggle('hidden')">
-            ${s.logo_url ? `<img src="${escapeHTML(s.logo_url)}" style="width:40px;height:40px;object-fit:contain;border-radius:0.4rem;flex-shrink:0">` : `<div style="width:40px;height:40px;background:color-mix(in srgb,${evColor} 12%,white);border-radius:0.4rem;flex-shrink:0;display:flex;align-items:center;justify-content:center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="${evColor}" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg></div>`}
-            <div style="flex:1">
-              <p style="font-weight:700;color:#1e293b;font-size:0.9rem;margin:0">${escapeHTML(s.name||'Loja')}</p>
-              ${s.url ? `<p style="font-size:0.7rem;color:${evColor};margin:0">Ver loja →</p>` : ''}
+  const style   = ev.gift_stores_style || 'modal';
+  const title   = escapeHTML(ev.gift_stores_title || 'Lojas sugeridas');
+  const message = ev.gift_stores_message ? `<p style="font-size:calc(0.85rem * var(--ev-body-scale,1));color:#4b5563;line-height:1.7;margin-bottom:1rem">${escapeHTML(ev.gift_stores_message)}</p>` : '';
+
+  if (!stores.length || style === 'hidden') return '';
+
+  if (style === 'list') {
+    // Lista simples inline
+    return `<div style="margin-top:1.5rem">
+      <p style="font-size:0.7rem;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:${evColor};margin-bottom:0.6rem;text-align:center">${title}</p>
+      ${message}
+      <div style="display:flex;flex-direction:column;gap:0.6rem">
+        ${stores.map(s => {
+          const items = (s.items||[]).filter(it => it.name);
+          return `<div style="background:#fff;border:1px solid #e5e7eb;border-radius:0.85rem;padding:0.85rem 1rem">
+            <div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:${items.length?'0.6rem':'0'}">
+              ${s.logo_url ? `<img src="${escapeHTML(s.logo_url)}" style="width:36px;height:36px;object-fit:contain;border-radius:4px;flex-shrink:0">` : ''}
+              <span style="font-weight:700;color:#1e293b;font-size:0.9rem">${escapeHTML(s.name||'')}</span>
+              ${s.url ? `<a href="${escapeHTML(s.url)}" target="_blank" style="margin-left:auto;font-size:0.7rem;color:${evColor};font-weight:700;text-decoration:none">Ver loja →</a>` : ''}
             </div>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg>
-          </div>
-          <div class="store-items hidden" style="border-top:1px solid #f3f4f6;padding:0.5rem 1rem 0.75rem">
-            ${(s.items||[]).map(it => `
-              <div style="display:flex;justify-content:space-between;align-items:center;padding:0.4rem 0;border-bottom:1px solid #f9fafb">
-                <span style="font-size:0.82rem;color:#374151">${escapeHTML(it.name||'')}</span>
-                ${it.price ? `<span style="font-size:0.78rem;font-weight:700;color:${evColor}">${escapeHTML(it.price)}</span>` : ''}
-              </div>`).join('')}
-            ${s.url ? `<a href="${escapeHTML(s.url)}" target="_blank" style="display:block;text-align:center;margin-top:0.6rem;font-size:0.78rem;font-weight:700;color:${evColor};text-decoration:none;padding:0.5rem;background:color-mix(in srgb,${evColor} 10%,white);border-radius:0.5rem">Visitar loja completa →</a>` : ''}
-          </div>
-        </div>`).join('')}
-    </div>
+            ${items.map(it => `<div style="display:flex;justify-content:space-between;padding:0.3rem 0;border-bottom:1px solid #f3f4f6">
+              ${it.url ? `<a href="${escapeHTML(it.url)}" target="_blank" style="font-size:0.82rem;color:#374151;text-decoration:none">${escapeHTML(it.name)}</a>` : `<span style="font-size:0.82rem;color:#374151">${escapeHTML(it.name)}</span>`}
+              ${it.price ? `<span style="font-size:0.78rem;font-weight:700;color:${evColor};margin-left:0.5rem">${escapeHTML(it.price)}</span>` : ''}
+            </div>`).join('')}
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+  }
+
+  // Modo modal — botão que abre ecrã completo
+  const storesJson = escapeHTML(JSON.stringify(stores));
+  return `<div style="margin-top:1.5rem;text-align:center">
+    <p style="font-size:0.7rem;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:${evColor};margin-bottom:0.5rem">${title}</p>
+    ${message}
+    <button onclick="_openGiftStoresModal(this)"
+      data-stores="${storesJson}"
+      data-title="${escapeHTML(ev.gift_stores_title||'Lojas sugeridas')}"
+      data-color="${evColor}"
+      class="rsvp-cta-btn action-btn"
+      style="background:${evColor};color:#fff;border:none;border-radius:0.85rem;padding:0.8rem 2rem;font-weight:700;font-size:0.9rem;cursor:pointer;display:inline-flex;align-items:center;gap:0.5rem">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+      Ver lojas de presentes
+    </button>
   </div>`;
 }
+
+// Abre o ecrã de lojas em modo fullscreen (sobre o convite)
+window._openGiftStoresModal = function(btn) {
+  const stores  = JSON.parse(btn.dataset.stores || '[]');
+  const title   = btn.dataset.title || 'Lojas sugeridas';
+  const color   = btn.dataset.color || '#007f9f';
+
+  const modal = document.createElement('div');
+  modal.style.cssText = 'position:fixed;inset:0;background:#fff;z-index:99999;overflow-y:auto;padding:1.5rem 1.25rem 4rem';
+  modal.innerHTML = `
+    <div style="max-width:520px;margin:0 auto">
+      <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:1.5rem">
+        <button onclick="this.closest('[style*=position\\:fixed]').remove()"
+          style="background:#f3f4f6;border:none;border-radius:50%;width:36px;height:36px;cursor:pointer;font-size:1.2rem;flex-shrink:0">←</button>
+        <h2 style="font-size:1.1rem;font-weight:800;color:#1e293b;margin:0">${escapeHTML(title)}</h2>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:0.75rem">
+        ${stores.map(s => {
+          const items = (s.items||[]).filter(it => it.name);
+          return `<div style="background:#fafafa;border:1px solid #e5e7eb;border-radius:1rem;overflow:hidden">
+            <div style="display:flex;align-items:center;gap:0.75rem;padding:1rem">
+              ${s.logo_url ? `<img src="${escapeHTML(s.logo_url)}" style="width:44px;height:44px;object-fit:contain;border-radius:0.5rem;flex-shrink:0;background:#fff;border:1px solid #f3f4f6">` : `<div style="width:44px;height:44px;background:color-mix(in srgb,${color} 10%,white);border-radius:0.5rem;flex-shrink:0;display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg></div>`}
+              <div style="flex:1">
+                <p style="font-weight:800;color:#1e293b;font-size:1rem;margin:0">${escapeHTML(s.name||'')}</p>
+                ${s.url ? `<a href="${escapeHTML(s.url)}" target="_blank" style="font-size:0.72rem;color:${color};font-weight:700;text-decoration:none">Visitar loja completa →</a>` : ''}
+              </div>
+            </div>
+            ${items.length ? `<div style="border-top:1px solid #f3f4f6;padding:0.5rem 1rem 0.75rem">
+              ${items.map(it => `<div style="display:flex;justify-content:space-between;align-items:center;padding:0.45rem 0;border-bottom:1px solid #f9fafb">
+                ${it.url ? `<a href="${escapeHTML(it.url)}" target="_blank" style="font-size:0.85rem;color:#374151;text-decoration:none;flex:1">${escapeHTML(it.name)}</a>` : `<span style="font-size:0.85rem;color:#374151;flex:1">${escapeHTML(it.name)}</span>`}
+                ${it.price ? `<span style="font-size:0.82rem;font-weight:800;color:${color};margin-left:0.75rem;flex-shrink:0">${escapeHTML(it.price)}</span>` : ''}
+              </div>`).join('')}
+            </div>` : ''}
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+};
 
 function buildIbanSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
   const evColor = ev.event_color || '#007f9f';

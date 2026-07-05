@@ -16,11 +16,11 @@
   <!-- PDF.js: renderizar PDFs como canvas (pré-visualização do template) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <!-- QRCode: gerador local, sem dependência CDN -->
-  <script src="js/qrcode-mini.js?v=1783253847"></script>
+  <script src="js/qrcode-mini.js?v=1783272232"></script>
   <script>tailwind.config = { theme: { extend: { colors: { teal: { 500: '#007f9f', 600: '#006b86' } } } } }</script>
   <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.js"></script>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💌</text></svg>">
-  <link rel="stylesheet" href="css/main.css?v=1783253847">
+  <link rel="stylesheet" href="css/main.css?v=1783272232">
 </head>
 <body class="h-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
 
@@ -1082,6 +1082,14 @@ para testemunhar o seu enlace matrimonial</textarea>
           <button type="button" class="btn-outline text-xs" onclick="openSectionFloralPicker()">🌸 Gerir flores nas secções</button>
           <input type="hidden" id="evt-section-florals">
          </div>
+
+         <!-- Fundos de secção -->
+         <div style="border-top:1px solid #f3f4f6;margin-top:0.75rem;padding-top:0.75rem">
+          <p class="text-xs font-bold text-gray-700 mb-1">Fundo de imagem por secção</p>
+          <p class="text-xs text-gray-400 mb-2">Coloca uma imagem como fundo de qualquer secção do convite. Controla a opacidade para que o texto continue legível.</p>
+          <button type="button" class="btn-outline text-xs" onclick="openSectionBgPicker()">🖼️ Gerir fundos das secções</button>
+          <input type="hidden" id="evt-section-bgs">
+         </div>
         </div>
        </div><!-- /pane decoracao -->
        <div class="event-tab-pane hidden" data-tab="mensagem-historia">
@@ -1570,21 +1578,21 @@ para testemunhar o seu enlace matrimonial</textarea>
   </a>
 
   <!-- ===================== SCRIPTS (ordem importa) ===================== -->
-  <script src="js/config.js?v=1783253847"></script>
-  <script src="js/store.js?v=1783253847"></script>
-  <script src="js/visuals.js?v=1783253847"></script>
-  <script src="js/venues.js?v=1783253847"></script>
-  <script src="js/rsvp.js?v=1783253847"></script>
-  <script src="js/ui.js?v=1783253847"></script>
-  <script src="js/auth.js?v=1783253847"></script>
-  <script src="js/dashboard.js?v=1783253847"></script>
-  <script src="js/events.js?v=1783253847"></script>
-  <script src="js/intake-wizard.js?v=1783253847"></script>
-  <script src="js/tickets.js?v=1783253847"></script>
-  <script src="js/guest.js?v=1783253847"></script>
-  <script src="js/sections.js?v=1783253847"></script>
-  <script src="js/admin.js?v=1783253847"></script>
-  <script src="js/router.js?v=1783253847"></script>
+  <script src="js/config.js?v=1783272232"></script>
+  <script src="js/store.js?v=1783272232"></script>
+  <script src="js/visuals.js?v=1783272232"></script>
+  <script src="js/venues.js?v=1783272232"></script>
+  <script src="js/rsvp.js?v=1783272232"></script>
+  <script src="js/ui.js?v=1783272232"></script>
+  <script src="js/auth.js?v=1783272232"></script>
+  <script src="js/dashboard.js?v=1783272232"></script>
+  <script src="js/events.js?v=1783272232"></script>
+  <script src="js/intake-wizard.js?v=1783272232"></script>
+  <script src="js/tickets.js?v=1783272232"></script>
+  <script src="js/guest.js?v=1783272232"></script>
+  <script src="js/sections.js?v=1783272232"></script>
+  <script src="js/admin.js?v=1783272232"></script>
+  <script src="js/router.js?v=1783272232"></script>
 
 </body>
 </html>

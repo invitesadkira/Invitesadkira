@@ -1816,3 +1816,165 @@ function applySectionFlorals(floralsJson) {
     }
   });
 }
+
+// ── Fundos de imagem por secção ────────────────────────────────────────────
+const _SC_BG_SECTIONS = [
+  'Abertura / Bênção','Texto Bíblico','Nomes dos Noivos','Texto do Convite',
+  'Nomes dos Pais','Galeria de Fotos','Locais','Dress Code','Cronograma',
+  'Manual do Bom Convidado','Presentes / IBAN','Recados','História','Texto Personalizado'
+];
+
+function openSectionBgPicker() {
+  let bgs = [];
+  try { bgs = JSON.parse(document.getElementById('evt-section-bgs')?.value || '[]'); } catch(e) {}
+
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.innerHTML = `<div class="modal-content bg-white rounded-2xl p-5" style="max-width:500px;max-height:88vh;overflow-y:auto">
+    <h3 class="text-base font-bold mb-1">Fundos das Secções</h3>
+    <p class="text-xs text-gray-500 mb-3">Carrega uma imagem e escolhe em que secção aparece como fundo. Ajusta a opacidade para que o texto fique legível.</p>
+    <div id="sbg-list">${_sbgRenderList(bgs)}</div>
+    <button type="button" class="btn-outline text-xs w-full mt-2" onclick="window._sbgAddRow()">+ Adicionar fundo</button>
+    <div class="flex gap-2 mt-3">
+      <button class="flex-1 btn-main" onclick="(()=>{
+        const rows = Array.from(document.querySelectorAll('.sbg-row'));
+        const data = rows.map(r => ({
+          url:      r.querySelector('.sbg-url').value,
+          section:  r.querySelector('.sbg-section').value,
+          opacity:  parseFloat(r.querySelector('.sbg-opacity').value)||0.15,
+          size:     r.querySelector('.sbg-size').value||'cover',
+          position: r.querySelector('.sbg-pos').value||'center',
+        })).filter(d => d.url);
+        document.getElementById('evt-section-bgs').value = JSON.stringify(data);
+        document.querySelector('.modal-overlay')?.remove();
+        toast('Fundos guardados — guarda o evento para aplicar.');
+      })()">Guardar</button>
+      <button class="flex-1 btn-outline" onclick="this.closest('.modal-overlay').remove()">Cancelar</button>
+    </div>
+  </div>`;
+  document.body.appendChild(modal);
+  modal.onclick = e => { if (e.target === modal) modal.remove(); };
+
+  window._sbgAddRow = () => {
+    document.getElementById('sbg-list').insertAdjacentHTML('beforeend', _sbgRowHtml({
+      url:'', section:_SC_BG_SECTIONS[0], opacity:0.15, size:'cover', position:'center'
+    }));
+  };
+}
+
+function _sbgRowHtml(item) {
+  return `<div class="sbg-row bg-gray-50 rounded-xl p-3 mb-2">
+    <div class="flex gap-2 items-start">
+      <div style="flex:1">
+        <label class="text-xs text-gray-500 block mb-1">URL da imagem</label>
+        <div class="flex gap-1">
+          <input class="sbg-url input-field text-xs flex-1" value="${escapeHTML(item.url||'')}" placeholder="Cole o URL ou carregue abaixo">
+          <input type="file" accept="image/*" class="hidden" onchange="(async(inp,row)=>{
+            const u=await uploadImageToStorage(inp.files[0],'event-covers');
+            if(u){row.querySelector('.sbg-url').value=u;const p=row.querySelector('.sbg-preview');if(p){p.src=u;p.style.display='';}}
+          })(this,this.closest('.sbg-row'))">
+          <button type="button" class="btn-outline text-xs px-2" onclick="this.previousElementSibling.click()">📤</button>
+        </div>
+        ${item.url ? `<img src="${escapeHTML(item.url)}" class="sbg-preview rounded-lg mt-1 max-h-20 object-cover" style="max-width:180px">` : `<img class="sbg-preview rounded-lg mt-1 max-h-20 object-cover" style="display:none;max-width:180px">`}
+        <label class="text-xs text-gray-500 block mt-2 mb-1">Secção</label>
+        <select class="sbg-section input-field text-xs w-full mb-2">
+          ${_SC_BG_SECTIONS.map(s=>`<option value="${s}" ${item.section===s?'selected':''}>${s}</option>`).join('')}
+        </select>
+        <div class="flex gap-2">
+          <div style="flex:1">
+            <label class="text-xs text-gray-500 block mb-1">Opacidade (0=invisível, 1=total)</label>
+            <input class="sbg-opacity input-field text-xs" type="range" min="0" max="1" step="0.05" value="${item.opacity||0.15}" style="width:100%;padding:0" oninput="this.nextElementSibling.textContent=Math.round(this.value*100)+'%'">
+            <span class="text-xs text-gray-600">${Math.round((item.opacity||0.15)*100)}%</span>
+          </div>
+          <div>
+            <label class="text-xs text-gray-500 block mb-1">Ajuste</label>
+            <select class="sbg-size input-field text-xs" style="width:90px">
+              <option value="cover" ${(item.size||'cover')==='cover'?'selected':''}>Cobrir</option>
+              <option value="contain" ${item.size==='contain'?'selected':''}>Conter</option>
+              <option value="auto" ${item.size==='auto'?'selected':''}>Original</option>
+            </select>
+          </div>
+          <div>
+            <label class="text-xs text-gray-500 block mb-1">Posição</label>
+            <select class="sbg-pos input-field text-xs" style="width:90px">
+              <option value="center" ${(item.position||'center')==='center'?'selected':''}>Centro</option>
+              <option value="top" ${item.position==='top'?'selected':''}>Topo</option>
+              <option value="bottom" ${item.position==='bottom'?'selected':''}>Baixo</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <button type="button" class="text-red-400 text-xl leading-none mt-1" onclick="this.closest('.sbg-row').remove()">×</button>
+    </div>
+  </div>`;
+}
+
+function _sbgRenderList(bgs) {
+  if (!bgs.length) return '<p class="text-xs text-gray-400 text-center py-3">Nenhum fundo adicionado ainda.</p>';
+  return bgs.map(_sbgRowHtml).join('');
+}
+
+// Aplicar os fundos às secções após renderizar o convite
+function applySectionBgs(bgsJson) {
+  let bgs = [];
+  try { bgs = JSON.parse(bgsJson || '[]'); } catch(e) {}
+  if (!bgs.length) return;
+
+  const SECTION_KEYWORDS = {
+    'Abertura / Bênção':       ['.bible-section','.blessing-section','.invite-blessing'],
+    'Texto Bíblico':           ['.bible-section'],
+    'Nomes dos Noivos':        ['.hero-couple','.couple-section'],
+    'Texto do Convite':        ['.invite-section','.invite-text-section'],
+    'Nomes dos Pais':          ['.parents-section'],
+    'Galeria de Fotos':        ['.gallery-section'],
+    'Locais':                  ['.venues-section'],
+    'Dress Code':              ['.dresscode-section'],
+    'Cronograma':              ['.schedule-section'],
+    'Manual do Bom Convidado': ['.manual-section'],
+    'Presentes / IBAN':        ['.iban-section','.gifts-section'],
+    'Recados':                 ['.messages-section'],
+    'História':                ['.story-section'],
+    'Texto Personalizado':     ['.custom-text-section'],
+  };
+
+  const allSections = Array.from(document.querySelectorAll(
+    '#guest-sections-container .event-section, #guest-sections-container > div'
+  ));
+
+  bgs.forEach((bg, idx) => {
+    if (!bg.url) return;
+    const sels = SECTION_KEYWORDS[bg.section];
+    let target = null;
+    if (sels) {
+      for (const sel of sels) {
+        target = document.querySelector(sel);
+        if (target) break;
+      }
+    }
+    // Fallback: usar a N-ésima secção com .event-section
+    if (!target) target = allSections[idx] || null;
+    if (!target) return;
+
+    target.style.position   = 'relative';
+    target.style.overflow   = 'hidden';
+
+    // Criar pseudo-fundo como div absoluta (não afecta o z-index do conteúdo)
+    const bgDiv = document.createElement('div');
+    bgDiv.style.cssText = `
+      position:absolute;inset:0;
+      background-image:url('${bg.url}');
+      background-size:${bg.size||'cover'};
+      background-position:${bg.position||'center'};
+      background-repeat:no-repeat;
+      opacity:${bg.opacity||0.15};
+      z-index:0;
+      pointer-events:none;
+    `;
+    target.insertBefore(bgDiv, target.firstChild);
+
+    // Garantir que o conteúdo fica por cima
+    const inner = target.querySelector('.section-inner, .reveal');
+    if (inner) inner.style.position = 'relative';
+    if (inner) inner.style.zIndex   = '1';
+  });
+}
