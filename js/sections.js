@@ -672,6 +672,7 @@ async function renderGuestSections(eventData) {
         case 'youtube_video': if (_yesOrTrue(eventData.show_youtube_video) && eventData.youtube_video_url) html += buildYoutubeVideoSection(eventData); break;
         case 'custom_text': if (_yesOrTrue(eventData.custom_text_show_invite) && eventData.custom_text_body) html += buildCustomTextSection(eventData); break;
         case 'iban':     if (eventData.iban_number) html += buildIbanSection(eventData); break;
+        case 'gift_stores': if (eventData.gift_stores) html += buildGiftStoresSection(eventData); break;
         case 'gallery':  if (eventData.gallery_urls) html += buildGallerySection(eventData); break;
         case 'venues':   if (_yesOrTrue(eventData.show_venues) && (eventData.venue_ceremony || eventData.venue_civil || eventData.venue_reception)) html += buildVenueSection(eventData); break;
         case 'manual':   if (_yesOrTrue(eventData.show_manual)) html += buildManualSection(eventData); break;
@@ -1360,11 +1361,12 @@ window._openGiftStoresModal = function(btn) {
   const color   = btn.dataset.color || '#007f9f';
 
   const modal = document.createElement('div');
+  modal.id = '_gift-stores-modal';
   modal.style.cssText = 'position:fixed;inset:0;background:#fff;z-index:99999;overflow-y:auto;padding:1.5rem 1.25rem 4rem';
   modal.innerHTML = `
     <div style="max-width:520px;margin:0 auto">
       <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:1.5rem">
-        <button onclick="this.closest('[style*=position\\:fixed]').remove()"
+        <button onclick="document.getElementById('_gift-stores-modal').remove()"
           style="background:#f3f4f6;border:none;border-radius:50%;width:36px;height:36px;cursor:pointer;font-size:1.2rem;flex-shrink:0">←</button>
         <h2 style="font-size:1.1rem;font-weight:800;color:#1e293b;margin:0">${escapeHTML(title)}</h2>
       </div>
@@ -1427,7 +1429,18 @@ function buildIbanSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
         </button>
         ${ev.iban_footer ? `<p class="text-xs text-gray-400 mt-3 text-right italic">${escapeHTML(ev.iban_footer)}</p>` : ''}
       </div>
-      ${ev.gift_stores ? buildGiftStoresHTML(ev, ev.event_color||'#007f9f') : ''}
+    </div>
+  </div>`;
+}
+
+// Secção independente para as lojas de presentes
+function buildGiftStoresSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
+  let stores = [];
+  try { stores = JSON.parse(ev.gift_stores || '[]'); } catch(e) {}
+  if (!stores.length || (ev.gift_stores_style||'modal') === 'hidden') return '';
+  return _SD + `<div class="event-section">
+    <div class="section-inner reveal" style="text-align:center">
+      ${buildGiftStoresHTML(ev, ev.event_color||'#007f9f')}
     </div>
   </div>`;
 }
@@ -2313,7 +2326,8 @@ const ALL_SECTION_DEFS = [
   { key: 'youtube_video', label: 'Vídeo do YouTube',                 icon: 'play-circle' },
   { key: 'venues',    label: 'Locais do Evento',                     icon: 'map-pin' },
   { key: 'parents',   label: 'Nomes dos Pais',                       icon: 'users' },
-  { key: 'iban',      label: 'Sugestão de Presente (IBAN)',           icon: 'credit-card' },
+  { key: 'iban',        label: 'Sugestão de Presente (IBAN)',         icon: 'credit-card' },
+  { key: 'gift_stores', label: 'Lojas de Presentes',                  icon: 'shopping-bag' },
   { key: 'gallery',   label: 'Galeria de Fotos',                     icon: 'image' },
   { key: 'manual',    label: 'Manual do Bom Convidado',              icon: 'list-checks' },
   { key: 'schedule',  label: 'Itinerário',                           icon: 'clock' },

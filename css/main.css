@@ -1626,3 +1626,13 @@ html.ev-gold-countdown .std-countdown-num {
   background-repeat: no-repeat;
 }
 .event-section { position: relative; overflow: visible; }
+
+/* ── Proteger fontes cursivas dos nomes dos noivos contra herança do
+   ev-body-font — cada elemento que usa 'Great Vibes' ou 'Playfair Display'
+   deve ter font-family definido inline, mas esta regra serve de escudo extra
+   para os casos em que o cascading pudesse sobrescrever. ── */
+.hero-couple-names,
+.std-couple-names,
+h1.hero-couple-names-simple {
+  font-family: var(--event-font, 'Great Vibes', cursive) !important;
+}
