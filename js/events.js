@@ -1053,6 +1053,7 @@ function renderEventDetails() {
     const btn = e.target.closest('.ticket-gen-btn');
     if (btn) generateGuestTicket(btn.dataset.name, btn.dataset.token);
   });
+  const intakeBtn = document.getElementById('btn-intake-link');
   if (intakeBtn) intakeBtn.style.display = (Store.currentUser?.role === 'admin') ? 'inline-flex' : 'none';
 
   // ✅ Aplicar permissões de funcionalidades — esconder botões desactivados
