@@ -146,6 +146,7 @@ async function openTicketTemplateEditor() {
       }).catch(() => {});
     }
     _initTicketDrag();
+    _initTicketLivePreview();
   }
 }
 
@@ -218,6 +219,60 @@ async function _renderTicketPreview(pdfUrl) {
   } catch(e) { console.error('_renderTicketPreview error:', e); }
 }
 
+function _initTicketLivePreview() {
+  const wrap = document.getElementById('ticket-canvas-wrap');
+  if (!wrap) return;
+
+  // Ouvir alterações nos controlos de estilo
+  const controls = ['ticket-name-size', 'ticket-qr-size', 'ticket-name-color', 'ticket-name-font'];
+  controls.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('input', _updateTicketPreview);
+  });
+
+  // Actualizar a prévia quando os marcadores são arrastados
+  ['ticket-mark-name', 'ticket-mark-qr-canvas'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('mouseup', _updateTicketPreview);
+    if (el) el.addEventListener('touchend', _updateTicketPreview);
+  });
+
+  _updateTicketPreview();
+}
+
+function _updateTicketPreview() {
+  const wrap     = document.getElementById('ticket-canvas-wrap');
+  const nameEl   = document.getElementById('ticket-mark-name');
+  const qrEl     = document.getElementById('ticket-mark-qr-canvas');
+  const nameFont = document.getElementById('ticket-name-font')?.value || 'Helvetica';
+  const nameSize = parseInt(document.getElementById('ticket-name-size')?.value || '24');
+  const qrSize   = parseInt(document.getElementById('ticket-qr-size')?.value   || '80');
+  const nameColor= document.getElementById('ticket-name-color')?.value || '#000000';
+  if (!nameEl || !qrEl || !wrap) return;
+
+  // Atualizar estilo do marcador de nome em tempo real
+  nameEl.style.fontSize  = Math.max(9, Math.round(nameSize * 0.55)) + 'px';
+  nameEl.style.color     = nameColor;
+  const fontMap = {
+    'Helvetica':'sans-serif','Helvetica-Bold':'sans-serif',
+    'Times-Roman':'serif','Times-Bold':'serif','Courier':'monospace'
+  };
+  nameEl.style.fontFamily  = fontMap[nameFont] || 'sans-serif';
+  nameEl.style.fontWeight  = nameFont.includes('Bold') ? '800' : '600';
+
+  // Redimensionar o canvas do QR se o tamanho mudou
+  const previewQrSize = Math.max(30, Math.round(qrSize * 0.55));
+  if (qrEl.width !== previewQrSize) {
+    if (typeof QRCode !== 'undefined') {
+      QRCode.toCanvas(qrEl, 'ADK:EXEMPLO', {
+        width: previewQrSize, margin: 1,
+        color: { dark: '#000000', light: '#ffffff' }
+      }).catch(() => {});
+    } else {
+      qrEl.width = qrEl.height = previewQrSize;
+    }
+  }
+}
 function _initTicketDrag() {
   const wrap = document.getElementById('ticket-canvas-wrap');
   if (!wrap) return;
