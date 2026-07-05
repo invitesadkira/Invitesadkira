@@ -1047,8 +1047,12 @@ function renderEventDetails() {
   const event = Store.events.find(e => e.id === Store.currentEventId);
   if (!event) { Router.go('not-found'); return; }
 
-  // Show intake link only for admin
-  const intakeBtn = document.getElementById('btn-intake-link');
+  // ✅ Delegação de eventos para botões de ticket — evita onclick inline
+  // com JSON.stringify que quebra com nomes que têm aspas ou carateres especiais
+  document.getElementById('confirmations-list')?.addEventListener('click', e => {
+    const btn = e.target.closest('.ticket-gen-btn');
+    if (btn) generateGuestTicket(btn.dataset.name, btn.dataset.token);
+  });
   if (intakeBtn) intakeBtn.style.display = (Store.currentUser?.role === 'admin') ? 'inline-flex' : 'none';
 
   // ✅ Aplicar permissões de funcionalidades — esconder botões desactivados
@@ -1305,7 +1309,7 @@ function renderEventDetails() {
         ((c.kids || []).length ? 'Crianças: ' + safeKids : ''),
         (hasReservedGift ? safeGiftName : '')
       ].filter(Boolean).join(' · ');
-      return '<div class="flex items-center gap-3 p-3 rounded-xl ' + (c.attending ? 'bg-green-50' : 'bg-red-50') + ' mb-2 ' + (isNew ? 'border-2 border-green-300' : '') + '"><div class="w-9 h-9 rounded-full ' + (c.attending ? 'bg-green-200 text-green-700' : 'bg-red-200 text-red-600') + ' flex items-center justify-center font-bold text-sm">' + escapeHTML((c.name || '?').charAt(0)) + '</div><div class="flex-1 min-w-0"><p class="font-semibold text-gray-800 text-sm truncate">' + safeName + newBadge + '</p><p class="text-xs text-gray-500">' + details + '</p></div><span class="text-xs font-semibold ' + (c.attending ? 'text-green-600' : 'text-red-500') + ' mr-2">' + (c.attending ? 'Vai' : 'Não vai') + '</span><div class="flex gap-1">' + removeGiftBtn + replyMessageBtn + (c.attending && c.rsvpToken && isOwner ? '<button class="text-gray-400 hover:text-purple-500 transition p-1" title="' + (c.ticketIssued ? 'Ticket emitido ✓ — Gerar novamente' : 'Gerar Ticket PDF') + '" onclick="generateGuestTicket('+JSON.stringify(c.name)+','+JSON.stringify(c.rsvpToken)+')"><i data-lucide="ticket" class="w-4 h-4" style="color:' + (c.ticketIssued ? '#7c3aed' : 'currentColor') + '"></i></button>' : '') + (isOwner ? '<button class="text-gray-400 hover:text-teal-500 transition p-1" onclick="editConfirmationModal(' + idx + ')"><i data-lucide="pencil" class="w-4 h-4"></i></button><button class="text-gray-400 hover:text-red-500 transition p-1" onclick="deleteConfirmation(' + idx + ')"><i data-lucide="trash-2" class="w-4 h-4"></i></button>' : '') + '</div></div>';
+      return '<div class="flex items-center gap-3 p-3 rounded-xl ' + (c.attending ? 'bg-green-50' : 'bg-red-50') + ' mb-2 ' + (isNew ? 'border-2 border-green-300' : '') + '"><div class="w-9 h-9 rounded-full ' + (c.attending ? 'bg-green-200 text-green-700' : 'bg-red-200 text-red-600') + ' flex items-center justify-center font-bold text-sm">' + escapeHTML((c.name || '?').charAt(0)) + '</div><div class="flex-1 min-w-0"><p class="font-semibold text-gray-800 text-sm truncate">' + safeName + newBadge + '</p><p class="text-xs text-gray-500">' + details + '</p></div><span class="text-xs font-semibold ' + (c.attending ? 'text-green-600' : 'text-red-500') + ' mr-2">' + (c.attending ? 'Vai' : 'Não vai') + '</span><div class="flex gap-1">' + removeGiftBtn + replyMessageBtn + (c.attending && c.rsvpToken && isOwner ? '<button class="ticket-gen-btn text-gray-400 hover:text-purple-500 transition p-1" data-name="' + escapeHTML(c.name || '').replace(/"/g, '&quot;') + '" data-token="' + escapeHTML(c.rsvpToken || '') + '" title="' + (c.ticketIssued ? 'Ticket emitido — Gerar novamente' : 'Gerar Ticket PDF') + '"><i data-lucide="ticket" class="w-4 h-4" style="color:' + (c.ticketIssued ? '#7c3aed' : 'currentColor') + '"></i></button>' : '') + (isOwner ? '<button class="text-gray-400 hover:text-teal-500 transition p-1" onclick="editConfirmationModal(' + idx + ')"><i data-lucide="pencil" class="w-4 h-4"></i></button><button class="text-gray-400 hover:text-red-500 transition p-1" onclick="deleteConfirmation(' + idx + ')"><i data-lucide="trash-2" class="w-4 h-4"></i></button>' : '') + '</div></div>';
     }).join('');
   }
 

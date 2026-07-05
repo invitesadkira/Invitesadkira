@@ -104,26 +104,43 @@ async function openTicketTemplateEditor() {
         </div>
         <div class="flex gap-3 mt-2 flex-wrap">
           <div>
-            <label class="text-xs text-gray-500 block">Tamanho do nome (pt)</label>
-            <input id="ticket-name-size" type="number" value="${ev.ticket_name_size||24}" min="8" max="72" class="input-field text-xs" style="width:80px">
+            <label class="text-xs text-gray-500 block mb-1">Tamanho do nome (pt)</label>
+            <div class="flex items-center gap-1">
+              <button type="button" onclick="document.getElementById('ticket-name-size').stepDown();document.getElementById('ticket-name-size').dispatchEvent(new Event('input'))" style="width:24px;height:24px;border:1px solid #e5e7eb;border-radius:4px;cursor:pointer;font-size:14px;line-height:1">−</button>
+              <input id="ticket-name-size" type="number" value="${ev.ticket_name_size||24}" min="6" max="96" class="input-field text-xs text-center" style="width:52px" oninput="_updateTicketPreview()">
+              <button type="button" onclick="document.getElementById('ticket-name-size').stepUp();document.getElementById('ticket-name-size').dispatchEvent(new Event('input'))" style="width:24px;height:24px;border:1px solid #e5e7eb;border-radius:4px;cursor:pointer;font-size:14px;line-height:1">+</button>
+            </div>
           </div>
           <div>
-            <label class="text-xs text-gray-500 block">Tamanho do QR (px)</label>
-            <input id="ticket-qr-size" type="number" value="${ev.ticket_qr_size||80}" min="40" max="300" class="input-field text-xs" style="width:80px">
+            <label class="text-xs text-gray-500 block mb-1">Tamanho do QR (px)</label>
+            <div class="flex items-center gap-1">
+              <button type="button" onclick="document.getElementById('ticket-qr-size').stepDown();document.getElementById('ticket-qr-size').dispatchEvent(new Event('input'))" style="width:24px;height:24px;border:1px solid #e5e7eb;border-radius:4px;cursor:pointer;font-size:14px;line-height:1">−</button>
+              <input id="ticket-qr-size" type="number" value="${ev.ticket_qr_size||80}" min="40" max="300" class="input-field text-xs text-center" style="width:52px" oninput="_updateTicketPreview()">
+              <button type="button" onclick="document.getElementById('ticket-qr-size').stepUp();document.getElementById('ticket-qr-size').dispatchEvent(new Event('input'))" style="width:24px;height:24px;border:1px solid #e5e7eb;border-radius:4px;cursor:pointer;font-size:14px;line-height:1">+</button>
+            </div>
           </div>
           <div>
-            <label class="text-xs text-gray-500 block">Cor do nome</label>
-            <input id="ticket-name-color" type="color" value="${ev.ticket_name_color||'#000000'}" class="input-field" style="width:50px;height:32px;padding:2px">
+            <label class="text-xs text-gray-500 block mb-1">Cor do nome</label>
+            <input id="ticket-name-color" type="color" value="${ev.ticket_name_color||'#000000'}" class="input-field" style="width:44px;height:32px;padding:2px" oninput="_updateTicketPreview()">
           </div>
-          <div>
-            <label class="text-xs text-gray-500 block">Fonte do nome</label>
-            <select id="ticket-name-font" class="input-field text-xs" style="width:140px">
+        </div>
+        <div class="mt-2">
+          <label class="text-xs text-gray-500 block mb-1">Fonte do nome</label>
+          <div class="flex gap-2 items-center flex-wrap">
+            <select id="ticket-name-font" class="input-field text-xs" style="width:160px" onchange="_updateTicketPreview()">
               <option value="Helvetica" ${(ev.ticket_name_font||'Helvetica')==='Helvetica'?'selected':''}>Helvetica (padrão)</option>
               <option value="Times-Roman" ${ev.ticket_name_font==='Times-Roman'?'selected':''}>Times Roman</option>
               <option value="Courier" ${ev.ticket_name_font==='Courier'?'selected':''}>Courier</option>
               <option value="Helvetica-Bold" ${ev.ticket_name_font==='Helvetica-Bold'?'selected':''}>Helvetica Bold</option>
               <option value="Times-Bold" ${ev.ticket_name_font==='Times-Bold'?'selected':''}>Times Bold</option>
+              ${(Store.availableFonts||[]).map(f=>`<option value="custom:${f.name}" ${ev.ticket_name_font===('custom:'+f.name)?'selected':''}>${f.name} (carregada)</option>`).join('')}
             </select>
+            <input type="file" id="ticket-font-file" accept=".ttf,.otf,.woff,.woff2" class="hidden" onchange="handleTicketFontUpload(this)">
+            <button type="button" class="btn-outline text-xs" onclick="document.getElementById('ticket-font-file').click()">📤 Carregar fonte</button>
+          </div>
+          <div class="flex items-center gap-2 mt-1.5 p-2 bg-amber-50 border border-amber-200 rounded-lg">
+            <input type="checkbox" id="ticket-font-global" class="w-4 h-4" ${ev.ticket_font_global?'checked':''}>
+            <label for="ticket-font-global" class="text-xs text-amber-800 cursor-pointer font-semibold">Usar esta fonte em TODOS os tickets (todos os eventos)</label>
           </div>
         </div>
       </div>
@@ -241,36 +258,41 @@ function _initTicketLivePreview() {
 }
 
 function _updateTicketPreview() {
-  const wrap     = document.getElementById('ticket-canvas-wrap');
-  const nameEl   = document.getElementById('ticket-mark-name');
-  const qrEl     = document.getElementById('ticket-mark-qr-canvas');
-  const nameFont = document.getElementById('ticket-name-font')?.value || 'Helvetica';
-  const nameSize = parseInt(document.getElementById('ticket-name-size')?.value || '24');
-  const qrSize   = parseInt(document.getElementById('ticket-qr-size')?.value   || '80');
-  const nameColor= document.getElementById('ticket-name-color')?.value || '#000000';
+  const wrap      = document.getElementById('ticket-canvas-wrap');
+  const nameEl    = document.getElementById('ticket-mark-name');
+  const qrEl      = document.getElementById('ticket-mark-qr-canvas');
+  const nameFont  = document.getElementById('ticket-name-font')?.value || 'Helvetica';
+  const nameSize  = parseInt(document.getElementById('ticket-name-size')?.value || '24');
+  const qrSize    = parseInt(document.getElementById('ticket-qr-size')?.value   || '80');
+  const nameColor = document.getElementById('ticket-name-color')?.value || '#000000';
   if (!nameEl || !qrEl || !wrap) return;
 
-  // Atualizar estilo do marcador de nome em tempo real
-  nameEl.style.fontSize  = Math.max(9, Math.round(nameSize * 0.55)) + 'px';
-  nameEl.style.color     = nameColor;
+  // Actualizar estilo do marcador de nome
+  const scale = wrap.offsetWidth / (wrap._pdfWidth || wrap.offsetWidth);
+  const previewFontSize = Math.max(8, Math.round(nameSize * scale * 0.85));
+  nameEl.style.fontSize   = previewFontSize + 'px';
+  nameEl.style.color      = nameColor;
   const fontMap = {
     'Helvetica':'sans-serif','Helvetica-Bold':'sans-serif',
     'Times-Roman':'serif','Times-Bold':'serif','Courier':'monospace'
   };
-  nameEl.style.fontFamily  = fontMap[nameFont] || 'sans-serif';
-  nameEl.style.fontWeight  = nameFont.includes('Bold') ? '800' : '600';
+  nameEl.style.fontFamily = fontMap[nameFont] || 'sans-serif';
+  nameEl.style.fontWeight = nameFont.includes('Bold') ? '800' : '600';
 
-  // Redimensionar o canvas do QR se o tamanho mudou
-  const previewQrSize = Math.max(30, Math.round(qrSize * 0.55));
-  if (qrEl.width !== previewQrSize) {
-    if (typeof QRCode !== 'undefined') {
-      QRCode.toCanvas(qrEl, 'ADK:EXEMPLO', {
-        width: previewQrSize, margin: 1,
-        color: { dark: '#000000', light: '#ffffff' }
-      }).catch(() => {});
-    } else {
-      qrEl.width = qrEl.height = previewQrSize;
-    }
+  // ✅ Redimensionar o QR em tempo real — redesenhar no canvas com o novo tamanho
+  const previewQrSize = Math.max(20, Math.round(qrSize * scale));
+  if (typeof QRCode !== 'undefined') {
+    QRCode.toCanvas(qrEl, 'ADK:EXEMPLO', {
+      width: previewQrSize, margin: 1,
+      color: { dark: '#000000', light: '#ffffff' }
+    }).then(() => {
+      // Manter a posição centrada após redimensionar
+      qrEl.style.width  = previewQrSize + 'px';
+      qrEl.style.height = previewQrSize + 'px';
+    }).catch(() => {});
+  } else {
+    qrEl.width = qrEl.height = previewQrSize;
+    qrEl.style.width = qrEl.style.height = previewQrSize + 'px';
   }
 }
 function _initTicketDrag() {
@@ -312,6 +334,38 @@ function _initTicketDrag() {
   });
 }
 
+async function handleTicketFontUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const allowed = ['.ttf','.otf','.woff','.woff2'];
+  if (!allowed.some(ext => file.name.toLowerCase().endsWith(ext))) {
+    toast('Apenas .ttf, .otf, .woff, .woff2');
+    return;
+  }
+  toast('A carregar fonte...');
+  const url = await uploadImageToStorage(file, 'event-covers', 'Fonte ticket');
+  if (!url) return;
+  const fontName = file.name.replace(/\.[^.]+$/, '');
+  // Guardar na lista de fontes disponíveis
+  if (!Store.availableFonts) Store.availableFonts = [];
+  if (!Store.availableFonts.find(f => f.name === fontName)) {
+    Store.availableFonts.push({ name: fontName, url });
+    await supabaseRequest('event_visuals?event_id=eq.' + Store.currentEventId, 'PATCH',
+      { custom_font_url: url, custom_font_family: fontName }).catch(() => {});
+  }
+  // Adicionar ao selector
+  const sel = document.getElementById('ticket-name-font');
+  if (sel) {
+    const opt = document.createElement('option');
+    opt.value = 'custom:' + fontName;
+    opt.textContent = fontName + ' (carregada)';
+    opt.selected = true;
+    sel.appendChild(opt);
+  }
+  toast('Fonte carregada e seleccionada!');
+  _updateTicketPreview();
+}
+
 async function saveTicketTemplate() {
   const eventId = Store.currentEventId;
   const nameEl = document.getElementById('ticket-mark-name');
@@ -331,6 +385,7 @@ async function saveTicketTemplate() {
     ticket_qr_size:   parseInt(document.getElementById('ticket-qr-size')?.value   || '80'),
     ticket_name_color: document.getElementById('ticket-name-color')?.value || '#000000',
     ticket_name_font:  document.getElementById('ticket-name-font')?.value  || 'Helvetica',
+    ticket_font_global: document.getElementById('ticket-font-global')?.checked || false,
   });
   const ev = Store.events.find(e => e.id === eventId);
   if (ev) { ev.ticket_name_x=nx; ev.ticket_name_y=ny; ev.ticket_qr_x=qx; ev.ticket_qr_y=qy; }
@@ -879,14 +934,15 @@ async function openTicketManager() {
       </button>` : ''}
 
       <div class="space-y-1">
-        ${rsvps.map(r => `
+        ${rsvps.map((r, idx) => `
           <div style="display:flex;align-items:center;gap:0.5rem;padding:0.6rem 0.75rem;background:${r.ticket_issued?'#f5f3ff':'#fafafa'};border-radius:0.6rem;border:1px solid ${r.ticket_issued?'#ede9fe':'#f3f4f6'}">
             <span style="width:28px;height:28px;border-radius:50%;background:${r.checked_in?'#dcfce7':r.ticket_issued?'#ede9fe':'#f3f4f6'};display:flex;align-items:center;justify-content:center;font-size:0.75rem;flex-shrink:0">
               ${r.checked_in ? '✅' : r.ticket_issued ? '🎫' : '⏳'}
             </span>
             <span style="flex:1;font-size:0.85rem;font-weight:600;color:#1e293b">${escapeHTML(r.guest_name)}</span>
             <span style="font-size:0.65rem;color:#9ca3af;margin-right:0.25rem">${r.ticket_issued ? 'emitido' : 'por emitir'}</span>
-            <button onclick="generateGuestTicket(${JSON.stringify(r.guest_name)},${JSON.stringify(r.rsvp_token)})"
+            <button class="tm-gen-btn"
+              data-idx="${idx}"
               style="background:${r.ticket_issued?'#ede9fe':'#007f9f'};color:${r.ticket_issued?'#7c3aed':'#fff'};border:none;border-radius:0.4rem;padding:0.3rem 0.6rem;font-size:0.7rem;font-weight:700;cursor:pointer;white-space:nowrap">
               ${r.ticket_issued ? '↺ Gerar de novo' : '↓ Gerar ticket'}
             </button>
@@ -894,6 +950,15 @@ async function openTicketManager() {
       </div>
     </div>`;
   document.body.appendChild(modal);
+
+  // ✅ Usar data-attributes em vez de onclick inline — evita que aspas nos
+  // nomes dos convidados quebrem o HTML do atributo onclick="..."
+  document.querySelectorAll('.tm-gen-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const r = rsvps[parseInt(btn.dataset.idx)];
+      if (r) generateGuestTicket(r.guest_name, r.rsvp_token);
+    });
+  });
 
   // Guardar lista para gerar todos
   window._pendingTicketRsvps = rsvps.filter(r => !r.ticket_issued);
