@@ -301,8 +301,13 @@ async function renderGuestView() {
   try {
     const visuals = await loadEventVisuals(eventData.id || Store.currentEventId);
     if (visuals && Object.keys(visuals).length > 0) {
+      // Campos que têm valor na tabela events com precedência sobre event_visuals
+      // (evitar que o default de event_visuals sobrescreva o valor correcto de events)
+      const eventsTablePriority = ['invite_order'];
       Object.keys(visuals).forEach(k => {
         if (k !== 'event_id' && k !== 'updated_at' && visuals[k] !== null && visuals[k] !== undefined) {
+          // Se o campo tem prioridade de events e já está definido, não sobrescrever
+          if (eventsTablePriority.includes(k) && eventData[k] && eventData[k] !== 'after') return;
           eventData[k] = visuals[k];
         }
       });
@@ -1092,6 +1097,7 @@ async function reloadEventFromSupabase(eventId) {
       show_bible: event.show_bible || null,
       invite_text: event.invite_text || null,
       show_invite: event.show_invite || null,
+      invite_order: event.invite_order || 'after',
       groom_parents: event.groom_parents || null,
       bride_parents: event.bride_parents || null,
       show_parents: event.show_parents || null,
