@@ -305,11 +305,8 @@ async function renderGuestView() {
   const visuals = await loadEventVisuals(eventData.id || Store.currentEventId);
   if (visuals && Object.keys(visuals).length > 0) {
     console.log('[ADK invite_order] event_visuals value:', visuals.invite_order);
-    // Campos que têm valor na tabela events com precedência sobre event_visuals
-    const eventsTablePriority = ['invite_order'];
     Object.keys(visuals).forEach(k => {
       if (k !== 'event_id' && k !== 'updated_at' && visuals[k] !== null && visuals[k] !== undefined) {
-        if (eventsTablePriority.includes(k) && eventData[k] && eventData[k] !== 'after') return;
         eventData[k] = visuals[k];
       }
     });

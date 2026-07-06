@@ -105,7 +105,7 @@ async function handleCreateEvent(e) {
   const bibleSize   = document.getElementById('evt-bible-size')?.value || '0.92';
   const showInvite  = document.getElementById('sw-invite').classList.contains('active');
   const inviteText  = showInvite ? (document.getElementById('evt-invite-text').value.trim() || null) : null;
-  const inviteOrder = document.querySelector('input[name="invite-order"]:checked')?.value || 'after';
+  const inviteOrder = document.getElementById('evt-invite-order')?.value || document.querySelector('input[name="invite-order"]:checked')?.value || 'after';
   const showParents = document.getElementById('sw-parents').classList.contains('active');
   const groomPar    = showParents ? (document.getElementById('evt-groom-parents').value.trim() || null) : null;
   const bridePar    = showParents ? (document.getElementById('evt-bride-parents').value.trim() || null) : null;
@@ -1980,11 +1980,12 @@ function _fillEditForm(ev) {
   document.getElementById('evt-invite-text').value = ev.invite_text || '';
   { 
     const io = ev.invite_order || 'after';
-    // Activar o radio correcto — funciona mesmo que o painel esteja escondido
     const radioBefore = document.getElementById('invite-order-before');
     const radioAfter  = document.getElementById('invite-order-after');
+    const hidden      = document.getElementById('evt-invite-order');
     if (radioBefore) radioBefore.checked = (io === 'before');
     if (radioAfter)  radioAfter.checked  = (io !== 'before');
+    if (hidden)      hidden.value        = io;
   }
 
   _setSwitch('sw-parents', _yesOrTrue(ev.show_parents), 'parents-extra');
