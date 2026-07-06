@@ -107,7 +107,7 @@ function buildSimpleInviteTemplate(ev) {
 
   const bibleBlock = ev.bible_text ? `
     <div style="max-width:480px;margin:0 auto;text-align:center;padding:0 1.5rem">
-      ${ev.bible_text.split('\n').filter(Boolean).map(l => `<p style="font-style:var(--ev-bible-style,italic);font-weight:var(--ev-bible-weight,400);font-family:var(--ev-bible-font,inherit);color:#4b5563;font-size:0.95rem;line-height:1.8;margin:0 0 0.4rem">${escapeHTML(l)}</p>`).join('')}
+      ${ev.bible_text.split('\n').filter(Boolean).map(l => `<p style="font-style:var(--ev-bible-style,italic);font-weight:var(--ev-bible-weight,400);font-family:var(--ev-bible-font,inherit);color:#4b5563;font-size:0.95rem;line-height:1.8;margin:0 0 0.4rem">${_formatBibleText(l)}</p>`).join('')}
       ${ev.bible_ref ? `<p style="font-size:0.78rem;color:${evColor};font-weight:700;margin-top:0.5rem">${escapeHTML(ev.bible_ref)}</p>` : ''}
       ${ev.bible_ornament_url
         ? `<img src="${ev.bible_ornament_url}" alt="" class="bible-ornament-anim" style="height:${parseFloat(ev.bible_ornament_size)||28}px;width:auto;margin:0.75rem auto 0;display:block" onerror="this.style.display='none'">`
@@ -361,7 +361,7 @@ function buildCardInviteTemplate(ev) {
       ${ev.invite_blessing ? `<p class="reveal" style="font-size:0.78rem;color:#6b7280;font-style:italic;line-height:1.7;margin-bottom:2rem">${escapeHTML(ev.invite_blessing)}</p>` : ''}
       ${ev.bible_text ? `<div class="reveal" style="margin-bottom:2rem">
         <p style="font-size:0.75rem;font-weight:800;color:${evColor};margin-bottom:0.5rem">✦</p>
-        ${ev.bible_text.split('\n').filter(Boolean).map(l=>`<p style="font-style:var(--ev-bible-style,italic);font-weight:var(--ev-bible-weight,400);font-family:var(--ev-bible-font,inherit);font-size:0.9rem;color:#374151;line-height:1.9;margin:0">${escapeHTML(l)}</p>`).join('')}
+        ${ev.bible_text.split('\n').filter(Boolean).map(l=>`<p style="font-style:var(--ev-bible-style,italic);font-weight:var(--ev-bible-weight,400);font-family:var(--ev-bible-font,inherit);font-size:0.9rem;color:#374151;line-height:1.9;margin:0">${_formatBibleText(l)}</p>`).join('')}
         ${ev.bible_ref ? `<p style="font-size:0.7rem;color:#9ca3af;margin-top:0.5rem;font-weight:700">${escapeHTML(ev.bible_ref)}</p>` : ''}
       </div>` : ''}
       ${(ev.show_parents !== 'no' && (ev.groom_parents || ev.bride_parents)) ? `<div class="reveal" style="margin-bottom:1.5rem">
@@ -854,11 +854,23 @@ function applyGuestBackground(ev) {
   }
 }
 
+// Formatar texto bíblico — suporte a **negrito** e *linha inteira em negrito*
+function _formatBibleText(line) {
+  // Linha inteira entre ** → negrito total
+  if (line.startsWith('**') && line.endsWith('**') && line.length > 4) {
+    return '<strong>' + escapeHTML(line.slice(2,-2)) + '</strong>';
+  }
+  // Palavras/frases entre ** dentro da linha → negrito parcial
+  // Ex: "A fé **move** montanhas"
+  const escaped = escapeHTML(line);
+  return escaped.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+}
+
 function buildBibleSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
   console.log('[ADK buildBibleSection] invite_order =', ev.invite_order, '| show_invite =', ev.show_invite, '| invite_text =', ev.invite_text ? '✓' : '✗');
   const bibleSize = parseFloat(ev.bible_size) || 0.92;
-  const lines = (ev.bible_text || '').split('\n').filter(Boolean).map(l => `<p class="bible-verse" style="font-size:${bibleSize}rem;line-height:1.8;font-style:var(--ev-bible-style,italic);font-weight:var(--ev-bible-weight,400);font-family:var(--ev-bible-font,inherit)">${escapeHTML(l)}</p>`).join('');
-  const lines2 = (ev.bible_text_2 || '').split('\n').filter(Boolean).map(l => `<p class="bible-verse" style="font-size:${bibleSize}rem;line-height:1.8;font-style:var(--ev-bible-style,italic);font-weight:var(--ev-bible-weight,400);font-family:var(--ev-bible-font,inherit)">${escapeHTML(l)}</p>`).join('');
+  const lines = (ev.bible_text || '').split('\n').filter(Boolean).map(l => `<p class="bible-verse" style="font-size:${bibleSize}rem;line-height:1.8;font-style:var(--ev-bible-style,italic);font-weight:var(--ev-bible-weight,400);font-family:var(--ev-bible-font,inherit)">${_formatBibleText(l)}</p>`).join('');
+  const lines2 = (ev.bible_text_2 || '').split('\n').filter(Boolean).map(l => `<p class="bible-verse" style="font-size:${bibleSize}rem;line-height:1.8;font-style:var(--ev-bible-style,italic);font-weight:var(--ev-bible-weight,400);font-family:var(--ev-bible-font,inherit)">${_formatBibleText(l)}</p>`).join('');
   const hasParents = ev.groom_parents || ev.bride_parents;
   // ✅ CORRIGIDO: agora usa mesmo o campo editável (evt-invite-blessing),
   // que já existia no formulário mas estava a ser ignorado de propósito.
@@ -2500,6 +2512,7 @@ function resetSectionOrder() {
 
 // ── VENUES SECTION ──
 function buildVenueSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
+  console.log('[ADK venues] ceremony_label=', ev.venue_ceremony_label, '| civil_label=', ev.venue_civil_label, '| reception_label=', ev.venue_reception_label);
   const evColor = ev.event_color || '#007f9f';
   const venues = [];
   if (ev.venue_ceremony) venues.push({ icon: ev.venue_ceremony_icon || 'church',      title: ev.venue_ceremony_label||'Cerimónia Religiosa', name: ev.venue_ceremony, maps: ev.venue_ceremony_maps, image: ev.venue_ceremony_image });

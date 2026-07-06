@@ -313,7 +313,6 @@ function saveEventWithCover(eventId, title, date, time, deadline, coverImageURL,
     music_url: musicUrl || null, music_title: musicTitle || null,
     iban_message: ibanMessage || null, iban_number: ibanNumber || null,
     iban_holder: ibanHolder || null, iban_footer: ibanFooter || null,
-    iban_number_2: v.ibanNumber2 || null, iban_holder_2: v.ibanHolder2 || null,
     show_couple: v.showCouple ? 'yes' : 'no',
     groom_name: v.groomName || null, bride_name: v.brideName || null,
     couple_size: v.coupleSize || 2.4,
@@ -460,6 +459,7 @@ function saveEventWithCover(eventId, title, date, time, deadline, coverImageURL,
         music_url: musicUrl || null, music_title: musicTitle || null,
         iban_message: ibanMessage || null, iban_number: ibanNumber || null,
         iban_holder: ibanHolder || null, iban_footer: ibanFooter || null,
+        iban_number_2: ibanNumber2 || null, iban_holder_2: ibanHolder2 || null,
       };
       // decor_side_url/decor_ornament_url/show_decor: NUNCA gravados aqui —
       // vivem na tabela events (ver eventData mais abaixo).
