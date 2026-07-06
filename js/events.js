@@ -481,7 +481,7 @@ function saveEventWithCover(eventId, title, date, time, deadline, coverImageURL,
 
       // Save venue/location fields to the DEDICATED event_venues table
       // (these do NOT belong in event_visuals — that table has no venue_* columns)
-      if (typeof saveEventVenues !== 'undefined') saveEventVenues(eventId, {
+      const _venuePayload = {
         show_venues:          document.getElementById('sw-venues')?.classList.contains('active') ? 'yes' : 'no',
         venue_ceremony:       document.getElementById('evt-venue-ceremony')?.value?.trim() || null,
         venue_ceremony_label: document.getElementById('evt-venue-ceremony-label')?.value?.trim() || null,
@@ -495,7 +495,9 @@ function saveEventWithCover(eventId, title, date, time, deadline, coverImageURL,
         venue_reception_label: document.getElementById('evt-venue-reception-label')?.value?.trim() || null,
         venue_reception_maps: document.getElementById('evt-venue-reception-maps')?.value?.trim() || null,
         venue_reception_image: document.getElementById('evt-venue-reception-image')?.value || null,
-      });
+      };
+      console.log('[ADK saveVenues] labels:', _venuePayload.venue_ceremony_label, '|', _venuePayload.venue_civil_label, '|', _venuePayload.venue_reception_label);
+      if (typeof saveEventVenues !== 'undefined') saveEventVenues(eventId, _venuePayload);
 
       // Save dates to dedicated table
       if (typeof saveEventDates !== 'undefined') saveEventDates(eventId, {
