@@ -299,19 +299,22 @@ async function renderGuestView() {
     section_order: eventData.section_order,
   };
   try {
-    const visuals = await loadEventVisuals(eventData.id || Store.currentEventId);
-    if (visuals && Object.keys(visuals).length > 0) {
-      // Campos que têm valor na tabela events com precedência sobre event_visuals
-      // (evitar que o default de event_visuals sobrescreva o valor correcto de events)
-      const eventsTablePriority = ['invite_order'];
-      Object.keys(visuals).forEach(k => {
-        if (k !== 'event_id' && k !== 'updated_at' && visuals[k] !== null && visuals[k] !== undefined) {
-          // Se o campo tem prioridade de events e já está definido, não sobrescrever
-          if (eventsTablePriority.includes(k) && eventData[k] && eventData[k] !== 'after') return;
-          eventData[k] = visuals[k];
-        }
-      });
-    }
+  // ✅ DEBUG — rastrear invite_order
+  console.log('[ADK invite_order] events table value:', eventData.invite_order);
+
+  const visuals = await loadEventVisuals(eventData.id || Store.currentEventId);
+  if (visuals && Object.keys(visuals).length > 0) {
+    console.log('[ADK invite_order] event_visuals value:', visuals.invite_order);
+    // Campos que têm valor na tabela events com precedência sobre event_visuals
+    const eventsTablePriority = ['invite_order'];
+    Object.keys(visuals).forEach(k => {
+      if (k !== 'event_id' && k !== 'updated_at' && visuals[k] !== null && visuals[k] !== undefined) {
+        if (eventsTablePriority.includes(k) && eventData[k] && eventData[k] !== 'after') return;
+        eventData[k] = visuals[k];
+      }
+    });
+    console.log('[ADK invite_order] final value after merge:', eventData.invite_order);
+  }
 
     // ── Analytics: log this guest visit (once per render, fire-and-forget) ──
     // Skip when the organiser is previewing their own event ("Ver como Convidado")

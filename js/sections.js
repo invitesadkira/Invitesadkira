@@ -855,6 +855,7 @@ function applyGuestBackground(ev) {
 }
 
 function buildBibleSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
+  console.log('[ADK buildBibleSection] invite_order =', ev.invite_order, '| show_invite =', ev.show_invite, '| invite_text =', ev.invite_text ? '✓' : '✗');
   const bibleSize = parseFloat(ev.bible_size) || 0.92;
   const lines = (ev.bible_text || '').split('\n').filter(Boolean).map(l => `<p class="bible-verse" style="font-size:${bibleSize}rem;line-height:1.8;font-style:var(--ev-bible-style,italic);font-weight:var(--ev-bible-weight,400);font-family:var(--ev-bible-font,inherit)">${escapeHTML(l)}</p>`).join('');
   const lines2 = (ev.bible_text_2 || '').split('\n').filter(Boolean).map(l => `<p class="bible-verse" style="font-size:${bibleSize}rem;line-height:1.8;font-style:var(--ev-bible-style,italic);font-weight:var(--ev-bible-weight,400);font-family:var(--ev-bible-font,inherit)">${escapeHTML(l)}</p>`).join('');
@@ -1171,9 +1172,7 @@ function buildStorySection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
   const storyStyle = ev.story_style || 'centered';
   const storySize  = parseFloat(ev.story_size) || 0.88;
   const storyTextColor = ev.story_text_color || '#4b5563';
-  const storyDateColor = ev.story_date_color || evColor;
-
-  // ── Style: PHOTO-SIDE — story text next to a photo ──
+  const storyDateColor = ev.story_date_color || evColor;  // ── Style: PHOTO-SIDE — story text next to a photo ──
   if (storyStyle === 'photo-side' && ev.story_photo_url) {
     return _SD + `<div class="event-section story-section">
       <div class="section-inner">
