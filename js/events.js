@@ -948,17 +948,21 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
           // venues saved separately below,
         });
         // Save venues to dedicated table
+        console.log('[ADK saveVenues path2] ceremony_label=', document.getElementById('evt-venue-ceremony-label')?.value);
         if (typeof saveEventVenues !== 'undefined') saveEventVenues(eventId, {
           show_venues:          document.getElementById('sw-venues')?.classList.contains('active') ? 'yes' : 'no',
           venue_ceremony:       document.getElementById('evt-venue-ceremony')?.value?.trim() || null,
+          venue_ceremony_label: document.getElementById('evt-venue-ceremony-label')?.value?.trim() || null,
           venue_ceremony_maps:  document.getElementById('evt-venue-ceremony-maps')?.value?.trim() || null,
           venue_ceremony_date:  document.getElementById('evt-venue-ceremony-date')?.value?.trim() || null,
           venue_ceremony_image: document.getElementById('evt-venue-ceremony-image')?.value || null,
           venue_civil:          document.getElementById('evt-venue-civil')?.value?.trim() || null,
+          venue_civil_label:    document.getElementById('evt-venue-civil-label')?.value?.trim() || null,
           venue_civil_maps:     document.getElementById('evt-venue-civil-maps')?.value?.trim() || null,
           venue_civil_date:     document.getElementById('evt-venue-civil-date')?.value?.trim() || null,
           venue_civil_image:    document.getElementById('evt-venue-civil-image')?.value || null,
           venue_reception:      document.getElementById('evt-venue-reception')?.value?.trim() || null,
+          venue_reception_label: document.getElementById('evt-venue-reception-label')?.value?.trim() || null,
           venue_reception_maps: document.getElementById('evt-venue-reception-maps')?.value?.trim() || null,
           venue_reception_image: document.getElementById('evt-venue-reception-image')?.value || null,
           venues_title: document.getElementById('evt-venues-title')?.value?.trim() || null,
