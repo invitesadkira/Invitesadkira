@@ -965,9 +965,9 @@ function startMusicAutoplay(ytId, audioSrc) {
     window._musicVisibilityListenerAdded = true;
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState !== 'visible') return;
-      // Retomar áudio directo
-      const audio = document.getElementById('guest-music-audio');
-      if (audio && audio.src && !audio.paused === false) {
+      // Retomar áudio directo quando volta ao separador
+      const audio = document.getElementById('guest-music-audio') || document.getElementById('guest-audio');
+      if (audio && audio.src && audio.paused) {
         audio.play().catch(() => {});
       }
       // Retomar YouTube
@@ -988,13 +988,13 @@ function startMusicAutoplay(ytId, audioSrc) {
     if (!ytFrame) {
       ytFrame = document.createElement('iframe');
       ytFrame.id = 'yt-music-frame';
-      ytFrame.style.cssText = 'display:none;width:0;height:0;position:absolute;pointer-events:none;';
+      // ✅ YouTube exige dimensões reais para reproduzir áudio
+      // display:none ou width/height:0 silencia o player — usar posição fora do ecrã
+      ytFrame.style.cssText = 'position:fixed;left:-9999px;top:-9999px;width:1px;height:1px;pointer-events:none;border:none;';
       document.body.appendChild(ytFrame);
     }
-    // autoplay=1: browser pode bloquear se não houver interacção prévia
-    // Si bloqueado, o player fica pronto para o utilizador clicar
-    ytFrame.allow = 'autoplay; encrypted-media';
-    ytFrame.src = `https://www.youtube.com/embed/${ytId}?enablejsapi=1&autoplay=1&mute=0&rel=0&modestbranding=1&origin=${encodeURIComponent(window.location.origin)}`;
+    ytFrame.allow = 'autoplay; encrypted-media; picture-in-picture';
+    ytFrame.src = `https://www.youtube.com/embed/${ytId}?enablejsapi=1&autoplay=1&mute=0&rel=0&modestbranding=1&playsinline=1&origin=${encodeURIComponent(window.location.origin)}`;
     ytFrame.dataset.playing = '1';
     // Optimista: assumir que está a tocar; se o browser bloquear o iframe não emite erro detectável
     setMusicPlayingUI(true);
@@ -1063,18 +1063,19 @@ function _startAudioFullyManual(audio, sub) {
     }).catch(() => {
       // Browser blocked autoplay entirely (expected on most https hosts)
       setMusicPlayingUI(false);
-      if (sub) sub.textContent = 'Toca para ouvir';
+      if (sub) sub.textContent = 'Toca para ouvir ♪';
 
       // Pulse the music player to draw attention
       const playerEl = document.getElementById('guest-music-player');
       if (playerEl) {
         playerEl.style.animation = 'musicPulseAttention 1.2s ease-in-out 3';
+        playerEl.classList.remove('hidden'); // garantir que está visível
         setTimeout(() => { if (playerEl) playerEl.style.animation = ''; }, 4000);
       }
 
       // Show floating button immediately (don't wait for scroll)
       const floatBtn = document.getElementById('floating-music-btn');
-      if (floatBtn) floatBtn.classList.add('visible');
+      if (floatBtn) { floatBtn.classList.add('visible'); floatBtn.title = 'Tocar música'; }
 
       // ── Mobile autoplay unlock ──
       // iOS Safari and most mobile browsers only honor audio.play() when
@@ -1397,20 +1398,22 @@ async function handleSigFontUpload(input) {
   const url = await uploadImageToStorage(file, 'event-covers', 'Fonte assinatura');
   if (url) {
     const fontName = file.name.replace(/\.[^.]+$/, '');
-    // Injectar a fonte no documento para pré-visualização imediata
+    // Injectar @font-face para pré-visualização imediata no editor
     const style = document.createElement('style');
     style.textContent = `@font-face { font-family: '${fontName}'; src: url('${url}'); }`;
     document.head.appendChild(style);
-    // Adicionar ao selector
+    // Guardar a URL no selector — a renderização detecta que é URL e injeta @font-face
     const sel = document.getElementById('evt-couplemsg-sig-font');
     if (sel) {
+      // Remover opção anterior com o mesmo nome se existir
+      Array.from(sel.options).forEach(o => { if (o.value === url) o.remove(); });
       const opt = document.createElement('option');
-      opt.value = fontName;
+      opt.value = url;           // ← guarda a URL completa
       opt.textContent = fontName + ' (carregada)';
       opt.selected = true;
       sel.appendChild(opt);
     }
-    toast('Fonte carregada!');
+    toast(`Fonte "${fontName}" carregada!`);
   }
 }
 

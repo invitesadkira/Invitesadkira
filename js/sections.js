@@ -276,7 +276,7 @@ function buildElegantInviteTemplate(ev) {
   const venueBlocks = [];
   if (ev.venue_ceremony) venueBlocks.push({ label: 'Ceremonia', name: ev.venue_ceremony, time: ev.time, maps: ev.venue_ceremony_maps });
   if (ev.venue_reception) venueBlocks.push({ label: 'Celebración', name: ev.venue_reception, time: null, maps: ev.venue_reception_maps });
-  if (ev.venue_civil) venueBlocks.push({ label: 'Cerimónia Civil', name: ev.venue_civil, time: null, maps: ev.venue_civil_maps });
+  if (ev.venue_civil) venueBlocks.push({ label: ev.venue_civil_label || 'Cerimónia Civil', name: ev.venue_civil, time: null, maps: ev.venue_civil_maps });
   const venuesBlock = venueBlocks.length ? `
     <div class="reveal" style="padding:3rem 1.5rem;text-align:center;max-width:480px;margin:0 auto">
       ${venueBlocks.map(v => `
@@ -345,9 +345,9 @@ function buildCardInviteTemplate(ev) {
     longDate = `${d.getDate()} de ${MONTHS[d.getMonth()]} de ${d.getFullYear()}`;
   }
   const venueRows = [];
-  if (ev.venue_civil)     venueRows.push({ label:'Cerimónia Civil',     name:ev.venue_civil,     time:ev.venue_civil_time,    maps:ev.venue_civil_maps     });
-  if (ev.venue_ceremony)  venueRows.push({ label:'Cerimónia Religiosa', name:ev.venue_ceremony,  time:ev.venue_ceremony_time, maps:ev.venue_ceremony_maps  });
-  if (ev.venue_reception) venueRows.push({ label:"Copo d'Água",         name:ev.venue_reception, time:ev.venue_reception_time,maps:ev.venue_reception_maps });
+  if (ev.venue_civil)     venueRows.push({ label:ev.venue_civil_label||'Cerimónia Civil',     name:ev.venue_civil,     time:ev.venue_civil_time,    maps:ev.venue_civil_maps     });
+  if (ev.venue_ceremony)  venueRows.push({ label:ev.venue_ceremony_label||'Cerimónia Religiosa', name:ev.venue_ceremony,  time:ev.venue_ceremony_time, maps:ev.venue_ceremony_maps  });
+  if (ev.venue_reception) venueRows.push({ label:ev.venue_reception_label||"Copo d'Água",         name:ev.venue_reception, time:ev.venue_reception_time,maps:ev.venue_reception_maps });
   const venuesHtml = venueRows.map(v => `
     <div style="margin-bottom:0.9rem">
       <p style="font-size:0.6rem;font-weight:800;letter-spacing:0.18em;text-transform:uppercase;color:${evColor};margin-bottom:0.1rem">${escapeHTML(v.label)}</p>
@@ -479,7 +479,7 @@ function buildCalendarInviteTemplate(ev) {
   const venueRows = [];
   if (ev.venue_ceremony) venueRows.push({ icon:'church', label:'Cerimónia', name:ev.venue_ceremony, time:ev.time, maps:ev.venue_ceremony_maps });
   if (ev.venue_reception) venueRows.push({ icon:'glass-water', label:'Banquete', name:ev.venue_reception, time:null, maps:ev.venue_reception_maps });
-  if (ev.venue_civil) venueRows.push({ icon:'file-text', label:'Cerimónia Civil', name:ev.venue_civil, time:null, maps:ev.venue_civil_maps });
+  if (ev.venue_civil) venueRows.push({ icon:'file-text', label:ev.venue_civil_label||'Cerimónia Civil', name:ev.venue_civil, time:null, maps:ev.venue_civil_maps });
   const venuesBlock = venueRows.map(v => `
     <div class="reveal" style="text-align:center;padding:0 1.5rem 2.5rem;max-width:420px;margin:0 auto">
       <i data-lucide="${v.icon}" style="width:30px;height:30px;color:${evColor};margin-bottom:0.6rem"></i>
@@ -2502,9 +2502,9 @@ function resetSectionOrder() {
 function buildVenueSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
   const evColor = ev.event_color || '#007f9f';
   const venues = [];
-  if (ev.venue_ceremony) venues.push({ icon: ev.venue_ceremony_icon || 'church',      title: 'Cerimónia Religiosa', name: ev.venue_ceremony, maps: ev.venue_ceremony_maps, image: ev.venue_ceremony_image });
-  if (ev.venue_civil)    venues.push({ icon: ev.venue_civil_icon || 'file-text',   title: 'Cerimónia Civil',     name: ev.venue_civil,    maps: ev.venue_civil_maps,    image: ev.venue_civil_image });
-  if (ev.venue_reception)venues.push({ icon: ev.venue_reception_icon || 'glass-water', title: "Copo d'Água",          name: ev.venue_reception,maps: ev.venue_reception_maps, image: ev.venue_reception_image });
+  if (ev.venue_ceremony) venues.push({ icon: ev.venue_ceremony_icon || 'church',      title: ev.venue_ceremony_label||'Cerimónia Religiosa', name: ev.venue_ceremony, maps: ev.venue_ceremony_maps, image: ev.venue_ceremony_image });
+  if (ev.venue_civil)    venues.push({ icon: ev.venue_civil_icon || 'file-text',   title: ev.venue_civil_label||'Cerimónia Civil',     name: ev.venue_civil,    maps: ev.venue_civil_maps,    image: ev.venue_civil_image });
+  if (ev.venue_reception)venues.push({ icon: ev.venue_reception_icon || 'glass-water', title: ev.venue_reception_label||"Copo d'Água",          name: ev.venue_reception,maps: ev.venue_reception_maps, image: ev.venue_reception_image });
   if (!venues.length) return '';
 
   const imgFit = ev.venue_image_fit === 'cover' ? 'cover' : 'contain';
@@ -2635,17 +2635,31 @@ function buildCoupleMsgSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
   const sig = ev.couplemsg_signature;
   const sigFont = ev.couplemsg_sig_font || '';
   const sigSize = parseFloat(ev.couplemsg_sig_size) || 1.6;
-  const googleFonts = ['Great Vibes','Dancing Script','Sacramento','Pacifico'];
-  const needsGoogleFont = sig && sigFont && googleFonts.includes(sigFont);
-  const fontLink = needsGoogleFont
-    ? `<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=${encodeURIComponent(sigFont)}&display=swap">`
-    : '';
+
+  // Detectar se é URL (fonte carregada pelo utilizador) ou nome de Google Font
+  const isUrl = sigFont.startsWith('http');
+  const googleFonts = ['Great Vibes','Dancing Script','Sacramento','Pacifico','Playfair Display'];
+  const isGoogleFont = googleFonts.includes(sigFont);
+
+  // Nome CSS da família — para URLs geramos um nome único a partir do URL
+  const cssFontFamily = isUrl
+    ? 'sig-font-' + sigFont.split('/').pop().replace(/[^a-zA-Z0-9]/g,'-').slice(0,20)
+    : sigFont;
+
+  // Injectar @font-face para fontes carregadas por URL
+  let fontInjectHtml = '';
+  if (sig && isUrl) {
+    fontInjectHtml = `<style>@font-face{font-family:'${cssFontFamily}';src:url('${sigFont}');}</style>`;
+  } else if (sig && isGoogleFont) {
+    fontInjectHtml = `<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=${encodeURIComponent(sigFont)}&display=swap">`;
+  }
+
   const sigHtml = sig ? `
     <div style="margin-top:1.5rem;padding-top:1rem;border-top:1px solid #f3f4f6">
-      <p style="font-size:${sigSize}rem;color:${evColor};font-family:${sigFont?`'${sigFont}',`:''}serif;line-height:1.4">${escapeHTML(sig)}</p>
+      <p style="font-size:${sigSize}rem;color:${evColor};font-family:${cssFontFamily ? `'${cssFontFamily}',` : ''}serif;line-height:1.4">${escapeHTML(sig)}</p>
     </div>` : '';
 
-  return fontLink + _SD + `<div class="event-section">
+  return fontInjectHtml + _SD + `<div class="event-section">
     <div class="section-inner reveal" style="text-align:center">
       <div style="width:52px;height:52px;border-radius:50%;background:color-mix(in srgb,${evColor} 12%,white);display:flex;align-items:center;justify-content:center;margin:0 auto 0.75rem">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="${evColor}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>

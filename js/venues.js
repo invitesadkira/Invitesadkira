@@ -1,5 +1,5 @@
 // ===================== EVENT VENUES (tabela dedicada) =====================
-const VENUES_FIELDS = 'event_id,venue_ceremony,venue_ceremony_maps,venue_ceremony_date,venue_ceremony_time,venue_ceremony_image,venue_ceremony_icon,venue_civil,venue_civil_maps,venue_civil_date,venue_civil_time,venue_civil_image,venue_civil_icon,venue_reception,venue_reception_maps,venue_reception_time,venue_reception_image,venue_reception_icon,show_venues,venues_title,venue_image_fit';
+const VENUES_FIELDS = 'event_id,venue_ceremony,venue_ceremony_label,venue_ceremony_maps,venue_ceremony_date,venue_ceremony_time,venue_ceremony_image,venue_ceremony_icon,venue_civil,venue_civil_label,venue_civil_maps,venue_civil_date,venue_civil_time,venue_civil_image,venue_civil_icon,venue_reception,venue_reception_label,venue_reception_maps,venue_reception_time,venue_reception_image,venue_reception_icon,show_venues,venues_title,venue_image_fit';
 
 const _venuesCache = {};
 

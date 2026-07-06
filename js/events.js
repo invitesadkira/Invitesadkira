@@ -75,8 +75,8 @@ async function handleCreateEvent(e) {
   const allowGifts = document.getElementById('sw-gifts').classList.contains('active');
   const allowKids = document.getElementById('sw-kids').classList.contains('active');
   const allowSides = document.getElementById('sw-sides').classList.contains('active');
-  const allowMessages = document.getElementById('sw-messages').classList.contains('active');
-  const showGuestMessages = document.getElementById('evt-show-messages').checked;
+  const allowMessages = (document.getElementById('sw-allow-messages') || document.getElementById('sw-messages'))?.classList.contains('active') ?? true;
+  const showGuestMessages = document.getElementById('sw-show-guest-messages')?.classList.contains('active') ?? document.getElementById('evt-show-messages')?.checked ?? true;
   const allowMusic = document.getElementById('sw-music').classList.contains('active');
   const musicUrl = document.getElementById('evt-music-url').value.trim();
   const musicTitle = document.getElementById('evt-music-title').value.trim();
@@ -484,12 +484,15 @@ function saveEventWithCover(eventId, title, date, time, deadline, coverImageURL,
       if (typeof saveEventVenues !== 'undefined') saveEventVenues(eventId, {
         show_venues:          document.getElementById('sw-venues')?.classList.contains('active') ? 'yes' : 'no',
         venue_ceremony:       document.getElementById('evt-venue-ceremony')?.value?.trim() || null,
+        venue_ceremony_label: document.getElementById('evt-venue-ceremony-label')?.value?.trim() || null,
         venue_ceremony_maps:  document.getElementById('evt-venue-ceremony-maps')?.value?.trim() || null,
         venue_ceremony_image: document.getElementById('evt-venue-ceremony-image')?.value || null,
         venue_civil:          document.getElementById('evt-venue-civil')?.value?.trim() || null,
+        venue_civil_label:    document.getElementById('evt-venue-civil-label')?.value?.trim() || null,
         venue_civil_maps:     document.getElementById('evt-venue-civil-maps')?.value?.trim() || null,
         venue_civil_image:    document.getElementById('evt-venue-civil-image')?.value || null,
         venue_reception:      document.getElementById('evt-venue-reception')?.value?.trim() || null,
+        venue_reception_label: document.getElementById('evt-venue-reception-label')?.value?.trim() || null,
         venue_reception_maps: document.getElementById('evt-venue-reception-maps')?.value?.trim() || null,
         venue_reception_image: document.getElementById('evt-venue-reception-image')?.value || null,
       });
@@ -1858,6 +1861,8 @@ function _fillEditForm(ev) {
     if(ev.std_scratch_photo_url){if(spUrl)spUrl.value=ev.std_scratch_photo_url;if(spPrev)spPrev.src=ev.std_scratch_photo_url;spWrap?.classList.remove('hidden');} }
   if (typeof toggleStdReleaseFields === 'function') toggleStdReleaseFields(ev.release_type || 'manual');
   _setSwitch('sw-messages',   _yesOrTrue(ev.allow_messages), 'messages-extra');
+  _setSwitch('sw-allow-messages', _yesOrTrue(ev.allow_messages));
+  _setSwitch('sw-show-guest-messages', _yesOrTrue(ev.show_guest_messages));
   _setSwitch('sw-sides',      _yesOrTrue(ev.allow_sides), 'sides-extra');
 
   // Show guest messages checkbox
@@ -2104,7 +2109,18 @@ function _fillEditForm(ev) {
   _setSwitch('sw-couplemsg', _yesOrTrue(ev.show_couplemsg), 'couplemsg-extra');
   { const ct = document.getElementById('evt-couplemsg-text'); if(ct) ct.value = ev.couplemsg_text || ''; }
   { const cs=document.getElementById('evt-couplemsg-signature'); if(cs) cs.value=ev.couplemsg_signature||''; }
-  { const cf=document.getElementById('evt-couplemsg-sig-font'); if(cf&&ev.couplemsg_sig_font) cf.value=ev.couplemsg_sig_font; }
+  { const cf=document.getElementById('evt-couplemsg-sig-font'); if(cf&&ev.couplemsg_sig_font){
+    const v=ev.couplemsg_sig_font;
+    if(v.startsWith('http')){
+      // URL de fonte carregada — adicionar como opção
+      const exists=Array.from(cf.options).some(o=>o.value===v);
+      if(!exists){const opt=document.createElement('option');opt.value=v;opt.textContent=v.split('/').pop().replace(/\.[^.]+$/,'')+'  (carregada)';cf.appendChild(opt);}
+      cf.value=v;
+      // Injectar @font-face para pré-visualização no editor
+      const fname='sig-font-'+v.split('/').pop().replace(/[^a-zA-Z0-9]/g,'-').slice(0,20);
+      if(!document.getElementById('sf-'+fname)){const s=document.createElement('style');s.id='sf-'+fname;s.textContent=`@font-face{font-family:'${fname}';src:url('${v}');}`;document.head.appendChild(s);}
+    }else{cf.value=v;}
+  }}
   { const ss=ev.couplemsg_sig_size||'1.6'; const si=document.getElementById('evt-couplemsg-sig-size'); const sl=document.getElementById('sig-size-val'); if(si)si.value=ss; if(sl)sl.textContent=parseFloat(ss).toFixed(1)+'rem'; }
   _setSwitch('sw-final-photo', _yesOrTrue(ev.show_final_photo), 'final-photo-extra');
   { const fpUrl=document.getElementById('evt-final-photo-url'); const fpPrev=document.getElementById('final-photo-preview'); const fpWrap=document.getElementById('final-photo-preview-wrap');
@@ -2148,12 +2164,15 @@ function _fillEditForm(ev) {
   _setSwitch('sw-venues', _yesOrTrue(ev.show_venues), 'venues-extra');
   const _sv = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
   _sv('evt-venue-ceremony',       ev.venue_ceremony);
+  _sv('evt-venue-ceremony-label', ev.venue_ceremony_label);
   _sv('evt-venue-ceremony-maps',  ev.venue_ceremony_maps);
   _sv('evt-venue-ceremony-date',  ev.venue_civil_date);
   _sv('evt-venue-civil',          ev.venue_civil);
+  _sv('evt-venue-civil-label',    ev.venue_civil_label);
   _sv('evt-venue-civil-maps',     ev.venue_civil_maps);
   _sv('evt-venue-civil-date',     ev.venue_relig_date);
   _sv('evt-venue-reception',      ev.venue_reception);
+  _sv('evt-venue-reception-label', ev.venue_reception_label);
   _sv('evt-venues-title',          ev.venues_title);
   { const vifEl = document.getElementById('evt-venue-image-fit'); if (vifEl) vifEl.value = ev.venue_image_fit || 'contain'; }
   _sv('evt-venue-reception-maps', ev.venue_reception_maps);
