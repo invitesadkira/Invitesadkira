@@ -86,6 +86,7 @@ async function handleCreateEvent(e) {
   const ibanHolder  = allowIban ? (document.getElementById('evt-iban-holder').value.trim() || null) : null;
   const ibanNumber2 = allowIban ? (document.getElementById('evt-iban-number-2')?.value.trim() || null) : null;
   const ibanHolder2 = allowIban ? (document.getElementById('evt-iban-holder-2')?.value.trim() || null) : null;
+  console.log('[ADK IBAN2] allowIban=', allowIban, '| input exists=', !!document.getElementById('evt-iban-number-2'), '| value=', document.getElementById('evt-iban-number-2')?.value, '| ibanNumber2=', ibanNumber2);
   const ibanFooter  = allowIban ? (document.getElementById('evt-iban-footer').value.trim() || null) : null;
 
   // Visual / sections
@@ -313,6 +314,7 @@ function saveEventWithCover(eventId, title, date, time, deadline, coverImageURL,
     music_url: musicUrl || null, music_title: musicTitle || null,
     iban_message: ibanMessage || null, iban_number: ibanNumber || null,
     iban_holder: ibanHolder || null, iban_footer: ibanFooter || null,
+    iban_number_2: ibanNumber2 || null, iban_holder_2: ibanHolder2 || null,
     show_couple: v.showCouple ? 'yes' : 'no',
     groom_name: v.groomName || null, bride_name: v.brideName || null,
     couple_size: v.coupleSize || 2.4,
@@ -386,6 +388,7 @@ function saveEventWithCover(eventId, title, date, time, deadline, coverImageURL,
         iban_message: ibanMessage || null,
         iban_number: ibanNumber || null,
         iban_holder: ibanHolder || null,
+        iban_number_2: ibanNumber2 || null, iban_holder_2: ibanHolder2 || null,
         iban_footer: ibanFooter || null,
         // ── Visual / Sections ──
         show_couple: v.showCouple ? 'yes' : 'no',
@@ -423,6 +426,7 @@ function saveEventWithCover(eventId, title, date, time, deadline, coverImageURL,
           music_url: musicUrl || null, music_title: musicTitle || null,
           iban_message: ibanMessage || null, iban_number: ibanNumber || null,
           iban_holder: ibanHolder || null, iban_footer: ibanFooter || null,
+          iban_number_2: ibanNumber2 || null, iban_holder_2: ibanHolder2 || null,
           show_couple: v.showCouple ? 'yes' : 'no',
           groom_name: v.groomName || null, bride_name: v.brideName || null, couple_size: v.coupleSize || 2.4,
           bg_url: v.bgUrl || null, bg_url_mobile: v.bgUrlMobile || null, bg_url_desktop: v.bgUrlDesktop || null, bg_overlay: v.bgOverlay !== undefined ? v.bgOverlay : 35,
@@ -664,6 +668,9 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
   const newIbanMessage = allowIbanActive ? (document.getElementById('evt-iban-message').value.trim() || null) : null;
   const newIbanNumber  = allowIbanActive ? (document.getElementById('evt-iban-number').value.trim() || null) : null;
   const newIbanHolder  = allowIbanActive ? (document.getElementById('evt-iban-holder').value.trim() || null) : null;
+  const newIbanNumber2 = allowIbanActive ? (document.getElementById('evt-iban-number-2')?.value.trim() || null) : null;
+  const newIbanHolder2 = allowIbanActive ? (document.getElementById('evt-iban-holder-2')?.value.trim() || null) : null;
+  console.log('[ADK IBAN2 path2] allowIbanActive=', allowIbanActive, '| value=', document.getElementById('evt-iban-number-2')?.value, '| newIbanNumber2=', newIbanNumber2);
   const newIbanFooter  = allowIbanActive ? (document.getElementById('evt-iban-footer').value.trim() || null) : null;
 
   const newShowCouple  = document.getElementById('sw-couple')?.classList.contains('active');
@@ -737,6 +744,7 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
     music_url: newMusicUrl, music_title: newMusicTitle,
     iban_message: newIbanMessage, iban_number: newIbanNumber,
     iban_holder: newIbanHolder, iban_footer: newIbanFooter,
+    iban_number_2: newIbanNumber2 || null, iban_holder_2: newIbanHolder2 || null,
     // ✅ CORREÇÃO: decor_side_url/decor_ornament_url/show_decor e as 3 zonas
     // novas vivem na tabela `events` (não em event_visuals) — estavam a ser
     // gravadas no sítio errado mais abaixo (saveEventVisuals), o que fazia
@@ -794,6 +802,7 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
         ev.music_url = newMusicUrl; ev.music_title = newMusicTitle;
         ev.iban_message = newIbanMessage; ev.iban_number = newIbanNumber;
         ev.iban_holder = newIbanHolder; ev.iban_footer = newIbanFooter;
+        ev.iban_number_2 = newIbanNumber2 || null; ev.iban_holder_2 = newIbanHolder2 || null;
         // Visual fields
         ev.show_couple = newShowCouple ? 'yes' : 'no';
         ev.groom_name = newGroomName; ev.bride_name = newBrideName; ev.couple_size = newCoupleSize;
