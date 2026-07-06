@@ -3442,7 +3442,8 @@ function renderSaveTheDateScreen(ev, decision) {
 
   const rsvpBtn = document.getElementById('std-rsvp-btn');
   if (rsvpBtn) rsvpBtn.onclick = () => {
-    const extUrl = eventData?.external_rsvp_url;
+    const evData = Store.guestEventData || window._evData;
+    const extUrl = evData?.external_rsvp_url;
     if (extUrl) {
       window.open(extUrl, '_blank', 'noopener');
     } else if (typeof openRsvpDrawer === 'function') {
