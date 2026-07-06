@@ -2483,6 +2483,10 @@ function openSectionOrderEditor() {
   modal.className = 'modal-overlay';
   modal.id = 'section-order-modal';
 
+  // Guardar antes de renderizar
+  window._sectionOrderCurrent = activeOrder;
+  window._sectionOrderInactive = inactiveOrder;
+
   function renderList() {
     const active = window._sectionOrderCurrent;
     return active.map((key, i) => {
@@ -2513,9 +2517,6 @@ function openSectionOrderEditor() {
   </div>`;
   document.body.appendChild(modal);
   lucide.createIcons();
-  // Guardar apenas as activas para reordenar; as inactivas mantêm-se no fim
-  window._sectionOrderCurrent = activeOrder;
-  window._sectionOrderInactive = inactiveOrder;
 }
 
 function moveSectionUp(i) {
