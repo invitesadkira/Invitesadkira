@@ -2758,34 +2758,43 @@ async function handleGalleryUpload(input) {
 function renderGalleryOrderPreview() {
   const ta = document.getElementById('evt-gallery-urls');
   const wrap = document.getElementById('gallery-order-preview');
-  const hint = document.getElementById('gallery-order-hint');
   if (!ta || !wrap) return;
   const urls = ta.value.split('\n').map(u => u.trim()).filter(Boolean);
-  if (!urls.length) { wrap.innerHTML = ''; if (hint) hint.classList.add('hidden'); return; }
-  if (hint) hint.classList.toggle('hidden', urls.length < 2);
-  wrap.innerHTML = urls.map((url, i) => {
-    const isFirst = i === 0;
-    const isLast = i === urls.length - 1 && urls.length > 1;
-    const borderColor = isFirst ? '#0f766e' : (isLast ? '#c9a84c' : '#e5e7eb');
-    return `<div style="position:relative;border-radius:0.5rem;overflow:hidden;border:2px solid ${borderColor}">
-      <img src="${url}" style="width:100%;aspect-ratio:1;object-fit:cover;display:block;background:#f3f4f6" onerror="this.style.opacity='0.15'">
-      ${isFirst ? `<span style="position:absolute;top:2px;left:2px;background:#0f766e;color:#fff;font-size:0.55rem;font-weight:800;padding:1px 4px;border-radius:0.25rem">1ª</span>` : ''}
-      ${isLast ? `<span style="position:absolute;top:2px;right:2px;background:#c9a84c;color:#fff;font-size:0.55rem;font-weight:800;padding:1px 4px;border-radius:0.25rem">Última</span>` : ''}
-      ${urls.length > 1 ? `<div style="position:absolute;bottom:0;left:0;right:0;display:flex;background:rgba(0,0,0,0.6)">
-        <button type="button" onclick="setGalleryPhotoPosition(${i},'first')" title="Definir como primeira foto" style="flex:1;background:none;border:none;color:#fff;font-size:0.6rem;font-weight:700;padding:3px 0;cursor:pointer">⇤ 1ª</button>
-        <button type="button" onclick="setGalleryPhotoPosition(${i},'last')" title="Definir como última foto" style="flex:1;background:none;border:none;color:#fff;font-size:0.6rem;font-weight:700;padding:3px 0;cursor:pointer;border-left:1px solid rgba(255,255,255,0.25)">Última ⇥</button>
-      </div>` : ''}
-    </div>`;
-  }).join('');
+  if (!urls.length) { wrap.innerHTML = ''; return; }
+
+  wrap.innerHTML = urls.map((url, i) => `
+    <div draggable="true" data-gidx="${i}" style="position:relative;border-radius:0.5rem;overflow:hidden;border:2px solid ${i===0?'#0f766e':'#e5e7eb'};cursor:grab;user-select:none">
+      <img src="${url}" style="width:100%;aspect-ratio:1;object-fit:cover;display:block;background:#f3f4f6;pointer-events:none" onerror="this.style.opacity='0.2'">
+      <span style="position:absolute;top:2px;left:2px;background:${i===0?'#0f766e':'rgba(0,0,0,0.6)'};color:#fff;font-size:0.6rem;font-weight:800;padding:1px 4px;border-radius:0.25rem">${i+1}</span>
+      <button type="button" onclick="removeGalleryPhoto(${i})" title="Remover" style="position:absolute;top:2px;right:2px;background:rgba(220,38,38,0.8);color:#fff;border:none;border-radius:50%;width:16px;height:16px;font-size:0.6rem;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0">×</button>
+    </div>`).join('');
+
+  // Drag-and-drop para reordenar
+  let dragIdx = null;
+  wrap.querySelectorAll('[data-gidx]').forEach(el => {
+    el.addEventListener('dragstart', e => { dragIdx = parseInt(el.dataset.gidx); el.style.opacity='0.4'; e.dataTransfer.effectAllowed='move'; });
+    el.addEventListener('dragend',   () => { el.style.opacity='1'; });
+    el.addEventListener('dragover',  e => { e.preventDefault(); el.style.border='2px solid #007f9f'; });
+    el.addEventListener('dragleave', () => { el.style.border=`2px solid ${el.dataset.gidx==='0'?'#0f766e':'#e5e7eb'}`; });
+    el.addEventListener('drop', e => {
+      e.preventDefault();
+      const dropIdx = parseInt(el.dataset.gidx);
+      if (dragIdx === null || dragIdx === dropIdx) { el.style.border='2px solid #e5e7eb'; return; }
+      const urls = ta.value.split('\n').map(u=>u.trim()).filter(Boolean);
+      const [item] = urls.splice(dragIdx, 1);
+      urls.splice(dropIdx, 0, item);
+      ta.value = urls.join('\n');
+      dragIdx = null;
+      renderGalleryOrderPreview();
+    });
+  });
 }
 
-function setGalleryPhotoPosition(index, pos) {
+function removeGalleryPhoto(index) {
   const ta = document.getElementById('evt-gallery-urls');
   if (!ta) return;
-  const urls = ta.value.split('\n').map(u => u.trim()).filter(Boolean);
-  if (index < 0 || index >= urls.length) return;
-  const [item] = urls.splice(index, 1);
-  if (pos === 'first') urls.unshift(item); else urls.push(item);
+  const urls = ta.value.split('\n').map(u=>u.trim()).filter(Boolean);
+  urls.splice(index, 1);
   ta.value = urls.join('\n');
   renderGalleryOrderPreview();
 }

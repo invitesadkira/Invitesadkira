@@ -1891,7 +1891,7 @@ function _fillEditForm(ev) {
   { const csEl = document.getElementById('evt-countdown-style'); if (csEl) csEl.value = ev.countdown_style || 'cards'; }
   { const bfEl = document.getElementById('evt-body-font'); if (bfEl) bfEl.value = ev.body_font_family || ''; }
   { const bsEl = document.getElementById('evt-body-text-scale'); const bsLbl = document.getElementById('body-text-size-label'); const bsVal = ev.body_text_scale || '100'; if (bsEl) bsEl.value = bsVal; if (bsLbl) bsLbl.textContent = bsVal + '%'; }
-  { const bgC = document.getElementById('evt-bg-color'); const bgH = document.getElementById('evt-bg-color-hex'); const v = ev.bg_color || ''; if (bgH) bgH.value = v; if (bgC && v) bgC.value = v; }
+  { const bgC = document.getElementById('evt-bg-color'); const bgH = document.getElementById('evt-bg-color-hex'); const v = ev.bg_color || ''; if (bgH) bgH.value = v; if (bgC) bgC.value = v && /^#[0-9a-fA-F]{6}$/.test(v) ? v : '#ffffff'; }
   { const ctTitle = document.getElementById('evt-custom-text-title'); if (ctTitle) ctTitle.value = ev.custom_text_title || ''; }
   { const ctBody = document.getElementById('evt-custom-text-body'); if (ctBody) ctBody.value = ev.custom_text_body || ''; }
   { const ctStd = document.getElementById('evt-custom-text-std'); if (ctStd) ctStd.checked = ev.custom_text_show_std === 'yes'; }

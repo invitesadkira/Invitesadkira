@@ -16,11 +16,11 @@
   <!-- PDF.js: renderizar PDFs como canvas (pré-visualização do template) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <!-- QRCode: gerador local, sem dependência CDN -->
-  <script src="js/qrcode-mini.js?v=1783310239"></script>
+  <script src="js/qrcode-mini.js?v=1783311155"></script>
   <script>tailwind.config = { theme: { extend: { colors: { teal: { 500: '#007f9f', 600: '#006b86' } } } } }</script>
   <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.js"></script>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💌</text></svg>">
-  <link rel="stylesheet" href="css/main.css?v=1783310239">
+  <link rel="stylesheet" href="css/main.css?v=1783311155">
 </head>
 <body class="h-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
 
@@ -876,7 +876,7 @@ para testemunhar o seu enlace matrimonial</textarea>
          <button type="button" class="mt-2 ml-3 text-xs text-teal-600 font-semibold" onclick="openMediaLibraryPicker((url) => { const t=document.getElementById('evt-gallery-urls'); const lines=t.value.split('\n').map(l=>l.trim()).filter(Boolean); if(!lines.includes(url)) lines.push(url); t.value = lines.join('\n'); renderGalleryOrderPreview(); })">📁 Escolher da Biblioteca</button>
          <input id="gallery-file-input" type="file" accept="image/*" multiple class="hidden" onchange="handleGalleryUpload(this)">
          <div id="gallery-order-preview" class="grid grid-cols-4 gap-2 mt-3"></div>
-         <p id="gallery-order-hint" class="text-xs text-gray-400 mt-1 hidden">Use os botões "1ª" / "Última" em cada foto para escolher a ordem.</p>
+         <p class="text-xs text-gray-400 mt-1">Arrasta as fotos abaixo para definir a ordem. Ou nomeia os ficheiros 1.jpg, 2.jpg... — a galeria ordena automaticamente por número.</p>
          <label class="text-xs font-semibold text-gray-600 block mt-3 mb-1">Estilo visual</label>
          <select id="evt-gallery-style" class="input-field text-sm">
           <option value="grid">Grelha (mosaico clássico)</option>
@@ -1653,21 +1653,21 @@ para testemunhar o seu enlace matrimonial</textarea>
   </a>
 
   <!-- ===================== SCRIPTS (ordem importa) ===================== -->
-  <script src="js/config.js?v=1783310239"></script>
-  <script src="js/store.js?v=1783310239"></script>
-  <script src="js/visuals.js?v=1783310239"></script>
-  <script src="js/venues.js?v=1783310239"></script>
-  <script src="js/rsvp.js?v=1783310239"></script>
-  <script src="js/ui.js?v=1783310239"></script>
-  <script src="js/auth.js?v=1783310239"></script>
-  <script src="js/dashboard.js?v=1783310239"></script>
-  <script src="js/events.js?v=1783310239"></script>
-  <script src="js/intake-wizard.js?v=1783310239"></script>
-  <script src="js/tickets.js?v=1783310239"></script>
-  <script src="js/guest.js?v=1783310239"></script>
-  <script src="js/sections.js?v=1783310239"></script>
-  <script src="js/admin.js?v=1783310239"></script>
-  <script src="js/router.js?v=1783310239"></script>
+  <script src="js/config.js?v=1783311155"></script>
+  <script src="js/store.js?v=1783311155"></script>
+  <script src="js/visuals.js?v=1783311155"></script>
+  <script src="js/venues.js?v=1783311155"></script>
+  <script src="js/rsvp.js?v=1783311155"></script>
+  <script src="js/ui.js?v=1783311155"></script>
+  <script src="js/auth.js?v=1783311155"></script>
+  <script src="js/dashboard.js?v=1783311155"></script>
+  <script src="js/events.js?v=1783311155"></script>
+  <script src="js/intake-wizard.js?v=1783311155"></script>
+  <script src="js/tickets.js?v=1783311155"></script>
+  <script src="js/guest.js?v=1783311155"></script>
+  <script src="js/sections.js?v=1783311155"></script>
+  <script src="js/admin.js?v=1783311155"></script>
+  <script src="js/router.js?v=1783311155"></script>
 
 </body>
 </html>

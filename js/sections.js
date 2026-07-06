@@ -1756,13 +1756,41 @@ async function openManualEditor() {
   function renderItems() {
     return items.map((it, i) => `
       <div class="flex items-center gap-2 mb-2" data-idx="${i}">
-        <input class="input-field text-xs flex-1" value="${it.text.replace(/\n/g,' ')}" placeholder="Texto" id="mi-text-${i}">
-        <input class="input-field text-xs w-28" value="${it.icon}" placeholder="Ícone lucide" id="mi-icon-${i}">
+        <div style="width:32px;height:32px;flex-shrink:0;border-radius:50%;background:#f3f4f6;display:flex;align-items:center;justify-content:center;overflow:hidden">
+          ${it.icon && it.icon.startsWith('http') ? `<img src="${escapeHTML(it.icon)}" style="width:20px;height:20px;object-fit:contain">` : `<i data-lucide="${escapeHTML(it.icon||'circle')}" style="width:16px;height:16px;color:#6b7280"></i>`}
+        </div>
+        <input class="input-field text-xs flex-1" value="${escapeHTML(it.text.replace(/\n/g,' '))}" placeholder="Texto" id="mi-text-${i}">
+        <div class="flex flex-col gap-0.5">
+          <input class="input-field text-xs" style="width:100px" value="${it.icon&&!it.icon.startsWith('http')?escapeHTML(it.icon):''}" placeholder="Ícone lucide" id="mi-icon-${i}" oninput="(()=>{window._miTmp=${i};})()">
+          <div class="flex gap-1">
+            <input type="file" accept="image/png,image/svg+xml,image/jpeg" style="display:none" id="mi-icon-file-${i}" onchange="window._uploadManualIcon(${i},this)">
+            <button type="button" class="text-xs text-teal-600" onclick="document.getElementById('mi-icon-file-${i}').click()">📤 PNG</button>
+            ${it.icon && it.icon.startsWith('http') ? `<button type="button" class="text-xs text-red-400" onclick="(()=>{document.getElementById('mi-icon-${i}').value='';window._miItems[${i}].icon='circle';window._reRenderManual();})()">✕</button>` : ''}
+          </div>
+        </div>
         <button type="button" class="text-red-400 px-1" onclick="removeManualItem(${i})"><i data-lucide="x" class="w-4 h-4"></i></button>
         ${i > 0 ? `<button type="button" class="text-gray-400 px-1" onclick="moveManualItem(${i},-1)"><i data-lucide="arrow-up" class="w-3 h-3"></i></button>` : ''}
         ${i < items.length-1 ? `<button type="button" class="text-gray-400 px-1" onclick="moveManualItem(${i},1)"><i data-lucide="arrow-down" class="w-3 h-3"></i></button>` : ''}
       </div>`).join('');
   }
+
+  window._miItems = items;
+  window._reRenderManual = () => {
+    document.getElementById('manual-items-list').innerHTML = renderItems();
+    lucide.createIcons({ el: document.getElementById('manual-items-list') });
+  };
+  window._uploadManualIcon = async (idx, input) => {
+    const file = input.files[0];
+    if (!file) return;
+    const btn = input.nextElementSibling;
+    if (btn) btn.textContent = '...';
+    const url = await uploadImageToStorage(file, 'event-covers', 'Ícone manual');
+    if (url) {
+      window._miItems[idx].icon = url;
+      window._reRenderManual();
+    }
+    if (btn) btn.textContent = '📤 PNG';
+  };
 
   modal.innerHTML = `<div class="modal-content bg-white rounded-2xl shadow-lg p-5 max-w-lg w-full max-h-[85vh] overflow-y-auto">
     <h3 class="text-base font-bold text-gray-800 mb-1">Manual do Bom Convidado</h3>
