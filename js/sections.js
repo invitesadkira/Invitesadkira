@@ -2437,23 +2437,55 @@ function getDefaultSectionOrder() {
 Store.eventSectionOrder = null;
 
 function openSectionOrderEditor() {
+  // Detectar quais secções estão activas com base nos switches do editor
+  const isSectionActive = (key) => {
+    const checks = {
+      'bible':       () => document.getElementById('sw-bible')?.classList.contains('active'),
+      'invite':      () => document.getElementById('sw-invite')?.classList.contains('active'),
+      'date':        () => true, // sempre visível
+      'countdown':   () => true,
+      'story':       () => document.getElementById('sw-story')?.classList.contains('active'),
+      'youtube_video': () => document.getElementById('sw-show-youtube-video')?.classList.contains('active'),
+      'venues':      () => document.getElementById('sw-venues')?.classList.contains('active'),
+      'parents':     () => document.getElementById('sw-parents')?.classList.contains('active'),
+      'iban':        () => document.getElementById('sw-iban')?.classList.contains('active'),
+      'gift_stores': () => { try { const s=JSON.parse(document.getElementById('dg2-gift-stores')?.value||'[]'); return s.length>0; } catch(e){ return false; } },
+      'gallery':     () => document.getElementById('sw-gallery')?.classList.contains('active'),
+      'manual':      () => document.getElementById('sw-manual')?.classList.contains('active'),
+      'schedule':    () => document.getElementById('sw-schedule')?.classList.contains('active'),
+      'dresscode':   () => document.getElementById('sw-dresscode')?.classList.contains('active'),
+      'couplemsg':   () => document.getElementById('sw-couplemsg')?.classList.contains('active'),
+      'final_photo': () => document.getElementById('sw-final-photo')?.classList.contains('active'),
+      'couple_photo':() => !!document.getElementById('evt-couple-photo-url')?.value,
+      'event_faq':   () => document.getElementById('sw-event-faq')?.classList.contains('active'),
+      'messages':    () => document.getElementById('sw-messages')?.classList.contains('active'),
+      'custom_text': () => !!(document.getElementById('evt-custom-text-title')?.value || document.getElementById('evt-custom-text-body')?.value),
+    };
+    const fn = checks[key];
+    return fn ? (fn() ?? true) : true;
+  };
+
   // Start with the current saved order (from event or Store)
   let order = Store.eventSectionOrder
     ? [...Store.eventSectionOrder]
     : getDefaultSectionOrder();
 
-  // Always add any missing sections (e.g. 'venues', 'story' added after event creation)
+  // Always add any missing sections
   const allKeys = getDefaultSectionOrder();
   allKeys.forEach(k => { if (!order.includes(k)) order.push(k); });
-  // Remove any stale keys not in current definitions
   order = order.filter(k => allKeys.includes(k));
+
+  // Separar em activas e inactivas
+  const activeOrder   = order.filter(k => isSectionActive(k));
+  const inactiveOrder = order.filter(k => !isSectionActive(k));
 
   const modal = document.createElement('div');
   modal.className = 'modal-overlay';
   modal.id = 'section-order-modal';
 
   function renderList() {
-    return order.map((key, i) => {
+    const active = window._sectionOrderCurrent;
+    return active.map((key, i) => {
       const def = ALL_SECTION_DEFS.find(d => d.key === key) || { label: key, icon: 'layout' };
       return `<div class="section-reorder-item" data-key="${key}">
         <span class="sr-handle"><i data-lucide="grip-vertical" class="w-4 h-4"></i></span>
@@ -2461,7 +2493,7 @@ function openSectionOrderEditor() {
         <button type="button" class="text-gray-300 hover:text-gray-500 px-1" onclick="moveSectionUp(${i})" ${i===0?'disabled style="opacity:0.3"':''}>
           <i data-lucide="chevron-up" class="w-4 h-4"></i>
         </button>
-        <button type="button" class="text-gray-300 hover:text-gray-500 px-1" onclick="moveSectionDown(${i})" ${i===order.length-1?'disabled style="opacity:0.3"':''}>
+        <button type="button" class="text-gray-300 hover:text-gray-500 px-1" onclick="moveSectionDown(${i})" ${i===active.length-1?'disabled style="opacity:0.3"':''}>
           <i data-lucide="chevron-down" class="w-4 h-4"></i>
         </button>
       </div>`;
@@ -2470,7 +2502,8 @@ function openSectionOrderEditor() {
 
   modal.innerHTML = `<div class="modal-content bg-white rounded-2xl shadow-lg p-5 max-w-md w-full" style="max-height:85vh;overflow-y:auto">
     <h3 class="text-base font-bold text-gray-800 mb-1">Organizar Secções</h3>
-    <p class="text-xs text-gray-400 mb-3">Use as setas para reordenar as secções da página do convidado.</p>
+    <p class="text-xs text-gray-400 mb-1">Apenas as secções activas aparecem aqui. Active mais secções no editor para as adicionar.</p>
+    ${inactiveOrder.length ? `<p class="text-xs text-gray-300 mb-3">Inactivas (não aparecem): ${inactiveOrder.map(k=>(ALL_SECTION_DEFS.find(d=>d.key===k)||{label:k}).label).join(', ')}</p>` : ''}
     <div id="section-order-list">${renderList()}</div>
     <div class="flex gap-2 mt-4">
       <button class="flex-1 btn-main" onclick="saveSectionOrder()">Guardar</button>
@@ -2480,7 +2513,9 @@ function openSectionOrderEditor() {
   </div>`;
   document.body.appendChild(modal);
   lucide.createIcons();
-  window._sectionOrderCurrent = order;
+  // Guardar apenas as activas para reordenar; as inactivas mantêm-se no fim
+  window._sectionOrderCurrent = activeOrder;
+  window._sectionOrderInactive = inactiveOrder;
 }
 
 function moveSectionUp(i) {
@@ -2509,7 +2544,9 @@ function refreshSectionOrderList() {
   lucide.createIcons();
 }
 function saveSectionOrder() {
-  Store.eventSectionOrder = [...window._sectionOrderCurrent];
+  // Guardar activas primeiro (na nova ordem) + inactivas no fim (mantêm posição relativa)
+  const combined = [...window._sectionOrderCurrent, ...(window._sectionOrderInactive || [])];
+  Store.eventSectionOrder = combined;
   document.getElementById('section-order-modal')?.remove();
   toast('Ordem das secções guardada.');
 }
