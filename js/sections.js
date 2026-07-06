@@ -1565,14 +1565,15 @@ function buildManualSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
   }
 
   // ── Style: CARDS (default) — grid of icon cards ──
+  const noCircles = ev.manual_show_circles === 'no';
   const cards = items.map(it => `<div class="manual-item">
-    <div class="mi-icon" style="background:color-mix(in srgb,${evColor} 15%,white)">${it.icon && it.icon.startsWith('http') ? `<img src="${it.icon}" style="width:20px;height:20px;object-fit:contain">` : `<i data-lucide="${it.icon}" style="color:${evColor}"></i>`}</div>
+    <div class="mi-icon" style="${noCircles ? '' : `background:color-mix(in srgb,${evColor} 15%,white)`}">${it.icon && it.icon.startsWith('http') ? `<img src="${it.icon}" style="${noCircles ? 'width:42px;height:42px' : 'width:20px;height:20px'};object-fit:contain">` : `<i data-lucide="${it.icon}" style="color:${evColor}"></i>`}</div>
     <p class="mi-text">${it.text.replace(/\n/g, '<br>')}</p>
   </div>`).join('');
   return _SD + `<div class="event-section" style="background:#f8fafc">
     <div class="section-inner">
       <h3 class="section-title reveal" style="color:${evColor}">Manual do Bom Convidado</h3>
-      <div class="manual-grid reveal-stagger">${cards}</div>
+      <div class="manual-grid reveal-stagger${noCircles ? ' manual-no-circles' : ''}">${cards}</div>
     </div>
   </div>`;
 }
@@ -1781,6 +1782,11 @@ async function openManualEditor() {
   modal.innerHTML = `<div class="modal-content bg-white rounded-2xl shadow-lg p-5 max-w-lg w-full max-h-[85vh] overflow-y-auto">
     <h3 class="text-base font-bold text-gray-800 mb-1">Manual do Bom Convidado</h3>
     <p class="text-xs text-gray-400 mb-2">Os ícones são nomes do <a href="https://lucide.dev/icons/" target="_blank" class="text-teal-500 underline">Lucide Icons</a>. Escreve o nome e vê a pré-visualização ao lado.</p>
+    <label class="flex items-center gap-2 mb-3 cursor-pointer p-2 bg-gray-50 rounded-lg">
+      <input type="checkbox" id="mi-show-circles" ${(Store.guestEventData?.manual_show_circles !== false) ? 'checked' : ''} class="w-4 h-4 accent-teal-500">
+      <span class="text-xs font-semibold text-gray-700">Mostrar círculos por trás dos ícones</span>
+      <span class="text-xs text-gray-400">(desactivar deixa os ícones maiores)</span>
+    </label>
     <div id="manual-items-list">${renderItems()}</div>
     <div class="flex gap-3 mt-2">
       <button type="button" class="text-xs text-teal-600 font-semibold" onclick="addManualItem()">+ Adicionar item</button>
@@ -1857,8 +1863,10 @@ async function saveManualItems() {
   }
   if (eventId) {
     try {
+      const showCircles = document.getElementById('mi-show-circles')?.checked !== false;
       const saveResult = await saveEventVisuals(eventId, {
         manual_items: JSON.stringify(items),
+        manual_show_circles: showCircles ? 'yes' : 'no',
         show_manual: 'yes'
       });
       dlog('📝 saveManualItems — resultado da gravação:', saveResult);
@@ -2622,13 +2630,29 @@ function buildCoupleMsgSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
   const evColor = ev.event_color || '#007f9f';
   const singlePerson = ev.event_type === 'birthday' || ev.event_type === 'other';
   const title = singlePerson ? 'Mensagem para os Convidados' : 'Mensagem dos Noivos';
-  return _SD + `<div class="event-section">
+
+  // Assinatura dos noivos
+  const sig = ev.couplemsg_signature;
+  const sigFont = ev.couplemsg_sig_font || '';
+  const sigSize = parseFloat(ev.couplemsg_sig_size) || 1.6;
+  const googleFonts = ['Great Vibes','Dancing Script','Sacramento','Pacifico'];
+  const needsGoogleFont = sig && sigFont && googleFonts.includes(sigFont);
+  const fontLink = needsGoogleFont
+    ? `<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=${encodeURIComponent(sigFont)}&display=swap">`
+    : '';
+  const sigHtml = sig ? `
+    <div style="margin-top:1.5rem;padding-top:1rem;border-top:1px solid #f3f4f6">
+      <p style="font-size:${sigSize}rem;color:${evColor};font-family:${sigFont?`'${sigFont}',`:''}serif;line-height:1.4">${escapeHTML(sig)}</p>
+    </div>` : '';
+
+  return fontLink + _SD + `<div class="event-section">
     <div class="section-inner reveal" style="text-align:center">
       <div style="width:52px;height:52px;border-radius:50%;background:color-mix(in srgb,${evColor} 12%,white);display:flex;align-items:center;justify-content:center;margin:0 auto 0.75rem">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="${evColor}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
       </div>
       <h3 class="section-title">${escapeHTML(title)}</h3>
       <p style="font-size:${parseFloat(ev.couplemsg_size)||0.95}rem;color:#374151;line-height:1.75;max-width:460px;margin:0 auto;white-space:pre-wrap">${escapeHTML(ev.couplemsg_text || '')}</p>
+      ${sigHtml}
     </div>
   </div>`;
 }

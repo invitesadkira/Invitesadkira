@@ -1636,3 +1636,20 @@ html.ev-gold-countdown .std-countdown-num {
 h1.hero-couple-names-simple {
   font-family: var(--event-font, 'Great Vibes', cursive) !important;
 }
+
+/* Manual do Bom Convidado — sem círculos (ícones maiores) */
+.manual-no-circles .mi-icon {
+  background: none !important;
+  border-radius: 0 !important;
+  width: 52px !important;
+  height: 52px !important;
+}
+.manual-no-circles .mi-icon svg,
+.manual-no-circles .mi-icon i {
+  width: 42px !important;
+  height: 42px !important;
+}
+.manual-no-circles .mi-icon img {
+  width: 42px !important;
+  height: 42px !important;
+}

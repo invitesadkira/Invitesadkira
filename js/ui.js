@@ -1390,6 +1390,30 @@ function clearCardBg() {
   if (c) c.style.display = 'none';
 }
 
+async function handleSigFontUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+  toast('A carregar fonte da assinatura...');
+  const url = await uploadImageToStorage(file, 'event-covers', 'Fonte assinatura');
+  if (url) {
+    const fontName = file.name.replace(/\.[^.]+$/, '');
+    // Injectar a fonte no documento para pré-visualização imediata
+    const style = document.createElement('style');
+    style.textContent = `@font-face { font-family: '${fontName}'; src: url('${url}'); }`;
+    document.head.appendChild(style);
+    // Adicionar ao selector
+    const sel = document.getElementById('evt-couplemsg-sig-font');
+    if (sel) {
+      const opt = document.createElement('option');
+      opt.value = fontName;
+      opt.textContent = fontName + ' (carregada)';
+      opt.selected = true;
+      sel.appendChild(opt);
+    }
+    toast('Fonte carregada!');
+  }
+}
+
 async function handleCouplePhotoUpload(input) {
   const file = input.files[0];
   if (!file) return;

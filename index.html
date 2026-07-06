@@ -16,11 +16,11 @@
   <!-- PDF.js: renderizar PDFs como canvas (pré-visualização do template) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <!-- QRCode: gerador local, sem dependência CDN -->
-  <script src="js/qrcode-mini.js?v=1783313905"></script>
+  <script src="js/qrcode-mini.js?v=1783315186"></script>
   <script>tailwind.config = { theme: { extend: { colors: { teal: { 500: '#007f9f', 600: '#006b86' } } } } }</script>
   <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.js"></script>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💌</text></svg>">
-  <link rel="stylesheet" href="css/main.css?v=1783313905">
+  <link rel="stylesheet" href="css/main.css?v=1783315186">
 </head>
 <body class="h-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
 
@@ -807,6 +807,8 @@ A vossa presença neste dia tão especial é, para nós, o maior presente. No en
          <span class="text-sm font-semibold text-gray-700">Texto de Convite</span>
          <div id="sw-invite" class="switch active" onclick="toggleSwitch(this, 'invite-extra')"></div>
         </div>
+        <!-- hidden input FORA do invite-extra para sobreviver ao toggle -->
+        <input type="hidden" id="evt-invite-order" value="after">
         <div id="invite-extra" class="pl-4 space-y-2">
          <textarea id="evt-invite-text" class="input-field text-sm" rows="5" placeholder="Ex: Têm a honra de convidar Exmo.(a) Sr.(a) para testemunhar...">Têm a honra de convidar
 Exmo.(a) Sr.(a)
@@ -814,7 +816,6 @@ para testemunhar o seu enlace matrimonial</textarea>
          <p class="text-xs text-gray-400">Cada linha ficará centrada. Use linha em branco para separar parágrafos.</p>
          <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:0.6rem;padding:0.6rem;margin-top:0.25rem">
           <p class="text-xs font-semibold text-gray-700 mb-1">Posição do texto de convite</p>
-          <input type="hidden" id="evt-invite-order" value="after">
           <div class="flex gap-3">
            <label class="flex items-center gap-1.5 cursor-pointer">
             <input type="radio" name="invite-order" id="invite-order-after" value="after" checked class="accent-teal-500"
@@ -903,6 +904,31 @@ para testemunhar o seu enlace matrimonial</textarea>
           <button type="button" class="w-8 h-8 rounded-lg border border-gray-300 flex items-center justify-center font-bold" onclick="changeCouplemsgSize(1)"><i data-lucide="plus" class="w-3 h-3"></i></button>
          </div>
          <input id="evt-couplemsg-size" type="hidden" value="0.95">
+
+         <!-- Assinatura dos Noivos -->
+         <div style="background:#fdf4ff;border:1px solid #e9d5ff;border-radius:0.6rem;padding:0.75rem;margin-top:0.75rem">
+          <p class="text-xs font-bold text-gray-700 mb-1">✍️ Assinatura dos Noivos (opcional)</p>
+          <p class="text-xs text-gray-400 mb-2">Aparece no final da mensagem. Ex: "Com muito amor, Cheron e Edmilson"</p>
+          <input id="evt-couplemsg-signature" type="text" class="input-field text-sm mb-2" placeholder="Ex: Com muito amor, Cheron e Edmilson">
+          <label class="text-xs font-semibold text-gray-600 block mb-1">Fonte da assinatura</label>
+          <div class="flex gap-2 items-center flex-wrap">
+           <select id="evt-couplemsg-sig-font" class="input-field text-xs" style="width:180px">
+            <option value="">Mesma fonte do convite</option>
+            <option value="Great Vibes">Great Vibes (cursiva elegante)</option>
+            <option value="Playfair Display">Playfair Display (serifa)</option>
+            <option value="Dancing Script">Dancing Script (manuscrita)</option>
+            <option value="Pacifico">Pacifico (casual)</option>
+            <option value="Sacramento">Sacramento (cursiva fina)</option>
+           </select>
+           <input type="file" id="sig-font-file" accept=".ttf,.otf,.woff,.woff2" class="hidden" onchange="handleSigFontUpload(this)">
+           <button type="button" class="btn-outline text-xs" onclick="document.getElementById('sig-font-file').click()">📤 Fonte própria</button>
+          </div>
+          <label class="text-xs font-semibold text-gray-600 block mt-2 mb-1">Tamanho da assinatura</label>
+          <div class="flex items-center gap-2">
+           <input id="evt-couplemsg-sig-size" type="range" min="1" max="3" step="0.1" value="1.6" style="width:120px" oninput="document.getElementById('sig-size-val').textContent=parseFloat(this.value).toFixed(1)+'rem'">
+           <span id="sig-size-val" class="text-xs text-gray-600">1.6rem</span>
+          </div>
+         </div>
         </div>
        </div><!-- /pane msg-noivos -->
        <div class="event-tab-pane hidden" data-tab="midia-capa">
@@ -1656,21 +1682,21 @@ para testemunhar o seu enlace matrimonial</textarea>
   </a>
 
   <!-- ===================== SCRIPTS (ordem importa) ===================== -->
-  <script src="js/config.js?v=1783313905"></script>
-  <script src="js/store.js?v=1783313905"></script>
-  <script src="js/visuals.js?v=1783313905"></script>
-  <script src="js/venues.js?v=1783313905"></script>
-  <script src="js/rsvp.js?v=1783313905"></script>
-  <script src="js/ui.js?v=1783313905"></script>
-  <script src="js/auth.js?v=1783313905"></script>
-  <script src="js/dashboard.js?v=1783313905"></script>
-  <script src="js/events.js?v=1783313905"></script>
-  <script src="js/intake-wizard.js?v=1783313905"></script>
-  <script src="js/tickets.js?v=1783313905"></script>
-  <script src="js/guest.js?v=1783313905"></script>
-  <script src="js/sections.js?v=1783313905"></script>
-  <script src="js/admin.js?v=1783313905"></script>
-  <script src="js/router.js?v=1783313905"></script>
+  <script src="js/config.js?v=1783315186"></script>
+  <script src="js/store.js?v=1783315186"></script>
+  <script src="js/visuals.js?v=1783315186"></script>
+  <script src="js/venues.js?v=1783315186"></script>
+  <script src="js/rsvp.js?v=1783315186"></script>
+  <script src="js/ui.js?v=1783315186"></script>
+  <script src="js/auth.js?v=1783315186"></script>
+  <script src="js/dashboard.js?v=1783315186"></script>
+  <script src="js/events.js?v=1783315186"></script>
+  <script src="js/intake-wizard.js?v=1783315186"></script>
+  <script src="js/tickets.js?v=1783315186"></script>
+  <script src="js/guest.js?v=1783315186"></script>
+  <script src="js/sections.js?v=1783315186"></script>
+  <script src="js/admin.js?v=1783315186"></script>
+  <script src="js/router.js?v=1783315186"></script>
 
 </body>
 </html>

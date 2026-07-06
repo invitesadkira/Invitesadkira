@@ -106,6 +106,7 @@ async function handleCreateEvent(e) {
   const showInvite  = document.getElementById('sw-invite').classList.contains('active');
   const inviteText  = showInvite ? (document.getElementById('evt-invite-text').value.trim() || null) : null;
   const inviteOrder = document.getElementById('evt-invite-order')?.value || document.querySelector('input[name="invite-order"]:checked')?.value || 'after';
+  console.log('[ADK SAVE] evt-invite-order hidden input =', document.getElementById('evt-invite-order')?.value, '| radio checked =', document.querySelector('input[name="invite-order"]:checked')?.value, '| inviteOrder =', inviteOrder);
   const showParents = document.getElementById('sw-parents').classList.contains('active');
   const groomPar    = showParents ? (document.getElementById('evt-groom-parents').value.trim() || null) : null;
   const bridePar    = showParents ? (document.getElementById('evt-bride-parents').value.trim() || null) : null;
@@ -884,6 +885,9 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
           youtube_video_url: document.getElementById('evt-youtube-video-url')?.value?.trim() || null,
           youtube_video_title: document.getElementById('evt-youtube-video-title')?.value?.trim() || null,
           couplemsg_size: document.getElementById('evt-couplemsg-size')?.value || '0.95',
+          couplemsg_signature: document.getElementById('evt-couplemsg-signature')?.value?.trim() || null,
+          couplemsg_sig_font: document.getElementById('evt-couplemsg-sig-font')?.value || null,
+          couplemsg_sig_size: document.getElementById('evt-couplemsg-sig-size')?.value || '1.6',
           story_size: document.getElementById('evt-story-size')?.value || '0.88',
           groom_name: newGroomName, bride_name: newBrideName, couple_size: newCoupleSize,
           hero_subtitle: document.getElementById('evt-hero-subtitle')?.value?.trim() || null,
@@ -911,6 +915,9 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
           // que já existem nesta altura na tabela event_visuals.
           show_couplemsg: document.getElementById('sw-couplemsg')?.classList.contains('active') ? 'yes' : 'no',
           couplemsg_text: document.getElementById('evt-couplemsg-text')?.value?.trim() || null,
+          couplemsg_signature: document.getElementById('evt-couplemsg-signature')?.value?.trim() || null,
+          couplemsg_sig_font: document.getElementById('evt-couplemsg-sig-font')?.value || null,
+          couplemsg_sig_size: document.getElementById('evt-couplemsg-sig-size')?.value || '1.6',
           show_final_photo: document.getElementById('sw-final-photo')?.classList.contains('active') ? 'yes' : 'no',
           final_photo_url: document.getElementById('evt-final-photo-url')?.value || null,
           couple_photo_url: document.getElementById('evt-couple-photo-url')?.value || null,
@@ -2096,6 +2103,9 @@ function _fillEditForm(ev) {
   _setSwitch('sw-decor', _yesOrTrue(ev.show_decor), 'decor-extra');
   _setSwitch('sw-couplemsg', _yesOrTrue(ev.show_couplemsg), 'couplemsg-extra');
   { const ct = document.getElementById('evt-couplemsg-text'); if(ct) ct.value = ev.couplemsg_text || ''; }
+  { const cs=document.getElementById('evt-couplemsg-signature'); if(cs) cs.value=ev.couplemsg_signature||''; }
+  { const cf=document.getElementById('evt-couplemsg-sig-font'); if(cf&&ev.couplemsg_sig_font) cf.value=ev.couplemsg_sig_font; }
+  { const ss=ev.couplemsg_sig_size||'1.6'; const si=document.getElementById('evt-couplemsg-sig-size'); const sl=document.getElementById('sig-size-val'); if(si)si.value=ss; if(sl)sl.textContent=parseFloat(ss).toFixed(1)+'rem'; }
   _setSwitch('sw-final-photo', _yesOrTrue(ev.show_final_photo), 'final-photo-extra');
   { const fpUrl=document.getElementById('evt-final-photo-url'); const fpPrev=document.getElementById('final-photo-preview'); const fpWrap=document.getElementById('final-photo-preview-wrap');
     if(ev.final_photo_url){if(fpUrl)fpUrl.value=ev.final_photo_url;if(fpPrev)fpPrev.src=ev.final_photo_url;fpWrap?.classList.remove('hidden');} }
