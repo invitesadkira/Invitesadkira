@@ -320,7 +320,7 @@ function saveEventWithCover(eventId, title, date, time, deadline, coverImageURL,
     // bg_url_mobile/bg_url_desktop/bible_text_2/bible_ref_2/bible_size removidos
     // daqui — só existem em event_visuals (ver saveEventVisuals mais abaixo).
     show_bible: v.showBible ? 'yes' : 'no', bible_text: v.bibleText || null, bible_ref: v.bibleRef || null,
-    show_invite: v.showInvite ? 'yes' : 'no', invite_text: v.inviteText || null,
+    show_invite: v.showInvite ? 'yes' : 'no', invite_text: v.inviteText || null, invite_order: v.inviteOrder || 'after',
     show_parents: v.showParents ? 'yes' : 'no',
     groom_parents: v.groomPar || null, bride_parents: v.bridePar || null,
     show_gallery: v.showGallery ? 'yes' : 'no', gallery_urls: v.galleryUrls || null,
@@ -399,7 +399,7 @@ function saveEventWithCover(eventId, title, date, time, deadline, coverImageURL,
         bible_ref: v.bibleRef || null,
         show_invite: v.showInvite ? 'yes' : 'no',
         invite_text: v.inviteText || null,
-        show_parents: v.showParents ? 'yes' : 'no',
+        invite_order: v.inviteOrder || 'after',
         groom_parents: v.groomPar || null,
         bride_parents: v.bridePar || null,
         show_gallery: v.showGallery ? 'yes' : 'no',
@@ -427,7 +427,7 @@ function saveEventWithCover(eventId, title, date, time, deadline, coverImageURL,
           groom_name: v.groomName || null, bride_name: v.brideName || null, couple_size: v.coupleSize || 2.4,
           bg_url: v.bgUrl || null, bg_url_mobile: v.bgUrlMobile || null, bg_url_desktop: v.bgUrlDesktop || null, bg_overlay: v.bgOverlay !== undefined ? v.bgOverlay : 35,
           show_bible: v.showBible ? 'yes' : 'no', bible_text: v.bibleText || null, bible_ref: v.bibleRef || null, bible_text_2: v.bibleText2 || null, bible_ref_2: v.bibleRef2 || null, bible_size: v.bibleSize || '0.92',
-          show_invite: v.showInvite ? 'yes' : 'no', invite_text: v.inviteText || null,
+          show_invite: v.showInvite ? 'yes' : 'no', invite_text: v.inviteText || null, invite_order: v.inviteOrder || 'after',
           show_parents: v.showParents ? 'yes' : 'no', groom_parents: v.groomPar || null, bride_parents: v.bridePar || null,
           show_gallery: v.showGallery ? 'yes' : 'no', gallery_urls: v.galleryUrls || null,
           show_manual: v.showManual ? 'yes' : 'no', manual_items: v.manualItems || null,
@@ -447,7 +447,7 @@ function saveEventWithCover(eventId, title, date, time, deadline, coverImageURL,
         couple_size: v.coupleSize || 2.4, show_couple: v.showCouple ? 'yes' : 'no',
         bg_url: v.bgUrl || null, bg_url_mobile: v.bgUrlMobile || null, bg_url_desktop: v.bgUrlDesktop || null, bg_overlay: v.bgOverlay !== undefined ? v.bgOverlay : 35,
         show_bible: v.showBible ? 'yes' : 'no', bible_text: v.bibleText || null, bible_ref: v.bibleRef || null, bible_text_2: v.bibleText2 || null, bible_ref_2: v.bibleRef2 || null, bible_size: v.bibleSize || '0.92',
-        show_invite: v.showInvite ? 'yes' : 'no', invite_text: v.inviteText || null,
+        show_invite: v.showInvite ? 'yes' : 'no', invite_text: v.inviteText || null, invite_order: v.inviteOrder || 'after',
         invite_blessing: v.inviteBlessing ?? '',
         show_parents: v.showParents ? 'yes' : 'no', groom_parents: v.groomPar || null, bride_parents: v.bridePar || null,
         show_gallery: v.showGallery ? 'yes' : 'no', gallery_urls: v.galleryUrls || null,
@@ -1978,7 +1978,14 @@ function _fillEditForm(ev) {
 
   _setSwitch('sw-invite', _yesOrTrue(ev.show_invite), 'invite-extra');
   document.getElementById('evt-invite-text').value = ev.invite_text || '';
-  { const io = ev.invite_order || 'after'; const radio = document.getElementById(io === 'before' ? 'invite-order-before' : 'invite-order-after'); if (radio) radio.checked = true; }
+  { 
+    const io = ev.invite_order || 'after';
+    // Activar o radio correcto — funciona mesmo que o painel esteja escondido
+    const radioBefore = document.getElementById('invite-order-before');
+    const radioAfter  = document.getElementById('invite-order-after');
+    if (radioBefore) radioBefore.checked = (io === 'before');
+    if (radioAfter)  radioAfter.checked  = (io !== 'before');
+  }
 
   _setSwitch('sw-parents', _yesOrTrue(ev.show_parents), 'parents-extra');
   document.getElementById('evt-groom-parents').value = ev.groom_parents || '';
@@ -2107,7 +2114,7 @@ function _fillEditForm(ev) {
   { const spUrl=document.getElementById('evt-story-photo-url'); const spPrev=document.getElementById('story-photo-preview'); const spWrap=document.getElementById('story-photo-preview-wrap');
     if(ev.story_photo_url){if(spUrl)spUrl.value=ev.story_photo_url;if(spPrev)spPrev.src=ev.story_photo_url;spWrap?.classList.remove('hidden');} }
   { const stc=ev.story_text_color||'#4b5563'; const stcI=document.getElementById('evt-story-text-color'); const stcH=document.getElementById('evt-story-text-color-hex'); if(stcI)stcI.value=stc; if(stcH)stcH.value=stc; }
-  { const sdc=ev.story_date_color||''; const sdcI=document.getElementById('evt-story-date-color'); const sdcH=document.getElementById('evt-story-date-color-hex'); if(sdc&&sdcI)sdcI.value=sdc; if(sdcH)sdcH.value=sdc; }
+  { const sdc=ev.story_date_color||''; const sdcI=document.getElementById('evt-story-date-color'); const sdcH=document.getElementById('evt-story-date-color-hex'); if(sdcI&&sdc&&/^#[0-9a-fA-F]{6}$/.test(sdc))sdcI.value=sdc; if(sdcH)sdcH.value=sdc; }
   { const psInp = document.getElementById('evt-parents-size'); const psLbl = document.getElementById('parents-size-label'); const psVal = ev.parents_size || '0.88'; if (psInp) psInp.value = psVal; if (psLbl) psLbl.textContent = psVal + 'rem'; }
   _setSwitch('sw-invert-names', _yesOrTrue(ev.invert_names));
   const evTypeEl = document.getElementById('evt-event-type');

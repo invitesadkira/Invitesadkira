@@ -636,17 +636,7 @@ async function renderGuestSections(eventData) {
   }
 
   // DEBUG: Log what data we have for each section
-  console.group('renderGuestSections — section data check');
-  dlog('bible_text:', eventData.bible_text ? '✓ '+String(eventData.bible_text).substring(0,30) : '✗ null');
-  dlog('gallery_urls:', eventData.gallery_urls ? '✓ '+String(eventData.gallery_urls).substring(0,50) : '✗ null');
-  dlog('groom_parents:', eventData.groom_parents ? '✓' : '✗');
-  dlog('iban_number:', eventData.iban_number ? '✓' : '✗');
-  dlog('invite_text:', eventData.invite_text ? '✓' : '✗');
-  dlog('event_color:', eventData.event_color);
-  dlog('section_order:', eventData.section_order ? JSON.parse(eventData.section_order) : 'default');
-  dlog('show_manual:', eventData.show_manual, '| manual_items:', eventData.manual_items ? '✓ '+String(eventData.manual_items).substring(0,80) : '✗ null/vazio');
-  dlog('show_schedule:', eventData.show_schedule, '| schedule_items:', eventData.schedule_items ? '✓' : '✗ null/vazio');
-  console.groupEnd();
+  // (debug logging removed — use browser devtools network tab for section data)
 
   applyGuestBackground(eventData);
 
