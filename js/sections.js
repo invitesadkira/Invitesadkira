@@ -1472,15 +1472,12 @@ function buildGiftStoresSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
 }
 
 function buildGallerySection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
-  const rawUrls = [...new Set((ev.gallery_urls || '').split('\n').map(u => u.trim()).filter(Boolean))];
+  const rawUrls = (ev.gallery_urls || '').split('\n').map(u => u.trim()).filter(Boolean);
 
-  // ✅ Ordenar as fotos pelo número no nome do ficheiro
-  // Ex: "foto_1.jpg", "2.jpg", "IMG_003.png" → ordenadas por 1, 2, 3
-  const urls = rawUrls.sort((a, b) => {
-    const numA = parseInt((a.split('/').pop().match(/(\d+)/) || [])[1] || '0');
-    const numB = parseInt((b.split('/').pop().match(/(\d+)/) || [])[1] || '0');
-    return numA - numB;
-  });
+  // ✅ Filtrar fotos desactivadas (prefixo '!') — mantém a ordem manual do dono
+  // Nota: não ordenamos por número de ficheiro aqui — o dono arrasta para definir a ordem
+  // no editor. Se quiser ordem por número, deve nomear 1.jpg, 2.jpg... E arrastar nessa ordem.
+  const urls = rawUrls.filter(u => !u.startsWith('!'));
   if (!urls.length) return '';
   const style = ev.gallery_style || 'grid';
   const evColor = ev.event_color || '#007f9f';

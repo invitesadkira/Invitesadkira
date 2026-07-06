@@ -1032,7 +1032,7 @@ async function reloadEventFromSupabase(eventId) {
     dlog('🔄 Recarregando evento do Supabase:', eventId);
     
     // Buscar evento COM JOIN para presentes e RSVPs
-    const eventData = await supabaseRequest(`events?id=eq.${eventId}&select=id,title,date,time,user_id,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,music_url,music_title,iban_message,iban_number,iban_holder,iban_footer,groom_name,bride_name,couple_size,show_couple,bg_url,bg_overlay,bible_text,bible_ref,show_bible,invite_text,show_invite,groom_parents,bride_parents,show_parents,gallery_urls,show_gallery,show_manual,manual_items,show_schedule,schedule_items,custom_font_family,section_order,story_text,invite_blessing,event_color,confirm_by_date,cover_image,event_code,gifts(id,name,category,reserved,reserved_by,quantity,image_url),rsvps(guest_name,attending,side,companions,kids,wants_gift,message,created_at,updated_at)`);
+    const eventData = await supabaseRequest(`events?id=eq.${eventId}&select=id,title,date,time,user_id,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,music_url,music_title,iban_message,iban_number,iban_holder,iban_footer,groom_name,bride_name,couple_size,show_couple,bg_url,bg_overlay,bible_text,bible_ref,show_bible,invite_text,show_invite,invite_order,groom_parents,bride_parents,show_parents,gallery_urls,show_gallery,show_manual,manual_items,show_schedule,schedule_items,custom_font_family,section_order,story_text,invite_blessing,event_color,confirm_by_date,cover_image,event_code,gifts(id,name,category,reserved,reserved_by,quantity,image_url),rsvps(guest_name,attending,side,companions,kids,wants_gift,message,created_at,updated_at)`);
     
     if (eventData && eventData.length > 0) {
       const event = eventData[0];
@@ -2759,43 +2759,67 @@ function renderGalleryOrderPreview() {
   const ta = document.getElementById('evt-gallery-urls');
   const wrap = document.getElementById('gallery-order-preview');
   if (!ta || !wrap) return;
-  const urls = ta.value.split('\n').map(u => u.trim()).filter(Boolean);
-  if (!urls.length) { wrap.innerHTML = ''; return; }
+  const lines = ta.value.split('\n').map(u => u.trim()).filter(Boolean);
+  if (!lines.length) { wrap.innerHTML = ''; return; }
 
-  wrap.innerHTML = urls.map((url, i) => `
-    <div draggable="true" data-gidx="${i}" style="position:relative;border-radius:0.5rem;overflow:hidden;border:2px solid ${i===0?'#0f766e':'#e5e7eb'};cursor:grab;user-select:none">
+  wrap.innerHTML = lines.map((line, i) => {
+    const disabled = line.startsWith('!');
+    const url = disabled ? line.slice(1) : line;
+    return `<div data-gidx="${i}" draggable="${!disabled}" style="position:relative;border-radius:0.5rem;overflow:hidden;border:2px solid ${i===0&&!disabled?'#0f766e':disabled?'#f87171':'#e5e7eb'};cursor:${disabled?'default':'grab'};user-select:none;opacity:${disabled?'0.45':'1'}">
       <img src="${url}" style="width:100%;aspect-ratio:1;object-fit:cover;display:block;background:#f3f4f6;pointer-events:none" onerror="this.style.opacity='0.2'">
-      <span style="position:absolute;top:2px;left:2px;background:${i===0?'#0f766e':'rgba(0,0,0,0.6)'};color:#fff;font-size:0.6rem;font-weight:800;padding:1px 4px;border-radius:0.25rem">${i+1}</span>
-      <button type="button" onclick="removeGalleryPhoto(${i})" title="Remover" style="position:absolute;top:2px;right:2px;background:rgba(220,38,38,0.8);color:#fff;border:none;border-radius:50%;width:16px;height:16px;font-size:0.6rem;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0">×</button>
-    </div>`).join('');
+      <span style="position:absolute;top:2px;left:2px;background:${disabled?'rgba(239,68,68,0.85)':i===0?'#0f766e':'rgba(0,0,0,0.6)'};color:#fff;font-size:0.6rem;font-weight:800;padding:1px 4px;border-radius:0.25rem">${disabled?'✕':i+1}</span>
+      <div style="position:absolute;bottom:0;left:0;right:0;display:flex">
+        <button type="button" onclick="toggleGalleryPhoto(${i})" title="${disabled?'Activar foto':'Desactivar foto'}"
+          style="flex:1;background:${disabled?'rgba(34,197,94,0.85)':'rgba(239,68,68,0.75)'};color:#fff;border:none;font-size:0.55rem;font-weight:800;padding:3px 0;cursor:pointer">
+          ${disabled?'👁 Mostrar':'🚫 Ocultar'}
+        </button>
+        <button type="button" onclick="removeGalleryPhoto(${i})" title="Remover"
+          style="flex:1;background:rgba(0,0,0,0.6);color:#fff;border:none;font-size:0.55rem;font-weight:800;padding:3px 0;cursor:pointer;border-left:1px solid rgba(255,255,255,0.2)">
+          🗑 Apagar
+        </button>
+      </div>
+    </div>`;
+  }).join('');
 
-  // Drag-and-drop para reordenar
+  // Drag-and-drop — só para fotos activas
   let dragIdx = null;
   wrap.querySelectorAll('[data-gidx]').forEach(el => {
-    el.addEventListener('dragstart', e => { dragIdx = parseInt(el.dataset.gidx); el.style.opacity='0.4'; e.dataTransfer.effectAllowed='move'; });
+    if (el.getAttribute('draggable') === 'false') return;
+    el.addEventListener('dragstart', e => { dragIdx = parseInt(el.dataset.gidx); el.style.opacity='0.3'; e.dataTransfer.effectAllowed='move'; });
     el.addEventListener('dragend',   () => { el.style.opacity='1'; });
-    el.addEventListener('dragover',  e => { e.preventDefault(); el.style.border='2px solid #007f9f'; });
-    el.addEventListener('dragleave', () => { el.style.border=`2px solid ${el.dataset.gidx==='0'?'#0f766e':'#e5e7eb'}`; });
+    el.addEventListener('dragover',  e => { e.preventDefault(); el.style.boxShadow='0 0 0 2px #007f9f'; });
+    el.addEventListener('dragleave', () => { el.style.boxShadow=''; });
     el.addEventListener('drop', e => {
       e.preventDefault();
+      el.style.boxShadow = '';
       const dropIdx = parseInt(el.dataset.gidx);
-      if (dragIdx === null || dragIdx === dropIdx) { el.style.border='2px solid #e5e7eb'; return; }
-      const urls = ta.value.split('\n').map(u=>u.trim()).filter(Boolean);
-      const [item] = urls.splice(dragIdx, 1);
-      urls.splice(dropIdx, 0, item);
-      ta.value = urls.join('\n');
+      if (dragIdx === null || dragIdx === dropIdx) return;
+      const lines = ta.value.split('\n').map(u=>u.trim()).filter(Boolean);
+      const [item] = lines.splice(dragIdx, 1);
+      lines.splice(dropIdx, 0, item);
+      ta.value = lines.join('\n');
       dragIdx = null;
       renderGalleryOrderPreview();
     });
   });
 }
 
+function toggleGalleryPhoto(index) {
+  const ta = document.getElementById('evt-gallery-urls');
+  if (!ta) return;
+  const lines = ta.value.split('\n').map(u => u.trim()).filter(Boolean);
+  if (index < 0 || index >= lines.length) return;
+  lines[index] = lines[index].startsWith('!') ? lines[index].slice(1) : '!' + lines[index];
+  ta.value = lines.join('\n');
+  renderGalleryOrderPreview();
+}
+
 function removeGalleryPhoto(index) {
   const ta = document.getElementById('evt-gallery-urls');
   if (!ta) return;
-  const urls = ta.value.split('\n').map(u=>u.trim()).filter(Boolean);
-  urls.splice(index, 1);
-  ta.value = urls.join('\n');
+  const lines = ta.value.split('\n').map(u=>u.trim()).filter(Boolean);
+  lines.splice(index, 1);
+  ta.value = lines.join('\n');
   renderGalleryOrderPreview();
 }
 
