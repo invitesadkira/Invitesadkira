@@ -2449,7 +2449,13 @@ function openSectionOrderEditor() {
       'venues':      () => document.getElementById('sw-venues')?.classList.contains('active'),
       'parents':     () => document.getElementById('sw-parents')?.classList.contains('active'),
       'iban':        () => document.getElementById('sw-iban')?.classList.contains('active'),
-      'gift_stores': () => { try { const s=JSON.parse(document.getElementById('dg2-gift-stores')?.value||'[]'); return s.length>0; } catch(e){ return false; } },
+      'gift_stores': () => {
+        // Verificar nos dados do evento actual (não no modal que pode não estar aberto)
+        const ev = Store.events?.find(e => e.id === Store.currentEventId);
+        if (ev?.gift_stores) { try { return JSON.parse(ev.gift_stores).length > 0; } catch(e) {} }
+        // Fallback: tentar ler do input do modal se estiver aberto
+        try { const s=JSON.parse(document.getElementById('dg2-gift-stores')?.value||'[]'); return s.length>0; } catch(e){ return false; }
+      },
       'gallery':     () => document.getElementById('sw-gallery')?.classList.contains('active'),
       'manual':      () => document.getElementById('sw-manual')?.classList.contains('active'),
       'schedule':    () => document.getElementById('sw-schedule')?.classList.contains('active'),
