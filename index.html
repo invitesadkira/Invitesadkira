@@ -16,11 +16,11 @@
   <!-- PDF.js: renderizar PDFs como canvas (pré-visualização do template) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <!-- QRCode: gerador local, sem dependência CDN -->
-  <script src="js/qrcode-mini.js?v=1783332591"></script>
+  <script src="js/qrcode-mini.js?v=1783333771"></script>
   <script>tailwind.config = { theme: { extend: { colors: { teal: { 500: '#007f9f', 600: '#006b86' } } } } }</script>
   <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.js"></script>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💌</text></svg>">
-  <link rel="stylesheet" href="css/main.css?v=1783332591">
+  <link rel="stylesheet" href="css/main.css?v=1783333771">
 </head>
 <body class="h-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
 
@@ -623,10 +623,13 @@ A vossa presença neste dia tão especial é, para nós, o maior presente. No en
          <input id="evt-iban-number" type="text" class="input-field font-mono" placeholder="IBAN: AO06 0006 0000 0000 0000 0000 0">
          <input id="evt-iban-holder" type="text" class="input-field" placeholder="Titular da conta">
          <p class="text-xs font-semibold text-gray-600 pt-1">2.º IBAN (opcional)</p>
-         <input id="evt-iban-number-2" type="text" class="input-field font-mono" placeholder="IBAN: AO06 0006 0000 0000 0000 0000 0">
-         <input id="evt-iban-holder-2" type="text" class="input-field" placeholder="Titular da 2.ª conta">
+         <input id="evt-iban-number-2" type="text" class="input-field font-mono" placeholder="IBAN: AO06 0006 0000 0000 0000 0000 0" oninput="document.getElementById('_iban2val').value=this.value">
+         <input id="evt-iban-holder-2" type="text" class="input-field" placeholder="Titular da 2.ª conta" oninput="document.getElementById('_iban2holder').value=this.value">
          <input id="evt-iban-footer" type="text" class="input-field" placeholder="Assinatura final (ex: Com carinho, Os Noivos)">
         </div>
+        <!-- Hidden inputs fora do iban-extra para garantir leitura mesmo quando escondido -->
+        <input type="hidden" id="_iban2val">
+        <input type="hidden" id="_iban2holder">
        </div>
        </div><!-- /pane presente-iban -->
        <div class="event-tab-pane hidden" data-tab="tipo-estilo">
@@ -1701,21 +1704,21 @@ para testemunhar o seu enlace matrimonial</textarea>
   </a>
 
   <!-- ===================== SCRIPTS (ordem importa) ===================== -->
-  <script src="js/config.js?v=1783332591"></script>
-  <script src="js/store.js?v=1783332591"></script>
-  <script src="js/visuals.js?v=1783332591"></script>
-  <script src="js/venues.js?v=1783332591"></script>
-  <script src="js/rsvp.js?v=1783332591"></script>
-  <script src="js/ui.js?v=1783332591"></script>
-  <script src="js/auth.js?v=1783332591"></script>
-  <script src="js/dashboard.js?v=1783332591"></script>
-  <script src="js/events.js?v=1783332591"></script>
-  <script src="js/intake-wizard.js?v=1783332591"></script>
-  <script src="js/tickets.js?v=1783332591"></script>
-  <script src="js/guest.js?v=1783332591"></script>
-  <script src="js/sections.js?v=1783332591"></script>
-  <script src="js/admin.js?v=1783332591"></script>
-  <script src="js/router.js?v=1783332591"></script>
+  <script src="js/config.js?v=1783333771"></script>
+  <script src="js/store.js?v=1783333771"></script>
+  <script src="js/visuals.js?v=1783333771"></script>
+  <script src="js/venues.js?v=1783333771"></script>
+  <script src="js/rsvp.js?v=1783333771"></script>
+  <script src="js/ui.js?v=1783333771"></script>
+  <script src="js/auth.js?v=1783333771"></script>
+  <script src="js/dashboard.js?v=1783333771"></script>
+  <script src="js/events.js?v=1783333771"></script>
+  <script src="js/intake-wizard.js?v=1783333771"></script>
+  <script src="js/tickets.js?v=1783333771"></script>
+  <script src="js/guest.js?v=1783333771"></script>
+  <script src="js/sections.js?v=1783333771"></script>
+  <script src="js/admin.js?v=1783333771"></script>
+  <script src="js/router.js?v=1783333771"></script>
 
 </body>
 </html>

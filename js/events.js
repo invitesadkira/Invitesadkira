@@ -84,9 +84,9 @@ async function handleCreateEvent(e) {
   const ibanMessage = allowIban ? (document.getElementById('evt-iban-message').value.trim() || null) : null;
   const ibanNumber  = allowIban ? (document.getElementById('evt-iban-number').value.trim() || null) : null;
   const ibanHolder  = allowIban ? (document.getElementById('evt-iban-holder').value.trim() || null) : null;
-  const ibanNumber2 = allowIban ? (document.getElementById('evt-iban-number-2')?.value.trim() || null) : null;
-  const ibanHolder2 = allowIban ? (document.getElementById('evt-iban-holder-2')?.value.trim() || null) : null;
-  console.log('[ADK IBAN2] allowIban=', allowIban, '| input exists=', !!document.getElementById('evt-iban-number-2'), '| value=', document.getElementById('evt-iban-number-2')?.value, '| ibanNumber2=', ibanNumber2);
+  const ibanNumber2 = allowIban ? (document.getElementById('_iban2val')?.value.trim() || document.getElementById('evt-iban-number-2')?.value.trim() || null) : null;
+  const ibanHolder2 = allowIban ? (document.getElementById('_iban2holder')?.value.trim() || document.getElementById('evt-iban-holder-2')?.value.trim() || null) : null;
+  console.log('[ADK IBAN2] allowIban=', allowIban, '| _iban2val=', document.getElementById('_iban2val')?.value, '| ibanNumber2=', ibanNumber2);
   const ibanFooter  = allowIban ? (document.getElementById('evt-iban-footer').value.trim() || null) : null;
 
   // Visual / sections
@@ -668,9 +668,9 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
   const newIbanMessage = allowIbanActive ? (document.getElementById('evt-iban-message').value.trim() || null) : null;
   const newIbanNumber  = allowIbanActive ? (document.getElementById('evt-iban-number').value.trim() || null) : null;
   const newIbanHolder  = allowIbanActive ? (document.getElementById('evt-iban-holder').value.trim() || null) : null;
-  const newIbanNumber2 = allowIbanActive ? (document.getElementById('evt-iban-number-2')?.value.trim() || null) : null;
-  const newIbanHolder2 = allowIbanActive ? (document.getElementById('evt-iban-holder-2')?.value.trim() || null) : null;
-  console.log('[ADK IBAN2 path2] allowIbanActive=', allowIbanActive, '| value=', document.getElementById('evt-iban-number-2')?.value, '| newIbanNumber2=', newIbanNumber2);
+  const newIbanNumber2 = allowIbanActive ? (document.getElementById('_iban2val')?.value.trim() || document.getElementById('evt-iban-number-2')?.value.trim() || null) : null;
+  const newIbanHolder2 = allowIbanActive ? (document.getElementById('_iban2holder')?.value.trim() || document.getElementById('evt-iban-holder-2')?.value.trim() || null) : null;
+  console.log('[ADK IBAN2 path2] newIbanNumber2=', newIbanNumber2);
   const newIbanFooter  = allowIbanActive ? (document.getElementById('evt-iban-footer').value.trim() || null) : null;
 
   const newShowCouple  = document.getElementById('sw-couple')?.classList.contains('active');
@@ -1943,8 +1943,8 @@ function _fillEditForm(ev) {
   document.getElementById('evt-iban-number').value  = ev.iban_number  || '';
   document.getElementById('evt-iban-holder').value  = ev.iban_holder  || '';
   document.getElementById('evt-iban-footer').value  = ev.iban_footer  || '';
-  { const i2=document.getElementById('evt-iban-number-2'); if(i2) i2.value=ev.iban_number_2||''; }
-  { const h2=document.getElementById('evt-iban-holder-2'); if(h2) h2.value=ev.iban_holder_2||''; }
+  { const i2=document.getElementById('evt-iban-number-2'); if(i2) i2.value=ev.iban_number_2||''; const h2=document.getElementById('_iban2val'); if(h2) h2.value=ev.iban_number_2||''; }
+  { const h2=document.getElementById('evt-iban-holder-2'); if(h2) h2.value=ev.iban_holder_2||''; const hh=document.getElementById('_iban2holder'); if(hh) hh.value=ev.iban_holder_2||''; }
 
   // Visual / Sections
   _setSwitch('sw-couple', _yesOrTrue(ev.show_couple), 'couple-extra');
