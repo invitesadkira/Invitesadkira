@@ -1037,7 +1037,7 @@ async function reloadEventFromSupabase(eventId) {
     dlog('🔄 Recarregando evento do Supabase:', eventId);
     
     // Buscar evento COM JOIN para presentes e RSVPs
-    const eventData = await supabaseRequest(`events?id=eq.${eventId}&select=id,title,date,time,user_id,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,music_url,music_title,iban_message,iban_number,iban_holder,iban_footer,groom_name,bride_name,couple_size,show_couple,bg_url,bg_overlay,bible_text,bible_ref,show_bible,invite_text,show_invite,invite_order,groom_parents,bride_parents,show_parents,gallery_urls,show_gallery,show_manual,manual_items,show_schedule,schedule_items,custom_font_family,section_order,story_text,invite_blessing,event_color,confirm_by_date,cover_image,event_code,gifts(id,name,category,reserved,reserved_by,quantity,image_url),rsvps(guest_name,attending,side,companions,kids,wants_gift,message,created_at,updated_at)`);
+    const eventData = await supabaseRequest(`events?id=eq.${eventId}&select=id,title,date,time,user_id,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,music_url,music_title,iban_message,iban_number,iban_holder,iban_footer,iban_number_2,iban_holder_2,groom_name,bride_name,couple_size,show_couple,bg_url,bg_overlay,bible_text,bible_ref,show_bible,invite_text,show_invite,invite_order,groom_parents,bride_parents,show_parents,gallery_urls,show_gallery,show_manual,manual_items,show_schedule,schedule_items,custom_font_family,section_order,story_text,invite_blessing,event_color,confirm_by_date,cover_image,event_code,gifts(id,name,category,reserved,reserved_by,quantity,image_url),rsvps(guest_name,attending,side,companions,kids,wants_gift,message,created_at,updated_at)`);
     
     if (eventData && eventData.length > 0) {
       const event = eventData[0];
@@ -1086,6 +1086,8 @@ async function reloadEventFromSupabase(eventId) {
         iban_number: event.iban_number || null,
         iban_holder: event.iban_holder || null,
         iban_footer: event.iban_footer || null,
+        iban_number_2: event.iban_number_2 || null,
+        iban_holder_2: event.iban_holder_2 || null,
       groom_name: event.groom_name || null,
       bride_name: event.bride_name || null,
       couple_size: event.couple_size || 2.4,
