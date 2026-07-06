@@ -381,6 +381,7 @@ async function renderGuestView() {
 
   // ── CRITICAL: Update Store.guestEventData with fully merged eventData ──
   Store.guestEventData = eventData;
+  window._evData = eventData; // acesso rápido para botões inline no HTML
 
   // (Save the Date gate check happens at the END of this function, after
   // the full invite — including RSVP drawer and music player — has been
@@ -3399,7 +3400,14 @@ function renderSaveTheDateScreen(ev, decision) {
   }
 
   const rsvpBtn = document.getElementById('std-rsvp-btn');
-  if (rsvpBtn) rsvpBtn.onclick = () => { if (typeof openRsvpDrawer==='function') openRsvpDrawer(); };
+  if (rsvpBtn) rsvpBtn.onclick = () => {
+    const extUrl = eventData?.external_rsvp_url;
+    if (extUrl) {
+      window.open(extUrl, '_blank', 'noopener');
+    } else if (typeof openRsvpDrawer === 'function') {
+      openRsvpDrawer();
+    }
+  };
 
   if (window._stdCountdownInterval) clearInterval(window._stdCountdownInterval);
   const labelEl = document.getElementById('std-countdown-label');

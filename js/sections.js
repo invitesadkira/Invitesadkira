@@ -185,7 +185,7 @@ function buildSimpleInviteTemplate(ev) {
 
       <!-- 7. Confirmar presença -->
       <div style="text-align:center;margin-bottom:3rem">
-        <button onclick="openRsvpDrawer()" style="background:${evColor};color:#fff;border:none;border-radius:999px;padding:0.9rem 2.6rem;font-weight:800;font-size:0.95rem;cursor:pointer;font-family:inherit;box-shadow:0 8px 24px rgba(0,0,0,0.18)">Confirmar Presença</button>
+        <button onclick="(function(){var u=window._evData&&window._evData.external_rsvp_url;if(u)window.open(u,'_blank','noopener');else if(typeof openRsvpDrawer==='function')openRsvpDrawer();})()" style="background:${evColor};color:#fff;border:none;border-radius:999px;padding:0.9rem 2.6rem;font-weight:800;font-size:0.95rem;cursor:pointer;font-family:inherit;box-shadow:0 8px 24px rgba(0,0,0,0.18)">Confirmar Presença</button>
       </div>
 
       <!-- 9. Local do evento (recepção, se diferente) + cronograma do dia -->
@@ -933,19 +933,22 @@ function buildBibleSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
       ${ev.invite_text.split('\n').map(_renderInviteLine).join('')}
     </div>` : '';
 
+  // ✅ O ornamento decorativo fica SEMPRE imediatamente após o versículo bíblico,
+  // independentemente de como os pais, os nomes ou o texto do convite estão ordenados.
+  const ornamentHtml = ev.bible_ornament_url
+    ? `<img src="${ev.bible_ornament_url}" alt="" class="bible-ornament-anim" style="height:${parseFloat(ev.bible_ornament_size)||28}px;width:auto;margin:0.75rem auto 0;display:block" onerror="this.style.display='none'">`
+    : `<div style="font-size:1.2rem;color:${ev.event_color||'#c9a84c'};margin-top:0.75rem;letter-spacing:0.2em">✦</div>`;
+
   return _SD + `<div class="event-section" style="background:#fdfaf6;text-align:center">
     <div class="section-inner">
       <div class="reveal scale-in">
         ${lines}
         ${ev.bible_ref ? `<p class="bible-ref" style="margin-top:0.75rem">${escapeHTML(ev.bible_ref)}</p>` : ''}
         ${lines2 ? `<div style="margin-top:1rem">${lines2}${ev.bible_ref_2 ? `<p class="bible-ref" style="margin-top:0.75rem">${escapeHTML(ev.bible_ref_2)}</p>` : ''}</div>` : ''}
-        ${ev.bible_ornament_url
-          ? `<img src="${ev.bible_ornament_url}" alt="" class="bible-ornament-anim" style="height:${parseFloat(ev.bible_ornament_size)||28}px;width:auto;margin:0.75rem auto 0;display:block" onerror="this.style.display='none'">`
-          : `<div style="font-size:1.2rem;color:${ev.event_color||'#c9a84c'};margin-top:0.75rem;letter-spacing:0.2em">✦</div>`}
       </div>
+      ${ornamentHtml}
       ${parentsHtml}
-      ${coupleNamesHtml}
-      ${inviteHtml}
+      ${ev.invite_order === 'before' ? inviteHtml + coupleNamesHtml : coupleNamesHtml + inviteHtml}
     </div>
   </div>`;
 }
@@ -1479,7 +1482,15 @@ function buildGiftStoresSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
 }
 
 function buildGallerySection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
-  const urls = [...new Set((ev.gallery_urls || '').split('\n').map(u => u.trim()).filter(Boolean))];
+  const rawUrls = [...new Set((ev.gallery_urls || '').split('\n').map(u => u.trim()).filter(Boolean))];
+
+  // ✅ Ordenar as fotos pelo número no nome do ficheiro
+  // Ex: "foto_1.jpg", "2.jpg", "IMG_003.png" → ordenadas por 1, 2, 3
+  const urls = rawUrls.sort((a, b) => {
+    const numA = parseInt((a.split('/').pop().match(/(\d+)/) || [])[1] || '0');
+    const numB = parseInt((b.split('/').pop().match(/(\d+)/) || [])[1] || '0');
+    return numA - numB;
+  });
   if (!urls.length) return '';
   const style = ev.gallery_style || 'grid';
   const evColor = ev.event_color || '#007f9f';
