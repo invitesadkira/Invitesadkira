@@ -1449,14 +1449,14 @@ function buildIbanSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
           <span style="font-size:1.1rem;font-weight:800;color:${evColor}">Gostaria de nos presentear?</span>
         </div>
         ${msgLines}
+        ${!ev.iban_number_2 ? `
         <div class="bg-gray-50 rounded-lg px-3 py-2 mt-3 mb-1 border border-teal-100"><p class="text-xs text-gray-400 mb-0.5">IBAN</p><p class="iban-value" style="text-align:center;word-break:break-all;margin:0.25rem 0">${escapeHTML(ev.iban_number)}</p></div>
         ${ev.iban_holder ? `<div class="bg-gray-50 rounded-lg px-3 py-2 mb-2 border border-teal-100"><p class="text-xs text-gray-400 mb-0.5">Titular</p><p class="text-sm font-semibold text-gray-700">${escapeHTML(ev.iban_holder)}</p></div>` : ''}
         <button class="iban-copy-btn" id="iban-copy-btn" onclick="copyIban('${escapeHTML(ev.iban_number)}')">
           <span class="action-btn-icon"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></span>
           <span class="action-btn-label">Copiar IBAN</span>
-        </button>
-        ${ev.iban_number_2 ? `
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-top:1rem;border-top:1px solid #e5e7eb;padding-top:1rem">
+        </button>` : `
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-top:0.75rem">
           <div>
             <div class="bg-gray-50 rounded-lg px-3 py-2 mb-1 border border-teal-100"><p class="text-xs text-gray-400 mb-0.5">IBAN 1</p><p class="iban-value" style="text-align:center;word-break:break-all;margin:0.25rem 0;font-size:0.8rem">${escapeHTML(ev.iban_number)}</p></div>
             ${ev.iban_holder ? `<div class="bg-gray-50 rounded-lg px-3 py-2 mb-2 border border-teal-100"><p class="text-xs text-gray-400 mb-0.5">Titular</p><p class="text-sm font-semibold text-gray-700">${escapeHTML(ev.iban_holder)}</p></div>` : ''}
@@ -1473,7 +1473,7 @@ function buildIbanSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
               <span class="action-btn-label">Copiar</span>
             </button>
           </div>
-        </div>` : ''}
+        </div>`}
         ${ev.iban_footer ? `<p class="text-xs text-gray-400 mt-3 text-right italic">${escapeHTML(ev.iban_footer)}</p>` : ''}
       </div>
     </div>
