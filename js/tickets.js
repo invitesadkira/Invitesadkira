@@ -1158,10 +1158,27 @@ async function generateManualTicket(eventId) {
   const ev = Store.events.find(e => e.id === (eventId || Store.currentEventId));
   if (!ev?.ticket_template_url) { toast('Template de ticket não configurado.'); return; }
 
-  // Criar um token único para este ticket manual
+  // Gerar um UUID como token — tem de existir na tabela rsvps para o scanner reconhecer
   const manualToken = 'manual_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
 
-  // Gerar ticket com este nome e token manual
+  // ✅ Guardar na tabela rsvps ANTES de gerar o ticket
+  // O scanner carrega apenas tokens que existem em rsvps com ticket_issued=true
+  try {
+    await supabaseRequest('rsvps', 'POST', {
+      event_id:         eventId,
+      guest_name:       fullName,
+      rsvp_token:       manualToken,
+      attending:        true,
+      ticket_issued:    true,
+      ticket_issued_at: new Date().toISOString(),
+    });
+  } catch(e) {
+    console.error('Erro ao criar RSVP manual:', e);
+    toast('Erro ao guardar convidado. Tenta novamente.');
+    return;
+  }
+
+  // Agora gerar o PDF com o token válido
   await generateGuestTicket(fullName, manualToken, eventId, true);
   document.getElementById('manual-ticket-name').value   = '';
   document.getElementById('manual-ticket-companion').value = '';
