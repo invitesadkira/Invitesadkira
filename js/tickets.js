@@ -618,105 +618,252 @@ async function _scSyncQueue(scannerToken, eventId) {
 }
 
 function _renderScannerUI(ev, scannerToken, cache, isOnline) {
-  const evColor = ev.event_color || '#007f9f';
-  const total   = Object.keys(cache.rsvpMap || {}).length;
-  const countIn = Object.values(cache.rsvpMap || {}).filter(r => r.checkedIn).length;
-  const cacheAge = cache.cachedAt ? Math.round((Date.now() - cache.cachedAt) / 60000) : null;
+  const C      = ev.event_color || '#5aa189';
+  const total  = Object.keys(cache.rsvpMap || {}).length;
+  const countIn= Object.values(cache.rsvpMap || {}).filter(r => r.checkedIn).length;
+  const pct    = total ? Math.round(countIn / total * 100) : 0;
 
   document.body.innerHTML = '';
-  document.body.style.cssText = 'margin:0;padding:0;font-family:sans-serif;background:#0f172a;min-height:100vh;color:#fff';
+  document.body.style.cssText = 'margin:0;padding:0;font-family:Inter,sans-serif;background:#f9fafb;min-height:100vh;color:#111827';
+  document.head.insertAdjacentHTML('beforeend',
+    '<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">' +
+    '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">' +
+    `<style>
+      *{box-sizing:border-box}
+      .sc-tab-btn{flex:1;padding:12px 16px;font-size:14px;font-weight:500;border:none;border-bottom:2px solid transparent;background:none;cursor:pointer;color:#6b7280;transition:all .2s;border-radius:8px 8px 0 0}
+      .sc-tab-btn.active{color:${C};border-bottom-color:${C};background:${C}18}
+      .sc-card{background:#fff;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.08);margin-bottom:16px;overflow:hidden}
+      .sc-badge-online{display:inline-flex;align-items:center;gap:6px;background:#f0fdf4;color:#065f46;border:1px solid #86efac;border-radius:8px;padding:4px 10px;font-size:12px;font-weight:600}
+      .sc-badge-offline{display:inline-flex;align-items:center;gap:6px;background:#fef3c7;color:#92400e;border:1px solid #fcd34d;border-radius:8px;padding:4px 10px;font-size:12px;font-weight:600}
+      .sc-sync-bar{position:fixed;top:0;left:0;right:0;background:#7c3aed;color:#fff;text-align:center;padding:8px;font-size:13px;font-weight:600;z-index:9999;transform:translateY(-100%);transition:transform .3s}
+      .sc-sync-bar.visible{transform:translateY(0)}
+      .sc-result-box{border-radius:10px;padding:16px;text-align:center;border-left:4px solid;transition:all .3s}
+      .sc-btn{width:100%;padding:14px;font-size:16px;font-weight:600;border-radius:12px;border:none;cursor:pointer;transition:all .2s;touch-action:manipulation}
+      .sc-guest-row{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid #f3f4f6}
+      .sc-guest-row:last-child{border-bottom:none}
+    </style>`
+  );
+
   document.body.innerHTML = `
-    <div style="max-width:480px;margin:0 auto;padding:1.5rem 1.25rem;padding-bottom:max(1.5rem,env(safe-area-inset-bottom))">
-      <div style="text-align:center;margin-bottom:1rem">
-        <p style="font-size:0.65rem;letter-spacing:0.15em;text-transform:uppercase;color:${evColor};font-weight:800;margin-bottom:0.2rem">SCANNER</p>
-        <h1 style="font-size:1.2rem;font-weight:800;margin:0">${escapeHTML(ev.title || 'Evento')}</h1>
-        <div id="sc-online-badge" style="display:inline-flex;align-items:center;gap:0.3rem;margin-top:0.4rem;font-size:0.65rem;font-weight:700;padding:0.2rem 0.6rem;border-radius:999px;background:${isOnline?'#166534':'#78350f'};color:#fff">
-          <span>${isOnline ? '🟢 Online' : '🔴 Offline'}</span>
-          ${!isOnline && cacheAge !== null ? `<span>· cache há ${cacheAge}min</span>` : ''}
+    <div class="sc-sync-bar" id="scSyncBar">🔄 <span id="scSyncTxt">0 scans por sincronizar</span> — a aguardar ligação...</div>
+
+    <!-- Header -->
+    <header style="background:#fff;border-bottom:1px solid #e5e7eb;position:sticky;top:0;z-index:50">
+      <div style="max-width:768px;margin:0 auto;padding:0 16px;display:flex;justify-content:space-between;align-items:center;height:56px">
+        <div style="display:flex;align-items:center;gap:10px;min-width:0">
+          <h1 style="font-size:17px;font-weight:600;color:#111827;margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHTML(ev.title||'Evento')}</h1>
+          <span id="scOnlineBadge" class="${isOnline?'sc-badge-online':'sc-badge-offline'}">
+            <span id="scDot" style="width:8px;height:8px;border-radius:50%;background:${isOnline?'#22c55e':'#f59e0b'};display:inline-block"></span>
+            <span id="scStatusTxt">${isOnline?'Online':'Offline'}</span>
+          </span>
+        </div>
+        <div style="font-size:13px;color:#6b7280;white-space:nowrap"><span id="scCountIn">${countIn}</span> / <span id="scCountTotal">${total}</span></div>
+      </div>
+      <!-- Tabs -->
+      <div style="max-width:768px;margin:0 auto;padding:0 16px;display:flex;gap:0">
+        <button class="sc-tab-btn active" id="tabBtnScanner" onclick="_scTab('scanner')"><i class="fas fa-qrcode" style="margin-right:6px"></i>Scanner</button>
+        <button class="sc-tab-btn" id="tabBtnOpcoes" onclick="_scTab('opcoes')"><i class="fas fa-cog" style="margin-right:6px"></i>Opções</button>
+      </div>
+    </header>
+
+    <!-- Scanner Tab -->
+    <div id="tabScanner" style="max-width:768px;margin:0 auto;padding:16px;padding-bottom:120px">
+      <div class="sc-card" style="padding:16px">
+        <!-- Botão check-in manual -->
+        <button onclick="_scOpenManual()" style="width:100%;margin-bottom:12px;padding:12px 16px;border-radius:10px;border:2px solid ${C};color:${C};background:${C}10;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
+          <i class="fas fa-search"></i>Check-in sem QR Code (pesquisar por nome)
+        </button>
+        <!-- Câmara -->
+        <div id="scanner-reader" style="border-radius:12px;overflow:hidden;background:#111827;aspect-ratio:1;max-width:400px;margin:0 auto;display:flex;align-items:center;justify-content:center">
+          <div style="text-align:center;color:#6b7280">
+            <i class="fas fa-qrcode" style="font-size:48px;margin-bottom:12px;display:block"></i>
+            <p>A inicializar câmara...</p>
+          </div>
         </div>
       </div>
 
-      <div id="scanner-reader" style="border-radius:1rem;overflow:hidden;background:#1e293b;margin-bottom:1rem"></div>
-
-      <div id="scanner-result" style="border-radius:1rem;padding:1.25rem;background:#1e293b;text-align:center;min-height:80px;display:flex;align-items:center;justify-content:center">
-        <p style="color:#6b7280;font-size:0.85rem">Aponte a câmara para o QR code do convidado</p>
-      </div>
-
-      <div style="display:flex;gap:1rem;margin-top:1rem">
-        <div style="flex:1;background:#1e293b;border-radius:0.75rem;padding:1rem;text-align:center">
-          <p style="font-size:1.6rem;font-weight:800;color:${evColor}" id="sc-count-in">${countIn}</p>
-          <p style="font-size:0.7rem;color:#6b7280;margin:0">Já entraram</p>
-        </div>
-        <div style="flex:1;background:#1e293b;border-radius:0.75rem;padding:1rem;text-align:center">
-          <p style="font-size:1.6rem;font-weight:800;color:#fff" id="sc-count-total">${total}</p>
-          <p style="font-size:0.7rem;color:#6b7280;margin:0">Confirmados</p>
+      <!-- Resultado -->
+      <div class="sc-card" style="padding:16px">
+        <h3 style="font-size:14px;font-weight:600;color:#374151;margin:0 0 12px;display:flex;align-items:center;gap:8px">
+          <i class="fas fa-clipboard-check" style="color:${C}"></i>Resultado
+        </h3>
+        <div id="scanner-result" style="text-align:center;color:#9ca3af;padding:24px 0">
+          <i class="fas fa-qrcode" style="font-size:28px;display:block;margin-bottom:8px"></i>
+          <p style="font-size:14px;margin:0">Aguardando scan...</p>
         </div>
       </div>
 
-      <div style="display:flex;gap:0.75rem;margin-top:1rem">
-        <button onclick="_scRefreshCache('${scannerToken}')" style="flex:1;background:#1e293b;color:#6b7280;border:none;border-radius:0.6rem;padding:0.6rem;font-size:0.75rem;cursor:pointer">🔄 Actualizar lista</button>
-        <button onclick="_scClearCache('${scannerToken}')" style="flex:1;background:#1e293b;color:#6b7280;border:none;border-radius:0.6rem;padding:0.6rem;font-size:0.75rem;cursor:pointer">🗑️ Limpar cache</button>
+      <!-- Progresso -->
+      <div class="sc-card" style="padding:16px">
+        <h3 style="font-size:14px;font-weight:600;color:#374151;margin:0 0 12px;display:flex;align-items:center;gap:8px">
+          <i class="fas fa-chart-line" style="color:#22c55e"></i>Progresso
+        </h3>
+        <div style="text-align:center;margin-bottom:12px">
+          <div id="scPct" style="font-size:32px;font-weight:700;color:#2563eb">${pct}%</div>
+          <div style="font-size:13px;color:#6b7280">Concluído</div>
+        </div>
+        <div style="background:#e5e7eb;border-radius:999px;height:10px;margin-bottom:12px">
+          <div id="scProgressBar" style="height:10px;border-radius:999px;transition:width .5s;background:linear-gradient(90deg,${C},${C}cc);width:${pct}%"></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div style="padding:12px;border-radius:10px;text-align:center;background:${C}15">
+            <div id="scCountInCard" style="font-size:22px;font-weight:700;color:${C}">${countIn}</div>
+            <div style="font-size:12px;color:${C}cc">Escaneados</div>
+          </div>
+          <div style="padding:12px;border-radius:10px;text-align:center;background:#eff6ff">
+            <div id="scCountTotalCard" style="font-size:22px;font-weight:700;color:#2563eb">${total}</div>
+            <div style="font-size:12px;color:#3b82f6">Total</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Opções Tab -->
+    <div id="tabOpcoes" style="display:none;max-width:768px;margin:0 auto;padding:16px">
+
+      <!-- Estatísticas -->
+      <div class="sc-card" style="padding:16px;margin-bottom:16px">
+        <h2 style="font-size:16px;font-weight:600;color:#111827;margin:0 0 16px;display:flex;align-items:center;gap:8px">
+          <i class="fas fa-chart-bar" style="color:#2563eb"></i>Estatísticas
+        </h2>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+          <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:16px;text-align:center">
+            <div id="scStatIn" style="font-size:28px;font-weight:700;color:#16a34a">${countIn}</div>
+            <div style="font-size:13px;color:#15803d">Entradas</div>
+          </div>
+          <div style="background:#fefce8;border:1px solid #fde68a;border-radius:10px;padding:16px;text-align:center">
+            <div id="scStatPending" style="font-size:28px;font-weight:700;color:#ca8a04">${total-countIn}</div>
+            <div style="font-size:13px;color:#a16207">Por entrar</div>
+          </div>
+        </div>
+        <div id="scQueueInfo" style="display:none;padding:10px;background:#fef3c7;border-radius:8px;font-size:13px;color:#92400e">
+          <i class="fas fa-clock" style="margin-right:6px;color:#d97706"></i>
+          <span id="scQueueCount">0</span> scans por sincronizar
+        </div>
       </div>
 
-      <p id="sc-queue-badge" style="text-align:center;font-size:0.7rem;color:#f59e0b;margin-top:0.75rem;display:none"></p>
+      <!-- Lista de Convidados -->
+      <div class="sc-card">
+        <div style="padding:16px;border-bottom:1px solid #f3f4f6;background:linear-gradient(to right,#eff6ff,#f5f3ff)">
+          <h2 style="font-size:16px;font-weight:600;color:#111827;margin:0 0 12px;display:flex;align-items:center;gap:8px">
+            <i class="fas fa-users" style="color:#2563eb"></i>Lista de Convidados
+          </h2>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <input type="text" id="scSearch" placeholder="Procurar convidado..." oninput="_scRenderGuests()" style="flex:1;min-width:160px;padding:8px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;outline:none">
+            <select id="scFilter" onchange="_scRenderGuests()" style="padding:8px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;outline:none">
+              <option value="all">Todos</option>
+              <option value="in">Entrou</option>
+              <option value="pending">Por entrar</option>
+            </select>
+          </div>
+        </div>
+        <div id="scGuestList" style="max-height:380px;overflow-y:auto">
+          <div style="text-align:center;color:#9ca3af;padding:32px">A carregar...</div>
+        </div>
+      </div>
+
+      <!-- Configurações -->
+      <div class="sc-card" style="padding:16px;margin-top:16px">
+        <h2 style="font-size:16px;font-weight:600;color:#111827;margin:0 0 16px;display:flex;align-items:center;gap:8px">
+          <i class="fas fa-volume-up" style="color:#22c55e"></i>Feedback
+        </h2>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;margin-bottom:8px">
+          <div><b style="font-size:14px">🔊 Som</b><div style="font-size:12px;color:#6b7280">Feedback sonoro nos scans</div></div>
+          <input type="checkbox" id="scSoundToggle" checked style="width:18px;height:18px;cursor:pointer" onchange="window._scSound=this.checked">
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:12px;background:#f5f3ff;border:1px solid #ddd6fe;border-radius:10px">
+          <div><b style="font-size:14px">📳 Vibração</b><div style="font-size:12px;color:#6b7280">Feedback tátil nos scans</div></div>
+          <input type="checkbox" id="scVibToggle" checked style="width:18px;height:18px;cursor:pointer" onchange="window._scVib=this.checked">
+        </div>
+      </div>
+
+      <!-- Acções rápidas -->
+      <div class="sc-card" style="padding:16px;margin-top:16px">
+        <h2 style="font-size:16px;font-weight:600;color:#111827;margin:0 0 16px;display:flex;align-items:center;gap:8px">
+          <i class="fas fa-bolt" style="color:#eab308"></i>Acções Rápidas
+        </h2>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <button onclick="_scRefreshCache('${scannerToken}')" style="padding:14px;background:#4b5563;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer">
+            <i class="fas fa-refresh" style="margin-right:6px"></i>Actualizar
+          </button>
+          <button onclick="_scSyncQueue('${scannerToken}','${ev.id}').then(()=>toast('Sincronizado!'))" style="padding:14px;background:#16a34a;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer">
+            <i class="fas fa-sync-alt" style="margin-right:6px"></i>Sincronizar
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal check-in manual -->
+    <div id="scManualModal" style="display:none;position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);padding:16px;align-items:center;justify-content:center">
+      <div style="background:#fff;border-radius:16px;padding:24px;width:100%;max-width:380px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <h2 style="font-size:18px;font-weight:700;margin:0;display:flex;align-items:center;gap:8px">
+            <i class="fas fa-search" style="color:${C}"></i>Check-in Manual
+          </h2>
+          <button onclick="document.getElementById('scManualModal').style.display='none'" style="background:#f3f4f6;border:none;border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:16px">×</button>
+        </div>
+        <input type="text" id="scManualInput" placeholder="Pesquisar nome do convidado..."
+          oninput="_scManualSearch('${scannerToken}','${ev.id}',cache)"
+          style="width:100%;padding:12px;border:2px solid #e5e7eb;border-radius:10px;font-size:14px;outline:none;margin-bottom:12px">
+        <div id="scManualResults" style="max-height:256px;overflow-y:auto;border-radius:10px;border:1px solid #f3f4f6"></div>
+      </div>
+    </div>
+
+    <!-- Botão próximo scan (mobile) -->
+    <div id="scNextBtn" style="display:none;position:fixed;bottom:0;left:0;right:0;background:#fff;padding:16px;border-top:1px solid #e5e7eb;z-index:50">
+      <button onclick="_scNextScan()" class="sc-btn" style="background:${C};color:#fff">
+        <i class="fas fa-arrow-right" style="margin-right:10px"></i>Próximo Scan
+      </button>
     </div>`;
 
-  // Mostrar fila pendente se houver
-  const queue = _scLoadCheckinQueue(scannerToken);
-  if (queue.length) {
-    const qb = document.getElementById('sc-queue-badge');
-    if (qb) { qb.style.display='block'; qb.textContent = `⏳ ${queue.length} check-in(s) para sincronizar`; }
-  }
+  // Guardar referências globais para uso nas funções
+  window._scCache = cache;
+  window._scSound = true;
+  window._scVib   = true;
 
-  // Listener de estado de rede — actualiza badge e sincroniza ao voltar online
+  // Renderizar lista de convidados
+  _scRenderGuests();
+
+  // Actualizações de rede
   window.addEventListener('online', async () => {
-    const badge = document.getElementById('sc-online-badge');
-    if (badge) { badge.style.background='#166534'; badge.innerHTML='<span>🟢 Online</span>'; }
+    document.getElementById('scOnlineBadge').className = 'sc-badge-online';
+    document.getElementById('scDot').style.background = '#22c55e';
+    document.getElementById('scStatusTxt').textContent = 'Online';
     await _scSyncQueue(scannerToken, ev.id);
-    const qb = document.getElementById('sc-queue-badge');
-    if (qb) { const q = _scLoadCheckinQueue(scannerToken); qb.style.display = q.length ? 'block' : 'none'; if (q.length) qb.textContent = `⏳ ${q.length} para sincronizar`; }
+    _scUpdateSyncBadge(scannerToken);
   });
   window.addEventListener('offline', () => {
-    const badge = document.getElementById('sc-online-badge');
-    if (badge) { badge.style.background='#78350f'; badge.innerHTML='<span>🔴 Offline</span>'; }
+    document.getElementById('scOnlineBadge').className = 'sc-badge-offline';
+    document.getElementById('scDot').style.background = '#f59e0b';
+    document.getElementById('scStatusTxt').textContent = 'Offline';
   });
 
-  // ✅ Scanner nativo — usa getUserMedia + BarcodeDetector (Chrome/Android)
-  // Sem nenhuma biblioteca externa. Funciona em todos os browsers modernos.
+  _scUpdateSyncBadge(scannerToken);
+
+  // Iniciar câmara
   const readerEl = document.getElementById('scanner-reader');
-  readerEl.style.cssText = 'position:relative;border-radius:1rem;overflow:hidden;background:#000;aspect-ratio:1;margin-bottom:1rem';
-  readerEl.innerHTML = `
-    <video id="sc-video" autoplay playsinline muted style="width:100%;height:100%;object-fit:cover;display:block"></video>
-    <canvas id="sc-canvas" style="display:none"></canvas>
+  readerEl.style.cssText = 'border-radius:12px;overflow:hidden;background:#111827;aspect-ratio:1;max-width:400px;margin:0 auto;position:relative';
+  readerEl.innerHTML = `<video id="sc-video" autoplay playsinline muted style="width:100%;height:100%;object-fit:cover;display:block"></video>
     <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none">
-      <div style="width:220px;height:220px;border:3px solid ${evColor};border-radius:12px;box-shadow:0 0 0 4000px rgba(0,0,0,0.4)"></div>
+      <div style="width:200px;height:200px;border:3px solid ${C};border-radius:12px;box-shadow:0 0 0 4000px rgba(0,0,0,0.35)"></div>
     </div>`;
 
   const video = document.getElementById('sc-video');
-  const canvas = document.getElementById('sc-canvas');
-  const ctx = canvas.getContext('2d', { willReadFrequently: true });
-  let scanning = true;
-
-  // Pedir câmara traseira
-  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false })
+  navigator.mediaDevices.getUserMedia({ video: { facingMode:'environment' }, audio: false })
     .then(stream => {
       video.srcObject = stream;
       video.play();
-
-      // Usar BarcodeDetector nativo (Chrome 83+, Android Chrome)
       if ('BarcodeDetector' in window) {
-        const detector = new BarcodeDetector({ formats: ['qr_code'] });
+        const detector = new BarcodeDetector({ formats:['qr_code'] });
+        let scanning = true;
         const scan = async () => {
           if (!scanning) return;
           if (video.readyState >= 2) {
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            ctx.drawImage(video, 0, 0);
             try {
               const codes = await detector.detect(video);
               if (codes.length > 0) {
                 scanning = false;
-                await _onQrScanned(codes[0].rawValue, ev.id, evColor, scannerToken, cache);
+                await _onQrScanned(codes[0].rawValue, ev.id, C, scannerToken, cache);
                 setTimeout(() => { scanning = true; }, 2500);
               }
             } catch(e) {}
@@ -724,30 +871,147 @@ function _renderScannerUI(ev, scannerToken, cache, isOnline) {
           requestAnimationFrame(scan);
         };
         scan();
-      } else {
-        // Fallback: botão para capturar foto e detectar QR
-        readerEl.insertAdjacentHTML('beforeend', `
-          <div style="position:absolute;bottom:0.75rem;left:0;right:0;text-align:center">
-            <button onclick="window._captureQR('${scannerToken}','${ev.id}','${evColor}',cache)"
-              style="background:${evColor};color:#fff;border:none;border-radius:0.5rem;padding:0.5rem 1.25rem;font-weight:700;cursor:pointer;font-size:0.8rem">
-              📷 Capturar e ler QR
-            </button>
-          </div>`);
-        window._captureQR = async (st, eid, ec, cache) => {
-          canvas.width = video.videoWidth;
-          canvas.height = video.videoHeight;
-          ctx.drawImage(video, 0, 0);
-          toast('BarcodeDetector não disponível neste browser. Usa o Chrome actualizado.');
-        };
       }
     })
     .catch(err => {
-      readerEl.innerHTML = `<div style="padding:1.5rem;text-align:center;color:#ef4444">
-        <p style="font-size:0.9rem;font-weight:700;margin-bottom:0.5rem">Sem acesso à câmara</p>
-        <p style="font-size:0.75rem;color:#6b7280">${err.message || err}</p>
-        <p style="font-size:0.72rem;color:#6b7280;margin-top:0.5rem">Certifica-te de que o browser tem permissão para a câmara e que o site está em HTTPS.</p>
+      readerEl.innerHTML = `<div style="padding:24px;text-align:center;color:#ef4444">
+        <i class="fas fa-video-slash" style="font-size:36px;display:block;margin-bottom:12px"></i>
+        <p style="font-size:14px">${err.message||err}</p>
       </div>`;
     });
+}
+
+// Funções auxiliares do novo scanner
+function _scTab(tab) {
+  document.getElementById('tabScanner').style.display = tab==='scanner'?'block':'none';
+  document.getElementById('tabOpcoes').style.display  = tab==='opcoes' ?'block':'none';
+  document.getElementById('tabBtnScanner').classList.toggle('active', tab==='scanner');
+  document.getElementById('tabBtnOpcoes').classList.toggle('active', tab==='opcoes');
+}
+
+function _scUpdateCounters(cache) {
+  const total   = Object.keys(cache.rsvpMap||{}).length;
+  const countIn = Object.values(cache.rsvpMap||{}).filter(r=>r.checkedIn).length;
+  const pct     = total ? Math.round(countIn/total*100) : 0;
+  ['scCountIn','scCountInCard','scStatIn'].forEach(id => { const e=document.getElementById(id); if(e)e.textContent=countIn; });
+  ['scCountTotal','scCountTotalCard'].forEach(id => { const e=document.getElementById(id); if(e)e.textContent=total; });
+  const sp=document.getElementById('scStatPending'); if(sp)sp.textContent=total-countIn;
+  const pb=document.getElementById('scProgressBar'); if(pb)pb.style.width=pct+'%';
+  const pp=document.getElementById('scPct'); if(pp)pp.textContent=pct+'%';
+}
+
+function _scUpdateSyncBadge(scannerToken) {
+  const q = _scLoadCheckinQueue(scannerToken);
+  const bar=document.getElementById('scSyncBar');
+  const qi=document.getElementById('scQueueInfo');
+  const qc=document.getElementById('scQueueCount');
+  if(q.length) {
+    if(bar){ document.getElementById('scSyncTxt').textContent=`${q.length} scans por sincronizar`; bar.classList.add('visible'); }
+    if(qi)qi.style.display='block';
+    if(qc)qc.textContent=q.length;
+  } else {
+    if(bar)bar.classList.remove('visible');
+    if(qi)qi.style.display='none';
+  }
+}
+
+function _scRenderGuests() {
+  const cache  = window._scCache;
+  const list   = document.getElementById('scGuestList');
+  if (!list || !cache) return;
+  const search = (document.getElementById('scSearch')?.value||'').toLowerCase();
+  const filter = document.getElementById('scFilter')?.value||'all';
+  const guests = Object.entries(cache.rsvpMap||{})
+    .filter(([,r]) => r.name.toLowerCase().includes(search))
+    .filter(([,r]) => filter==='all'||(filter==='in'&&r.checkedIn)||(filter==='pending'&&!r.checkedIn))
+    .sort((a,b) => a[1].name.localeCompare(b[1].name));
+  if (!guests.length) { list.innerHTML='<div style="text-align:center;color:#9ca3af;padding:24px;font-size:13px">Nenhum convidado encontrado</div>'; return; }
+  list.innerHTML = guests.map(([tok,r]) => `<div class="sc-guest-row">
+    <div style="width:36px;height:36px;border-radius:50%;background:${r.checkedIn?'#dcfce7':'#f3f4f6'};display:flex;align-items:center;justify-content:center;flex-shrink:0">
+      <i class="fas fa-${r.checkedIn?'check':'clock'}" style="font-size:14px;color:${r.checkedIn?'#16a34a':'#9ca3af'}"></i>
+    </div>
+    <div style="flex:1;min-width:0">
+      <p style="font-size:14px;font-weight:500;margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHTML(r.name)}</p>
+      <p style="font-size:12px;color:${r.checkedIn?'#16a34a':'#9ca3af'};margin:0">${r.checkedIn?'✅ Entrou':'⏳ Por entrar'}</p>
+    </div>
+  </div>`).join('');
+}
+
+function _scOpenManual() {
+  const modal = document.getElementById('scManualModal');
+  if (modal) { modal.style.display='flex'; document.getElementById('scManualInput').focus(); }
+}
+
+function _scManualSearch(scannerToken, eventId, cache) {
+  const q    = document.getElementById('scManualInput')?.value.toLowerCase()||'';
+  const res  = document.getElementById('scManualResults');
+  const evColor = window._scEvColor || '#5aa189';
+  if (!res || !cache) return;
+  if (q.length < 2) { res.innerHTML='<div style="text-align:center;color:#9ca3af;padding:16px;font-size:13px">Escreve pelo menos 2 letras</div>'; return; }
+  const matches = Object.entries(cache.rsvpMap||{})
+    .filter(([,r]) => r.name.toLowerCase().includes(q) && !r.checkedIn)
+    .slice(0, 8);
+  if (!matches.length) { res.innerHTML='<div style="text-align:center;color:#9ca3af;padding:16px;font-size:13px">Nenhum resultado</div>'; return; }
+  res.innerHTML = matches.map(([tok,r]) => `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid #f3f4f6">
+      <span style="font-size:14px;font-weight:500">${escapeHTML(r.name)}</span>
+      <button data-tok="${tok}" onclick="_scManualCheckin('${scannerToken}','${eventId}',this.dataset.tok)"
+        style="padding:8px 16px;background:${evColor};color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">
+        Check-in
+      </button>
+    </div>`).join('');
+}
+
+async function _scManualCheckin(scannerToken, eventId, rsvpToken) {
+  const cache = window._scCache;
+  if (!cache || !cache.rsvpMap[rsvpToken]) return;
+  cache.rsvpMap[rsvpToken].checkedIn = true;
+  _scSaveCache(scannerToken, cache);
+  window._scCache = cache;
+  _scUpdateCounters(cache);
+  _scRenderGuests();
+  document.getElementById('scManualModal').style.display='none';
+  _scShowResult('success', cache.rsvpMap[rsvpToken].name, 'Check-in manual realizado!');
+  if (navigator.onLine) {
+    supabaseRequest(`rsvps?rsvp_token=eq.${rsvpToken}&event_id=eq.${eventId}`,'PATCH',
+      { checked_in:true, checked_in_at:new Date().toISOString() }).catch(()=>{});
+  } else {
+    const q=[..._scLoadCheckinQueue(scannerToken),rsvpToken];
+    _scSaveCheckinQueue(scannerToken,q);
+    _scUpdateSyncBadge(scannerToken);
+  }
+}
+
+function _scNextScan() {
+  document.getElementById('scNextBtn').style.display='none';
+  document.getElementById('scanner-result').innerHTML = `<div style="text-align:center;color:#9ca3af;padding:24px">
+    <i class="fas fa-qrcode" style="font-size:28px;display:block;margin-bottom:8px"></i>
+    <p style="font-size:14px;margin:0">Aguardando scan...</p>
+  </div>`;
+}
+
+function _scShowResult(type, name, subtitle) {
+  const el = document.getElementById('scanner-result');
+  if (!el) return;
+  const cfg = {
+    success: { bg:'#f0fdf4', border:'#22c55e', icon:'fa-check-circle', color:'#16a34a', emoji:'✅' },
+    already:  { bg:'#eff6ff', border:'#3b82f6', icon:'fa-redo',         color:'#2563eb', emoji:'🔁' },
+    error:    { bg:'#fef2f2', border:'#ef4444', icon:'fa-times-circle',  color:'#dc2626', emoji:'❌' },
+  }[type]||{};
+  el.innerHTML = `<div style="padding:8px">
+    <i class="fas ${cfg.icon}" style="font-size:36px;color:${cfg.color};display:block;margin-bottom:8px"></i>
+    <p style="font-size:16px;font-weight:700;color:${cfg.color};margin:0 0 4px">${escapeHTML(name)}</p>
+    <p style="font-size:13px;color:#6b7280;margin:0">${escapeHTML(subtitle)}</p>
+  </div>`;
+  // Som
+  if (window._scSound) {
+    try { const ctx=new AudioContext(); const osc=ctx.createOscillator(); const g=ctx.createGain(); osc.connect(g); g.connect(ctx.destination); osc.frequency.value=type==='success'?880:220; g.gain.setValueAtTime(0.3,ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.3); osc.start(); osc.stop(ctx.currentTime+0.3); } catch(e){}
+  }
+  // Vibração
+  if (window._scVib && navigator.vibrate) navigator.vibrate(type==='success'?[100]:[200,100,200]);
+  // Botão próximo scan
+  const nb=document.getElementById('scNextBtn'); if(nb)nb.style.display='block';
+  setTimeout(()=>{ const nb2=document.getElementById('scNextBtn'); if(nb2)nb2.style.display='none'; el.innerHTML=`<div style="text-align:center;color:#9ca3af;padding:24px"><i class="fas fa-qrcode" style="font-size:28px;display:block;margin-bottom:8px"></i><p style="font-size:14px;margin:0">Aguardando scan...</p></div>`; }, 3000);
 }
 
 async function _scRefreshCache(scannerToken) {
@@ -787,56 +1051,47 @@ async function _onQrScanned(text, eventId, evColor, scannerToken, cache) {
   };
 
   if (!text.startsWith(_QR_PREFIX)) {
-    show('#7f1d1d', `<div><p style="font-size:2rem;margin:0">🚫</p><p style="font-weight:700;font-size:1rem;margin:0.3rem 0 0">QR não reconhecido</p><p style="font-size:0.8rem;color:#fca5a5">Não emitido pelo AdKira</p></div>`);
+    _scShowResult('error', 'QR não reconhecido', 'Não emitido pelo AdKira');
     return;
   }
 
   const token = await _decryptToken(text, scannerToken);
   if (!token) {
-    show('#7f1d1d', `<div><p style="font-size:2rem;margin:0">🔐</p><p style="font-weight:700;font-size:1rem;margin:0.3rem 0 0">QR de outro evento</p><p style="font-size:0.8rem;color:#fca5a5">Chave incorrecta</p></div>`);
+    _scShowResult('error', 'QR de outro evento', 'Chave incorrecta');
     return;
   }
 
-  // ✅ Verificar na cache local (funciona offline)
   const rsvp = cache.rsvpMap[token];
   if (!rsvp) {
-    show('#7f1d1d', `<div><p style="font-size:2rem;margin:0">❌</p><p style="font-weight:700;font-size:1rem;margin:0.3rem 0 0">Não encontrado</p><p style="font-size:0.8rem;color:#fca5a5">Convidado não confirmou ou token inválido</p></div>`);
+    _scShowResult('error', 'Não encontrado', 'Convidado não confirmou ou token inválido');
     return;
   }
 
   if (rsvp.checkedIn) {
-    show('#1e3a5f', `<div><p style="font-size:2rem;margin:0">🔁</p><p style="font-weight:800;font-size:1.1rem;margin:0.3rem 0 0">${escapeHTML(rsvp.name)}</p><p style="font-size:0.8rem;color:#93c5fd">Já entrou anteriormente</p></div>`);
+    _scShowResult('already', rsvp.name, 'Já entrou anteriormente');
     return;
   }
 
-  // ✅ Entrada válida — marcar na cache local imediatamente
+  // ✅ Entrada válida
   cache.rsvpMap[token].checkedIn = true;
   _scSaveCache(scannerToken, cache);
+  window._scCache = cache;
+  _scUpdateCounters(cache);
+  _scRenderGuests();
+  _scShowResult('success', rsvp.name, navigator.onLine ? 'Entrada registada!' : 'Entrada registada (offline)');
 
-  // Actualizar contadores
-  const countIn = Object.values(cache.rsvpMap).filter(r => r.checkedIn).length;
-  const el = document.getElementById('sc-count-in');
-  if (el) el.textContent = countIn;
-
-  // Tentar marcar online; se falhar, guardar na fila offline
   if (navigator.onLine) {
     supabaseRequest(`rsvps?rsvp_token=eq.${token}&event_id=eq.${eventId}`, 'PATCH',
       { checked_in: true, checked_in_at: new Date().toISOString() }
     ).catch(() => {
-      // Falhou mesmo com online — guardar na fila
       const q = _scLoadCheckinQueue(scannerToken);
-      q.push(token);
-      _scSaveCheckinQueue(scannerToken, q);
+      if (!q.includes(token)) { q.push(token); _scSaveCheckinQueue(scannerToken, q); }
     });
   } else {
-    // Offline — guardar na fila para sincronizar depois
     const q = _scLoadCheckinQueue(scannerToken);
     if (!q.includes(token)) { q.push(token); _scSaveCheckinQueue(scannerToken, q); }
-    const qb = document.getElementById('sc-queue-badge');
-    if (qb) { qb.style.display='block'; qb.textContent=`⏳ ${q.length} check-in(s) para sincronizar`; }
+    _scUpdateSyncBadge(scannerToken);
   }
-
-  show('#14532d', `<div><p style="font-size:2.5rem;margin:0">✅</p><p style="font-weight:800;font-size:1.2rem;margin:0.3rem 0 0">${escapeHTML(rsvp.name)}</p><p style="font-size:0.8rem;color:#86efac">${navigator.onLine ? 'Entrada registada!' : 'Entrada registada (offline)'}</p></div>`);
 }
 
 // ── 4. Gerar/mostrar token do scanner para o admin ───────────────────────
