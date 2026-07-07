@@ -1426,34 +1426,47 @@ async function handleSigFontUpload(input) {
   const file = input.files[0];
   if (!file) return;
   toast('A carregar fonte da assinatura...');
-  const url = await uploadImageToStorage(file, 'event-covers', 'Fonte assinatura');
-  if (url) {
+  try {
+    const originalName = file.name.replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9_-]/g, '_');
+    const ext = file.name.split('.').pop().toLowerCase();
+    const fileName = `font_${originalName}_${Date.now()}.${ext}`;
+    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/event-covers/${fileName}`, {
+      method: 'POST',
+      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/octet-stream', 'x-upsert': 'true' },
+      body: file
+    });
+    if (!res.ok) throw new Error(await res.text());
+    const url = `${SUPABASE_URL}/storage/v1/object/public/event-covers/${fileName}`;
     const fontName = file.name.replace(/\.[^.]+$/, '');
-    // Injectar @font-face para pré-visualização imediata no editor
     const style = document.createElement('style');
     style.textContent = `@font-face { font-family: '${fontName}'; src: url('${url}'); }`;
     document.head.appendChild(style);
-    // Guardar a URL no selector — a renderização detecta que é URL e injeta @font-face
     const sel = document.getElementById('evt-couplemsg-sig-font');
     if (sel) {
-      // Remover opção anterior com o mesmo nome se existir
       Array.from(sel.options).forEach(o => { if (o.value === url) o.remove(); });
       const opt = document.createElement('option');
-      opt.value = url;           // ← guarda a URL completa
-      opt.textContent = fontName + ' (carregada)';
-      opt.selected = true;
+      opt.value = url; opt.textContent = fontName + ' (carregada)'; opt.selected = true;
       sel.appendChild(opt);
     }
     toast(`Fonte "${fontName}" carregada!`);
-  }
+  } catch(e) { toast('Erro ao carregar fonte.'); console.error(e); }
 }
 
 async function handleCouplemsgBodyFontUpload(input) {
   const file = input.files[0];
   if (!file) return;
   toast('A carregar fonte...');
-  const url = await uploadImageToStorage(file, 'event-covers', 'Fonte mensagem');
-  if (url) {
+  try {
+    const originalName = file.name.replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9_-]/g, '_');
+    const ext = file.name.split('.').pop().toLowerCase();
+    const fileName = `font_${originalName}_${Date.now()}.${ext}`;
+    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/event-covers/${fileName}`, {
+      method: 'POST',
+      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/octet-stream', 'x-upsert': 'true' },
+      body: file
+    });
+    if (!res.ok) throw new Error(await res.text());
+    const url = `${SUPABASE_URL}/storage/v1/object/public/event-covers/${fileName}`;
     const fontName = file.name.replace(/\.[^.]+$/, '');
     const style = document.createElement('style');
     style.textContent = `@font-face { font-family: '${fontName}'; src: url('${url}'); }`;
@@ -1465,7 +1478,7 @@ async function handleCouplemsgBodyFontUpload(input) {
       sel.appendChild(opt);
     }
     toast(`Fonte "${fontName}" carregada!`);
-  }
+  } catch(e) { toast('Erro ao carregar fonte.'); console.error(e); }
 }
 
 

@@ -934,6 +934,7 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
           couplemsg_sig_font: document.getElementById('evt-couplemsg-sig-font')?.value || null,
           couplemsg_sig_size: document.getElementById('evt-couplemsg-sig-size')?.value || '1.6',
           show_final_photo: document.getElementById('sw-final-photo')?.classList.contains('active') ? 'yes' : 'no',
+          show_final_photo_names: document.getElementById('sw-final-photo-names')?.classList.contains('active') !== false ? 'yes' : 'no',
           show_cover: document.getElementById('sw-cover')?.classList.contains('active') ? 'yes' : 'no',
           final_photo_url: document.getElementById('evt-final-photo-url')?.value || null,
           couple_photo_url: document.getElementById('evt-couple-photo-url')?.value || null,
@@ -2148,6 +2149,7 @@ function _fillEditForm(ev) {
   }}
   { const ss=ev.couplemsg_sig_size||'1.6'; const si=document.getElementById('evt-couplemsg-sig-size'); const sl=document.getElementById('sig-size-val'); if(si)si.value=ss; if(sl)sl.textContent=parseFloat(ss).toFixed(1)+'rem'; }
   _setSwitch('sw-final-photo', _yesOrTrue(ev.show_final_photo), 'final-photo-extra');
+  _setSwitch('sw-final-photo-names', ev.show_final_photo_names !== 'no');
   _setSwitch('sw-cover', ev.show_cover !== 'no', 'cover-section-wrap');
   { const fpUrl=document.getElementById('evt-final-photo-url'); const fpPrev=document.getElementById('final-photo-preview'); const fpWrap=document.getElementById('final-photo-preview-wrap');
     if(ev.final_photo_url){if(fpUrl)fpUrl.value=ev.final_photo_url;if(fpPrev)fpPrev.src=ev.final_photo_url;fpWrap?.classList.remove('hidden');} }

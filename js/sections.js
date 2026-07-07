@@ -1189,7 +1189,7 @@ function buildStorySection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
   if (storyStyle === 'photo-side' && ev.story_photo_url) {
     return _SD + `<div class="event-section story-section">
       <div class="section-inner">
-        <h2 class="section-title reveal" style="text-align:center;margin-bottom:1.5rem">Nossa História</h2>
+        <h2 class="section-title reveal" style="text-align:center;margin-bottom:1.5rem">${escapeHTML(_getSectionTitle(ev,'story','Nossa História'))}</h2>
         <div class="reveal" style="display:flex;gap:1.5rem;align-items:center;flex-wrap:wrap;max-width:560px;margin:0 auto">
           <div style="flex:1 1 220px;min-width:200px;border-radius:1rem;overflow:hidden;aspect-ratio:4/5">
             <img src="${ev.story_photo_url}" style="width:100%;height:100%;object-fit:cover" alt="">
@@ -1208,7 +1208,7 @@ function buildStorySection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
       <div class="section-inner" style="text-align:center;max-width:520px;margin:0 auto">
         <div class="reveal">
           <svg width="32" height="32" viewBox="0 0 24 24" fill="${evColor}" style="opacity:0.35;margin-bottom:0.5rem"><path d="M9.983 3v7.391c0 5.704-3.731 9.57-8.983 10.609l-.995-2.151c2.432-.917 3.995-3.638 3.995-5.849h-4v-10h9.983zm14.017 0v7.391c0 5.704-3.748 9.57-9 10.609l-.996-2.151c2.433-.917 3.996-3.638 3.996-5.849h-3.983v-10h9.983z"/></svg>
-          <h2 class="section-title" style="margin-bottom:1rem">Nossa História</h2>
+          <h2 class="section-title" style="margin-bottom:1rem">${escapeHTML(_getSectionTitle(ev,'story','Nossa História'))}</h2>
           <p style="font-size:${storySize}rem;color:${storyTextColor};line-height:1.85;font-style:italic;white-space:pre-line">${escapeHTML(ev.story_text)}</p>
         </div>
       </div>
@@ -1256,7 +1256,7 @@ function buildStorySection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
 
     return _SD + `<div class="event-section story-section">
       <div class="section-inner">
-        <h2 class="section-title reveal" style="text-align:center;margin-bottom:2.5rem">Nossa História</h2>
+        <h2 class="section-title reveal" style="text-align:center;margin-bottom:2.5rem">${escapeHTML(_getSectionTitle(ev,'story','Nossa História'))}</h2>
         <div class="story-timeline" style="--ev-color:${evColor}">
           <div class="story-line"></div>
           ${rows}
@@ -1269,7 +1269,7 @@ function buildStorySection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
   return _SD + `<div class="event-section story-section">
     <div class="section-inner" style="text-align:center">
       <div class="reveal">
-        <h2 class="section-title">Nossa História</h2>
+        <h2 class="section-title">${escapeHTML(_getSectionTitle(ev,'story','Nossa História'))}</h2>
         <p class="story-text" style="font-size:${storySize}rem">${escapeHTML(ev.story_text)}</p>
       </div>
     </div>
@@ -2863,12 +2863,9 @@ function buildCouplePhotoSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
 }
 
 function buildFinalPhotoSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
-  const hasNames = !!(ev.groom_name || ev.bride_name);
+  const showNames = ev.show_final_photo_names !== 'no';
+  const hasNames = showNames && !!(ev.groom_name || ev.bride_name);
   const namesHtml = `${escapeHTML(ev.groom_name||'')}${ev.groom_name&&ev.bride_name?' &amp; ':''}${escapeHTML(ev.bride_name||'')}`;
-  // ✅ O wrapper é "inline-block" e do tamanho exacto da foto renderizada
-  // (nunca maior) — por isso o nome sobreposto cai sempre dentro da própria
-  // foto (nunca sobre espaço vazio à volta), mesmo que a foto não preencha
-  // toda a largura/altura disponível. Fundo branco em vez do escuro anterior.
   return _SD + `<div class="event-section" style="padding:2.5rem 1rem;background:#fff;text-align:center">
     <div class="reveal" style="display:inline-block;position:relative;max-width:100%;line-height:0;border-radius:1.1rem;overflow:hidden">
       <img src="${ev.final_photo_url}" alt="Foto dos Noivos"
@@ -2888,7 +2885,7 @@ function buildEventFaqSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
   if (!items.length) return '';
   return _SD + `<div class="event-section" style="background:#fdfaf6">
     <div class="section-inner reveal">
-      <p style="text-align:center;font-size:0.7rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--ev-color);font-weight:700;margin-bottom:1.5rem">Perguntas Frequentes</p>
+      <p style="text-align:center;font-size:0.7rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--ev-color);font-weight:700;margin-bottom:1.5rem">${escapeHTML(_getSectionTitle(ev,'event_faq','Perguntas Frequentes'))}</p>
       <div id="event-faq-accordion" style="display:flex;flex-direction:column;gap:0.75rem;max-width:480px;margin:0 auto">
         ${items.map((it, i) => `
         <div class="event-faq-block" style="background:#fff;border-radius:0.75rem;border:1px solid #e5e7eb;overflow:hidden">
