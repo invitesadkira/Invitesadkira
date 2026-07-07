@@ -2413,19 +2413,19 @@ const ALL_SECTION_DEFS = [
   { key: 'countdown', label: 'Contagem Regressiva',                  icon: 'timer' },
   { key: 'story',     label: 'Nossa História',                       icon: 'heart' },
   { key: 'youtube_video', label: 'Vídeo do YouTube',                 icon: 'play-circle' },
-  { key: 'venues',    label: _getSectionTitle(ev,'venues','Locais do Evento'),                     icon: 'map-pin' },
+  { key: 'venues',    label: 'Locais do Evento',                     icon: 'map-pin' },
   { key: 'parents',   label: 'Nomes dos Pais',                       icon: 'users' },
   { key: 'iban',        label: 'Sugestão de Presente (IBAN)',         icon: 'credit-card' },
   { key: 'gift_stores', label: 'Lojas de Presentes',                  icon: 'shopping-bag' },
-  { key: 'gallery',   label: _getSectionTitle(ev,'gallery','Galeria de Fotos'),                     icon: 'image' },
-  { key: 'manual',    label: _getSectionTitle(ev,'manual','Manual do Bom Convidado'),              icon: 'list-checks' },
+  { key: 'gallery',   label: 'Galeria de Fotos',                     icon: 'image' },
+  { key: 'manual',    label: 'Manual do Bom Convidado',              icon: 'list-checks' },
   { key: 'schedule',  label: 'Itinerário',                           icon: 'clock' },
   { key: 'dresscode',  label: 'Dress Code + Sugestão de Presentes',     icon: 'shirt' },
   { key: 'couplemsg',   label: 'Mensagem dos Noivos',                   icon: 'message-circle' },
   { key: 'final_photo', label: 'Foto Final dos Noivos',                 icon: 'image' },
   { key: 'couple_photo', label: 'Foto de Fundo do Casal',               icon: 'heart' },
   { key: 'couple_video', label: 'Vídeo do Casal',                        icon: 'video' },
-  { key: 'event_faq',   label: _getSectionTitle(ev,'event_faq','Perguntas Frequentes'),                  icon: 'help-circle' },
+  { key: 'event_faq',   label: 'Perguntas Frequentes',                  icon: 'help-circle' },
   { key: 'messages',    label: 'Recados / Correio do Amor',             icon: 'message-square-heart' },
   { key: 'custom_text', label: 'Texto Personalizado',                   icon: 'file-text' },
 ];
@@ -2594,7 +2594,7 @@ function buildVenueSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
 
   return _SD + `<div class="event-section">
     <div class="section-inner reveal">
-      <h3 class="section-title">${escapeHTML(ev.venues_title || _getSectionTitle(ev,'venues','Locais do Evento'))}</h3>
+      <h3 class="section-title">${escapeHTML(ev.venues_title || 'Locais do Evento')}</h3>
       <div style="display:flex;gap:1rem;flex-wrap:wrap;justify-content:center">${cards}</div>
     </div>
   </div>`;
@@ -3080,17 +3080,17 @@ const SECTION_TITLE_DEFAULTS = {
   bible:        'Palavra de Deus',
   invite:       'Convite',
   date:         'Data & Hora',
-  story:        _getSectionTitle(ev,'story','A Nossa História'),
-  venues:       _getSectionTitle(ev,'venues','Locais do Evento'),
-  gallery:      _getSectionTitle(ev,'gallery','Galeria de Fotos'),
-  manual:       _getSectionTitle(ev,'manual','Manual do Bom Convidado'),
-  schedule:     _getSectionTitle(ev,'schedule','Programa do Dia'),
-  dresscode:    _getSectionTitle(ev,'dresscode','Dress Code'),
+  story:        'A Nossa História',
+  venues:       'Locais do Evento',
+  gallery:      'Galeria de Fotos',
+  manual:       'Manual do Bom Convidado',
+  schedule:     'Programa do Dia',
+  dresscode:    'Dress Code',
   couplemsg:    'Mensagem dos Noivos',
-  iban:         _getSectionTitle(ev,'iban','Gostaria de nos presentear?'),
-  gift_stores:  _getSectionTitle(ev,'gift_stores','Lojas Sugeridas'),
+  iban:         'Gostaria de nos presentear?',
+  gift_stores:  'Lojas Sugeridas',
   couple_photo: 'Foto do Casal',
-  event_faq:    _getSectionTitle(ev,'event_faq','Perguntas Frequentes'),
+  event_faq:    'Perguntas Frequentes',
   custom_text:  'Texto Livre',
 };
 

@@ -1263,6 +1263,49 @@ function _scShowResult(type, title, subtitle, duration=3500) {
   if (duration>0) setTimeout(()=>{ if(el)el.style.display='none'; }, duration);
 }
 
+async function _scLoadUndoRemaining(eventId) {
+  try {
+    const ev = await supabaseRequest(`events?id=eq.${eventId}&select=user_id&limit=1`);
+    const userId = ev?.[0]?.user_id;
+    if (!userId) return;
+    const acc = await supabaseRequest(`accounts?auth_uid=eq.${userId}&select=undo_scans_remaining&limit=1`);
+    const remaining = acc?.[0]?.undo_scans_remaining ?? 4;
+    const btn  = document.getElementById('scUndoBtn');
+    const info = document.getElementById('scUndoInfo');
+    if (info) info.textContent = `Restam ${remaining} utilizações`;
+    if (btn && remaining <= 0) {
+      btn.disabled = true; btn.style.background = '#9ca3af'; btn.style.cursor = 'not-allowed';
+      if (info) info.textContent = 'Sem utilizações — contacta o suporte';
+    }
+  } catch(e) { console.warn('_scLoadUndoRemaining:', e); }
+}
+
+async function _scUndoScans(scannerToken, eventId) {
+  try {
+    const ev = await supabaseRequest(`events?id=eq.${eventId}&select=user_id&limit=1`);
+    const userId = ev?.[0]?.user_id;
+    const acc = await supabaseRequest(`accounts?auth_uid=eq.${userId}&select=undo_scans_remaining&limit=1`);
+    const remaining = acc?.[0]?.undo_scans_remaining ?? 4;
+    if (remaining <= 0) { alert('Sem utilizações disponíveis. Contacta o administrador.'); return; }
+    if (!confirm(`Tens a certeza que queres desfazer TODOS os check-ins?\n\nRestam ${remaining} utilizações.`)) return;
+    await supabaseRequest(`rsvps?event_id=eq.${eventId}`, 'PATCH',
+      { checked_in: false, checked_in_at: null, companion_checked_in: false });
+    await supabaseRequest(`accounts?auth_uid=eq.${userId}`, 'PATCH', { undo_scans_remaining: remaining - 1 });
+    const cache = window._scCache;
+    if (cache) {
+      Object.values(cache.rsvpMap || {}).forEach(r => { r.checkedIn = false; r.companionCheckedIn = false; });
+      _scSaveCache(scannerToken, cache);
+      window._scCache = cache;
+      _scUpdateCounters(cache);
+      _scRenderGuests();
+    }
+    localStorage.removeItem(`adk_checkin_queue_${scannerToken}`);
+    _scUpdateSyncBadge(scannerToken);
+    _scLoadUndoRemaining(eventId);
+    alert(`✅ Todos os check-ins foram anulados.\nRestam ${remaining - 1} utilizações.`);
+  } catch(e) { alert('Erro ao desfazer. Tenta novamente.'); console.error(e); }
+}
+
 async function _scDownloadReport(eventId, eventTitle) {
   const cache = window._scCache;
   if (!cache) { alert('Carrega o scanner primeiro.'); return; }
