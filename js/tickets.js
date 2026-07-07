@@ -688,23 +688,14 @@ function _renderScannerUI(ev, scannerToken, cache, isOnline) {
         <button onclick="_scOpenManual()" style="width:100%;margin-bottom:12px;padding:12px 16px;border-radius:10px;border:2px solid ${C};color:${C};background:${C}10;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>Check-in sem QR Code (pesquisar por nome)
         </button>
-        <!-- Câmara -->
-        <div id="scanner-reader" style="border-radius:12px;overflow:hidden;background:#111827;aspect-ratio:1;max-width:400px;margin:0 auto;display:flex;align-items:center;justify-content:center">
+        <!-- Câmara com resultado sobreposto -->
+        <div id="scanner-reader" style="border-radius:12px;overflow:hidden;background:#111827;aspect-ratio:4/3;max-width:480px;margin:0 auto;display:flex;align-items:center;justify-content:center;position:relative">
           <div style="text-align:center;color:#6b7280">
             <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:block;margin:0 auto 12px"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="5" y="5" width="3" height="3" fill="currentColor" stroke="none"/><rect x="16" y="5" width="3" height="3" fill="currentColor" stroke="none"/><rect x="16" y="16" width="3" height="3" fill="currentColor" stroke="none"/><rect x="5" y="16" width="3" height="3" fill="currentColor" stroke="none"/></svg>
             <p>A inicializar câmara...</p>
           </div>
-        </div>
-      </div>
-
-      <!-- Resultado -->
-      <div class="sc-card" style="padding:16px">
-        <h3 style="font-size:14px;font-weight:600;color:#374151;margin:0 0 12px;display:flex;align-items:center;gap:8px">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="${C}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="m9 12 2 2 4-4"/></svg>Resultado
-        </h3>
-        <div id="scanner-result" style="text-align:center;color:#9ca3af;padding:24px 0">
-          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:block;margin:0 auto 8px"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="5" y="5" width="3" height="3" fill="currentColor" stroke="none"/><rect x="16" y="5" width="3" height="3" fill="currentColor" stroke="none"/><rect x="16" y="16" width="3" height="3" fill="currentColor" stroke="none"/><rect x="5" y="16" width="3" height="3" fill="currentColor" stroke="none"/></svg>
-          <p style="font-size:14px;margin:0">Aguardando scan...</p>
+          <!-- Resultado sobreposto na câmara -->
+          <div id="scanner-result" style="display:none;position:absolute;bottom:0;left:0;right:0;padding:16px 20px;text-align:center;backdrop-filter:blur(4px);z-index:10;transition:all .3s"></div>
         </div>
       </div>
 
@@ -805,6 +796,10 @@ function _renderScannerUI(ev, scannerToken, cache, isOnline) {
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>Sincronizar
           </button>
         </div>
+        <button onclick="_scDownloadReport('${ev.id}','${escapeHTML(ev.title||'Evento')}')" style="margin-top:10px;width:100%;padding:14px;background:linear-gradient(135deg,#7c3aed,#6d28d9);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Descarregar Relatório PDF
+        </button>
       </div>
     </div>
 
@@ -824,12 +819,7 @@ function _renderScannerUI(ev, scannerToken, cache, isOnline) {
       </div>
     </div>
 
-    <!-- Botão próximo scan (mobile) -->
-    <div id="scNextBtn" style="display:none;position:fixed;bottom:0;left:0;right:0;background:#fff;padding:16px;border-top:1px solid #e5e7eb;z-index:50">
-      <button onclick="_scNextScan()" class="sc-btn" style="background:${C};color:#fff">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:10px"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>Próximo Scan
-      </button>
-    </div>`;
+`;
 
   // Guardar referências globais para uso nas funções
   window._scCache = cache;
@@ -854,6 +844,38 @@ function _renderScannerUI(ev, scannerToken, cache, isOnline) {
   });
 
   _scUpdateSyncBadge(scannerToken);
+
+  // Botão próximo scan (mobile)
+  const nextBtnDiv = document.createElement('div');
+  nextBtnDiv.id = 'scNextBtn';
+  nextBtnDiv.style.cssText = 'display:none;position:fixed;bottom:0;left:0;right:0;background:#fff;padding:16px;border-top:1px solid #e5e7eb;z-index:50';
+  nextBtnDiv.innerHTML = `<button onclick="_scNextScan()" style="width:100%;padding:16px;background:${C};color:#fff;border:none;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>Próximo Scan</button>`;
+  document.body.appendChild(nextBtnDiv);
+
+  // ✅ Realtime — sincronizar check-ins de outros leitores do mesmo evento
+  // Quando 4 pessoas estão a escanear ao mesmo tempo, cada uma vê as entradas das outras
+  if (isOnline && window.supabase) {
+    try {
+      window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+        .channel('scanner-' + ev.id)
+        .on('postgres_changes', {
+          event: 'UPDATE', schema: 'public', table: 'rsvps',
+          filter: `event_id=eq.${ev.id}`
+        }, (payload) => {
+          const r = payload.new;
+          if (!r || !r.rsvp_token) return;
+          const entry = cache.rsvpMap[r.rsvp_token];
+          if (entry && r.checked_in && !entry.checkedIn) {
+            entry.checkedIn = true;
+            _scSaveCache(scannerToken, cache);
+            window._scCache = cache;
+            _scUpdateCounters(cache);
+            _scRenderGuests();
+          }
+        })
+        .subscribe();
+    } catch(e) { console.warn('[Scanner] Realtime init failed:', e); }
+  }
 
   // Iniciar câmara
   const readerEl = document.getElementById('scanner-reader');
@@ -1005,28 +1027,87 @@ function _scNextScan() {
   </div>`;
 }
 
-function _scShowResult(type, name, subtitle) {
+function _scShowResult(type, title, subtitle, duration=3500) {
   const el = document.getElementById('scanner-result');
   if (!el) return;
   const cfg = {
-    success: { bg:'#f0fdf4', border:'#22c55e', icon:'fa-check-circle', color:'#16a34a', emoji:'✅' },
-    already:  { bg:'#eff6ff', border:'#3b82f6', icon:'fa-redo',         color:'#2563eb', emoji:'🔁' },
-    error:    { bg:'#fef2f2', border:'#ef4444', icon:'fa-times-circle',  color:'#dc2626', emoji:'❌' },
-  }[type]||{};
-  el.innerHTML = `<div style="padding:8px">
-    <i class="fas ${cfg.icon}" style="font-size:36px;color:${cfg.color};display:block;margin-bottom:8px"></i>
-    <p style="font-size:16px;font-weight:700;color:${cfg.color};margin:0 0 4px">${escapeHTML(name)}</p>
-    <p style="font-size:13px;color:#6b7280;margin:0">${escapeHTML(subtitle)}</p>
-  </div>`;
+    success:   { bg:'rgba(22,163,74,0.92)' },
+    companion: { bg:'rgba(37,99,235,0.92)' },
+    already:   { bg:'rgba(37,99,235,0.92)' },
+    error:     { bg:'rgba(220,38,38,0.92)' },
+    warning:   { bg:'rgba(217,119,6,0.92)' },
+  }[type] || { bg:'rgba(0,0,0,0.85)' };
+
+  const isGood = type==='success'||type==='companion';
+  el.style.cssText = `display:block;position:absolute;bottom:0;left:0;right:0;padding:20px;text-align:center;background:${cfg.bg};z-index:10;border-radius:0 0 12px 12px`;
+  el.innerHTML = `
+    <div style="font-size:12px;font-weight:800;color:rgba(255,255,255,0.8);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:6px">${isGood?'✓ Entrada Permitida':'✗ Acesso Negado'}</div>
+    <div style="font-size:22px;font-weight:800;color:#fff;margin-bottom:2px">${escapeHTML(title)}</div>
+    ${subtitle?`<div style="font-size:13px;color:rgba(255,255,255,0.85)">${escapeHTML(subtitle)}</div>`:''}
+  `;
   // Som
   if (window._scSound) {
-    try { const ctx=new AudioContext(); const osc=ctx.createOscillator(); const g=ctx.createGain(); osc.connect(g); g.connect(ctx.destination); osc.frequency.value=type==='success'?880:220; g.gain.setValueAtTime(0.3,ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.3); osc.start(); osc.stop(ctx.currentTime+0.3); } catch(e){}
+    try { const ctx=new AudioContext(); const osc=ctx.createOscillator(); const g=ctx.createGain(); osc.connect(g); g.connect(ctx.destination); osc.frequency.value=isGood?880:220; g.gain.setValueAtTime(0.3,ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.3); osc.start(); osc.stop(ctx.currentTime+0.3); } catch(e){}
   }
   // Vibração
-  if (window._scVib && navigator.vibrate) navigator.vibrate(type==='success'?[100]:[200,100,200]);
-  // Botão próximo scan
+  if (window._scVib && navigator.vibrate) navigator.vibrate(isGood?[100]:[200,100,200]);
   const nb=document.getElementById('scNextBtn'); if(nb)nb.style.display='block';
-  setTimeout(()=>{ const nb2=document.getElementById('scNextBtn'); if(nb2)nb2.style.display='none'; el.innerHTML=`<div style="text-align:center;color:#9ca3af;padding:24px"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:block;margin:0 auto 8px"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="5" y="5" width="3" height="3" fill="currentColor" stroke="none"/><rect x="16" y="5" width="3" height="3" fill="currentColor" stroke="none"/><rect x="16" y="16" width="3" height="3" fill="currentColor" stroke="none"/><rect x="5" y="16" width="3" height="3" fill="currentColor" stroke="none"/></svg><p style="font-size:14px;margin:0">Aguardando scan...</p></div>`; }, 3000);
+  if (duration>0) setTimeout(()=>{ if(el)el.style.display='none'; const nb2=document.getElementById('scNextBtn'); if(nb2)nb2.style.display='none'; }, duration);
+}
+
+async function _scDownloadReport(eventId, eventTitle) {
+  const cache = window._scCache;
+  if (!cache) { alert('Carrega o scanner primeiro.'); return; }
+  const now     = new Date();
+  const entries = Object.values(cache.rsvpMap || {});
+  const entered = entries.filter(r => r.checkedIn).sort((a,b)=>a.name.localeCompare(b.name));
+  const absent  = entries.filter(r => !r.checkedIn).sort((a,b)=>a.name.localeCompare(b.name));
+  const pct     = entries.length ? Math.round(entered.length/entries.length*100) : 0;
+  const w = window.open('', '_blank');
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Relatório ${escapeHTML(eventTitle)}</title>
+  <style>
+    body{font-family:Arial,sans-serif;padding:32px;color:#1e293b;max-width:860px;margin:0 auto}
+    h1{font-size:24px;margin-bottom:4px}
+    h2{font-size:14px;color:#6b7280;font-weight:normal;margin-top:0 0 24px}
+    .stats{display:flex;gap:14px;margin:24px 0;flex-wrap:wrap}
+    .stat{flex:1;min-width:120px;border-radius:12px;padding:16px;text-align:center}
+    .stat-n{font-size:30px;font-weight:800;line-height:1}
+    .stat-l{font-size:12px;color:#6b7280;margin-top:6px}
+    .section{margin-top:28px}
+    .section-title{font-size:16px;font-weight:700;padding-bottom:8px;border-bottom:2px solid #e2e8f0;margin-bottom:12px}
+    table{width:100%;border-collapse:collapse}
+    th{background:#f8fafc;padding:9px 14px;text-align:left;font-size:12px;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;border-bottom:2px solid #e2e8f0}
+    td{padding:10px 14px;border-bottom:1px solid #f1f5f9;font-size:13px}
+    tr:nth-child(even) td{background:#fafafa}
+    .footer{margin-top:40px;font-size:11px;color:#94a3b8;text-align:center;border-top:1px solid #e2e8f0;padding-top:16px}
+    @media print{.no-print{display:none}}
+  </style></head><body>
+  <div class="no-print" style="margin-bottom:20px">
+    <button onclick="window.print()" style="padding:10px 20px;background:#7c3aed;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:14px">🖨 Imprimir / Guardar PDF</button>
+  </div>
+  <h1>📋 Relatório de Presenças</h1>
+  <h2>${escapeHTML(eventTitle)} &bull; ${now.toLocaleDateString('pt-PT',{weekday:'long',year:'numeric',month:'long',day:'numeric'})} &bull; gerado às ${now.toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'})}</h2>
+  <div class="stats">
+    <div class="stat" style="background:#f0fdf4;border:1px solid #bbf7d0"><div class="stat-n" style="color:#16a34a">${entered.length}</div><div class="stat-l">✅ Entraram</div></div>
+    <div class="stat" style="background:#fef2f2;border:1px solid #fecaca"><div class="stat-n" style="color:#dc2626">${absent.length}</div><div class="stat-l">❌ Ausentes</div></div>
+    <div class="stat" style="background:#eff6ff;border:1px solid #bfdbfe"><div class="stat-n" style="color:#2563eb">${entries.length}</div><div class="stat-l">👥 Total</div></div>
+    <div class="stat" style="background:#f5f3ff;border:1px solid #ddd6fe"><div class="stat-n" style="color:#7c3aed">${pct}%</div><div class="stat-l">📊 Presença</div></div>
+  </div>
+  <div class="section">
+    <div class="section-title" style="color:#16a34a">✅ Presentes (${entered.length})</div>
+    <table><thead><tr><th>#</th><th>Nome</th><th>Acompanhante</th></tr></thead><tbody>
+    ${entered.map((r,i)=>{const has=/ e /i.test(r.name);const m=has?r.name.split(/ e /i)[0]:r.name;const c=has?r.name.split(/ e /i).slice(1).join(' e '):'';return `<tr><td style="color:#9ca3af;font-size:12px">${i+1}</td><td><b>${escapeHTML(m)}</b></td><td style="color:#6b7280">${c?escapeHTML(c):'—'}</td></tr>`;}).join('')}
+    </tbody></table>
+  </div>
+  <div class="section">
+    <div class="section-title" style="color:#dc2626">❌ Ausentes (${absent.length})</div>
+    <table><thead><tr><th>#</th><th>Nome</th></tr></thead><tbody>
+    ${absent.map((r,i)=>`<tr><td style="color:#9ca3af;font-size:12px">${i+1}</td><td>${escapeHTML(r.name)}</td></tr>`).join('')}
+    </tbody></table>
+  </div>
+  <div class="footer">Gerado por AdKira &bull; ${now.toLocaleString('pt-PT')}</div>
+  </body></html>`);
+  w.document.close();
 }
 
 async function _scRefreshCache(scannerToken) {
@@ -1037,7 +1118,7 @@ async function _scRefreshCache(scannerToken) {
     const ev = rows[0];
     const rsvps = await supabaseRequest(`rsvps?event_id=eq.${ev.id}&ticket_issued=eq.true&select=rsvp_token,guest_name,checked_in&limit=2000`);
     const rsvpMap = {};
-    (rsvps || []).forEach(r => { rsvpMap[r.rsvp_token] = { name: r.guest_name, checkedIn: r.checked_in || false }; });
+    (rsvps || []).forEach(r => { rsvpMap[r.rsvp_token] = { name: r.guest_name, checkedIn: r.checked_in || false, companionCheckedIn: false }; });
     const cache = { ev, rsvpMap, cachedAt: Date.now() };
     _scSaveCache(scannerToken, cache);
     await _scSyncQueue(scannerToken, ev.id);
@@ -1056,14 +1137,7 @@ let _scannerCooldown = false;
 async function _onQrScanned(text, eventId, evColor, scannerToken, cache) {
   if (_scannerCooldown) return;
   _scannerCooldown = true;
-  setTimeout(() => _scannerCooldown = false, 2000);
-
-  const resultEl = document.getElementById('scanner-result');
-  const show = (bg, html, dur=2500) => {
-    resultEl.style.background = bg;
-    resultEl.innerHTML = html;
-    setTimeout(() => { resultEl.style.background='#1e293b'; resultEl.innerHTML='<p style="color:#6b7280;font-size:0.85rem">Aponte a câmara para o QR code do convidado</p>'; }, dur);
-  };
+  setTimeout(() => _scannerCooldown = false, 2500);
 
   if (!text.startsWith(_QR_PREFIX)) {
     _scShowResult('error', 'QR não reconhecido', 'Não emitido pelo AdKira');
@@ -1078,30 +1152,101 @@ async function _onQrScanned(text, eventId, evColor, scannerToken, cache) {
 
   const rsvp = cache.rsvpMap[token];
   if (!rsvp) {
-    _scShowResult('error', 'Não encontrado', 'Convidado não confirmou ou token inválido');
+    _scShowResult('error', 'Não encontrado', 'Convidado não tem ticket ou já foi removido');
     return;
   }
 
-  if (rsvp.checkedIn) {
+  // Detectar se tem acompanhante ("Nome e Acompanhante")
+  const hasCompanion = / e /i.test(rsvp.name);
+  const mainName     = hasCompanion ? rsvp.name.split(/ e /i)[0].trim() : rsvp.name;
+  const companionName= hasCompanion ? rsvp.name.split(/ e /i).slice(1).join(' e ').trim() : '';
+
+  // Caso: já entrou completamente
+  if (rsvp.checkedIn && (!hasCompanion || rsvp.companionCheckedIn)) {
     _scShowResult('already', rsvp.name, 'Já entrou anteriormente');
     return;
   }
 
-  // ✅ Entrada válida
+  // Caso: convidado principal entrou mas acompanhante ainda não
+  if (rsvp.checkedIn && hasCompanion && !rsvp.companionCheckedIn) {
+    // Segunda leitura — entrada do acompanhante
+    cache.rsvpMap[token].companionCheckedIn = true;
+    _scSaveCache(scannerToken, cache);
+    window._scCache = cache;
+    _scShowResult('companion', companionName, `Acompanhante de ${mainName}`, 4000);
+    if (navigator.onLine) {
+      supabaseRequest(`rsvps?rsvp_token=eq.${token}&event_id=eq.${eventId}`, 'PATCH',
+        { companion_checked_in: true, companion_checked_in_at: new Date().toISOString() }
+      ).catch(() => {});
+    }
+    return;
+  }
+
+  // Caso: primeira leitura
+  if (hasCompanion) {
+    // Perguntar se o acompanhante veio junto
+    _scannerCooldown = true; // manter bloqueado durante o modal
+    _scShowResult('success', mainName, `Veio com ${companionName}?`, 0); // sem auto-dismiss
+
+    // Mostrar modal de confirmação
+    const resultEl = document.getElementById('scanner-result');
+    if (resultEl) {
+      resultEl.innerHTML += `
+        <div style="display:flex;gap:10px;justify-content:center;margin-top:12px">
+          <button onclick="window._scCompanionAnswer('${token}','${eventId}','${scannerToken}',true)" style="flex:1;max-width:140px;padding:10px;background:#fff;color:#16a34a;border:none;border-radius:10px;font-weight:800;font-size:15px;cursor:pointer">✓ Sim</button>
+          <button onclick="window._scCompanionAnswer('${token}','${eventId}','${scannerToken}',false)" style="flex:1;max-width:140px;padding:10px;background:rgba(255,255,255,0.3);color:#fff;border:none;border-radius:10px;font-weight:800;font-size:15px;cursor:pointer">Não</button>
+        </div>`;
+    }
+
+    window._scCompanionAnswer = async (tok, evId, scToken, companionCame) => {
+      delete window._scCompanionAnswer;
+      cache.rsvpMap[tok].checkedIn = true;
+      cache.rsvpMap[tok].companionCheckedIn = companionCame;
+      _scSaveCache(scToken, cache);
+      window._scCache = cache;
+      _scUpdateCounters(cache);
+      _scRenderGuests();
+
+      const subtitle = companionCame ? `${mainName} + ${companionName}` : `${mainName} (acompanhante virá depois)`;
+      _scShowResult('success', 'Entrada permitida', subtitle, 4000);
+      _scannerCooldown = false;
+
+      const patch = { checked_in: true, checked_in_at: new Date().toISOString() };
+      if (companionCame) Object.assign(patch, { companion_checked_in: true, companion_checked_in_at: new Date().toISOString() });
+
+      if (navigator.onLine) {
+        supabaseRequest(`rsvps?rsvp_token=eq.${tok}&event_id=eq.${evId}`, 'PATCH', patch).catch(() => {
+          const q = _scLoadCheckinQueue(scToken); if(!q.includes(tok)){q.push(tok);_scSaveCheckinQueue(scToken,q);}
+        });
+      } else {
+        const q = _scLoadCheckinQueue(scToken); if(!q.includes(tok)){q.push(tok);_scSaveCheckinQueue(scToken,q);} _scUpdateSyncBadge(scToken);
+      }
+    };
+    return;
+  }
+
+  // Sem acompanhante — entrada directa
   cache.rsvpMap[token].checkedIn = true;
   _scSaveCache(scannerToken, cache);
   window._scCache = cache;
   _scUpdateCounters(cache);
   _scRenderGuests();
-  _scShowResult('success', rsvp.name, navigator.onLine ? 'Entrada registada!' : 'Entrada registada (offline)');
+  _scShowResult('success', rsvp.name, '');
 
   if (navigator.onLine) {
-    supabaseRequest(`rsvps?rsvp_token=eq.${token}&event_id=eq.${eventId}`, 'PATCH',
+    // ✅ PATCH atómico — só actualiza se ainda não estiver checked_in
+    // Se 0 linhas actualizadas → outro scanner chegou primeiro
+    const res = await supabaseRequest(
+      `rsvps?rsvp_token=eq.${token}&event_id=eq.${eventId}&checked_in=eq.false`,
+      'PATCH',
       { checked_in: true, checked_in_at: new Date().toISOString() }
-    ).catch(() => {
-      const q = _scLoadCheckinQueue(scannerToken);
-      if (!q.includes(token)) { q.push(token); _scSaveCheckinQueue(scannerToken, q); }
-    });
+    ).catch(() => null);
+
+    if (Array.isArray(res) && res.length === 0) {
+      // Outro scanner já registou esta entrada
+      cache.rsvpMap[token].checkedIn = true;
+      _scShowResult('already', rsvp.name, 'Já registado por outro leitor');
+    }
   } else {
     const q = _scLoadCheckinQueue(scannerToken);
     if (!q.includes(token)) { q.push(token); _scSaveCheckinQueue(scannerToken, q); }
