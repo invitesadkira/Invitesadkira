@@ -4389,33 +4389,42 @@ async function openVideoManager() {
   document.body.appendChild(modal);
 
   try {
-    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/list/event-covers`, {
-      method: 'POST',
-      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ limit: 200, offset: 0, prefix: '', sortBy: { column: 'name', order: 'desc' } })
-    });
-    const files = await res.json();
-    const videos = (files || []).filter(f => f.name && /\.(mp4|webm|ogg|mov)$/i.test(f.name));
+    // Procurar em ambos os buckets
+    const allVideos = [];
+    for (const bucket of ['event-videos', 'event-covers', 'event-media']) {
+      try {
+        const res = await fetch(`${SUPABASE_URL}/storage/v1/object/list/${bucket}`, {
+          method: 'POST',
+          headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ limit: 200, offset: 0, prefix: '', sortBy: { column: 'name', order: 'desc' } })
+        });
+        if (!res.ok) continue;
+        const files = await res.json();
+        if (!Array.isArray(files)) continue;
+        files.filter(f => f.name && /\.(mp4|webm|ogg|mov)$/i.test(f.name))
+          .forEach(f => allVideos.push({ ...f, bucket }));
+      } catch(e) {}
+    }
 
     const list = document.getElementById('video-manager-list');
-    if (!videos.length) { list.innerHTML = '<p class="text-xs text-gray-400">Nenhum vídeo encontrado.</p>'; return; }
+    if (!allVideos.length) { list.innerHTML = '<p class="text-xs text-gray-400 text-center py-4">Nenhum vídeo encontrado nos buckets.</p>'; return; }
 
     list.innerHTML = `
       <div class="flex justify-between items-center mb-2">
-        <span class="text-xs text-gray-500">${videos.length} vídeo(s) encontrado(s)</span>
+        <span class="text-xs text-gray-500">${allVideos.length} vídeo(s) encontrado(s)</span>
         <button onclick="_deleteAllVideos()" class="text-xs text-red-600 font-semibold">🗑 Eliminar todos</button>
       </div>
       <div class="space-y-2">
-        ${videos.map(f => {
-          const url = `${SUPABASE_URL}/storage/v1/object/public/event-covers/${f.name}`;
+        ${allVideos.map(f => {
+          const url = `${SUPABASE_URL}/storage/v1/object/public/${f.bucket}/${f.name}`;
           const size = f.metadata?.size ? (f.metadata.size/1024/1024).toFixed(1)+'MB' : '?';
-          return `<div class="flex items-center gap-2 p-2 border border-gray-100 rounded-lg">
+          return `<div class="flex items-center gap-2 p-2 border border-gray-100 rounded-lg" data-bucket="${f.bucket}" data-name="${f.name}">
             <video src="${url}" style="width:80px;height:50px;object-fit:cover;border-radius:6px;background:#111" muted></video>
             <div class="flex-1 min-w-0">
               <p class="text-xs font-semibold text-gray-700 truncate">${f.name}</p>
-              <p class="text-xs text-gray-400">${size}</p>
+              <p class="text-xs text-gray-400">${size} · ${f.bucket}</p>
             </div>
-            <button onclick="_deleteVideo('${f.name}',this.closest('div[class*=flex]'))" class="text-xs text-red-500 font-semibold px-2 py-1 border border-red-200 rounded">🗑</button>
+            <button onclick="_deleteVideo('${f.name}','${f.bucket}',this.closest('[data-bucket]'))" class="text-xs text-red-500 font-semibold px-2 py-1 border border-red-200 rounded">🗑</button>
           </div>`;
         }).join('')}
       </div>`;
@@ -4424,9 +4433,9 @@ async function openVideoManager() {
   }
 }
 
-async function _deleteVideo(fileName, rowEl) {
+async function _deleteVideo(fileName, bucket, rowEl) {
   if (!confirm(`Eliminar "${fileName}"?`)) return;
-  const res = await fetch(`${SUPABASE_URL}/storage/v1/object/event-covers/${fileName}`, {
+  const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${bucket}/${fileName}`, {
     method: 'DELETE',
     headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
   });

@@ -331,8 +331,8 @@ function removeCoverImageFromForm() {
 async function handleCoverVideoUpload(input) {
   const file = input.files[0];
   if (!file) return;
-  if (file.size > 10 * 1024 * 1024) {
-    toast('Vídeo muito grande (máx. 10MB) — usa um vídeo curto ou comprime antes de carregar.');
+  if (file.size > 25 * 1024 * 1024) {
+    toast('Vídeo demasiado grande. Máx. 25 MB.');
     input.value = '';
     return;
   }
@@ -350,11 +350,33 @@ async function handleCoverVideoUpload(input) {
   }
 }
 
-function removeCoverVideoFromForm() {
-  document.getElementById('evt-cover-video-url').value = '';
-  document.getElementById('cover-video-input').value = '';
-  document.getElementById('cover-video-preview').src = '';
-  document.getElementById('cover-video-preview-wrap').classList.add('hidden');
+async function removeCoverVideoFromForm() {
+  const urlEl = document.getElementById('evt-cover-video-url');
+  const url = urlEl?.value;
+  
+  // Apagar do Supabase Storage se houver URL
+  if (url && url.startsWith('http')) {
+    try {
+      // Extrair bucket e filename do URL
+      const match = url.match(/storage\/v1\/object\/public\/([^/]+)\/(.+)$/);
+      if (match) {
+        const [, bucket, fileName] = match;
+        await fetch(`${SUPABASE_URL}/storage/v1/object/${bucket}/${fileName}`, {
+          method: 'DELETE',
+          headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
+        });
+      }
+    } catch(e) { console.warn('Erro ao eliminar vídeo do Storage:', e); }
+  }
+  
+  if (urlEl) urlEl.value = '';
+  const inp = document.getElementById('cover-video-input');
+  if (inp) inp.value = '';
+  const prev = document.getElementById('cover-video-preview');
+  if (prev) prev.src = '';
+  const wrap = document.getElementById('cover-video-preview-wrap');
+  if (wrap) wrap.classList.add('hidden');
+  toast('Vídeo removido.');
 }
 
 async function previewCover(input) {
@@ -1461,6 +1483,27 @@ async function handleCouplemsgBodyFontUpload(input) {
     if (wrap) wrap.style.display = '';
     toast('Vídeo carregado!');
   } catch(e) { toast('Erro ao carregar vídeo. Tenta novamente.'); console.error(e); }
+}
+
+async function removeCoupleVideo() {
+  const urlEl = document.getElementById('evt-couple-video-url');
+  const url = urlEl?.value;
+  if (url && url.startsWith('http')) {
+    try {
+      const match = url.match(/storage\/v1\/object\/public\/([^/]+)\/(.+)$/);
+      if (match) {
+        const [, bucket, fileName] = match;
+        await fetch(`${SUPABASE_URL}/storage/v1/object/${bucket}/${fileName}`, {
+          method: 'DELETE',
+          headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
+        });
+      }
+    } catch(e) { console.warn('Erro ao eliminar vídeo:', e); }
+  }
+  if (urlEl) urlEl.value = '';
+  const wrap = document.getElementById('couple-video-preview-wrap');
+  if (wrap) wrap.style.display = 'none';
+  toast('Vídeo removido.');
 }
 
 function _toggleCoupleVideoType() {
