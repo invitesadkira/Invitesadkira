@@ -181,33 +181,18 @@ async function renderGuestView() {
   }
 
   // ── Capa: vídeo (se houver) ou foto/gradiente, como já era ──
-  const showCover = eventData.show_cover !== 'no'; // default: mostrar
+  const showCover = eventData.show_cover !== 'no';
   const coverImage = showCover ? (eventData.cover_image || eventData.cover || '') : '';
-  const coverVideo = showCover ? (eventData.cover_video_url || '') : '';
+  // cover_video_url vem dos visuals — será aplicado após o merge abaixo
   const heroEl = document.getElementById('guest-hero-bg');
   const heroSection = document.getElementById('guest-hero');
   if (!showCover && heroSection) { heroSection.style.display = 'none'; }
   const videoEl = document.getElementById('guest-hero-video');
-  if (coverVideo && coverVideo.startsWith('http') && videoEl) {
-    videoEl.src = coverVideo;
-    videoEl.classList.remove('hidden');
-    videoEl.play().catch(() => {}); // alguns browsers exigem interação antes de dar play; falha em silêncio
-    if (heroEl) heroEl.style.background = 'none'; // a foto fica escondida por trás do vídeo
-  } else {
-    if (videoEl) { videoEl.classList.add('hidden'); videoEl.removeAttribute('src'); }
-    if (heroEl) {
-      if (coverImage && coverImage.startsWith('http')) {
-        heroEl.style.backgroundImage = `url('${coverImage}')`;
-        // If image fails to load, fallback to gradient
-        const _testImg = new Image();
-        _testImg.onerror = () => { heroEl.style.backgroundImage = ''; heroEl.style.background = 'linear-gradient(135deg, var(--ev-color,#007f9f) 0%, #0d4f6a 100%)'; };
-        _testImg.src = coverImage;
-        heroEl.style.backgroundSize = 'cover';
-        heroEl.style.backgroundPosition = 'center';
-      } else {
-        heroEl.style.background = 'linear-gradient(135deg, #007f9f 0%, #0d4f6a 100%)';
-      }
-    }
+  // Aplicar imagem de capa inicial (antes dos visuals carregarem)
+  if (heroEl && coverImage && coverImage.startsWith('http')) {
+    heroEl.style.backgroundImage = `url('${coverImage}')`;
+    heroEl.style.backgroundSize = 'cover';
+    heroEl.style.backgroundPosition = 'center';
   }
 
   // guest-title hidden — couple names not shown in CTA section
@@ -329,7 +314,19 @@ async function renderGuestView() {
     console.warn('event_visuals load failed:', e);
   }
 
-  // ── CRITICAL FIX: load venue/location data from the dedicated event_venues table ──
+  // ✅ Aplicar vídeo de capa DEPOIS do merge dos visuals (cover_video_url vem de event_visuals)
+  {
+    const coverVideoUrl = eventData.cover_video_url;
+    const videoEl2 = document.getElementById('guest-hero-video');
+    const heroEl2  = document.getElementById('guest-hero-bg');
+    if (coverVideoUrl && coverVideoUrl.startsWith('http') && videoEl2) {
+      videoEl2.src = coverVideoUrl;
+      videoEl2.classList.remove('hidden');
+      videoEl2.load();
+      videoEl2.play().catch(() => {});
+      if (heroEl2) heroEl2.style.background = 'none';
+    }
+  }
   // This was previously never loaded for guests — venue_ceremony/venue_civil/venue_reception
   // etc. live ONLY in event_venues, never in the events table, so without this call
   // "Locais do Evento" could never appear no matter how it was configured.
