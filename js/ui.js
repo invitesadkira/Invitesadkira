@@ -336,17 +336,25 @@ async function handleCoverVideoUpload(input) {
     input.value = '';
     return;
   }
-  toast('A carregar vídeo...');
+  toast('A carregar vídeo de capa...');
   try {
-    const url = await uploadImageToStorage(file, 'event-covers', 'Vídeo de Capa');
+    const ext = file.name.split('.').pop().toLowerCase();
+    const fileName = `cover_video_${Date.now()}.${ext}`;
+    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/event-videos/${fileName}`, {
+      method: 'POST',
+      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': file.type || 'video/mp4', 'x-upsert': 'true' },
+      body: file
+    });
+    if (!res.ok) throw new Error(await res.text());
+    const url = `${SUPABASE_URL}/storage/v1/object/public/event-videos/${fileName}`;
     document.getElementById('evt-cover-video-url').value = url;
     const preview = document.getElementById('cover-video-preview');
-    preview.src = url;
+    if (preview) preview.src = url;
     document.getElementById('cover-video-preview-wrap').classList.remove('hidden');
-    toast('Vídeo carregado!');
+    toast('✅ Vídeo de capa carregado! Clica em Guardar.');
   } catch(e) {
-    toast('Erro ao carregar o vídeo.');
-    console.warn(e);
+    toast('Erro ao carregar o vídeo: ' + e.message);
+    console.error(e);
   }
 }
 
