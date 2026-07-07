@@ -4288,6 +4288,7 @@ async function renderStorageBar() {
         <span style="font-size:0.8rem;font-weight:700;color:#374151">Armazenamento Supabase</span>
       </div>
       <button onclick="renderStorageBar()" style="font-size:0.65rem;color:#6b7280;background:none;border:none;cursor:pointer">🔄 Actualizar</button>
+      <button onclick="openVideoManager()" style="font-size:0.65rem;color:#7c3aed;background:none;border:none;cursor:pointer;font-weight:600">🎬 Gerir Vídeos</button>
     </div>
     <div id="storage-bar-wrap"><p style="font-size:0.75rem;color:#9ca3af">A calcular...</p></div>
   </div>`;
@@ -4371,4 +4372,82 @@ async function renderStorageBar() {
     document.getElementById('storage-bar-wrap').innerHTML =
       `<p style="font-size:0.72rem;color:#ef4444">Erro ao calcular: ${e.message}</p>`;
   }
+}
+
+// ── Gestor de Vídeos (admin god) ─────────────────────────────────────────
+async function openVideoManager() {
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.id = 'video-manager-modal';
+  modal.innerHTML = `<div class="modal-content bg-white rounded-2xl p-5" style="max-width:600px;max-height:88vh;overflow-y:auto">
+    <div class="flex items-center justify-between mb-3">
+      <h3 class="text-base font-bold text-gray-800">🎬 Gerir Vídeos do Storage</h3>
+      <button onclick="this.closest('.modal-overlay').remove()" style="background:#f3f4f6;border:none;border-radius:50%;width:28px;height:28px;cursor:pointer">×</button>
+    </div>
+    <div id="video-manager-list"><p class="text-xs text-gray-400">A carregar...</p></div>
+  </div>`;
+  document.body.appendChild(modal);
+
+  try {
+    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/list/event-covers`, {
+      method: 'POST',
+      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ limit: 200, offset: 0, prefix: '', sortBy: { column: 'name', order: 'desc' } })
+    });
+    const files = await res.json();
+    const videos = (files || []).filter(f => f.name && /\.(mp4|webm|ogg|mov)$/i.test(f.name));
+
+    const list = document.getElementById('video-manager-list');
+    if (!videos.length) { list.innerHTML = '<p class="text-xs text-gray-400">Nenhum vídeo encontrado.</p>'; return; }
+
+    list.innerHTML = `
+      <div class="flex justify-between items-center mb-2">
+        <span class="text-xs text-gray-500">${videos.length} vídeo(s) encontrado(s)</span>
+        <button onclick="_deleteAllVideos()" class="text-xs text-red-600 font-semibold">🗑 Eliminar todos</button>
+      </div>
+      <div class="space-y-2">
+        ${videos.map(f => {
+          const url = `${SUPABASE_URL}/storage/v1/object/public/event-covers/${f.name}`;
+          const size = f.metadata?.size ? (f.metadata.size/1024/1024).toFixed(1)+'MB' : '?';
+          return `<div class="flex items-center gap-2 p-2 border border-gray-100 rounded-lg">
+            <video src="${url}" style="width:80px;height:50px;object-fit:cover;border-radius:6px;background:#111" muted></video>
+            <div class="flex-1 min-w-0">
+              <p class="text-xs font-semibold text-gray-700 truncate">${f.name}</p>
+              <p class="text-xs text-gray-400">${size}</p>
+            </div>
+            <button onclick="_deleteVideo('${f.name}',this.closest('div[class*=flex]'))" class="text-xs text-red-500 font-semibold px-2 py-1 border border-red-200 rounded">🗑</button>
+          </div>`;
+        }).join('')}
+      </div>`;
+  } catch(e) {
+    document.getElementById('video-manager-list').innerHTML = '<p class="text-xs text-red-500">Erro ao carregar vídeos.</p>';
+  }
+}
+
+async function _deleteVideo(fileName, rowEl) {
+  if (!confirm(`Eliminar "${fileName}"?`)) return;
+  const res = await fetch(`${SUPABASE_URL}/storage/v1/object/event-covers/${fileName}`, {
+    method: 'DELETE',
+    headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
+  });
+  if (res.ok) { rowEl?.remove(); toast('Vídeo eliminado.'); }
+  else toast('Erro ao eliminar.');
+}
+
+async function _deleteAllVideos() {
+  if (!confirm('Eliminar TODOS os vídeos? Esta acção é irreversível.')) return;
+  const res = await fetch(`${SUPABASE_URL}/storage/v1/object/list/event-covers`, {
+    method: 'POST',
+    headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ limit: 200, offset: 0, prefix: '', sortBy: { column: 'name', order: 'asc' } })
+  });
+  const files = await res.json();
+  const videos = (files || []).filter(f => f.name && /\.(mp4|webm|ogg|mov)$/i.test(f.name));
+  for (const f of videos) {
+    await fetch(`${SUPABASE_URL}/storage/v1/object/event-covers/${f.name}`, {
+      method: 'DELETE', headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
+    });
+  }
+  toast(`${videos.length} vídeo(s) eliminados.`);
+  document.getElementById('video-manager-modal')?.remove();
 }

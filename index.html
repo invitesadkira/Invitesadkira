@@ -16,11 +16,11 @@
   <!-- PDF.js: renderizar PDFs como canvas (pré-visualização do template) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <!-- QRCode: gerador local, sem dependência CDN -->
-  <script src="js/qrcode-mini.js?v=1783422305"></script>
+  <script src="js/qrcode-mini.js?v=1783423250"></script>
   <script>tailwind.config = { theme: { extend: { colors: { teal: { 500: '#007f9f', 600: '#006b86' } } } } }</script>
   <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.js"></script>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💌</text></svg>">
-  <link rel="stylesheet" href="css/main.css?v=1783422305">
+  <link rel="stylesheet" href="css/main.css?v=1783423250">
 </head>
 <body class="h-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
 
@@ -313,7 +313,13 @@
        <button type="button" onclick="openSmartPasteModal()" style="width:100%;background:linear-gradient(135deg,#7c3aed,#a855f7);color:#fff;border:none;border-radius:0.65rem;padding:0.7rem;font-weight:700;font-size:0.85rem;margin-bottom:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:0.4rem">
         🪄 Colar Texto Inteligente
        </button>
-       <!-- Cover --> <label class="block text-sm font-semibold text-gray-600 mb-1">Imagem de Capa <span class="text-gray-400 font-normal">(opcional)</span></label>
+       <!-- Cover -->
+       <div class="flex items-center justify-between mb-2">
+        <label class="text-sm font-semibold text-gray-600">Imagem / Vídeo de Capa</label>
+        <div id="sw-cover" class="switch active" onclick="toggleSwitch(this,'cover-section-wrap')"></div>
+       </div>
+       <div id="cover-section-wrap">
+       <label class="block text-xs text-gray-400 mb-1">Deixa vazio para não mostrar capa — o convite começa directo no conteúdo.</label>
        <div id="cover-preview" class="w-full h-40 rounded-xl bg-gray-100 border-2 border-dashed border-gray-300 flex items-center justify-center cursor-pointer mb-1 overflow-hidden hover:border-teal-400 transition" onclick="document.getElementById('cover-input').click()">
         <span id="cover-placeholder" class="text-gray-400 flex flex-col items-center"><i data-lucide="image" class="w-8 h-8 mb-1"></i><span class="text-sm">Carregar imagem</span><span class="text-xs mt-0.5">(podes deixar em branco)</span></span> <img id="cover-img" class="hidden w-full h-full object-contain bg-white">
        </div>
@@ -331,6 +337,7 @@
          <button type="button" class="text-xs text-red-500 font-semibold mt-1" onclick="removeCoverVideoFromForm()">✕ Remover vídeo</button>
         </div>
        </div>
+       </div><!-- /cover-section-wrap -->
        <input id="cover-input" type="file" accept="image/*" class="hidden" onchange="previewCover(this)"> <label class="block text-sm font-semibold text-gray-600 mb-1">Título do Evento</label> <input id="evt-title" class="input-field mb-3" placeholder="Ex: Casamento Ana &amp; Pedro" required>
        <div class="grid grid-cols-2 gap-3 mb-3">
         <div>
@@ -1806,21 +1813,21 @@ para testemunhar o seu enlace matrimonial</textarea>
   </a>
 
   <!-- ===================== SCRIPTS (ordem importa) ===================== -->
-  <script src="js/config.js?v=1783422305"></script>
-  <script src="js/store.js?v=1783422305"></script>
-  <script src="js/visuals.js?v=1783422305"></script>
-  <script src="js/venues.js?v=1783422305"></script>
-  <script src="js/rsvp.js?v=1783422305"></script>
-  <script src="js/ui.js?v=1783422305"></script>
-  <script src="js/auth.js?v=1783422305"></script>
-  <script src="js/dashboard.js?v=1783422305"></script>
-  <script src="js/events.js?v=1783422305"></script>
-  <script src="js/intake-wizard.js?v=1783422305"></script>
-  <script src="js/tickets.js?v=1783422305"></script>
-  <script src="js/guest.js?v=1783422305"></script>
-  <script src="js/sections.js?v=1783422305"></script>
-  <script src="js/admin.js?v=1783422305"></script>
-  <script src="js/router.js?v=1783422305"></script>
+  <script src="js/config.js?v=1783423250"></script>
+  <script src="js/store.js?v=1783423250"></script>
+  <script src="js/visuals.js?v=1783423250"></script>
+  <script src="js/venues.js?v=1783423250"></script>
+  <script src="js/rsvp.js?v=1783423250"></script>
+  <script src="js/ui.js?v=1783423250"></script>
+  <script src="js/auth.js?v=1783423250"></script>
+  <script src="js/dashboard.js?v=1783423250"></script>
+  <script src="js/events.js?v=1783423250"></script>
+  <script src="js/intake-wizard.js?v=1783423250"></script>
+  <script src="js/tickets.js?v=1783423250"></script>
+  <script src="js/guest.js?v=1783423250"></script>
+  <script src="js/sections.js?v=1783423250"></script>
+  <script src="js/admin.js?v=1783423250"></script>
+  <script src="js/router.js?v=1783423250"></script>
 
 </body>
 </html>

@@ -934,13 +934,15 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
           couplemsg_sig_font: document.getElementById('evt-couplemsg-sig-font')?.value || null,
           couplemsg_sig_size: document.getElementById('evt-couplemsg-sig-size')?.value || '1.6',
           show_final_photo: document.getElementById('sw-final-photo')?.classList.contains('active') ? 'yes' : 'no',
+          show_cover: document.getElementById('sw-cover')?.classList.contains('active') ? 'yes' : 'no',
           final_photo_url: document.getElementById('evt-final-photo-url')?.value || null,
           couple_photo_url: document.getElementById('evt-couple-photo-url')?.value || null,
-          couple_video_url: document.getElementById('sw-couple-video')?.classList.contains('active')
-            ? (document.getElementById('evt-couple-video-type')?.value === 'youtube'
-               ? (document.getElementById('evt-couple-video-yt-url')?.value?.trim() || null)
-               : (document.getElementById('evt-couple-video-url')?.value || null))
-            : null,
+          couple_video_url: (() => {
+            if (!document.getElementById('sw-couple-video')?.classList.contains('active')) return null;
+            const type = document.getElementById('evt-couple-video-type')?.value || 'file';
+            if (type === 'youtube') return document.getElementById('evt-couple-video-yt-url')?.value?.trim() || null;
+            return document.getElementById('evt-couple-video-url')?.value?.trim() || null;
+          })(),
           video_audio_mode: document.querySelector('input[name="video-audio-mode"]:checked')?.value || 'pause_music',
           show_event_faq: document.getElementById('sw-event-faq')?.classList.contains('active') ? 'yes' : 'no',
           event_faq_items: (Store.eventFaqItems && Store.eventFaqItems.length) ? JSON.stringify(Store.eventFaqItems) : null,
@@ -2146,6 +2148,7 @@ function _fillEditForm(ev) {
   }}
   { const ss=ev.couplemsg_sig_size||'1.6'; const si=document.getElementById('evt-couplemsg-sig-size'); const sl=document.getElementById('sig-size-val'); if(si)si.value=ss; if(sl)sl.textContent=parseFloat(ss).toFixed(1)+'rem'; }
   _setSwitch('sw-final-photo', _yesOrTrue(ev.show_final_photo), 'final-photo-extra');
+  _setSwitch('sw-cover', ev.show_cover !== 'no', 'cover-section-wrap');
   { const fpUrl=document.getElementById('evt-final-photo-url'); const fpPrev=document.getElementById('final-photo-preview'); const fpWrap=document.getElementById('final-photo-preview-wrap');
     if(ev.final_photo_url){if(fpUrl)fpUrl.value=ev.final_photo_url;if(fpPrev)fpPrev.src=ev.final_photo_url;fpWrap?.classList.remove('hidden');} }
   { const cp=document.getElementById('evt-couple-photo-url'); const cpP=document.getElementById('couple-photo-preview');

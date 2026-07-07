@@ -181,9 +181,12 @@ async function renderGuestView() {
   }
 
   // ── Capa: vídeo (se houver) ou foto/gradiente, como já era ──
-  const coverImage = eventData.cover_image || eventData.cover || '';
-  const coverVideo = eventData.cover_video_url || '';
+  const showCover = eventData.show_cover !== 'no'; // default: mostrar
+  const coverImage = showCover ? (eventData.cover_image || eventData.cover || '') : '';
+  const coverVideo = showCover ? (eventData.cover_video_url || '') : '';
   const heroEl = document.getElementById('guest-hero-bg');
+  const heroSection = document.getElementById('guest-hero');
+  if (!showCover && heroSection) { heroSection.style.display = 'none'; }
   const videoEl = document.getElementById('guest-hero-video');
   if (coverVideo && coverVideo.startsWith('http') && videoEl) {
     videoEl.src = coverVideo;

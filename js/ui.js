@@ -1463,6 +1463,42 @@ async function handleCouplemsgBodyFontUpload(input) {
   } catch(e) { toast('Erro ao carregar vídeo. Tenta novamente.'); console.error(e); }
 }
 
+function _toggleCoupleVideoType() {
+  const type = document.querySelector('input[name="couple-video-type"]:checked')?.value || 'file';
+  const fw = document.getElementById('couple-video-file-wrap');
+  const yw = document.getElementById('couple-video-youtube-wrap');
+  if (fw) fw.style.display = type === 'file'    ? '' : 'none';
+  if (yw) yw.style.display = type === 'youtube' ? '' : 'none';
+  const ti = document.getElementById('evt-couple-video-type');
+  if (ti) ti.value = type;
+}
+
+async function handleCoupleVideoUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const MAX = 25 * 1024 * 1024;
+  if (file.size > MAX) { toast('Vídeo demasiado grande. Máx. 25 MB.'); input.value = ''; return; }
+  toast('A carregar vídeo... pode demorar alguns segundos');
+  try {
+    const ext = file.name.split('.').pop().toLowerCase();
+    const fileName = `couple_video_${Date.now()}.${ext}`;
+    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/event-covers/${fileName}`, {
+      method: 'POST',
+      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': file.type || 'video/mp4', 'x-upsert': 'true' },
+      body: file
+    });
+    if (!res.ok) throw new Error(await res.text());
+    const url = `${SUPABASE_URL}/storage/v1/object/public/event-covers/${fileName}`;
+    const hidden = document.getElementById('evt-couple-video-url');
+    if (hidden) hidden.value = url;
+    const prev = document.getElementById('couple-video-preview');
+    const wrap = document.getElementById('couple-video-preview-wrap');
+    if (prev) prev.src = url;
+    if (wrap) wrap.style.display = '';
+    toast('✅ Vídeo carregado! Clica em Guardar para aplicar.');
+  } catch(e) { toast('Erro ao carregar vídeo: ' + e.message); console.error(e); }
+}
+
 async function handleCouplePhotoUpload(input) {
   const file = input.files[0];
   if (!file) return;
