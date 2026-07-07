@@ -701,7 +701,7 @@ async function checkAndInitScanner() {
       const rsvps = await supabaseRequest(`rsvps?event_id=eq.${ev.id}&ticket_issued=eq.true&select=rsvp_token,guest_name,checked_in&limit=2000`);
       // Guardar em cache local — indexado por rsvp_token para O(1) lookup
       const rsvpMap = {};
-      (rsvps || []).forEach(r => { rsvpMap[r.rsvp_token] = { name: r.guest_name, checkedIn: r.checked_in || false }; });
+      (rsvps || []).forEach(r => { rsvpMap[r.rsvp_token] = { name: r.guest_name, checkedIn: r.checked_in || false, companionCheckedIn: false, scanCount: 0 }; });
       cache = { ev, rsvpMap, cachedAt: Date.now() };
       _scSaveCache(scannerToken, cache);
       // Sincronizar fila de check-ins pendentes (feitos offline)
@@ -798,7 +798,7 @@ function _renderScannerUI(ev, scannerToken, cache, isOnline) {
       <div class="sc-card" style="padding:16px">
         <!-- Botão check-in manual -->
         <button onclick="_scOpenManual()" style="width:100%;margin-bottom:12px;padding:12px 16px;border-radius:10px;border:2px solid ${C};color:${C};background:${C}10;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>Check-in sem QR Code (pesquisar por nome)
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>Pesquisar por nome
         </button>
         <!-- Câmara com resultado sobreposto -->
         <div id="scanner-reader" style="border-radius:12px;overflow:hidden;background:#111827;aspect-ratio:4/3;max-width:480px;margin:0 auto;display:flex;align-items:center;justify-content:center;position:relative">
@@ -1271,191 +1271,126 @@ async function _scDownloadReport(eventId, eventTitle) {
   const entries = Object.values(cache.rsvpMap || {});
   const entered = entries.filter(r => r.checkedIn).sort((a,b) => a.name.localeCompare(b.name));
   const absent  = entries.filter(r => !r.checkedIn).sort((a,b) => a.name.localeCompare(b.name));
-  const pct     = entries.length ? Math.round(entered.length / entries.length * 100) : 0;
+  const pct     = entries.length ? Math.round(entered.length/entries.length*100) : 0;
+  const companionMissing = entered.filter(r => / e /i.test(r.name) && !r.companionCheckedIn).sort((a,b) => a.name.localeCompare(b.name));
+  const suspicious = entries.filter(r => (r.scanCount||0) > 2).sort((a,b) => (b.scanCount||0)-(a.scanCount||0));
 
-  // Usar jsPDF
-  const { jsPDF } = window.jspdf || {};
-  if (!jsPDF) {
-    // Carregar jsPDF dinamicamente se ainda não estiver carregado
-    await new Promise((res, rej) => {
-      const s = document.createElement('script');
-      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
-      s.onload = res; s.onerror = rej;
-      document.head.appendChild(s);
-    });
+  if (!window.jspdf?.jsPDF && !window.jsPDF) {
+    await new Promise((res,rej)=>{ const s=document.createElement('script'); s.src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'; s.onload=res; s.onerror=rej; document.head.appendChild(s); });
   }
+  const J = (window.jspdf||window).jsPDF;
+  const doc = new J({ orientation:'portrait', unit:'mm', format:'a4' });
+  const W=210, margin=18;
+  let y=margin;
 
-  const J = (window.jspdf || window).jsPDF;
-  const doc = new J({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-  const W = 210; const margin = 18;
-  let y = margin;
-
-  const hex2rgb = h => { h=h.replace('#',''); return [parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)]; };
-  const setColor  = (h) => { const [r,g,b]=hex2rgb(h); doc.setTextColor(r,g,b); };
-  const setFill   = (h) => { const [r,g,b]=hex2rgb(h); doc.setFillColor(r,g,b); };
-  const setDraw   = (h) => { const [r,g,b]=hex2rgb(h); doc.setDrawColor(r,g,b); };
+  const hex2rgb=h=>{h=h.replace('#','');return[parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)];};
+  const setColor=h=>{const[r,g,b]=hex2rgb(h);doc.setTextColor(r,g,b);};
+  const setFill=h=>{const[r,g,b]=hex2rgb(h);doc.setFillColor(r,g,b);};
+  const setDraw=h=>{const[r,g,b]=hex2rgb(h);doc.setDrawColor(r,g,b);};
 
   // Cabeçalho
-  setFill('#1e293b'); doc.rect(0, 0, W, 32, 'F');
+  setFill('#1e293b'); doc.rect(0,0,W,32,'F');
   doc.setFontSize(18); doc.setFont('helvetica','bold'); setColor('#ffffff');
   doc.text('Relatório de Presenças', margin, 13);
   doc.setFontSize(10); doc.setFont('helvetica','normal'); setColor('#94a3b8');
   doc.text(eventTitle, margin, 21);
-  doc.text(now.toLocaleDateString('pt-PT',{weekday:'long',year:'numeric',month:'long',day:'numeric'}) + '  •  ' + now.toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'}), margin, 28);
-  y = 42;
+  doc.text(now.toLocaleDateString('pt-PT',{weekday:'long',year:'numeric',month:'long',day:'numeric'})+'  •  '+now.toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'}), margin, 28);
+  y=42;
 
-  // Cards de estatísticas
-  const cards = [
-    { label:'Entraram',   value: entered.length, bg:'#f0fdf4', border:'#86efac', text:'#16a34a' },
-    { label:'Ausentes',   value: absent.length,  bg:'#fef2f2', border:'#fca5a5', text:'#dc2626' },
-    { label:'Total',      value: entries.length, bg:'#eff6ff', border:'#93c5fd', text:'#2563eb' },
-    { label:'Presença',   value: pct+'%',        bg:'#f5f3ff', border:'#c4b5fd', text:'#7c3aed' },
+  // Cards estatísticas
+  const cards=[
+    {label:'Entraram', value:entered.length, bg:'#f0fdf4', border:'#86efac', text:'#16a34a'},
+    {label:'Ausentes',  value:absent.length,  bg:'#fef2f2', border:'#fca5a5', text:'#dc2626'},
+    {label:'Total',     value:entries.length, bg:'#eff6ff', border:'#93c5fd', text:'#2563eb'},
+    {label:'Presença',  value:pct+'%',        bg:'#f5f3ff', border:'#c4b5fd', text:'#7c3aed'},
   ];
-  const cardW = (W - margin*2 - 9) / 4;
-  cards.forEach((card, i) => {
-    const x = margin + i * (cardW + 3);
-    setFill(card.bg); setDraw(card.border);
-    doc.setLineWidth(0.4); doc.roundedRect(x, y, cardW, 18, 2, 2, 'FD');
-    doc.setFontSize(16); doc.setFont('helvetica','bold'); setColor(card.text);
-    doc.text(String(card.value), x + cardW/2, y + 10, { align:'center' });
-    doc.setFontSize(8); doc.setFont('helvetica','normal'); setColor('#6b7280');
-    doc.text(card.label, x + cardW/2, y + 15, { align:'center' });
+  if(companionMissing.length) cards.push({label:'Acomp.faltam', value:companionMissing.length, bg:'#fff7ed', border:'#fed7aa', text:'#ea580c'});
+  if(suspicious.length)       cards.push({label:'⚠️ Suspeitos',  value:suspicious.length,       bg:'#fefce8', border:'#fde68a', text:'#ca8a04'});
+
+  const cW=(W-margin*2-(cards.length-1)*3)/cards.length;
+  cards.forEach((card,i)=>{
+    const x=margin+i*(cW+3);
+    setFill(card.bg); setDraw(card.border); doc.setLineWidth(0.4); doc.roundedRect(x,y,cW,18,2,2,'FD');
+    doc.setFontSize(13); doc.setFont('helvetica','bold'); setColor(card.text);
+    doc.text(String(card.value), x+cW/2, y+10, {align:'center'});
+    doc.setFontSize(7); doc.setFont('helvetica','normal'); setColor('#6b7280');
+    doc.text(card.label, x+cW/2, y+15, {align:'center'});
   });
-  y += 26;
+  y+=26;
 
-  // Função para desenhar uma tabela
-  const drawTable = (title, color, rows, cols) => {
-    if (y > 250) { doc.addPage(); y = margin; }
-    // Título da secção
+  const drawTable=(title,color,rows,cols,bgH='#f8fafc')=>{
+    if(y>250){doc.addPage();y=margin;}
     doc.setFontSize(11); doc.setFont('helvetica','bold'); setColor(color);
-    doc.text(title, margin, y);
-    y += 2;
-    setDraw(color); doc.setLineWidth(0.5); doc.line(margin, y, W - margin, y);
-    y += 5;
-
-    // Cabeçalho da tabela
-    setFill('#f8fafc'); setDraw('#e2e8f0'); doc.setLineWidth(0.3);
-    doc.rect(margin, y, W - margin*2, 7, 'FD');
+    doc.text(title,margin,y); y+=2; setDraw(color); doc.setLineWidth(0.5); doc.line(margin,y,W-margin,y); y+=5;
+    setFill(bgH); setDraw('#e2e8f0'); doc.setLineWidth(0.3); doc.rect(margin,y,W-margin*2,7,'FD');
     doc.setFontSize(8); doc.setFont('helvetica','bold'); setColor('#64748b');
-    let cx = margin + 2;
-    cols.forEach(col => { doc.text(col.header, cx, y+5); cx += col.w; });
-    y += 7;
-
-    // Linhas
-    rows.forEach((row, idx) => {
-      if (y > 275) { doc.addPage(); y = margin; }
-      if (idx % 2 === 0) { setFill('#f9fafb'); doc.rect(margin, y, W-margin*2, 7, 'F'); }
-      setDraw('#f1f5f9'); doc.setLineWidth(0.2); doc.line(margin, y+7, W-margin, y+7);
+    let cx=margin+2;
+    cols.forEach(col=>{doc.text(col.header,cx,y+5);cx+=col.w;});
+    y+=7;
+    rows.forEach((row,idx)=>{
+      if(y>275){doc.addPage();y=margin;}
+      if(idx%2===0){setFill('#f9fafb');doc.rect(margin,y,W-margin*2,7,'F');}
+      setDraw('#f1f5f9'); doc.setLineWidth(0.2); doc.line(margin,y+7,W-margin,y+7);
       doc.setFontSize(8); doc.setFont('helvetica','normal'); setColor('#1e293b');
-      let rx = margin + 2;
-      row.forEach((cell, ci) => {
-        const maxW = cols[ci].w - 3;
-        const txt  = doc.splitTextToSize(String(cell), maxW)[0];
-        doc.text(txt, rx, y + 5);
-        rx += cols[ci].w;
+      let rx=margin+2;
+      row.forEach((cell,ci)=>{
+        const txt=doc.splitTextToSize(String(cell),cols[ci].w-3)[0];
+        doc.text(txt,rx,y+5); rx+=cols[ci].w;
       });
-      y += 7;
+      y+=7;
     });
-    y += 8;
+    y+=8;
   };
 
-  // Tabela de presentes
-  drawTable(`✓  Presentes (${entered.length})`, '#16a34a',
-    entered.map((r, i) => {
-      const has  = / e /i.test(r.name);
-      const main = has ? r.name.split(/ e /i)[0] : r.name;
-      const comp = has ? r.name.split(/ e /i).slice(1).join(' e ') : '—';
-      return [i+1, main, comp];
+  // Secção 1: Presentes com estado do acompanhante
+  drawTable(`✓  Presentes (${entered.length})`,'#16a34a',
+    entered.map((r,i)=>{
+      const has=/ e /i.test(r.name);
+      const main=has?r.name.split(/ e /i)[0]:r.name;
+      const comp=has?r.name.split(/ e /i).slice(1).join(' e '):'—';
+      const st=!has?'—':(r.companionCheckedIn?'✓ Entrou':'✗ Não apareceu');
+      return[i+1,main,comp,st];
     }),
-    [{ header:'#', w:10 }, { header:'Nome', w:90 }, { header:'Acompanhante', w:74 }]
+    [{header:'#',w:8},{header:'Nome',w:70},{header:'Acompanhante',w:60},{header:'Acomp.',w:36}]
   );
 
-  // Tabela de ausentes
-  drawTable(`✗  Ausentes (${absent.length})`, '#dc2626',
-    absent.map((r, i) => [i+1, r.name]),
-    [{ header:'#', w:10 }, { header:'Nome', w:164 }]
-  );
-
-  // Rodapé
-  const pages = doc.getNumberOfPages();
-  for (let p = 1; p <= pages; p++) {
-    doc.setPage(p);
-    setColor('#94a3b8'); doc.setFontSize(8); doc.setFont('helvetica','normal');
-    doc.text(`AdKira  •  Página ${p} de ${pages}  •  ${now.toLocaleString('pt-PT')}`, W/2, 290, { align:'center' });
-  }
-
-  const fileName = `relatorio_${eventTitle.replace(/[^a-zA-Z0-9]/g,'_')}_${now.toISOString().slice(0,10)}.pdf`;
-  doc.save(fileName);
-}
-
-async function _scLoadUndoRemaining(eventId) {
-  try {
-    const ev = await supabaseRequest(`events?id=eq.${eventId}&select=user_id,owner_id&limit=1`);
-    const userId = ev?.[0]?.user_id || ev?.[0]?.owner_id;
-    if (!userId) return;
-    const acc = await supabaseRequest(`accounts?auth_uid=eq.${userId}&select=undo_scans_remaining,id&limit=1`);
-    const remaining = acc?.[0]?.undo_scans_remaining ?? 4;
-    const btn  = document.getElementById('scUndoBtn');
-    const info = document.getElementById('scUndoInfo');
-    if (info) info.textContent = `Restam ${remaining} utilizações`;
-    if (btn) {
-      if (remaining <= 0) {
-        btn.disabled = true;
-        btn.style.background = '#9ca3af';
-        btn.style.cursor = 'not-allowed';
-        if (info) info.textContent = 'Sem utilizações — contacta o suporte';
-      }
-    }
-  } catch(e) {}
-}
-
-async function _scUndoScans(scannerToken, eventId) {
-  try {
-    const ev = await supabaseRequest(`events?id=eq.${eventId}&select=user_id,owner_id&limit=1`);
-    const userId = ev?.[0]?.user_id || ev?.[0]?.owner_id;
-    const acc = await supabaseRequest(`accounts?auth_uid=eq.${userId}&select=undo_scans_remaining,id&limit=1`);
-    const remaining = acc?.[0]?.undo_scans_remaining ?? 4;
-
-    if (remaining <= 0) {
-      alert('Sem utilizações disponíveis. Contacta o administrador para repor.');
-      return;
-    }
-
-    if (!confirm(`Tens a certeza que queres desfazer TODOS os check-ins deste evento?\n\nRestam ${remaining} utilizações após esta operação.`)) return;
-
-    // Apagar todos os check-ins
-    await supabaseRequest(`rsvps?event_id=eq.${eventId}`, 'PATCH',
-      { checked_in: false, checked_in_at: null, companion_checked_in: false }
+  // Secção 2: Acompanhantes em falta
+  if(companionMissing.length){
+    drawTable(`⚠️  Acompanhantes que não apareceram (${companionMissing.length})`,'#ea580c',
+      companionMissing.map((r,i)=>{
+        const main=r.name.split(/ e /i)[0];
+        const comp=r.name.split(/ e /i).slice(1).join(' e ');
+        return[i+1,main,comp];
+      }),
+      [{header:'#',w:8},{header:'Titular (presente)',w:86},{header:'Acompanhante (não apareceu)',w:80}],
+      '#fff7ed'
     );
-
-    // Decrementar contador
-    const newRemaining = remaining - 1;
-    await supabaseRequest(`accounts?auth_uid=eq.${userId}`, 'PATCH', { undo_scans_remaining: newRemaining });
-
-    // Limpar cache local
-    const cache = window._scCache;
-    if (cache) {
-      Object.values(cache.rsvpMap || {}).forEach(r => { r.checkedIn = false; r.companionCheckedIn = false; });
-      _scSaveCache(scannerToken, cache);
-      window._scCache = cache;
-      _scUpdateCounters(cache);
-      _scRenderGuests();
-    }
-    _scLoadCheckinQueue(scannerToken); // limpar fila
-    localStorage.removeItem(`adk_checkin_queue_${scannerToken}`);
-    _scUpdateSyncBadge(scannerToken);
-
-    const btn  = document.getElementById('scUndoBtn');
-    const info = document.getElementById('scUndoInfo');
-    if (info) info.textContent = `Restam ${newRemaining} utilizações`;
-    if (newRemaining <= 0 && btn) { btn.disabled=true; btn.style.background='#9ca3af'; btn.style.cursor='not-allowed'; }
-
-    alert(`✅ Todos os check-ins foram anulados.\nRestam ${newRemaining} utilizações.`);
-  } catch(e) {
-    alert('Erro ao desfazer. Tenta novamente.');
-    console.error(e);
   }
+
+  // Secção 3: QR suspeitos
+  if(suspicious.length){
+    drawTable(`⚠️  QR lido mais de 2x — Possível partilha de convite (${suspicious.length})`,'#ca8a04',
+      suspicious.map((r,i)=>[i+1,r.name,r.scanCount||0,r.checkedIn?'Entrou':'Não entrou']),
+      [{header:'#',w:8},{header:'Nome',w:100},{header:'Leituras',w:26},{header:'Estado',w:40}],
+      '#fefce8'
+    );
+  }
+
+  // Secção 4: Ausentes
+  drawTable(`✗  Ausentes (${absent.length})`,'#dc2626',
+    absent.map((r,i)=>[i+1,r.name]),
+    [{header:'#',w:10},{header:'Nome',w:164}]
+  );
+
+  // Rodapé em todas as páginas
+  const pages=doc.getNumberOfPages();
+  for(let p=1;p<=pages;p++){
+    doc.setPage(p); setColor('#94a3b8'); doc.setFontSize(8); doc.setFont('helvetica','normal');
+    doc.text(`AdKira  •  Página ${p} de ${pages}  •  ${now.toLocaleString('pt-PT')}`,W/2,290,{align:'center'});
+  }
+  doc.save(`relatorio_${eventTitle.replace(/[^a-zA-Z0-9]/g,'_')}_${now.toISOString().slice(0,10)}.pdf`);
 }
+
 
 async function _scRefreshCache(scannerToken) {
   if (!navigator.onLine) { alert('Sem internet. Liga a rede e tenta novamente.'); return; }
@@ -1465,7 +1400,7 @@ async function _scRefreshCache(scannerToken) {
     const ev = rows[0];
     const rsvps = await supabaseRequest(`rsvps?event_id=eq.${ev.id}&ticket_issued=eq.true&select=rsvp_token,guest_name,checked_in&limit=2000`);
     const rsvpMap = {};
-    (rsvps || []).forEach(r => { rsvpMap[r.rsvp_token] = { name: r.guest_name, checkedIn: r.checked_in || false, companionCheckedIn: false }; });
+    (rsvps || []).forEach(r => { rsvpMap[r.rsvp_token] = { name: r.guest_name, checkedIn: r.checked_in || false, companionCheckedIn: false, scanCount: 0 }; });
     const cache = { ev, rsvpMap, cachedAt: Date.now() };
     _scSaveCache(scannerToken, cache);
     await _scSyncQueue(scannerToken, ev.id);
@@ -1500,6 +1435,17 @@ async function _onQrScanned(text, eventId, evColor, scannerToken, cache) {
   const rsvp = cache.rsvpMap[token];
   if (!rsvp) {
     _scShowResult('error', 'Não encontrado', 'Convidado não tem ticket ou já foi removido');
+    return;
+  }
+
+  // Incrementar contador de leituras
+  rsvp.scanCount = (rsvp.scanCount || 0) + 1;
+  _scSaveCache(scannerToken, cache);
+
+  // Alertar se lido mais de 2x (possível partilha do convite)
+  if (rsvp.scanCount > 2) {
+    _scShowResult('warning', `⚠️ QR lido ${rsvp.scanCount}x`, `${rsvp.name} — Possível partilha do convite!`, 5000);
+    if (window._scVib && navigator.vibrate) navigator.vibrate([300, 100, 300, 100, 300]);
     return;
   }
 

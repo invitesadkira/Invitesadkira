@@ -163,6 +163,7 @@ function _renderMediaLibraryGrid(items) {
   grid.innerHTML = items.map((item, idx) => `
     <div style="position:relative;border-radius:0.6rem;overflow:hidden;border:1.5px solid #e5e7eb;aspect-ratio:1;background:#f8fafc;cursor:pointer" onclick="_useMediaLibraryItem('${item.url}')">
       <input type="checkbox" class="media-lib-checkbox" data-idx="${idx}" onclick="event.stopPropagation();_toggleMediaLibrarySelection(${idx}, this.checked)" style="position:absolute;top:4px;left:4px;width:18px;height:18px;z-index:2;cursor:pointer">
+      <button onclick="event.stopPropagation();_useMediaLibraryItem('${item.url}')" style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,127,159,0.9);color:#fff;border:none;font-size:11px;font-weight:700;padding:5px 0;cursor:pointer;z-index:2;letter-spacing:0.03em">✓ Usar</button>
       <img src="${item.url}" loading="lazy" style="width:100%;height:100%;object-fit:cover" onerror="this.parentElement.style.opacity='0.35'">
       <span style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,0.7));color:#fff;font-size:0.6rem;padding:0.3rem 0.4rem;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHTML(item.label || 'Imagem')}</span>
       <button onclick="event.stopPropagation();downloadFileFromUrl('${item.url}', (window._mediaLibraryItems[${idx}].label||'foto').replace(/[^a-z0-9]+/gi,'_')+'.jpg')" title="Descarregar" style="position:absolute;top:3px;right:29px;width:22px;height:22px;border-radius:50%;background:rgba(0,127,159,0.92);color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:0.7rem;line-height:0">⬇</button>
@@ -1415,6 +1416,31 @@ async function handleSigFontUpload(input) {
     }
     toast(`Fonte "${fontName}" carregada!`);
   }
+}
+
+async function handleCoupleVideoUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const MAX = 25 * 1024 * 1024; // 25MB
+  if (file.size > MAX) { toast('Vídeo demasiado grande. Máx. 25 MB.'); input.value = ''; return; }
+  toast('A carregar vídeo... (pode demorar)');
+  try {
+    const ext = file.name.split('.').pop().toLowerCase();
+    const fileName = `couple_video_${Date.now()}.${ext}`;
+    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/event-covers/${fileName}`, {
+      method: 'POST',
+      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': file.type || 'video/mp4', 'x-upsert': 'true' },
+      body: file
+    });
+    if (!res.ok) throw new Error(await res.text());
+    const url = `${SUPABASE_URL}/storage/v1/object/public/event-covers/${fileName}`;
+    document.getElementById('evt-couple-video-url').value = url;
+    const prev = document.getElementById('couple-video-preview');
+    const wrap = document.getElementById('couple-video-preview-wrap');
+    if (prev) prev.src = url;
+    if (wrap) wrap.style.display = '';
+    toast('Vídeo carregado!');
+  } catch(e) { toast('Erro ao carregar vídeo. Tenta novamente.'); console.error(e); }
 }
 
 async function handleCouplePhotoUpload(input) {

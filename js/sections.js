@@ -2412,18 +2412,18 @@ const ALL_SECTION_DEFS = [
   { key: 'countdown', label: 'Contagem Regressiva',                  icon: 'timer' },
   { key: 'story',     label: 'Nossa História',                       icon: 'heart' },
   { key: 'youtube_video', label: 'Vídeo do YouTube',                 icon: 'play-circle' },
-  { key: 'venues',    label: 'Locais do Evento',                     icon: 'map-pin' },
+  { key: 'venues',    label: _getSectionTitle(ev,'venues','Locais do Evento'),                     icon: 'map-pin' },
   { key: 'parents',   label: 'Nomes dos Pais',                       icon: 'users' },
   { key: 'iban',        label: 'Sugestão de Presente (IBAN)',         icon: 'credit-card' },
   { key: 'gift_stores', label: 'Lojas de Presentes',                  icon: 'shopping-bag' },
-  { key: 'gallery',   label: 'Galeria de Fotos',                     icon: 'image' },
-  { key: 'manual',    label: 'Manual do Bom Convidado',              icon: 'list-checks' },
+  { key: 'gallery',   label: _getSectionTitle(ev,'gallery','Galeria de Fotos'),                     icon: 'image' },
+  { key: 'manual',    label: _getSectionTitle(ev,'manual','Manual do Bom Convidado'),              icon: 'list-checks' },
   { key: 'schedule',  label: 'Itinerário',                           icon: 'clock' },
   { key: 'dresscode',  label: 'Dress Code + Sugestão de Presentes',     icon: 'shirt' },
   { key: 'couplemsg',   label: 'Mensagem dos Noivos',                   icon: 'message-circle' },
   { key: 'final_photo', label: 'Foto Final dos Noivos',                 icon: 'image' },
   { key: 'couple_photo', label: 'Foto de Fundo do Casal',               icon: 'heart' },
-  { key: 'event_faq',   label: 'Perguntas Frequentes',                  icon: 'help-circle' },
+  { key: 'event_faq',   label: _getSectionTitle(ev,'event_faq','Perguntas Frequentes'),                  icon: 'help-circle' },
   { key: 'messages',    label: 'Recados / Correio do Amor',             icon: 'message-square-heart' },
   { key: 'custom_text', label: 'Texto Personalizado',                   icon: 'file-text' },
 ];
@@ -2592,7 +2592,7 @@ function buildVenueSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
 
   return _SD + `<div class="event-section">
     <div class="section-inner reveal">
-      <h3 class="section-title">${escapeHTML(ev.venues_title || 'Locais do Evento')}</h3>
+      <h3 class="section-title">${escapeHTML(ev.venues_title || _getSectionTitle(ev,'venues','Locais do Evento'))}</h3>
       <div style="display:flex;gap:1rem;flex-wrap:wrap;justify-content:center">${cards}</div>
     </div>
   </div>`;
@@ -3071,4 +3071,68 @@ function initGalleryCarousels() {
     dots.forEach((d) => { d.onclick = () => { const i = dots.indexOf(d); if (i !== -1) go(i); }; });
   });
   window._pendingCarousels = [];
+}
+
+// ── Editor de Títulos das Secções ─────────────────────────────────────────
+const SECTION_TITLE_DEFAULTS = {
+  bible:        'Palavra de Deus',
+  invite:       'Convite',
+  date:         'Data & Hora',
+  story:        _getSectionTitle(ev,'story','A Nossa História'),
+  venues:       _getSectionTitle(ev,'venues','Locais do Evento'),
+  gallery:      _getSectionTitle(ev,'gallery','Galeria de Fotos'),
+  manual:       _getSectionTitle(ev,'manual','Manual do Bom Convidado'),
+  schedule:     _getSectionTitle(ev,'schedule','Programa do Dia'),
+  dresscode:    _getSectionTitle(ev,'dresscode','Dress Code'),
+  couplemsg:    'Mensagem dos Noivos',
+  iban:         _getSectionTitle(ev,'iban','Gostaria de nos presentear?'),
+  gift_stores:  _getSectionTitle(ev,'gift_stores','Lojas Sugeridas'),
+  couple_photo: 'Foto do Casal',
+  event_faq:    _getSectionTitle(ev,'event_faq','Perguntas Frequentes'),
+  custom_text:  'Texto Livre',
+};
+
+function openSectionTitlesEditor() {
+  const ev = Store.events?.find(e => e.id === Store.currentEventId);
+  const savedTitles = (() => { try { return JSON.parse(ev?.section_titles || '{}'); } catch(e) { return {}; } })();
+
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.innerHTML = `<div class="modal-content bg-white rounded-2xl p-5 max-w-md w-full" style="max-height:85vh;overflow-y:auto">
+    <h3 class="text-base font-bold text-gray-800 mb-1">✏️ Editar Títulos das Secções</h3>
+    <p class="text-xs text-gray-400 mb-3">Deixa vazio para usar o título padrão.</p>
+    <div class="space-y-2">
+      ${Object.entries(SECTION_TITLE_DEFAULTS).map(([key, def]) => `
+        <div>
+          <label class="text-xs font-semibold text-gray-500 block mb-0.5">${def}</label>
+          <input type="text" data-section-title="${key}" class="input-field text-sm" placeholder="${def}" value="${escapeHTML(savedTitles[key]||'')}">
+        </div>`).join('')}
+    </div>
+    <div class="flex gap-2 mt-4">
+      <button class="flex-1 btn-main" onclick="saveSectionTitles(this.closest('.modal-overlay'))">Guardar</button>
+      <button class="flex-1 btn-outline" onclick="this.closest('.modal-overlay').remove()">Cancelar</button>
+    </div>
+  </div>`;
+  document.body.appendChild(modal);
+}
+
+async function saveSectionTitles(modal) {
+  const inputs = modal.querySelectorAll('[data-section-title]');
+  const titles = {};
+  inputs.forEach(inp => { if (inp.value.trim()) titles[inp.dataset.sectionTitle] = inp.value.trim(); });
+  const eventId = Store.currentEventId;
+  await saveEventVisuals(eventId, { section_titles: JSON.stringify(titles) });
+  // Actualizar Store
+  const ev = Store.events?.find(e => e.id === eventId);
+  if (ev) ev.section_titles = JSON.stringify(titles);
+  modal.remove();
+  toast('Títulos guardados!');
+}
+
+// Função auxiliar para obter o título de uma secção (usa custom ou padrão)
+function _getSectionTitle(ev, key, defaultTitle) {
+  try {
+    const titles = JSON.parse(ev?.section_titles || '{}');
+    return titles[key] || defaultTitle;
+  } catch(e) { return defaultTitle; }
 }
