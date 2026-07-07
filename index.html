@@ -16,11 +16,11 @@
   <!-- PDF.js: renderizar PDFs como canvas (pré-visualização do template) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <!-- QRCode: gerador local, sem dependência CDN -->
-  <script src="js/qrcode-mini.js?v=1783427023"></script>
+  <script src="js/qrcode-mini.js?v=1783428007"></script>
   <script>tailwind.config = { theme: { extend: { colors: { teal: { 500: '#007f9f', 600: '#006b86' } } } } }</script>
   <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.js"></script>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💌</text></svg>">
-  <link rel="stylesheet" href="css/main.css?v=1783427023">
+  <link rel="stylesheet" href="css/main.css?v=1783428007">
 </head>
 <body class="h-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
 
@@ -329,7 +329,7 @@
        </div>
        <div class="mb-4" style="background:#f9fafb;border-radius:0.5rem;padding:0.6rem 0.75rem">
         <p class="text-xs font-semibold text-gray-600 mb-1">🎬 Ou usar um vídeo em vez de foto <span class="text-gray-400 font-normal">(opcional)</span></p>
-        <p class="text-xs text-gray-400 mb-1.5">Formato vertical (1080×1920, como um Reels/Story), sem som, máx. 25MB. Se carregares um vídeo, ele substitui a foto de capa.</p>
+        <p class="text-xs text-gray-400 mb-1.5">Formato vertical (1080×1920, como um Reels/Story), sem som, máx. 50MB. Se carregares um vídeo, ele substitui a foto de capa.</p>
         <input type="file" id="cover-video-input" accept="video/mp4,video/webm" class="input-field text-xs" onchange="handleCoverVideoUpload(this)">
         <input type="hidden" id="evt-cover-video-url" value="">
         <div id="cover-video-preview-wrap" class="hidden mt-2">
@@ -585,7 +585,7 @@
          <div class="flex gap-2 mb-1"><div id="music-upload-area" class="flex-1 rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 flex flex-col items-center justify-center py-3 cursor-pointer hover:border-teal-400 hover:bg-teal-50 transition" onclick="document.getElementById('music-file-input').click()">
           <i data-lucide="music" class="w-6 h-6 text-gray-400 mb-1"></i>
           <span class="text-xs text-gray-500 font-semibold">Carregar ficheiro MP3 / OGG</span>
-          <span class="text-xs text-gray-400 mt-0.5">Máx. 25 MB</span>
+          <span class="text-xs text-gray-400 mt-0.5">Máx. 50 MB</span>
          </div><button type="button" class="flex-shrink-0 btn-outline text-xs px-2 py-1 self-start mt-0" onclick="openMusicFromStorage()">Reutilizar</button></div>
          <input id="music-file-input" type="file" accept="audio/mpeg,audio/ogg,audio/wav,audio/mp4,.mp3,.ogg,.wav,.m4a" class="hidden" onchange="handleMusicFileUpload(this)">
          <div id="music-upload-status" class="hidden text-xs text-teal-600 font-semibold flex items-center gap-1">
@@ -639,7 +639,7 @@
         <!-- Ficheiro -->
         <div id="couple-video-file-wrap">
          <div style="background:#fef9c3;border:1px solid #fde68a;border-radius:0.5rem;padding:0.5rem;margin-bottom:0.5rem">
-          <p class="text-xs text-amber-700 font-semibold">⚠️ Máx. 25 MB — use vídeos curtos e comprimidos</p>
+          <p class="text-xs text-amber-700 font-semibold">⚠️ Máx. 50 MB — use vídeos curtos e comprimidos</p>
          </div>
          <input type="file" id="evt-couple-video-input" accept="video/mp4,video/webm,video/ogg" class="input-field text-sm mb-2" onchange="handleCoupleVideoUpload(this)">
          <div id="couple-video-preview-wrap" style="display:none;margin-top:0.5rem">
@@ -1063,9 +1063,9 @@ para testemunhar o seu enlace matrimonial</textarea>
         <div class="flex items-center justify-between mb-1">
          <span class="text-sm font-semibold text-gray-700">Secção de Vídeo do Casal</span>
         </div>
-        <p class="text-xs text-gray-400 mb-3">Carregue um vídeo (máx. 25 MB) que aparece incorporado no convite em loop. Tem controlos completos (play, pausa, volume, avançar, ecrã completo).</p>
+        <p class="text-xs text-gray-400 mb-3">Carregue um vídeo (máx. 50 MB) que aparece incorporado no convite em loop. Tem controlos completos (play, pausa, volume, avançar, ecrã completo).</p>
         <div style="background:#fef9c3;border:1px solid #fde68a;border-radius:0.6rem;padding:0.6rem;margin-bottom:0.75rem">
-         <p class="text-xs font-semibold text-amber-700">⚠️ Limite: 25 MB</p>
+         <p class="text-xs font-semibold text-amber-700">⚠️ Limite: 50 MB</p>
          <p class="text-xs text-amber-600">O Supabase tem armazenamento limitado. Use vídeos curtos e comprimidos.</p>
         </div>
         <input type="file" id="evt-couple-video-input" accept="video/mp4,video/webm,video/ogg" class="input-field text-sm mb-2" onchange="handleCoupleVideoUpload(this)">
@@ -1813,21 +1813,21 @@ para testemunhar o seu enlace matrimonial</textarea>
   </a>
 
   <!-- ===================== SCRIPTS (ordem importa) ===================== -->
-  <script src="js/config.js?v=1783427023"></script>
-  <script src="js/store.js?v=1783427023"></script>
-  <script src="js/visuals.js?v=1783427023"></script>
-  <script src="js/venues.js?v=1783427023"></script>
-  <script src="js/rsvp.js?v=1783427023"></script>
-  <script src="js/ui.js?v=1783427023"></script>
-  <script src="js/auth.js?v=1783427023"></script>
-  <script src="js/dashboard.js?v=1783427023"></script>
-  <script src="js/events.js?v=1783427023"></script>
-  <script src="js/intake-wizard.js?v=1783427023"></script>
-  <script src="js/tickets.js?v=1783427023"></script>
-  <script src="js/guest.js?v=1783427023"></script>
-  <script src="js/sections.js?v=1783427023"></script>
-  <script src="js/admin.js?v=1783427023"></script>
-  <script src="js/router.js?v=1783427023"></script>
+  <script src="js/config.js?v=1783428007"></script>
+  <script src="js/store.js?v=1783428007"></script>
+  <script src="js/visuals.js?v=1783428007"></script>
+  <script src="js/venues.js?v=1783428007"></script>
+  <script src="js/rsvp.js?v=1783428007"></script>
+  <script src="js/ui.js?v=1783428007"></script>
+  <script src="js/auth.js?v=1783428007"></script>
+  <script src="js/dashboard.js?v=1783428007"></script>
+  <script src="js/events.js?v=1783428007"></script>
+  <script src="js/intake-wizard.js?v=1783428007"></script>
+  <script src="js/tickets.js?v=1783428007"></script>
+  <script src="js/guest.js?v=1783428007"></script>
+  <script src="js/sections.js?v=1783428007"></script>
+  <script src="js/admin.js?v=1783428007"></script>
+  <script src="js/router.js?v=1783428007"></script>
 
 </body>
 </html>

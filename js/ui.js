@@ -331,8 +331,8 @@ function removeCoverImageFromForm() {
 async function handleCoverVideoUpload(input) {
   const file = input.files[0];
   if (!file) return;
-  if (file.size > 25 * 1024 * 1024) {
-    toast('Vídeo demasiado grande. Máx. 25 MB.');
+  if (file.size > 50 * 1024 * 1024) {
+    toast('Vídeo demasiado grande. Máx. 50 MB.');
     input.value = '';
     return;
   }
@@ -1472,7 +1472,7 @@ async function handleCouplemsgBodyFontUpload(input) {
   const file = input.files[0];
   if (!file) return;
   const MAX = 25 * 1024 * 1024; // 25MB
-  if (file.size > MAX) { toast('Vídeo demasiado grande. Máx. 25 MB.'); input.value = ''; return; }
+  if (file.size > MAX) { toast('Vídeo demasiado grande. Máx. 50 MB.'); input.value = ''; return; }
   toast('A carregar vídeo... (pode demorar)');
   try {
     const ext = file.name.split('.').pop().toLowerCase();
@@ -1528,7 +1528,7 @@ async function handleCoupleVideoUpload(input) {
   const file = input.files[0];
   if (!file) return;
   const MAX = 25 * 1024 * 1024;
-  if (file.size > MAX) { toast('Vídeo demasiado grande. Máx. 25 MB.'); input.value = ''; return; }
+  if (file.size > MAX) { toast('Vídeo demasiado grande. Máx. 50 MB.'); input.value = ''; return; }
   toast('A carregar vídeo... pode demorar alguns segundos');
   try {
     const ext = file.name.split('.').pop().toLowerCase();
