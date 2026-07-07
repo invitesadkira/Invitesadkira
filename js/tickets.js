@@ -800,6 +800,11 @@ function _renderScannerUI(ev, scannerToken, cache, isOnline) {
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           Descarregar Relatório PDF
         </button>
+        <button onclick="_scUndoScans('${scannerToken}','${ev.id}')" id="scUndoBtn" style="margin-top:8px;width:100%;padding:14px;background:#dc2626;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>
+          <span id="scUndoLabel">Desfazer todos os scans</span>
+        </button>
+        <p id="scUndoInfo" style="text-align:center;font-size:12px;color:#6b7280;margin-top:6px">A carregar usos restantes...</p>
       </div>
     </div>
 
@@ -825,6 +830,9 @@ function _renderScannerUI(ev, scannerToken, cache, isOnline) {
   window._scCache = cache;
   window._scSound = true;
   window._scVib   = true;
+
+  // Carregar usos restantes do desfazer
+  _scLoadUndoRemaining(ev.id);
 
   // Renderizar lista de convidados
   _scRenderGuests();
@@ -879,42 +887,58 @@ function _renderScannerUI(ev, scannerToken, cache, isOnline) {
 
   // Iniciar câmara
   const readerEl = document.getElementById('scanner-reader');
-  readerEl.style.cssText = 'border-radius:12px;overflow:hidden;background:#111827;aspect-ratio:1;max-width:400px;margin:0 auto;position:relative';
-  readerEl.innerHTML = `<video id="sc-video" autoplay playsinline muted style="width:100%;height:100%;object-fit:cover;display:block"></video>
+  readerEl.style.cssText = 'border-radius:12px;overflow:hidden;background:#111827;aspect-ratio:4/3;max-width:480px;margin:0 auto;position:relative';
+  readerEl.innerHTML = `
+    <video id="sc-video" autoplay playsinline muted style="width:100%;height:100%;object-fit:cover;display:block"></video>
+    <canvas id="sc-canvas" style="display:none"></canvas>
     <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none">
-      <div style="width:200px;height:200px;border:3px solid ${C};border-radius:12px;box-shadow:0 0 0 4000px rgba(0,0,0,0.35)"></div>
-    </div>`;
+      <div id="sc-viewfinder" style="width:220px;height:220px;border:3px solid ${C};border-radius:12px;box-shadow:0 0 0 4000px rgba(0,0,0,0.4);transition:border-color .2s"></div>
+    </div>
+    <div id="scanner-result" style="display:none;position:absolute;bottom:0;left:0;right:0;padding:20px;text-align:center;z-index:10;border-radius:0 0 12px 12px"></div>`;
 
-  const video = document.getElementById('sc-video');
-  navigator.mediaDevices.getUserMedia({ video: { facingMode:'environment' }, audio: false })
-    .then(stream => {
-      video.srcObject = stream;
-      video.play();
+  const video  = document.getElementById('sc-video');
+  const canvas = document.getElementById('sc-canvas');
+  const ctx    = canvas.getContext('2d', { willReadFrequently: true });
+  let scanning = true;
+
+  const _doScan = async () => {
+    if (!scanning || _scannerCooldown) return;
+    if (video.readyState < 2) return;
+
+    // Tentar BarcodeDetector no canvas (mais fiável que no video directamente)
+    canvas.width  = video.videoWidth  || 640;
+    canvas.height = video.videoHeight || 480;
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    try {
       if ('BarcodeDetector' in window) {
-        const detector = new BarcodeDetector({ formats:['qr_code'] });
-        let scanning = true;
-        const scan = async () => {
-          if (!scanning) return;
-          if (video.readyState >= 2) {
-            try {
-              const codes = await detector.detect(video);
-              if (codes.length > 0) {
-                scanning = false;
-                await _onQrScanned(codes[0].rawValue, ev.id, C, scannerToken, cache);
-                setTimeout(() => { scanning = true; }, 2500);
-              }
-            } catch(e) {}
-          }
-          requestAnimationFrame(scan);
-        };
-        scan();
+        const detector = new BarcodeDetector({ formats: ['qr_code'] });
+        const codes = await detector.detect(canvas);  // ← canvas, não video
+        if (codes.length > 0) {
+          scanning = false;
+          // Piscar o viewfinder a verde
+          const vf = document.getElementById('sc-viewfinder');
+          if (vf) { vf.style.borderColor = '#22c55e'; setTimeout(() => { if(vf) vf.style.borderColor = '${C}'; }, 600); }
+          await _onQrScanned(codes[0].rawValue, ev.id, C, scannerToken, cache);
+          setTimeout(() => { scanning = true; }, 2800);
+        }
       }
-    })
+    } catch(e) {}
+  };
+
+  // Scan a cada 250ms (não requestAnimationFrame — mais estável em Android)
+  const _scanInterval = setInterval(_doScan, 250);
+  window._scScanInterval = _scanInterval; // guardar para poder parar
+
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false })
+    .then(stream => { video.srcObject = stream; video.play(); })
     .catch(err => {
       readerEl.innerHTML = `<div style="padding:24px;text-align:center;color:#ef4444">
         <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:block;margin:0 auto 12px"><path d="M16 16v1a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2"/><path d="M7.9 4H14a2 2 0 0 1 2 2v4.1"/><path d="m22 8-6 4 6 4V8z"/><line x1="2" y1="2" x2="22" y2="22"/></svg>
-        <p style="font-size:14px">${err.message||err}</p>
+        <p style="font-size:14px;font-weight:700;margin-bottom:4px">Sem acesso à câmara</p>
+        <p style="font-size:12px;color:#9ca3af">${err.message||err}</p>
       </div>`;
+      clearInterval(_scanInterval);
     });
 }
 
@@ -1058,56 +1082,196 @@ function _scShowResult(type, title, subtitle, duration=3500) {
 async function _scDownloadReport(eventId, eventTitle) {
   const cache = window._scCache;
   if (!cache) { alert('Carrega o scanner primeiro.'); return; }
+
   const now     = new Date();
   const entries = Object.values(cache.rsvpMap || {});
-  const entered = entries.filter(r => r.checkedIn).sort((a,b)=>a.name.localeCompare(b.name));
-  const absent  = entries.filter(r => !r.checkedIn).sort((a,b)=>a.name.localeCompare(b.name));
-  const pct     = entries.length ? Math.round(entered.length/entries.length*100) : 0;
-  const w = window.open('', '_blank');
-  w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Relatório ${escapeHTML(eventTitle)}</title>
-  <style>
-    body{font-family:Arial,sans-serif;padding:32px;color:#1e293b;max-width:860px;margin:0 auto}
-    h1{font-size:24px;margin-bottom:4px}
-    h2{font-size:14px;color:#6b7280;font-weight:normal;margin-top:0 0 24px}
-    .stats{display:flex;gap:14px;margin:24px 0;flex-wrap:wrap}
-    .stat{flex:1;min-width:120px;border-radius:12px;padding:16px;text-align:center}
-    .stat-n{font-size:30px;font-weight:800;line-height:1}
-    .stat-l{font-size:12px;color:#6b7280;margin-top:6px}
-    .section{margin-top:28px}
-    .section-title{font-size:16px;font-weight:700;padding-bottom:8px;border-bottom:2px solid #e2e8f0;margin-bottom:12px}
-    table{width:100%;border-collapse:collapse}
-    th{background:#f8fafc;padding:9px 14px;text-align:left;font-size:12px;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;border-bottom:2px solid #e2e8f0}
-    td{padding:10px 14px;border-bottom:1px solid #f1f5f9;font-size:13px}
-    tr:nth-child(even) td{background:#fafafa}
-    .footer{margin-top:40px;font-size:11px;color:#94a3b8;text-align:center;border-top:1px solid #e2e8f0;padding-top:16px}
-    @media print{.no-print{display:none}}
-  </style></head><body>
-  <div class="no-print" style="margin-bottom:20px">
-    <button onclick="window.print()" style="padding:10px 20px;background:#7c3aed;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:14px">🖨 Imprimir / Guardar PDF</button>
-  </div>
-  <h1>📋 Relatório de Presenças</h1>
-  <h2>${escapeHTML(eventTitle)} &bull; ${now.toLocaleDateString('pt-PT',{weekday:'long',year:'numeric',month:'long',day:'numeric'})} &bull; gerado às ${now.toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'})}</h2>
-  <div class="stats">
-    <div class="stat" style="background:#f0fdf4;border:1px solid #bbf7d0"><div class="stat-n" style="color:#16a34a">${entered.length}</div><div class="stat-l">✅ Entraram</div></div>
-    <div class="stat" style="background:#fef2f2;border:1px solid #fecaca"><div class="stat-n" style="color:#dc2626">${absent.length}</div><div class="stat-l">❌ Ausentes</div></div>
-    <div class="stat" style="background:#eff6ff;border:1px solid #bfdbfe"><div class="stat-n" style="color:#2563eb">${entries.length}</div><div class="stat-l">👥 Total</div></div>
-    <div class="stat" style="background:#f5f3ff;border:1px solid #ddd6fe"><div class="stat-n" style="color:#7c3aed">${pct}%</div><div class="stat-l">📊 Presença</div></div>
-  </div>
-  <div class="section">
-    <div class="section-title" style="color:#16a34a">✅ Presentes (${entered.length})</div>
-    <table><thead><tr><th>#</th><th>Nome</th><th>Acompanhante</th></tr></thead><tbody>
-    ${entered.map((r,i)=>{const has=/ e /i.test(r.name);const m=has?r.name.split(/ e /i)[0]:r.name;const c=has?r.name.split(/ e /i).slice(1).join(' e '):'';return `<tr><td style="color:#9ca3af;font-size:12px">${i+1}</td><td><b>${escapeHTML(m)}</b></td><td style="color:#6b7280">${c?escapeHTML(c):'—'}</td></tr>`;}).join('')}
-    </tbody></table>
-  </div>
-  <div class="section">
-    <div class="section-title" style="color:#dc2626">❌ Ausentes (${absent.length})</div>
-    <table><thead><tr><th>#</th><th>Nome</th></tr></thead><tbody>
-    ${absent.map((r,i)=>`<tr><td style="color:#9ca3af;font-size:12px">${i+1}</td><td>${escapeHTML(r.name)}</td></tr>`).join('')}
-    </tbody></table>
-  </div>
-  <div class="footer">Gerado por AdKira &bull; ${now.toLocaleString('pt-PT')}</div>
-  </body></html>`);
-  w.document.close();
+  const entered = entries.filter(r => r.checkedIn).sort((a,b) => a.name.localeCompare(b.name));
+  const absent  = entries.filter(r => !r.checkedIn).sort((a,b) => a.name.localeCompare(b.name));
+  const pct     = entries.length ? Math.round(entered.length / entries.length * 100) : 0;
+
+  // Usar jsPDF
+  const { jsPDF } = window.jspdf || {};
+  if (!jsPDF) {
+    // Carregar jsPDF dinamicamente se ainda não estiver carregado
+    await new Promise((res, rej) => {
+      const s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+      s.onload = res; s.onerror = rej;
+      document.head.appendChild(s);
+    });
+  }
+
+  const J = (window.jspdf || window).jsPDF;
+  const doc = new J({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const W = 210; const margin = 18;
+  let y = margin;
+
+  const hex2rgb = h => { h=h.replace('#',''); return [parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)]; };
+  const setColor  = (h) => { const [r,g,b]=hex2rgb(h); doc.setTextColor(r,g,b); };
+  const setFill   = (h) => { const [r,g,b]=hex2rgb(h); doc.setFillColor(r,g,b); };
+  const setDraw   = (h) => { const [r,g,b]=hex2rgb(h); doc.setDrawColor(r,g,b); };
+
+  // Cabeçalho
+  setFill('#1e293b'); doc.rect(0, 0, W, 32, 'F');
+  doc.setFontSize(18); doc.setFont('helvetica','bold'); setColor('#ffffff');
+  doc.text('Relatório de Presenças', margin, 13);
+  doc.setFontSize(10); doc.setFont('helvetica','normal'); setColor('#94a3b8');
+  doc.text(eventTitle, margin, 21);
+  doc.text(now.toLocaleDateString('pt-PT',{weekday:'long',year:'numeric',month:'long',day:'numeric'}) + '  •  ' + now.toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'}), margin, 28);
+  y = 42;
+
+  // Cards de estatísticas
+  const cards = [
+    { label:'Entraram',   value: entered.length, bg:'#f0fdf4', border:'#86efac', text:'#16a34a' },
+    { label:'Ausentes',   value: absent.length,  bg:'#fef2f2', border:'#fca5a5', text:'#dc2626' },
+    { label:'Total',      value: entries.length, bg:'#eff6ff', border:'#93c5fd', text:'#2563eb' },
+    { label:'Presença',   value: pct+'%',        bg:'#f5f3ff', border:'#c4b5fd', text:'#7c3aed' },
+  ];
+  const cardW = (W - margin*2 - 9) / 4;
+  cards.forEach((card, i) => {
+    const x = margin + i * (cardW + 3);
+    setFill(card.bg); setDraw(card.border);
+    doc.setLineWidth(0.4); doc.roundedRect(x, y, cardW, 18, 2, 2, 'FD');
+    doc.setFontSize(16); doc.setFont('helvetica','bold'); setColor(card.text);
+    doc.text(String(card.value), x + cardW/2, y + 10, { align:'center' });
+    doc.setFontSize(8); doc.setFont('helvetica','normal'); setColor('#6b7280');
+    doc.text(card.label, x + cardW/2, y + 15, { align:'center' });
+  });
+  y += 26;
+
+  // Função para desenhar uma tabela
+  const drawTable = (title, color, rows, cols) => {
+    if (y > 250) { doc.addPage(); y = margin; }
+    // Título da secção
+    doc.setFontSize(11); doc.setFont('helvetica','bold'); setColor(color);
+    doc.text(title, margin, y);
+    y += 2;
+    setDraw(color); doc.setLineWidth(0.5); doc.line(margin, y, W - margin, y);
+    y += 5;
+
+    // Cabeçalho da tabela
+    setFill('#f8fafc'); setDraw('#e2e8f0'); doc.setLineWidth(0.3);
+    doc.rect(margin, y, W - margin*2, 7, 'FD');
+    doc.setFontSize(8); doc.setFont('helvetica','bold'); setColor('#64748b');
+    let cx = margin + 2;
+    cols.forEach(col => { doc.text(col.header, cx, y+5); cx += col.w; });
+    y += 7;
+
+    // Linhas
+    rows.forEach((row, idx) => {
+      if (y > 275) { doc.addPage(); y = margin; }
+      if (idx % 2 === 0) { setFill('#f9fafb'); doc.rect(margin, y, W-margin*2, 7, 'F'); }
+      setDraw('#f1f5f9'); doc.setLineWidth(0.2); doc.line(margin, y+7, W-margin, y+7);
+      doc.setFontSize(8); doc.setFont('helvetica','normal'); setColor('#1e293b');
+      let rx = margin + 2;
+      row.forEach((cell, ci) => {
+        const maxW = cols[ci].w - 3;
+        const txt  = doc.splitTextToSize(String(cell), maxW)[0];
+        doc.text(txt, rx, y + 5);
+        rx += cols[ci].w;
+      });
+      y += 7;
+    });
+    y += 8;
+  };
+
+  // Tabela de presentes
+  drawTable(`✓  Presentes (${entered.length})`, '#16a34a',
+    entered.map((r, i) => {
+      const has  = / e /i.test(r.name);
+      const main = has ? r.name.split(/ e /i)[0] : r.name;
+      const comp = has ? r.name.split(/ e /i).slice(1).join(' e ') : '—';
+      return [i+1, main, comp];
+    }),
+    [{ header:'#', w:10 }, { header:'Nome', w:90 }, { header:'Acompanhante', w:74 }]
+  );
+
+  // Tabela de ausentes
+  drawTable(`✗  Ausentes (${absent.length})`, '#dc2626',
+    absent.map((r, i) => [i+1, r.name]),
+    [{ header:'#', w:10 }, { header:'Nome', w:164 }]
+  );
+
+  // Rodapé
+  const pages = doc.getNumberOfPages();
+  for (let p = 1; p <= pages; p++) {
+    doc.setPage(p);
+    setColor('#94a3b8'); doc.setFontSize(8); doc.setFont('helvetica','normal');
+    doc.text(`AdKira  •  Página ${p} de ${pages}  •  ${now.toLocaleString('pt-PT')}`, W/2, 290, { align:'center' });
+  }
+
+  const fileName = `relatorio_${eventTitle.replace(/[^a-zA-Z0-9]/g,'_')}_${now.toISOString().slice(0,10)}.pdf`;
+  doc.save(fileName);
+}
+
+async function _scLoadUndoRemaining(eventId) {
+  try {
+    const ev = await supabaseRequest(`events?id=eq.${eventId}&select=user_id&limit=1`);
+    const userId = ev?.[0]?.user_id;
+    if (!userId) return;
+    const acc = await supabaseRequest(`accounts?user_id=eq.${userId}&select=undo_scans_remaining&limit=1`);
+    const remaining = acc?.[0]?.undo_scans_remaining ?? 4;
+    const btn  = document.getElementById('scUndoBtn');
+    const info = document.getElementById('scUndoInfo');
+    if (info) info.textContent = `Restam ${remaining} utilizações`;
+    if (btn) {
+      if (remaining <= 0) {
+        btn.disabled = true;
+        btn.style.background = '#9ca3af';
+        btn.style.cursor = 'not-allowed';
+        if (info) info.textContent = 'Sem utilizações — contacta o suporte';
+      }
+    }
+  } catch(e) {}
+}
+
+async function _scUndoScans(scannerToken, eventId) {
+  // Verificar usos restantes
+  try {
+    const ev = await supabaseRequest(`events?id=eq.${eventId}&select=user_id&limit=1`);
+    const userId = ev?.[0]?.user_id;
+    const acc = await supabaseRequest(`accounts?user_id=eq.${userId}&select=undo_scans_remaining&limit=1`);
+    const remaining = acc?.[0]?.undo_scans_remaining ?? 4;
+
+    if (remaining <= 0) {
+      alert('Sem utilizações disponíveis. Contacta o administrador para repor.');
+      return;
+    }
+
+    if (!confirm(`Tens a certeza que queres desfazer TODOS os check-ins deste evento?\n\nRestam ${remaining} utilizações após esta operação.`)) return;
+
+    // Apagar todos os check-ins
+    await supabaseRequest(`rsvps?event_id=eq.${eventId}`, 'PATCH',
+      { checked_in: false, checked_in_at: null, companion_checked_in: false }
+    );
+
+    // Decrementar contador
+    const newRemaining = remaining - 1;
+    await supabaseRequest(`accounts?user_id=eq.${userId}`, 'PATCH', { undo_scans_remaining: newRemaining });
+
+    // Limpar cache local
+    const cache = window._scCache;
+    if (cache) {
+      Object.values(cache.rsvpMap || {}).forEach(r => { r.checkedIn = false; r.companionCheckedIn = false; });
+      _scSaveCache(scannerToken, cache);
+      window._scCache = cache;
+      _scUpdateCounters(cache);
+      _scRenderGuests();
+    }
+    _scLoadCheckinQueue(scannerToken); // limpar fila
+    localStorage.removeItem(`adk_checkin_queue_${scannerToken}`);
+    _scUpdateSyncBadge(scannerToken);
+
+    const btn  = document.getElementById('scUndoBtn');
+    const info = document.getElementById('scUndoInfo');
+    if (info) info.textContent = `Restam ${newRemaining} utilizações`;
+    if (newRemaining <= 0 && btn) { btn.disabled=true; btn.style.background='#9ca3af'; btn.style.cursor='not-allowed'; }
+
+    alert(`✅ Todos os check-ins foram anulados.\nRestam ${newRemaining} utilizações.`);
+  } catch(e) {
+    alert('Erro ao desfazer. Tenta novamente.');
+    console.error(e);
+  }
 }
 
 async function _scRefreshCache(scannerToken) {

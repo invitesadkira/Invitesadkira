@@ -189,6 +189,7 @@ function renderAdminAccountsList(users) {
     html += '<button class="text-xs bg-orange-500 hover:bg-orange-600 text-white rounded-lg py-1.5 px-3 font-semibold transition" onclick="changeUserPhone(\'' + u.id + '\')">Username</button>';
     html += '<button class="text-xs bg-violet-600 hover:bg-violet-700 text-white rounded-lg py-1.5 px-3 font-semibold transition" onclick="openUserFeaturesModal(\'' + u.id + '\')">🔐 Permissões</button>';
     html += '<button class="text-xs bg-rose-500 hover:bg-rose-600 text-white rounded-lg py-1.5 px-3 font-semibold transition" onclick="openTicketLimitModal(\'' + u.id + '\',\'' + escapeHTML(u.username||u.email||u.id) + '\')">🎫 Tickets</button>';
+    html += '<button class="text-xs bg-orange-500 hover:bg-orange-600 text-white rounded-lg py-1.5 px-3 font-semibold transition" onclick="resetUndoScans(\'' + u.id + '\',\'' + escapeHTML(u.username||u.email||u.id) + '\')">↩ Repor Desfazer</button>';
     html += '<button class="text-xs ' + (u.edit_locked ? 'bg-green-600 hover:bg-green-700' : 'bg-yellow-600 hover:bg-yellow-700') + ' text-white rounded-lg py-1.5 px-3 font-semibold transition" onclick="adminToggleEditLock(\'' + u.id + '\',' + !!u.edit_locked + ')">' + (u.edit_locked ? '🔓 Desbloquear Edição' : '🔒 Bloquear Edição') + '</button>';
     
     if (Store.events.some(e => e.userId === u.id)) {
@@ -4178,6 +4179,15 @@ const FEATURE_DEFS = [
 function _getFeaturePerms(user) {
   try { return typeof user.allowed_features === 'string' ? JSON.parse(user.allowed_features) : (user.allowed_features || {}); }
   catch(e) { return {}; }
+}
+
+async function resetUndoScans(userId, username) {
+  const val = prompt(`Repor usos de "Desfazer Scans" para ${username}.\n\nNovo número de usos (padrão: 4):`, '4');
+  if (val === null) return;
+  const n = parseInt(val) || 4;
+  const res = await supabaseRequest(`accounts?user_id=eq.${userId}`, 'PATCH', { undo_scans_remaining: n }).catch(() => null);
+  if (!res) await supabaseRequest('accounts', 'POST', { user_id: userId, undo_scans_remaining: n }).catch(() => {});
+  toast(`Usos de desfazer reposto para ${n} — ${username}`);
 }
 
 async function openTicketLimitModal(userId, username) {
