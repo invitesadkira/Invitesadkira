@@ -936,7 +936,11 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
           show_final_photo: document.getElementById('sw-final-photo')?.classList.contains('active') ? 'yes' : 'no',
           final_photo_url: document.getElementById('evt-final-photo-url')?.value || null,
           couple_photo_url: document.getElementById('evt-couple-photo-url')?.value || null,
-          couple_video_url: document.getElementById('sw-couple-video')?.classList.contains('active') ? (document.getElementById('evt-couple-video-url')?.value || null) : null,
+          couple_video_url: document.getElementById('sw-couple-video')?.classList.contains('active')
+            ? (document.getElementById('evt-couple-video-type')?.value === 'youtube'
+               ? (document.getElementById('evt-couple-video-yt-url')?.value?.trim() || null)
+               : (document.getElementById('evt-couple-video-url')?.value || null))
+            : null,
           video_audio_mode: document.querySelector('input[name="video-audio-mode"]:checked')?.value || 'pause_music',
           show_event_faq: document.getElementById('sw-event-faq')?.classList.contains('active') ? 'yes' : 'no',
           event_faq_items: (Store.eventFaqItems && Store.eventFaqItems.length) ? JSON.stringify(Store.eventFaqItems) : null,
@@ -2147,7 +2151,17 @@ function _fillEditForm(ev) {
   { const cp=document.getElementById('evt-couple-photo-url'); const cpP=document.getElementById('couple-photo-preview');
     if(ev.couple_photo_url){if(cp)cp.value=ev.couple_photo_url;if(cpP){cpP.src=ev.couple_photo_url;cpP.style.display='';}} }
   { const cv=document.getElementById('evt-couple-video-url'); if(cv)cv.value=ev.couple_video_url||'';
-    if(ev.couple_video_url){ _setSwitch('sw-couple-video', true, 'couple-video-extra'); const vp=document.getElementById('couple-video-preview'); const vw=document.getElementById('couple-video-preview-wrap'); if(vp)vp.src=ev.couple_video_url; if(vw)vw.style.display=''; }
+    if(ev.couple_video_url){
+      _setSwitch('sw-couple-video', true, 'couple-video-extra');
+      const isYt = ev.couple_video_url.includes('youtube.com') || ev.couple_video_url.includes('youtu.be');
+      if(isYt){
+        const r=document.getElementById('cvt-youtube'); if(r){r.checked=true; window._toggleCoupleVideoType?.();}
+        const yu=document.getElementById('evt-couple-video-yt-url'); if(yu)yu.value=ev.couple_video_url;
+      } else {
+        const vp=document.getElementById('couple-video-preview'); const vw=document.getElementById('couple-video-preview-wrap');
+        if(vp)vp.src=ev.couple_video_url; if(vw)vw.style.display='';
+      }
+    }
     const vam=ev.video_audio_mode||'pause_music'; const r=document.getElementById('video-audio-'+(vam==='replace_music'?'replace-music':'pause-music')); if(r)r.checked=true; }
   _setSwitch('sw-event-faq', _yesOrTrue(ev.show_event_faq), 'event-faq-extra');
   try { Store.eventFaqItems = ev.event_faq_items ? JSON.parse(ev.event_faq_items) : []; } catch(e) { Store.eventFaqItems = []; }

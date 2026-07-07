@@ -3158,29 +3158,40 @@ function buildCoupleVideoSection(ev) {
   const _SD = '<!-- SECTION_DIVIDER -->';
   if (!ev.couple_video_url) return '';
 
-  const evColor    = ev.event_color || '#007f9f';
-  const audioMode  = ev.video_audio_mode || 'pause_music';
-  const replaceMusic = audioMode === 'replace_music';
-  const title = _getSectionTitle(ev, 'couple_video', 'O Nosso Momento');
+  const evColor     = ev.event_color || '#007f9f';
+  const audioMode   = ev.video_audio_mode || 'pause_music';
+  const replaceMusic= audioMode === 'replace_music';
+  const title       = _getSectionTitle(ev, 'couple_video', 'O Nosso Momento');
+  const isYouTube   = ev.couple_video_url.includes('youtube.com') || ev.couple_video_url.includes('youtu.be');
+
+  let videoHtml;
+  if (isYouTube) {
+    const ytMatch = ev.couple_video_url.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+    const ytId = ytMatch ? ytMatch[1] : '';
+    videoHtml = ytId
+      ? `<iframe src="https://www.youtube.com/embed/${ytId}?loop=1&playlist=${ytId}&rel=0&modestbranding=1"
+          style="width:100%;aspect-ratio:16/9;border:none;border-radius:12px;display:block"
+          allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe>`
+      : '';
+  } else {
+    videoHtml = `<video
+      id="couple-video-player"
+      src="${escapeHTML(ev.couple_video_url)}"
+      controls loop playsinline
+      style="width:100%;display:block;max-height:480px;object-fit:contain"
+      onplay="window._coupleVideoPlay()"
+      onpause="window._coupleVideoStop()"
+      onended="window._coupleVideoStop()"
+    ></video>`;
+  }
 
   return _SD + `<div class="event-section" style="background:#000;padding:0">
     <div style="max-width:680px;margin:0 auto;padding:1.5rem">
       <h3 class="section-title" style="color:#fff;text-align:center;margin-bottom:1rem">${escapeHTML(title)}</h3>
       <div style="border-radius:12px;overflow:hidden;position:relative;background:#111">
-        <video
-          id="couple-video-player"
-          src="${escapeHTML(ev.couple_video_url)}"
-          controls
-          loop
-          playsinline
-          ${replaceMusic ? '' : ''}
-          style="width:100%;display:block;max-height:480px;object-fit:contain"
-          onplay="window._coupleVideoPlay()"
-          onpause="window._coupleVideoStop()"
-          onended="window._coupleVideoStop()"
-        ></video>
+        ${videoHtml}
       </div>
-      ${replaceMusic ? `<p style="text-align:center;color:rgba(255,255,255,0.5);font-size:11px;margin-top:8px">🎵 O áudio deste vídeo é a música do evento</p>` : ''}
+      ${replaceMusic && !isYouTube ? `<p style="text-align:center;color:rgba(255,255,255,0.5);font-size:11px;margin-top:8px">🎵 O áudio deste vídeo é a música do evento</p>` : ''}
     </div>
   </div>`;
 }

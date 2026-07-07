@@ -1438,7 +1438,7 @@ async function handleCouplemsgBodyFontUpload(input) {
   }
 }
 
-async function handleCoupleVideoUpload(input) {
+async function handleCouplemsgBodyFontUpload(input) {
   const file = input.files[0];
   if (!file) return;
   const MAX = 25 * 1024 * 1024; // 25MB
