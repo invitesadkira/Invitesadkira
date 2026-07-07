@@ -671,6 +671,7 @@ async function renderGuestSections(eventData) {
         case 'couplemsg': if (_yesOrTrue(eventData.show_couplemsg) && eventData.couplemsg_text) html += buildCoupleMsgSection(eventData); break;
         case 'final_photo': if (_yesOrTrue(eventData.show_final_photo) && eventData.final_photo_url) html += buildFinalPhotoSection(eventData); break;
         case 'couple_photo': if (eventData.couple_photo_url) html += buildCouplePhotoSection(eventData); break;
+        case 'couple_video': if (eventData.couple_video_url) html += buildCoupleVideoSection(eventData); break;
         case 'event_faq': if (_yesOrTrue(eventData.show_event_faq) && eventData.event_faq_items) html += buildEventFaqSection(eventData); break;
         case 'messages':
           // ✅ Independente da confirmação de presença: aparece sempre que
@@ -2423,6 +2424,7 @@ const ALL_SECTION_DEFS = [
   { key: 'couplemsg',   label: 'Mensagem dos Noivos',                   icon: 'message-circle' },
   { key: 'final_photo', label: 'Foto Final dos Noivos',                 icon: 'image' },
   { key: 'couple_photo', label: 'Foto de Fundo do Casal',               icon: 'heart' },
+  { key: 'couple_video', label: 'Vídeo do Casal',                        icon: 'video' },
   { key: 'event_faq',   label: _getSectionTitle(ev,'event_faq','Perguntas Frequentes'),                  icon: 'help-circle' },
   { key: 'messages',    label: 'Recados / Correio do Amor',             icon: 'message-square-heart' },
   { key: 'custom_text', label: 'Texto Personalizado',                   icon: 'file-text' },
@@ -3136,3 +3138,64 @@ function _getSectionTitle(ev, key, defaultTitle) {
     return titles[key] || defaultTitle;
   } catch(e) { return defaultTitle; }
 }
+
+// ── Secção de Vídeo do Casal ──────────────────────────────────────────────
+function buildCoupleVideoSection(ev) {
+  const _SD = '<!-- SECTION_DIVIDER -->';
+  if (!ev.couple_video_url) return '';
+
+  const evColor    = ev.event_color || '#007f9f';
+  const audioMode  = ev.video_audio_mode || 'pause_music';
+  const replaceMusic = audioMode === 'replace_music';
+  const title = _getSectionTitle(ev, 'couple_video', 'O Nosso Momento');
+
+  return _SD + `<div class="event-section" style="background:#000;padding:0">
+    <div style="max-width:680px;margin:0 auto;padding:1.5rem">
+      <h3 class="section-title" style="color:#fff;text-align:center;margin-bottom:1rem">${escapeHTML(title)}</h3>
+      <div style="border-radius:12px;overflow:hidden;position:relative;background:#111">
+        <video
+          id="couple-video-player"
+          src="${escapeHTML(ev.couple_video_url)}"
+          controls
+          loop
+          playsinline
+          ${replaceMusic ? '' : ''}
+          style="width:100%;display:block;max-height:480px;object-fit:contain"
+          onplay="window._coupleVideoPlay()"
+          onpause="window._coupleVideoStop()"
+          onended="window._coupleVideoStop()"
+        ></video>
+      </div>
+      ${replaceMusic ? `<p style="text-align:center;color:rgba(255,255,255,0.5);font-size:11px;margin-top:8px">🎵 O áudio deste vídeo é a música do evento</p>` : ''}
+    </div>
+  </div>`;
+}
+
+// Coordenação de áudio — chamada pelos eventos do vídeo
+window._coupleVideoPlay = function() {
+  const ev = Store.guestEventData || window._evData;
+  if (!ev || ev.video_audio_mode === 'replace_music') return;
+  // Pausar música do evento (audio directo ou YouTube)
+  const audio   = document.getElementById('guest-audio');
+  const ytFrame = document.getElementById('yt-music-frame');
+  if (audio && !audio.paused) { audio.pause(); window._coupleVideoPausedAudio = true; }
+  if (ytFrame) {
+    try { ytFrame.contentWindow?.postMessage(JSON.stringify({event:'command',func:'pauseVideo',args:[]}), '*'); window._coupleVideoPausedYt = true; } catch(e) {}
+  }
+};
+
+window._coupleVideoStop = function() {
+  const ev = Store.guestEventData || window._evData;
+  if (!ev || ev.video_audio_mode === 'replace_music') return;
+  // Retomar música do evento
+  if (window._coupleVideoPausedAudio) {
+    const audio = document.getElementById('guest-audio');
+    if (audio) audio.play().catch(()=>{});
+    window._coupleVideoPausedAudio = false;
+  }
+  if (window._coupleVideoPausedYt) {
+    const ytFrame = document.getElementById('yt-music-frame');
+    if (ytFrame) { try { ytFrame.contentWindow?.postMessage(JSON.stringify({event:'command',func:'playVideo',args:[]}), '*'); } catch(e) {} }
+    window._coupleVideoPausedYt = false;
+  }
+};
