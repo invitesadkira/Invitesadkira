@@ -556,7 +556,30 @@ async function generateGuestTicket(guestName, rsvpToken, eventId, skipNameEdit) 
       'Times-Bold': StandardFonts.TimesRomanBold,
       'Courier': StandardFonts.Courier,
     };
-    const font = await doc.embedFont(fontMap[fontName] || StandardFonts.Helvetica);
+
+    let font;
+    if (fontName.startsWith('custom:') || (fontName.startsWith('http') && (fontName.endsWith('.ttf')||fontName.endsWith('.otf')||fontName.endsWith('.woff')))) {
+      // Fonte personalizada — carregar do URL e incorporar no PDF
+      try {
+        // Obter URL: se for "custom:NomeFonte", procurar em availableFonts
+        let fontUrl = fontName.startsWith('http') ? fontName : null;
+        if (!fontUrl) {
+          const fontRecord = (Store.availableFonts||[]).find(f => 'custom:'+f.name === fontName);
+          fontUrl = fontRecord?.url;
+        }
+        if (fontUrl) {
+          const fontBytes = await fetch(fontUrl).then(r => r.arrayBuffer());
+          font = await doc.embedFont(fontBytes);
+        } else {
+          font = await doc.embedFont(StandardFonts.Helvetica);
+        }
+      } catch(e) {
+        console.warn('Custom font load failed, using Helvetica:', e);
+        font = await doc.embedFont(StandardFonts.Helvetica);
+      }
+    } else {
+      font = await doc.embedFont(fontMap[fontName] || StandardFonts.Helvetica);
+    }
     const nameSize = ev.ticket_name_size || 24;
 
     // Converter cor hex para rgb (0-1)
@@ -1057,7 +1080,9 @@ function _scTab(tab) {
   document.getElementById('tabOpcoes').style.display  = tab==='opcoes' ?'block':'none';
   document.getElementById('tabBtnScanner').classList.toggle('active', tab==='scanner');
   document.getElementById('tabBtnOpcoes').classList.toggle('active', tab==='opcoes');
-  // ✅ Persistir aba escolhida
+  // Ocultar botão Próximo na aba Opções
+  const nb = document.getElementById('scNextBtn');
+  if (nb) nb.style.display = tab==='opcoes' ? 'none' : 'block';
   try { sessionStorage.setItem('sc_active_tab', tab); } catch(e) {}
 }
 
@@ -1156,19 +1181,56 @@ function _scManualSearch(scannerToken, eventId) {
 async function _scManualCheckin(scannerToken, eventId, rsvpToken) {
   const cache = window._scCache;
   if (!cache || !cache.rsvpMap[rsvpToken]) return;
+
+  const rsvp = cache.rsvpMap[rsvpToken];
+  const hasCompanion  = / e /i.test(rsvp.name);
+  const mainName      = hasCompanion ? rsvp.name.split(/ e /i)[0].trim() : rsvp.name;
+  const companionName = hasCompanion ? rsvp.name.split(/ e /i).slice(1).join(' e ').trim() : '';
+
+  document.getElementById('scManualModal').style.display = 'none';
+
+  if (hasCompanion) {
+    // Perguntar sobre acompanhante — mostrar na câmara
+    _scShowResult('success', mainName, `Veio com ${companionName}?`, 0);
+    const resultEl = document.getElementById('scanner-result');
+    if (resultEl) {
+      const evColor = window._scEvColor || '#5aa189';
+      resultEl.innerHTML += `
+        <div style="display:flex;gap:10px;justify-content:center;margin-top:12px">
+          <button onclick="window._scManualCompanionAnswer('${scannerToken}','${eventId}','${rsvpToken}',true)" style="flex:1;max-width:140px;padding:10px;background:#fff;color:#16a34a;border:none;border-radius:10px;font-weight:800;font-size:15px;cursor:pointer">✓ Sim</button>
+          <button onclick="window._scManualCompanionAnswer('${scannerToken}','${eventId}','${rsvpToken}',false)" style="flex:1;max-width:140px;padding:10px;background:rgba(255,255,255,0.3);color:#fff;border:none;border-radius:10px;font-weight:800;font-size:15px;cursor:pointer">Não</button>
+        </div>`;
+    }
+    window._scManualCompanionAnswer = async (st, evId, tok, companionCame) => {
+      delete window._scManualCompanionAnswer;
+      cache.rsvpMap[tok].checkedIn = true;
+      cache.rsvpMap[tok].companionCheckedIn = companionCame;
+      _scSaveCache(st, cache);
+      window._scCache = cache;
+      _scUpdateCounters(cache);
+      _scRenderGuests();
+      const sub = companionCame ? `${mainName} + ${companionName}` : `${mainName} (acompanhante virá depois)`;
+      _scShowResult('success', 'Entrada permitida', sub, 4000);
+      const patch = { checked_in: true, checked_in_at: new Date().toISOString() };
+      if (companionCame) Object.assign(patch, { companion_checked_in: true, companion_checked_in_at: new Date().toISOString() });
+      if (navigator.onLine) supabaseRequest(`rsvps?rsvp_token=eq.${tok}&event_id=eq.${evId}`, 'PATCH', patch).catch(()=>{});
+    };
+    return;
+  }
+
+  // Sem acompanhante — check-in directo
   cache.rsvpMap[rsvpToken].checkedIn = true;
   _scSaveCache(scannerToken, cache);
   window._scCache = cache;
   _scUpdateCounters(cache);
   _scRenderGuests();
-  document.getElementById('scManualModal').style.display='none';
-  _scShowResult('success', cache.rsvpMap[rsvpToken].name, 'Check-in manual realizado!');
+  _scShowResult('success', rsvp.name, 'Check-in manual realizado!');
   if (navigator.onLine) {
-    supabaseRequest(`rsvps?rsvp_token=eq.${rsvpToken}&event_id=eq.${eventId}`,'PATCH',
-      { checked_in:true, checked_in_at:new Date().toISOString() }).catch(()=>{});
+    supabaseRequest(`rsvps?rsvp_token=eq.${rsvpToken}&event_id=eq.${eventId}`, 'PATCH',
+      { checked_in: true, checked_in_at: new Date().toISOString() }).catch(() => {});
   } else {
-    const q=[..._scLoadCheckinQueue(scannerToken),rsvpToken];
-    _scSaveCheckinQueue(scannerToken,q);
+    const q = [..._scLoadCheckinQueue(scannerToken), rsvpToken];
+    _scSaveCheckinQueue(scannerToken, q);
     _scUpdateSyncBadge(scannerToken);
   }
 }
@@ -1328,10 +1390,10 @@ async function _scDownloadReport(eventId, eventTitle) {
 
 async function _scLoadUndoRemaining(eventId) {
   try {
-    const ev = await supabaseRequest(`events?id=eq.${eventId}&select=user_id&limit=1`);
-    const userId = ev?.[0]?.user_id;
+    const ev = await supabaseRequest(`events?id=eq.${eventId}&select=user_id,owner_id&limit=1`);
+    const userId = ev?.[0]?.user_id || ev?.[0]?.owner_id;
     if (!userId) return;
-    const acc = await supabaseRequest(`accounts?auth_uid=eq.${userId}&select=undo_scans_remaining&limit=1`);
+    const acc = await supabaseRequest(`accounts?auth_uid=eq.${userId}&select=undo_scans_remaining,id&limit=1`);
     const remaining = acc?.[0]?.undo_scans_remaining ?? 4;
     const btn  = document.getElementById('scUndoBtn');
     const info = document.getElementById('scUndoInfo');
@@ -1348,11 +1410,10 @@ async function _scLoadUndoRemaining(eventId) {
 }
 
 async function _scUndoScans(scannerToken, eventId) {
-  // Verificar usos restantes
   try {
-    const ev = await supabaseRequest(`events?id=eq.${eventId}&select=user_id&limit=1`);
-    const userId = ev?.[0]?.user_id;
-    const acc = await supabaseRequest(`accounts?auth_uid=eq.${userId}&select=undo_scans_remaining&limit=1`);
+    const ev = await supabaseRequest(`events?id=eq.${eventId}&select=user_id,owner_id&limit=1`);
+    const userId = ev?.[0]?.user_id || ev?.[0]?.owner_id;
+    const acc = await supabaseRequest(`accounts?auth_uid=eq.${userId}&select=undo_scans_remaining,id&limit=1`);
     const remaining = acc?.[0]?.undo_scans_remaining ?? 4;
 
     if (remaining <= 0) {
@@ -1602,6 +1663,7 @@ async function generateManualTicket(eventId) {
       attending:        true,
       ticket_issued:    true,
       ticket_issued_at: new Date().toISOString(),
+      is_manual_ticket: true,
     });
   } catch(e) {
     console.error('Erro ao criar RSVP manual:', e);
