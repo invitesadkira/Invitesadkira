@@ -420,6 +420,21 @@ async function generateGuestTicket(guestName, rsvpToken, eventId, skipNameEdit) 
   const ev = Store.events.find(e => e.id === (eventId || Store.currentEventId));
   if (!ev) { toast('Evento não encontrado.'); return; }
 
+  // ✅ Verificar limite de tickets da conta
+  try {
+    const userId = ev.user_id || ev.userId;
+    if (userId && !Store.adminModeActive) {
+      const acc = await supabaseRequest(`accounts?user_id=eq.${userId}&select=ticket_limit&limit=1`);
+      const limit = acc?.[0]?.ticket_limit ?? 50;
+      const issued = await supabaseRequest(`rsvps?event_id=eq.${ev.id}&ticket_issued=eq.true&select=rsvp_token`);
+      const count  = (issued||[]).length;
+      if (count >= limit) {
+        toast(`Limite de ${limit} tickets atingido. Contacta o suporte para aumentar.`);
+        return;
+      }
+    }
+  } catch(e) { console.warn('Ticket limit check failed:', e); }
+
   // Garantir que os campos do ticket estão actualizados
   if (!ev.ticket_template_url) {
     try {
@@ -626,7 +641,7 @@ function _renderScannerUI(ev, scannerToken, cache, isOnline) {
   document.body.innerHTML = '';
   document.body.style.cssText = 'margin:0;padding:0;font-family:Inter,sans-serif;background:#f9fafb;min-height:100vh;color:#111827';
   document.head.insertAdjacentHTML('beforeend',
-    '<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">' +
+    '' +
     '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap">' +
     `<style>
       *{box-sizing:border-box}
@@ -661,8 +676,8 @@ function _renderScannerUI(ev, scannerToken, cache, isOnline) {
       </div>
       <!-- Tabs -->
       <div style="max-width:768px;margin:0 auto;padding:0 16px;display:flex;gap:0">
-        <button class="sc-tab-btn active" id="tabBtnScanner" onclick="_scTab('scanner')"><i class="fas fa-qrcode" style="margin-right:6px"></i>Scanner</button>
-        <button class="sc-tab-btn" id="tabBtnOpcoes" onclick="_scTab('opcoes')"><i class="fas fa-cog" style="margin-right:6px"></i>Opções</button>
+        <button class="sc-tab-btn active" id="tabBtnScanner" onclick="_scTab('scanner')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;flex-shrink:0"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="5" y="5" width="3" height="3" fill="currentColor" stroke="none"/><rect x="16" y="5" width="3" height="3" fill="currentColor" stroke="none"/><rect x="16" y="16" width="3" height="3" fill="currentColor" stroke="none"/><rect x="5" y="16" width="3" height="3" fill="currentColor" stroke="none"/></svg>Scanner</button>
+        <button class="sc-tab-btn" id="tabBtnOpcoes" onclick="_scTab('opcoes')"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;flex-shrink:0"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Opções</button>
       </div>
     </header>
 
@@ -671,12 +686,12 @@ function _renderScannerUI(ev, scannerToken, cache, isOnline) {
       <div class="sc-card" style="padding:16px">
         <!-- Botão check-in manual -->
         <button onclick="_scOpenManual()" style="width:100%;margin-bottom:12px;padding:12px 16px;border-radius:10px;border:2px solid ${C};color:${C};background:${C}10;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">
-          <i class="fas fa-search"></i>Check-in sem QR Code (pesquisar por nome)
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>Check-in sem QR Code (pesquisar por nome)
         </button>
         <!-- Câmara -->
         <div id="scanner-reader" style="border-radius:12px;overflow:hidden;background:#111827;aspect-ratio:1;max-width:400px;margin:0 auto;display:flex;align-items:center;justify-content:center">
           <div style="text-align:center;color:#6b7280">
-            <i class="fas fa-qrcode" style="font-size:48px;margin-bottom:12px;display:block"></i>
+            <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:block;margin:0 auto 12px"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="5" y="5" width="3" height="3" fill="currentColor" stroke="none"/><rect x="16" y="5" width="3" height="3" fill="currentColor" stroke="none"/><rect x="16" y="16" width="3" height="3" fill="currentColor" stroke="none"/><rect x="5" y="16" width="3" height="3" fill="currentColor" stroke="none"/></svg>
             <p>A inicializar câmara...</p>
           </div>
         </div>
@@ -685,10 +700,10 @@ function _renderScannerUI(ev, scannerToken, cache, isOnline) {
       <!-- Resultado -->
       <div class="sc-card" style="padding:16px">
         <h3 style="font-size:14px;font-weight:600;color:#374151;margin:0 0 12px;display:flex;align-items:center;gap:8px">
-          <i class="fas fa-clipboard-check" style="color:${C}"></i>Resultado
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="${C}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="m9 12 2 2 4-4"/></svg>Resultado
         </h3>
         <div id="scanner-result" style="text-align:center;color:#9ca3af;padding:24px 0">
-          <i class="fas fa-qrcode" style="font-size:28px;display:block;margin-bottom:8px"></i>
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:block;margin:0 auto 8px"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="5" y="5" width="3" height="3" fill="currentColor" stroke="none"/><rect x="16" y="5" width="3" height="3" fill="currentColor" stroke="none"/><rect x="16" y="16" width="3" height="3" fill="currentColor" stroke="none"/><rect x="5" y="16" width="3" height="3" fill="currentColor" stroke="none"/></svg>
           <p style="font-size:14px;margin:0">Aguardando scan...</p>
         </div>
       </div>
@@ -696,7 +711,7 @@ function _renderScannerUI(ev, scannerToken, cache, isOnline) {
       <!-- Progresso -->
       <div class="sc-card" style="padding:16px">
         <h3 style="font-size:14px;font-weight:600;color:#374151;margin:0 0 12px;display:flex;align-items:center;gap:8px">
-          <i class="fas fa-chart-line" style="color:#22c55e"></i>Progresso
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Progresso
         </h3>
         <div style="text-align:center;margin-bottom:12px">
           <div id="scPct" style="font-size:32px;font-weight:700;color:#2563eb">${pct}%</div>
@@ -724,7 +739,7 @@ function _renderScannerUI(ev, scannerToken, cache, isOnline) {
       <!-- Estatísticas -->
       <div class="sc-card" style="padding:16px;margin-bottom:16px">
         <h2 style="font-size:16px;font-weight:600;color:#111827;margin:0 0 16px;display:flex;align-items:center;gap:8px">
-          <i class="fas fa-chart-bar" style="color:#2563eb"></i>Estatísticas
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="2" y1="20" x2="22" y2="20"/></svg>Estatísticas
         </h2>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
           <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:16px;text-align:center">
@@ -737,7 +752,7 @@ function _renderScannerUI(ev, scannerToken, cache, isOnline) {
           </div>
         </div>
         <div id="scQueueInfo" style="display:none;padding:10px;background:#fef3c7;border-radius:8px;font-size:13px;color:#92400e">
-          <i class="fas fa-clock" style="margin-right:6px;color:#d97706"></i>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px;flex-shrink:0"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
           <span id="scQueueCount">0</span> scans por sincronizar
         </div>
       </div>
@@ -746,7 +761,7 @@ function _renderScannerUI(ev, scannerToken, cache, isOnline) {
       <div class="sc-card">
         <div style="padding:16px;border-bottom:1px solid #f3f4f6;background:linear-gradient(to right,#eff6ff,#f5f3ff)">
           <h2 style="font-size:16px;font-weight:600;color:#111827;margin:0 0 12px;display:flex;align-items:center;gap:8px">
-            <i class="fas fa-users" style="color:#2563eb"></i>Lista de Convidados
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Lista de Convidados
           </h2>
           <div style="display:flex;gap:8px;flex-wrap:wrap">
             <input type="text" id="scSearch" placeholder="Procurar convidado..." oninput="_scRenderGuests()" style="flex:1;min-width:160px;padding:8px 12px;border:1px solid #d1d5db;border-radius:8px;font-size:13px;outline:none">
@@ -765,7 +780,7 @@ function _renderScannerUI(ev, scannerToken, cache, isOnline) {
       <!-- Configurações -->
       <div class="sc-card" style="padding:16px;margin-top:16px">
         <h2 style="font-size:16px;font-weight:600;color:#111827;margin:0 0 16px;display:flex;align-items:center;gap:8px">
-          <i class="fas fa-volume-up" style="color:#22c55e"></i>Feedback
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>Feedback
         </h2>
         <div style="display:flex;align-items:center;justify-content:space-between;padding:12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;margin-bottom:8px">
           <div><b style="font-size:14px">🔊 Som</b><div style="font-size:12px;color:#6b7280">Feedback sonoro nos scans</div></div>
@@ -780,14 +795,14 @@ function _renderScannerUI(ev, scannerToken, cache, isOnline) {
       <!-- Acções rápidas -->
       <div class="sc-card" style="padding:16px;margin-top:16px">
         <h2 style="font-size:16px;font-weight:600;color:#111827;margin:0 0 16px;display:flex;align-items:center;gap:8px">
-          <i class="fas fa-bolt" style="color:#eab308"></i>Acções Rápidas
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#eab308" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Acções Rápidas
         </h2>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
           <button onclick="_scRefreshCache('${scannerToken}')" style="padding:14px;background:#4b5563;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer">
-            <i class="fas fa-refresh" style="margin-right:6px"></i>Actualizar
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>Actualizar
           </button>
           <button onclick="_scSyncQueue('${scannerToken}','${ev.id}').then(()=>toast('Sincronizado!'))" style="padding:14px;background:#16a34a;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer">
-            <i class="fas fa-sync-alt" style="margin-right:6px"></i>Sincronizar
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:6px"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>Sincronizar
           </button>
         </div>
       </div>
@@ -798,7 +813,7 @@ function _renderScannerUI(ev, scannerToken, cache, isOnline) {
       <div style="background:#fff;border-radius:16px;padding:24px;width:100%;max-width:380px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
           <h2 style="font-size:18px;font-weight:700;margin:0;display:flex;align-items:center;gap:8px">
-            <i class="fas fa-search" style="color:${C}"></i>Check-in Manual
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="${C}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>Check-in Manual
           </h2>
           <button onclick="document.getElementById('scManualModal').style.display='none'" style="background:#f3f4f6;border:none;border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:16px">×</button>
         </div>
@@ -812,7 +827,7 @@ function _renderScannerUI(ev, scannerToken, cache, isOnline) {
     <!-- Botão próximo scan (mobile) -->
     <div id="scNextBtn" style="display:none;position:fixed;bottom:0;left:0;right:0;background:#fff;padding:16px;border-top:1px solid #e5e7eb;z-index:50">
       <button onclick="_scNextScan()" class="sc-btn" style="background:${C};color:#fff">
-        <i class="fas fa-arrow-right" style="margin-right:10px"></i>Próximo Scan
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:10px"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>Próximo Scan
       </button>
     </div>`;
 
@@ -875,7 +890,7 @@ function _renderScannerUI(ev, scannerToken, cache, isOnline) {
     })
     .catch(err => {
       readerEl.innerHTML = `<div style="padding:24px;text-align:center;color:#ef4444">
-        <i class="fas fa-video-slash" style="font-size:36px;display:block;margin-bottom:12px"></i>
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:block;margin:0 auto 12px"><path d="M16 16v1a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2"/><path d="M7.9 4H14a2 2 0 0 1 2 2v4.1"/><path d="m22 8-6 4 6 4V8z"/><line x1="2" y1="2" x2="22" y2="22"/></svg>
         <p style="font-size:14px">${err.message||err}</p>
       </div>`;
     });
@@ -928,7 +943,7 @@ function _scRenderGuests() {
   if (!guests.length) { list.innerHTML='<div style="text-align:center;color:#9ca3af;padding:24px;font-size:13px">Nenhum convidado encontrado</div>'; return; }
   list.innerHTML = guests.map(([tok,r]) => `<div class="sc-guest-row">
     <div style="width:36px;height:36px;border-radius:50%;background:${r.checkedIn?'#dcfce7':'#f3f4f6'};display:flex;align-items:center;justify-content:center;flex-shrink:0">
-      <i class="fas fa-${r.checkedIn?'check':'clock'}" style="font-size:14px;color:${r.checkedIn?'#16a34a':'#9ca3af'}"></i>
+      ${r.checkedIn?'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>':'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>'}
     </div>
     <div style="flex:1;min-width:0">
       <p style="font-size:14px;font-weight:500;margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHTML(r.name)}</p>
@@ -985,7 +1000,7 @@ async function _scManualCheckin(scannerToken, eventId, rsvpToken) {
 function _scNextScan() {
   document.getElementById('scNextBtn').style.display='none';
   document.getElementById('scanner-result').innerHTML = `<div style="text-align:center;color:#9ca3af;padding:24px">
-    <i class="fas fa-qrcode" style="font-size:28px;display:block;margin-bottom:8px"></i>
+    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:block;margin:0 auto 8px"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="5" y="5" width="3" height="3" fill="currentColor" stroke="none"/><rect x="16" y="5" width="3" height="3" fill="currentColor" stroke="none"/><rect x="16" y="16" width="3" height="3" fill="currentColor" stroke="none"/><rect x="5" y="16" width="3" height="3" fill="currentColor" stroke="none"/></svg>
     <p style="font-size:14px;margin:0">Aguardando scan...</p>
   </div>`;
 }
@@ -1011,7 +1026,7 @@ function _scShowResult(type, name, subtitle) {
   if (window._scVib && navigator.vibrate) navigator.vibrate(type==='success'?[100]:[200,100,200]);
   // Botão próximo scan
   const nb=document.getElementById('scNextBtn'); if(nb)nb.style.display='block';
-  setTimeout(()=>{ const nb2=document.getElementById('scNextBtn'); if(nb2)nb2.style.display='none'; el.innerHTML=`<div style="text-align:center;color:#9ca3af;padding:24px"><i class="fas fa-qrcode" style="font-size:28px;display:block;margin-bottom:8px"></i><p style="font-size:14px;margin:0">Aguardando scan...</p></div>`; }, 3000);
+  setTimeout(()=>{ const nb2=document.getElementById('scNextBtn'); if(nb2)nb2.style.display='none'; el.innerHTML=`<div style="text-align:center;color:#9ca3af;padding:24px"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:block;margin:0 auto 8px"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="5" y="5" width="3" height="3" fill="currentColor" stroke="none"/><rect x="16" y="5" width="3" height="3" fill="currentColor" stroke="none"/><rect x="16" y="16" width="3" height="3" fill="currentColor" stroke="none"/><rect x="5" y="16" width="3" height="3" fill="currentColor" stroke="none"/></svg><p style="font-size:14px;margin:0">Aguardando scan...</p></div>`; }, 3000);
 }
 
 async function _scRefreshCache(scannerToken) {
@@ -1134,6 +1149,25 @@ async function showScannerToken() {
 }
 
 // ── 5. GESTOR DE TICKETS — visão geral de todos os convidados ────────────
+async function generateManualTicket(eventId) {
+  const name       = document.getElementById('manual-ticket-name')?.value?.trim();
+  const companion  = document.getElementById('manual-ticket-companion')?.value?.trim();
+  if (!name) { toast('Insere o nome do convidado.'); return; }
+
+  const fullName = companion ? `${name} e ${companion}` : name;
+  const ev = Store.events.find(e => e.id === (eventId || Store.currentEventId));
+  if (!ev?.ticket_template_url) { toast('Template de ticket não configurado.'); return; }
+
+  // Criar um token único para este ticket manual
+  const manualToken = 'manual_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+
+  // Gerar ticket com este nome e token manual
+  await generateGuestTicket(fullName, manualToken, eventId, true);
+  document.getElementById('manual-ticket-name').value   = '';
+  document.getElementById('manual-ticket-companion').value = '';
+  toast(`Ticket gerado: ${fullName}`);
+}
+
 async function openTicketManager() {
   const eventId = Store.currentEventId;
   const ev = Store.events.find(e => e.id === eventId);
@@ -1166,6 +1200,17 @@ async function openTicketManager() {
       <div class="flex items-center justify-between mb-3">
         <h3 class="text-base font-bold text-gray-800">Gerir Tickets</h3>
         <button onclick="this.closest('.modal-overlay').remove()" style="background:#f3f4f6;border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:1rem">×</button>
+      </div>
+
+      <!-- Gerar ticket manual (para não confirmados) -->
+      <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:0.75rem;padding:0.75rem;margin-bottom:0.75rem">
+        <p class="text-xs font-bold text-gray-700 mb-1">🎫 Gerar ticket manualmente</p>
+        <p class="text-xs text-gray-400 mb-2">Para convidados que não confirmaram no sistema. O QR será válido na porta.</p>
+        <div class="flex gap-2 mb-1">
+          <input id="manual-ticket-name" class="input-field text-sm flex-1" placeholder="Nome do convidado *">
+          <input id="manual-ticket-companion" class="input-field text-sm flex-1" placeholder="Acompanhante (opcional)">
+        </div>
+        <button onclick="generateManualTicket('${eventId}')" class="btn-main text-xs w-full">Gerar Ticket</button>
       </div>
 
       <div class="flex gap-3 mb-3">

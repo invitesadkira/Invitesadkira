@@ -188,6 +188,7 @@ function renderAdminAccountsList(users) {
     html += '<button class="text-xs bg-slate-500 hover:bg-slate-600 text-white rounded-lg py-1.5 px-3 font-semibold transition" onclick="changeUserPassword(\'' + u.id + '\')">Senha</button>';
     html += '<button class="text-xs bg-orange-500 hover:bg-orange-600 text-white rounded-lg py-1.5 px-3 font-semibold transition" onclick="changeUserPhone(\'' + u.id + '\')">Username</button>';
     html += '<button class="text-xs bg-violet-600 hover:bg-violet-700 text-white rounded-lg py-1.5 px-3 font-semibold transition" onclick="openUserFeaturesModal(\'' + u.id + '\')">🔐 Permissões</button>';
+    html += '<button class="text-xs bg-rose-500 hover:bg-rose-600 text-white rounded-lg py-1.5 px-3 font-semibold transition" onclick="openTicketLimitModal(\'' + u.id + '\',\'' + escapeHTML(u.username||u.email||u.id) + '\')">🎫 Tickets</button>';
     html += '<button class="text-xs ' + (u.edit_locked ? 'bg-green-600 hover:bg-green-700' : 'bg-yellow-600 hover:bg-yellow-700') + ' text-white rounded-lg py-1.5 px-3 font-semibold transition" onclick="adminToggleEditLock(\'' + u.id + '\',' + !!u.edit_locked + ')">' + (u.edit_locked ? '🔓 Desbloquear Edição' : '🔒 Bloquear Edição') + '</button>';
     
     if (Store.events.some(e => e.userId === u.id)) {
@@ -4177,6 +4178,39 @@ const FEATURE_DEFS = [
 function _getFeaturePerms(user) {
   try { return typeof user.allowed_features === 'string' ? JSON.parse(user.allowed_features) : (user.allowed_features || {}); }
   catch(e) { return {}; }
+}
+
+async function openTicketLimitModal(userId, username) {
+  // Carregar limite actual
+  const acc = await supabaseRequest(`accounts?user_id=eq.${userId}&select=ticket_limit&limit=1`).catch(() => []);
+  const current = acc?.[0]?.ticket_limit ?? 50;
+
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.innerHTML = `<div class="modal-content bg-white rounded-2xl p-5" style="max-width:380px">
+    <h3 class="text-base font-bold text-gray-800 mb-1">🎫 Limite de Tickets</h3>
+    <p class="text-xs text-gray-500 mb-3">Utilizador: <strong>${escapeHTML(username)}</strong></p>
+    <p class="text-xs text-gray-400 mb-2">Define quantos tickets este cliente pode gerar no total (para todos os seus eventos).</p>
+    <div class="flex items-center gap-3 mb-4">
+      <button onclick="document.getElementById('tl-val').value=Math.max(0,parseInt(document.getElementById('tl-val').value||0)-5)" style="width:36px;height:36px;border-radius:50%;border:1px solid #e5e7eb;background:#f9fafb;font-size:1.2rem;cursor:pointer;font-weight:700">−</button>
+      <input id="tl-val" type="number" min="0" max="9999" value="${current}" class="input-field text-center text-lg font-bold flex-1" style="max-width:120px">
+      <button onclick="document.getElementById('tl-val').value=parseInt(document.getElementById('tl-val').value||0)+5" style="width:36px;height:36px;border-radius:50%;border:1px solid #e5e7eb;background:#f9fafb;font-size:1.2rem;cursor:pointer;font-weight:700">+</button>
+    </div>
+    <div class="flex gap-2 flex-wrap mb-2">
+      ${[10,25,50,100,200,500].map(v => `<button onclick="document.getElementById('tl-val').value=${v}" class="text-xs bg-gray-100 hover:bg-gray-200 rounded-lg px-3 py-1.5 font-semibold transition">${v}</button>`).join('')}
+    </div>
+    <div class="flex gap-2 mt-3">
+      <button class="flex-1 btn-main" onclick="(async()=>{
+        const v=parseInt(document.getElementById('tl-val').value)||50;
+        const res=await supabaseRequest('accounts?user_id=eq.${userId}','PATCH',{ticket_limit:v}).catch(()=>null);
+        if(!res){await supabaseRequest('accounts','POST',{user_id:'${userId}',ticket_limit:v}).catch(()=>{});}
+        toast('Limite de tickets actualizado: '+v);
+        this.closest('.modal-overlay').remove();
+      })()">Guardar</button>
+      <button class="flex-1 btn-outline" onclick="this.closest('.modal-overlay').remove()">Cancelar</button>
+    </div>
+  </div>`;
+  document.body.appendChild(modal);
 }
 
 async function openUserFeaturesModal(userId) {
