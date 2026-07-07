@@ -16,11 +16,11 @@
   <!-- PDF.js: renderizar PDFs como canvas (pré-visualização do template) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <!-- QRCode: gerador local, sem dependência CDN -->
-  <script src="js/qrcode-mini.js?v=1783421466"></script>
+  <script src="js/qrcode-mini.js?v=1783421863"></script>
   <script>tailwind.config = { theme: { extend: { colors: { teal: { 500: '#007f9f', 600: '#006b86' } } } } }</script>
   <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.js"></script>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💌</text></svg>">
-  <link rel="stylesheet" href="css/main.css?v=1783421466">
+  <link rel="stylesheet" href="css/main.css?v=1783421863">
 </head>
 <body class="h-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
 
@@ -614,7 +614,9 @@
         <!-- Vídeo do Casal (Supabase) -->
         <div class="flex items-center justify-between mb-1">
          <span class="text-sm font-semibold text-gray-700">🎬 Vídeo do Casal (ficheiro)</span>
+         <div id="sw-couple-video" class="switch" onclick="toggleSwitch(this, 'couple-video-extra')"></div>
         </div>
+        <div id="couple-video-extra" class="hidden pl-4">
         <p class="text-xs text-gray-400 mb-2">Vídeo carregado directamente — aparece em loop no convite com controlos completos (play, pausa, volume, ecrã completo). Máx. 25 MB.</p>
         <div style="background:#fef9c3;border:1px solid #fde68a;border-radius:0.5rem;padding:0.5rem;margin-bottom:0.75rem">
          <p class="text-xs text-amber-700 font-semibold">⚠️ Máx. 25 MB — use vídeos curtos e comprimidos</p>
@@ -635,6 +637,7 @@
           <input type="radio" name="video-audio-mode" id="video-audio-replace-music" value="replace_music" class="accent-teal-500">
           <span class="text-xs text-gray-700">Usar o <strong>áudio deste vídeo</strong> como música do evento</span>
          </label>
+        </div>
         </div>
        </div><!-- /pane video -->
        <div class="event-tab-pane hidden" data-tab="presentes">
@@ -1780,21 +1783,21 @@ para testemunhar o seu enlace matrimonial</textarea>
   </a>
 
   <!-- ===================== SCRIPTS (ordem importa) ===================== -->
-  <script src="js/config.js?v=1783421466"></script>
-  <script src="js/store.js?v=1783421466"></script>
-  <script src="js/visuals.js?v=1783421466"></script>
-  <script src="js/venues.js?v=1783421466"></script>
-  <script src="js/rsvp.js?v=1783421466"></script>
-  <script src="js/ui.js?v=1783421466"></script>
-  <script src="js/auth.js?v=1783421466"></script>
-  <script src="js/dashboard.js?v=1783421466"></script>
-  <script src="js/events.js?v=1783421466"></script>
-  <script src="js/intake-wizard.js?v=1783421466"></script>
-  <script src="js/tickets.js?v=1783421466"></script>
-  <script src="js/guest.js?v=1783421466"></script>
-  <script src="js/sections.js?v=1783421466"></script>
-  <script src="js/admin.js?v=1783421466"></script>
-  <script src="js/router.js?v=1783421466"></script>
+  <script src="js/config.js?v=1783421863"></script>
+  <script src="js/store.js?v=1783421863"></script>
+  <script src="js/visuals.js?v=1783421863"></script>
+  <script src="js/venues.js?v=1783421863"></script>
+  <script src="js/rsvp.js?v=1783421863"></script>
+  <script src="js/ui.js?v=1783421863"></script>
+  <script src="js/auth.js?v=1783421863"></script>
+  <script src="js/dashboard.js?v=1783421863"></script>
+  <script src="js/events.js?v=1783421863"></script>
+  <script src="js/intake-wizard.js?v=1783421863"></script>
+  <script src="js/tickets.js?v=1783421863"></script>
+  <script src="js/guest.js?v=1783421863"></script>
+  <script src="js/sections.js?v=1783421863"></script>
+  <script src="js/admin.js?v=1783421863"></script>
+  <script src="js/router.js?v=1783421863"></script>
 
 </body>
 </html>
