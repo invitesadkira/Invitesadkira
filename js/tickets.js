@@ -397,18 +397,27 @@ async function saveTicketTemplate() {
 async function generateGuestTicket(guestName, rsvpToken, eventId, skipNameEdit) {
   // ✅ Permitir editar o nome antes de gerar o ticket
   if (!skipNameEdit) {
-    return new Promise(resolve => {
+    return new Promise(async resolve => {
+      // Verificar se conta tem mesas activadas
+      const userId = Store.events.find(e=>e.id===(eventId||Store.currentEventId))?.user_id;
+      let withTable = false;
+      if (userId) {
+        try { const a=await supabaseRequest(`accounts?user_id=eq.${userId}&select=tickets_with_table&limit=1`); withTable=a?.[0]?.tickets_with_table||false; } catch(e) {}
+      }
+
       const modal = document.createElement('div');
       modal.className = 'modal-overlay';
       modal.innerHTML = `<div class="modal-content bg-white rounded-2xl p-5" style="max-width:380px">
         <h3 class="text-sm font-bold text-gray-800 mb-1">Nome no ticket</h3>
-        <p class="text-xs text-gray-500 mb-2">Pode editar antes de gerar — ex: "Araújo e esposa", "Araújo e acompanhante"</p>
-        <input id="ticket-name-edit" class="input-field mb-3" value="${escapeHTML(guestName)}">
+        <p class="text-xs text-gray-500 mb-2">Pode editar antes de gerar — ex: "Araújo e esposa"</p>
+        <input id="ticket-name-edit" class="input-field mb-2" value="${escapeHTML(guestName)}">
+        ${withTable ? `<input id="ticket-table-edit" class="input-field mb-3" placeholder="Mesa (ex: Mesa 5, VIP, Mesa dos Noivos)">` : '<div class="mb-3"></div>'}
         <div class="flex gap-2">
           <button class="flex-1 btn-main" onclick="(()=>{
             const n=document.getElementById('ticket-name-edit').value.trim()||'${escapeHTML(guestName)}';
+            const t=document.getElementById('ticket-table-edit')?.value.trim()||null;
             this.closest('.modal-overlay').remove();
-            generateGuestTicket(n,'${rsvpToken}','${eventId||''}',true);
+            generateGuestTicket(n,'${rsvpToken}','${eventId||''}',true,t);
           })()">Gerar Ticket</button>
           <button class="flex-1 btn-outline" onclick="this.closest('.modal-overlay').remove()">Cancelar</button>
         </div>
@@ -818,7 +827,7 @@ function _renderScannerUI(ev, scannerToken, cache, isOnline) {
           <button onclick="document.getElementById('scManualModal').style.display='none'" style="background:#f3f4f6;border:none;border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:16px">×</button>
         </div>
         <input type="text" id="scManualInput" placeholder="Pesquisar nome do convidado..."
-          oninput="_scManualSearch('${scannerToken}','${ev.id}',cache)"
+          oninput="_scManualSearch('${scannerToken}','${ev.id}')"
           style="width:100%;padding:12px;border:2px solid #e5e7eb;border-radius:10px;font-size:14px;outline:none;margin-bottom:12px">
         <div id="scManualResults" style="max-height:256px;overflow-y:auto;border-radius:10px;border:1px solid #f3f4f6"></div>
       </div>
@@ -853,10 +862,14 @@ function _renderScannerUI(ev, scannerToken, cache, isOnline) {
 
   _scUpdateSyncBadge(scannerToken);
 
+  // ✅ Restaurar aba guardada (evita voltar ao Scanner ao fazer refresh)
+  const _savedTab = sessionStorage.getItem('sc_active_tab') || 'scanner';
+  if (_savedTab === 'opcoes') setTimeout(() => _scTab('opcoes'), 100);
+
   // Botão próximo scan (mobile)
   const nextBtnDiv = document.createElement('div');
   nextBtnDiv.id = 'scNextBtn';
-  nextBtnDiv.style.cssText = 'display:none;position:fixed;bottom:0;left:0;right:0;background:#fff;padding:16px;border-top:1px solid #e5e7eb;z-index:50';
+  nextBtnDiv.style.cssText = 'display:block;position:fixed;bottom:0;left:0;right:0;background:#fff;padding:16px;border-top:1px solid #e5e7eb;z-index:50';
   nextBtnDiv.innerHTML = `<button onclick="_scNextScan()" style="width:100%;padding:16px;background:${C};color:#fff;border:none;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>Próximo Scan</button>`;
   document.body.appendChild(nextBtnDiv);
 
@@ -931,7 +944,23 @@ function _renderScannerUI(ev, scannerToken, cache, isOnline) {
   window._scScanInterval = _scanInterval; // guardar para poder parar
 
   navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false })
-    .then(stream => { video.srcObject = stream; video.play(); })
+    .then(stream => {
+      video.srcObject = stream;
+      video.play();
+
+      // ✅ Reactivar câmara quando o ecrã desbloquear / voltar ao separador
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+          if (video.paused || video.ended || !video.srcObject) {
+            navigator.mediaDevices.getUserMedia({ video: { facingMode:'environment' }, audio: false })
+              .then(s => { video.srcObject = s; video.play(); })
+              .catch(() => {});
+          } else {
+            video.play().catch(() => {});
+          }
+        }
+      });
+    })
     .catch(err => {
       readerEl.innerHTML = `<div style="padding:24px;text-align:center;color:#ef4444">
         <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="display:block;margin:0 auto 12px"><path d="M16 16v1a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2"/><path d="M7.9 4H14a2 2 0 0 1 2 2v4.1"/><path d="m22 8-6 4 6 4V8z"/><line x1="2" y1="2" x2="22" y2="22"/></svg>
@@ -948,6 +977,8 @@ function _scTab(tab) {
   document.getElementById('tabOpcoes').style.display  = tab==='opcoes' ?'block':'none';
   document.getElementById('tabBtnScanner').classList.toggle('active', tab==='scanner');
   document.getElementById('tabBtnOpcoes').classList.toggle('active', tab==='opcoes');
+  // ✅ Persistir aba escolhida
+  try { sessionStorage.setItem('sc_active_tab', tab); } catch(e) {}
 }
 
 function _scUpdateCounters(cache) {
@@ -1003,24 +1034,43 @@ function _scOpenManual() {
   if (modal) { modal.style.display='flex'; document.getElementById('scManualInput').focus(); }
 }
 
-function _scManualSearch(scannerToken, eventId, cache) {
-  const q    = document.getElementById('scManualInput')?.value.toLowerCase()||'';
-  const res  = document.getElementById('scManualResults');
+function _scManualSearch(scannerToken, eventId) {
+  const cache   = window._scCache;
+  const q       = (document.getElementById('scManualInput')?.value || '').toLowerCase().trim();
+  const res     = document.getElementById('scManualResults');
   const evColor = window._scEvColor || '#5aa189';
   if (!res || !cache) return;
-  if (q.length < 2) { res.innerHTML='<div style="text-align:center;color:#9ca3af;padding:16px;font-size:13px">Escreve pelo menos 2 letras</div>'; return; }
-  const matches = Object.entries(cache.rsvpMap||{})
-    .filter(([,r]) => r.name.toLowerCase().includes(q) && !r.checkedIn)
-    .slice(0, 8);
-  if (!matches.length) { res.innerHTML='<div style="text-align:center;color:#9ca3af;padding:16px;font-size:13px">Nenhum resultado</div>'; return; }
-  res.innerHTML = matches.map(([tok,r]) => `
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid #f3f4f6">
-      <span style="font-size:14px;font-weight:500">${escapeHTML(r.name)}</span>
-      <button data-tok="${tok}" onclick="_scManualCheckin('${scannerToken}','${eventId}',this.dataset.tok)"
-        style="padding:8px 16px;background:${evColor};color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer">
-        Check-in
-      </button>
-    </div>`).join('');
+
+  if (q.length < 1) {
+    res.innerHTML = '<div style="text-align:center;color:#9ca3af;padding:16px;font-size:13px">Escreve o nome do convidado</div>';
+    return;
+  }
+
+  const matches = Object.entries(cache.rsvpMap || {})
+    .filter(([, r]) => r.name.toLowerCase().includes(q))
+    .slice(0, 12);
+
+  if (!matches.length) {
+    res.innerHTML = '<div style="text-align:center;color:#9ca3af;padding:16px;font-size:13px">Nenhum convidado encontrado</div>';
+    return;
+  }
+
+  res.innerHTML = matches.map(([tok, r]) => {
+    const done = r.checkedIn;
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid #f3f4f6;background:${done?'#f9fafb':'#fff'}">
+      <div>
+        <span style="font-size:14px;font-weight:600;color:${done?'#9ca3af':'#111827'}">${escapeHTML(r.name)}</span>
+        ${done ? '<span style="font-size:11px;color:#16a34a;display:block">✓ Já entrou</span>' : ''}
+      </div>
+      ${done
+        ? `<span style="font-size:12px;color:#9ca3af;padding:6px 12px">Entrou</span>`
+        : `<button data-tok="${tok}" onclick="_scManualCheckin('${scannerToken}','${eventId}',this.dataset.tok)"
+            style="padding:8px 16px;background:${evColor};color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">
+            Check-in
+          </button>`
+      }
+    </div>`;
+  }).join('');
 }
 
 async function _scManualCheckin(scannerToken, eventId, rsvpToken) {
@@ -1054,20 +1104,13 @@ function _scNextScan() {
 function _scShowResult(type, title, subtitle, duration=3500) {
   const el = document.getElementById('scanner-result');
   if (!el) return;
-  const cfg = {
-    success:   { bg:'rgba(22,163,74,0.92)' },
-    companion: { bg:'rgba(37,99,235,0.92)' },
-    already:   { bg:'rgba(37,99,235,0.92)' },
-    error:     { bg:'rgba(220,38,38,0.92)' },
-    warning:   { bg:'rgba(217,119,6,0.92)' },
-  }[type] || { bg:'rgba(0,0,0,0.85)' };
-
   const isGood = type==='success'||type==='companion';
-  el.style.cssText = `display:block;position:absolute;bottom:0;left:0;right:0;padding:20px;text-align:center;background:${cfg.bg};z-index:10;border-radius:0 0 12px 12px`;
+  const textColor = isGood ? '#16a34a' : (type==='already' ? '#2563eb' : '#dc2626');
+  el.style.cssText = 'display:block;position:absolute;bottom:16px;left:16px;right:16px;padding:14px 18px;text-align:center;background:rgba(0,0,0,0.72);backdrop-filter:blur(6px);z-index:10;border-radius:12px;border:1.5px solid rgba(255,255,255,0.15)';
   el.innerHTML = `
-    <div style="font-size:12px;font-weight:800;color:rgba(255,255,255,0.8);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:6px">${isGood?'✓ Entrada Permitida':'✗ Acesso Negado'}</div>
-    <div style="font-size:22px;font-weight:800;color:#fff;margin-bottom:2px">${escapeHTML(title)}</div>
-    ${subtitle?`<div style="font-size:13px;color:rgba(255,255,255,0.85)">${escapeHTML(subtitle)}</div>`:''}
+    <div style="font-size:11px;font-weight:800;color:${textColor};letter-spacing:0.12em;text-transform:uppercase;margin-bottom:5px">${isGood?'✓ Entrada Permitida':'✗ Acesso Negado'}</div>
+    <div style="font-size:20px;font-weight:800;color:#fff;margin-bottom:2px">${escapeHTML(title)}</div>
+    ${subtitle?`<div style="font-size:12px;color:rgba(255,255,255,0.7)">${escapeHTML(subtitle)}</div>`:''}
   `;
   // Som
   if (window._scSound) {
@@ -1075,8 +1118,7 @@ function _scShowResult(type, title, subtitle, duration=3500) {
   }
   // Vibração
   if (window._scVib && navigator.vibrate) navigator.vibrate(isGood?[100]:[200,100,200]);
-  const nb=document.getElementById('scNextBtn'); if(nb)nb.style.display='block';
-  if (duration>0) setTimeout(()=>{ if(el)el.style.display='none'; const nb2=document.getElementById('scNextBtn'); if(nb2)nb2.style.display='none'; }, duration);
+  if (duration>0) setTimeout(()=>{ if(el)el.style.display='none'; }, duration);
 }
 
 async function _scDownloadReport(eventId, eventTitle) {
