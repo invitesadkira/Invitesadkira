@@ -1418,6 +1418,26 @@ async function handleSigFontUpload(input) {
   }
 }
 
+async function handleCouplemsgBodyFontUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+  toast('A carregar fonte...');
+  const url = await uploadImageToStorage(file, 'event-covers', 'Fonte mensagem');
+  if (url) {
+    const fontName = file.name.replace(/\.[^.]+$/, '');
+    const style = document.createElement('style');
+    style.textContent = `@font-face { font-family: '${fontName}'; src: url('${url}'); }`;
+    document.head.appendChild(style);
+    const sel = document.getElementById('evt-couplemsg-body-font');
+    if (sel) {
+      const opt = document.createElement('option');
+      opt.value = url; opt.textContent = fontName + ' (carregada)'; opt.selected = true;
+      sel.appendChild(opt);
+    }
+    toast(`Fonte "${fontName}" carregada!`);
+  }
+}
+
 async function handleCoupleVideoUpload(input) {
   const file = input.files[0];
   if (!file) return;

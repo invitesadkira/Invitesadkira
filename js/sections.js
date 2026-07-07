@@ -2698,7 +2698,21 @@ function _buildDresscodeContentHTML(ev) {
 function buildCoupleMsgSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
   const evColor = ev.event_color || '#007f9f';
   const singlePerson = ev.event_type === 'birthday' || ev.event_type === 'other';
-  const title = singlePerson ? 'Mensagem para os Convidados' : 'Mensagem dos Noivos';
+  const title = _getSectionTitle(ev, 'couplemsg', singlePerson ? 'Mensagem para os Convidados' : 'Mensagem dos Noivos');
+
+  // Fonte do corpo da mensagem
+  const bodyFont = ev.couplemsg_body_font || '';
+  const bodyIsUrl = bodyFont.startsWith('http');
+  const bodyFontName = bodyIsUrl
+    ? 'cmsgbody-' + bodyFont.split('/').pop().replace(/[^a-zA-Z0-9]/g,'-').slice(0,20)
+    : bodyFont;
+  let bodyFontInject = '';
+  if (bodyIsUrl) {
+    bodyFontInject = `<style>@font-face{font-family:'${bodyFontName}';src:url('${bodyFont}');}</style>`;
+  } else if (['Great Vibes','Dancing Script','Playfair Display','Lora','Sacramento','Garamond'].includes(bodyFont)) {
+    bodyFontInject = `<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=${encodeURIComponent(bodyFont)}&display=swap">`;
+  }
+  const bodyFontStyle = bodyFontName ? `font-family:'${bodyFontName}',serif;` : '';
 
   // Assinatura dos noivos
   const sig = ev.couplemsg_signature;
@@ -2728,13 +2742,13 @@ function buildCoupleMsgSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
       <p style="font-size:${sigSize}rem;color:${evColor};font-family:${cssFontFamily ? `'${cssFontFamily}',` : ''}serif;line-height:1.4">${escapeHTML(sig)}</p>
     </div>` : '';
 
-  return fontInjectHtml + _SD + `<div class="event-section">
+  return bodyFontInject + fontInjectHtml + _SD + `<div class="event-section">
     <div class="section-inner reveal" style="text-align:center">
       <div style="width:52px;height:52px;border-radius:50%;background:color-mix(in srgb,${evColor} 12%,white);display:flex;align-items:center;justify-content:center;margin:0 auto 0.75rem">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="${evColor}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
       </div>
       <h3 class="section-title">${escapeHTML(title)}</h3>
-      <p style="font-size:${parseFloat(ev.couplemsg_size)||0.95}rem;color:#374151;line-height:1.75;max-width:460px;margin:0 auto;white-space:pre-wrap">${escapeHTML(ev.couplemsg_text || '')}</p>
+      <p style="font-size:${parseFloat(ev.couplemsg_size)||0.95}rem;color:#374151;line-height:1.75;max-width:460px;margin:0 auto;white-space:pre-wrap;${bodyFontStyle}">${escapeHTML(ev.couplemsg_text || '')}</p>
       ${sigHtml}
     </div>
   </div>`;
