@@ -4191,9 +4191,9 @@ async function resetUndoScans(userId, username) {
 }
 
 async function openTicketLimitModal(userId, username) {
-  // Carregar limite actual
-  const acc = await supabaseRequest(`accounts?user_id=eq.${userId}&select=ticket_limit&limit=1`).catch(() => []);
-  const current = acc?.[0]?.ticket_limit ?? 50;
+  const acc = await supabaseRequest(`accounts?user_id=eq.${userId}&select=ticket_limit,tickets_with_table&limit=1`).catch(() => []);
+  const current     = acc?.[0]?.ticket_limit ?? 50;
+  const withTable   = acc?.[0]?.tickets_with_table ?? false;
 
   const modal = document.createElement('div');
   modal.className = 'modal-overlay';
@@ -4209,12 +4209,20 @@ async function openTicketLimitModal(userId, username) {
     <div class="flex gap-2 flex-wrap mb-2">
       ${[10,25,50,100,200,500].map(v => `<button onclick="document.getElementById('tl-val').value=${v}" class="text-xs bg-gray-100 hover:bg-gray-200 rounded-lg px-3 py-1.5 font-semibold transition">${v}</button>`).join('')}
     </div>
+    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg mt-3 mb-1">
+      <div>
+        <span class="text-sm font-semibold text-gray-700">🪑 Tickets com mesa</span>
+        <p class="text-xs text-gray-400">Permite associar número/nome de mesa a cada ticket gerado</p>
+      </div>
+      <input type="checkbox" id="tl-table" ${withTable?'checked':''} class="w-5 h-5 cursor-pointer accent-teal-500">
+    </div>
     <div class="flex gap-2 mt-3">
       <button class="flex-1 btn-main" onclick="(async()=>{
         const v=parseInt(document.getElementById('tl-val').value)||50;
-        const res=await supabaseRequest('accounts?user_id=eq.${userId}','PATCH',{ticket_limit:v}).catch(()=>null);
-        if(!res){await supabaseRequest('accounts','POST',{user_id:'${userId}',ticket_limit:v}).catch(()=>{});}
-        toast('Limite de tickets actualizado: '+v);
+        const t=document.getElementById('tl-table').checked;
+        const res=await supabaseRequest('accounts?user_id=eq.${userId}','PATCH',{ticket_limit:v,tickets_with_table:t}).catch(()=>null);
+        if(!res){await supabaseRequest('accounts','POST',{user_id:'${userId}',ticket_limit:v,tickets_with_table:t}).catch(()=>{});}
+        toast('Configuração de tickets guardada!');
         this.closest('.modal-overlay').remove();
       })()">Guardar</button>
       <button class="flex-1 btn-outline" onclick="this.closest('.modal-overlay').remove()">Cancelar</button>
