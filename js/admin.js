@@ -3353,7 +3353,7 @@ async function loadUserNotifications() {
   if (!userId) return;
 
   const rows = await supabaseRequest(
-    `notifications?select=id,title,body,read,created_at&auth_uid=eq.${userId}&order=created_at.desc&limit=20`
+    `notifications?select=id,title,body,read,created_at&user_id=eq.${userId}&order=created_at.desc&limit=20`
   ).catch(() => []);
 
   const badge = document.getElementById('notif-badge');
