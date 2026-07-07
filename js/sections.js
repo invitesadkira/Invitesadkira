@@ -3156,6 +3156,7 @@ function _getSectionTitle(ev, key, defaultTitle) {
 // ── Secção de Vídeo do Casal ──────────────────────────────────────────────
 function buildCoupleVideoSection(ev) {
   const _SD = '<!-- SECTION_DIVIDER -->';
+  console.log('[ADK video] couple_video_url =', ev.couple_video_url);
   if (!ev.couple_video_url) return '';
 
   const evColor     = ev.event_color || '#007f9f';
@@ -3177,7 +3178,7 @@ function buildCoupleVideoSection(ev) {
     videoHtml = `<video
       id="couple-video-player"
       src="${escapeHTML(ev.couple_video_url)}"
-      controls loop playsinline
+      controls loop playsinline controlsList="nodownload" oncontextmenu="return false"
       style="width:100%;display:block;max-height:480px;object-fit:contain"
       onplay="window._coupleVideoPlay()"
       onpause="window._coupleVideoStop()"
