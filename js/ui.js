@@ -1484,7 +1484,7 @@ async function handleCoupleVideoUpload(input) {
     const fileName = `couple_video_${Date.now()}.${ext}`;
     const res = await fetch(`${SUPABASE_URL}/storage/v1/object/event-covers/${fileName}`, {
       method: 'POST',
-      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': file.type || 'video/mp4', 'x-upsert': 'true' },
+      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/octet-stream', 'x-upsert': 'true' },
       body: file
     });
     if (!res.ok) throw new Error(await res.text());
