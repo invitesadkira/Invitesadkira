@@ -431,6 +431,7 @@ async function saveTicketTemplate() {
   const qy = parseFloat(qrEl.style.top)    / 100;
 
   const tableEl = document.getElementById('ticket-mark-table');
+  const ev = Store.events.find(e => e.id === eventId);
   const tx = tableEl ? parseFloat(tableEl.style.left)/100 : (ev?.ticket_table_x || 0.5);
   const ty = tableEl ? parseFloat(tableEl.style.top)/100  : (ev?.ticket_table_y || 0.9);
 
@@ -446,7 +447,6 @@ async function saveTicketTemplate() {
     ticket_table_size: parseInt(document.getElementById('ticket-table-size')?.value || '18'),
     ticket_table_color: document.getElementById('ticket-table-color')?.value || '#000000',
   });
-  const ev = Store.events.find(e => e.id === eventId);
   if (ev) { ev.ticket_name_x=nx; ev.ticket_name_y=ny; ev.ticket_qr_x=qx; ev.ticket_qr_y=qy; }
   toast('Configuração guardada!');
   document.getElementById('ticket-editor-modal')?.remove();
