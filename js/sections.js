@@ -1377,7 +1377,7 @@ function buildGiftStoresHTML(ev, evColor) {
       class="rsvp-cta-btn action-btn"
       style="background:${evColor};color:#fff;border:none;border-radius:0.85rem;padding:0.8rem 2rem;font-weight:700;font-size:0.9rem;cursor:pointer;display:inline-flex;align-items:center;gap:0.5rem">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
-      Ver lojas de presentes
+      Ver lojas lojas de presentes
     </button>
   </div>`;
 }
