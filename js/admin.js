@@ -334,7 +334,7 @@ async function confirmAdminDeleteUser(userId, modal) {
 
   try {
     // 1. Get all events for this user
-    const userEvents = await supabaseRequest(`events?user_id=eq.${userId}&select=id`);
+    const userEvents = await supabaseRequest(`events?auth_uid=eq.${userId}&select=id`);
     const eventIds = (userEvents || []).map(e => e.id);
 
     // 2. Delete RSVPs for each event
@@ -346,7 +346,7 @@ async function confirmAdminDeleteUser(userId, modal) {
 
     // 3. Delete all events
     if (eventIds.length > 0) {
-      await supabaseRequest(`events?user_id=eq.${userId}`, 'DELETE');
+      await supabaseRequest(`events?auth_uid=eq.${userId}`, 'DELETE');
     }
 
     // 4. Delete the account
@@ -3353,7 +3353,7 @@ async function loadUserNotifications() {
   if (!userId) return;
 
   const rows = await supabaseRequest(
-    `notifications?select=id,title,body,read,created_at&user_id=eq.${userId}&order=created_at.desc&limit=20`
+    `notifications?select=id,title,body,read,created_at&auth_uid=eq.${userId}&order=created_at.desc&limit=20`
   ).catch(() => []);
 
   const badge = document.getElementById('notif-badge');
@@ -4185,13 +4185,13 @@ async function resetUndoScans(userId, username) {
   const val = prompt(`Repor usos de "Desfazer Scans" para ${username}.\n\nNovo número de usos (padrão: 4):`, '4');
   if (val === null) return;
   const n = parseInt(val) || 4;
-  const res = await supabaseRequest(`accounts?user_id=eq.${userId}`, 'PATCH', { undo_scans_remaining: n }).catch(() => null);
+  const res = await supabaseRequest(`accounts?auth_uid=eq.${userId}`, 'PATCH', { undo_scans_remaining: n }).catch(() => null);
   if (!res) await supabaseRequest('accounts', 'POST', { user_id: userId, undo_scans_remaining: n }).catch(() => {});
   toast(`Usos de desfazer reposto para ${n} — ${username}`);
 }
 
 async function openTicketLimitModal(userId, username) {
-  const acc = await supabaseRequest(`accounts?user_id=eq.${userId}&select=ticket_limit,tickets_with_table&limit=1`).catch(() => []);
+  const acc = await supabaseRequest(`accounts?auth_uid=eq.${userId}&select=ticket_limit,tickets_with_table&limit=1`).catch(() => []);
   const current     = acc?.[0]?.ticket_limit ?? 50;
   const withTable   = acc?.[0]?.tickets_with_table ?? false;
 
@@ -4220,8 +4220,8 @@ async function openTicketLimitModal(userId, username) {
       <button class="flex-1 btn-main" onclick="(async()=>{
         const v=parseInt(document.getElementById('tl-val').value)||50;
         const t=document.getElementById('tl-table').checked;
-        const res=await supabaseRequest('accounts?user_id=eq.${userId}','PATCH',{ticket_limit:v,tickets_with_table:t}).catch(()=>null);
-        if(!res){await supabaseRequest('accounts','POST',{user_id:'${userId}',ticket_limit:v,tickets_with_table:t}).catch(()=>{});}
+        const res=await supabaseRequest('accounts?auth_uid=eq.${userId}','PATCH',{ticket_limit:v,tickets_with_table:t}).catch(()=>null);
+        if(!res){await supabaseRequest('accounts','POST',{auth_uid:'${userId}',ticket_limit:v,tickets_with_table:t}).catch(()=>{});}
         toast('Configuração de tickets guardada!');
         this.closest('.modal-overlay').remove();
       })()">Guardar</button>

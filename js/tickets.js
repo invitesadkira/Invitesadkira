@@ -402,7 +402,7 @@ async function generateGuestTicket(guestName, rsvpToken, eventId, skipNameEdit) 
       const userId = Store.events.find(e=>e.id===(eventId||Store.currentEventId))?.user_id;
       let withTable = false;
       if (userId) {
-        try { const a=await supabaseRequest(`accounts?user_id=eq.${userId}&select=tickets_with_table&limit=1`); withTable=a?.[0]?.tickets_with_table||false; } catch(e) {}
+        try { const a=await supabaseRequest(`accounts?auth_uid=eq.${userId}&select=tickets_with_table&limit=1`); withTable=a?.[0]?.tickets_with_table||false; } catch(e) {}
       }
 
       const modal = document.createElement('div');
@@ -433,7 +433,7 @@ async function generateGuestTicket(guestName, rsvpToken, eventId, skipNameEdit) 
   try {
     const userId = ev.user_id || ev.userId;
     if (userId && !Store.adminModeActive) {
-      const acc = await supabaseRequest(`accounts?user_id=eq.${userId}&select=ticket_limit&limit=1`);
+      const acc = await supabaseRequest(`accounts?auth_uid=eq.${userId}&select=ticket_limit&limit=1`);
       const limit = acc?.[0]?.ticket_limit ?? 50;
       const issued = await supabaseRequest(`rsvps?event_id=eq.${ev.id}&ticket_issued=eq.true&select=rsvp_token`);
       const count  = (issued||[]).length;
@@ -1251,7 +1251,7 @@ async function _scLoadUndoRemaining(eventId) {
     const ev = await supabaseRequest(`events?id=eq.${eventId}&select=user_id&limit=1`);
     const userId = ev?.[0]?.user_id;
     if (!userId) return;
-    const acc = await supabaseRequest(`accounts?user_id=eq.${userId}&select=undo_scans_remaining&limit=1`);
+    const acc = await supabaseRequest(`accounts?auth_uid=eq.${userId}&select=undo_scans_remaining&limit=1`);
     const remaining = acc?.[0]?.undo_scans_remaining ?? 4;
     const btn  = document.getElementById('scUndoBtn');
     const info = document.getElementById('scUndoInfo');
@@ -1272,7 +1272,7 @@ async function _scUndoScans(scannerToken, eventId) {
   try {
     const ev = await supabaseRequest(`events?id=eq.${eventId}&select=user_id&limit=1`);
     const userId = ev?.[0]?.user_id;
-    const acc = await supabaseRequest(`accounts?user_id=eq.${userId}&select=undo_scans_remaining&limit=1`);
+    const acc = await supabaseRequest(`accounts?auth_uid=eq.${userId}&select=undo_scans_remaining&limit=1`);
     const remaining = acc?.[0]?.undo_scans_remaining ?? 4;
 
     if (remaining <= 0) {
@@ -1289,7 +1289,7 @@ async function _scUndoScans(scannerToken, eventId) {
 
     // Decrementar contador
     const newRemaining = remaining - 1;
-    await supabaseRequest(`accounts?user_id=eq.${userId}`, 'PATCH', { undo_scans_remaining: newRemaining });
+    await supabaseRequest(`accounts?auth_uid=eq.${userId}`, 'PATCH', { undo_scans_remaining: newRemaining });
 
     // Limpar cache local
     const cache = window._scCache;
