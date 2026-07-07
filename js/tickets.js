@@ -61,17 +61,22 @@ async function openTicketTemplateEditor() {
   let ev = Store.events.find(e => e.id === eventId);
   if (!ev) return;
 
-  // ✅ Recarregar dados frescos do evento para garantir que ticket_template_url
-  // está actualizado — sem isto, um refresh da página podia limpar o valor
-  // do Store mesmo que já estivesse guardado no Supabase.
+  // Verificar se conta tem mesas activadas
+  let withTable = false;
+  try {
+    const userId = ev.user_id || ev.userId;
+    if (userId) {
+      const acc = await supabaseRequest(`accounts?auth_uid=eq.${userId}&select=tickets_with_table&limit=1`);
+      withTable = acc?.[0]?.tickets_with_table || false;
+    }
+  } catch(e) {}
+
   try {
     const fresh = await supabaseRequest(
-      `events?id=eq.${eventId}&select=ticket_template_url,ticket_name_x,ticket_name_y,ticket_qr_x,ticket_qr_y,ticket_name_size,ticket_qr_size,ticket_name_color,ticket_name_font,scanner_token&limit=1`
+      `events?id=eq.${eventId}&select=ticket_template_url,ticket_name_x,ticket_name_y,ticket_qr_x,ticket_qr_y,ticket_name_size,ticket_qr_size,ticket_name_color,ticket_name_font,scanner_token,ticket_table_x,ticket_table_y,ticket_table_size,ticket_table_color&limit=1`
     );
-    if (fresh && fresh[0]) {
-      Object.assign(ev, fresh[0]);
-    }
-  } catch(e) { /* continua com o que já tem */ }
+    if (fresh && fresh[0]) Object.assign(ev, fresh[0]);
+  } catch(e) {}
 
   const modal = document.createElement('div');
   modal.className = 'modal-overlay';
@@ -92,17 +97,23 @@ async function openTicketTemplateEditor() {
       <!-- Pré-visualização da 1ª página + marcadores arrastáveis -->
       <div id="ticket-preview-wrap" style="display:${ev.ticket_template_url ? 'block' : 'none'}">
         <label class="text-xs font-semibold text-gray-600 block mb-1">Posicionar elementos (arrastar)</label>
-        <p class="text-xs text-gray-400 mb-2">🔵 = Nome do convidado &nbsp;|&nbsp; 🟢 = QR Code</p>
+        <p class="text-xs text-gray-400 mb-2">🔵 = Nome &nbsp;|&nbsp; 🟢 = QR Code${withTable?' &nbsp;|&nbsp; 🟠 = Mesa':''}</p>
         <div id="ticket-canvas-wrap" style="position:relative;border:1px solid #e5e7eb;border-radius:0.5rem;overflow:hidden;background:#f8fafc;display:inline-block;max-width:100%">
           <canvas id="ticket-preview-canvas" style="display:block;max-width:100%"></canvas>
-      <!-- Marcador do Nome -->
-      <div id="ticket-mark-name" style="position:absolute;background:rgba(59,130,246,0.85);color:#fff;border-radius:6px;padding:4px 10px;font-size:13px;font-weight:700;cursor:grab;user-select:none;white-space:nowrap;left:${(ev.ticket_name_x||0.5)*100}%;top:${(ev.ticket_name_y||0.75)*100}%;transform:translate(-50%,-50%);backdrop-filter:blur(2px);border:2px solid #3b82f6">
-        María da Silva
-      </div>
-      <!-- Marcador do QR (mostra QR real de exemplo) -->
-      <canvas id="ticket-mark-qr-canvas" style="position:absolute;left:${(ev.ticket_qr_x||0.5)*100}%;top:${(ev.ticket_qr_y||0.85)*100}%;transform:translate(-50%,-50%);border:2px solid #16a34a;border-radius:4px;cursor:grab;background:#fff" width="${ev.ticket_qr_size||80}" height="${ev.ticket_qr_size||80}"></canvas>
+          <!-- Marcador do Nome -->
+          <div id="ticket-mark-name" style="position:absolute;background:rgba(59,130,246,0.85);color:#fff;border-radius:6px;padding:4px 10px;font-size:13px;font-weight:700;cursor:grab;user-select:none;white-space:nowrap;left:${(ev.ticket_name_x||0.5)*100}%;top:${(ev.ticket_name_y||0.75)*100}%;transform:translate(-50%,-50%);backdrop-filter:blur(2px);border:2px solid #3b82f6">
+            María da Silva
+          </div>
+          <!-- Marcador do QR -->
+          <canvas id="ticket-mark-qr-canvas" style="position:absolute;left:${(ev.ticket_qr_x||0.5)*100}%;top:${(ev.ticket_qr_y||0.85)*100}%;transform:translate(-50%,-50%);border:2px solid #16a34a;border-radius:4px;cursor:grab;background:#fff" width="${ev.ticket_qr_size||80}" height="${ev.ticket_qr_size||80}"></canvas>
+          <!-- Marcador da Mesa (só se mesas activadas) -->
+          ${withTable ? `<div id="ticket-mark-table" style="position:absolute;background:rgba(234,88,12,0.85);color:#fff;border-radius:6px;padding:4px 10px;font-size:13px;font-weight:700;cursor:grab;user-select:none;white-space:nowrap;left:${(ev.ticket_table_x||0.5)*100}%;top:${(ev.ticket_table_y||0.9)*100}%;transform:translate(-50%,-50%);backdrop-filter:blur(2px);border:2px solid #ea580c">
+            🪑 Mesa 5
+          </div>` : ''}
         </div>
-        <div class="flex gap-3 mt-2 flex-wrap">
+
+        <!-- Controlos do Nome -->
+        <div class="flex gap-3 mt-3 flex-wrap">
           <div>
             <label class="text-xs text-gray-500 block mb-1">Tamanho do nome (pt)</label>
             <div class="flex items-center gap-1">
@@ -124,6 +135,28 @@ async function openTicketTemplateEditor() {
             <input id="ticket-name-color" type="color" value="${ev.ticket_name_color||'#000000'}" class="input-field" style="width:44px;height:32px;padding:2px" oninput="_updateTicketPreview()">
           </div>
         </div>
+
+        ${withTable ? `
+        <!-- Controlos da Mesa -->
+        <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:0.6rem;padding:0.75rem;margin-top:0.75rem">
+          <p class="text-xs font-bold text-orange-700 mb-2">🪑 Configurar posição da mesa no PDF</p>
+          <div class="flex gap-3 flex-wrap">
+            <div>
+              <label class="text-xs text-gray-500 block mb-1">Tamanho do texto (pt)</label>
+              <div class="flex items-center gap-1">
+                <button type="button" onclick="document.getElementById('ticket-table-size').stepDown();document.getElementById('ticket-table-size').dispatchEvent(new Event('input'))" style="width:24px;height:24px;border:1px solid #e5e7eb;border-radius:4px;cursor:pointer;font-size:14px;line-height:1">−</button>
+                <input id="ticket-table-size" type="number" value="${ev.ticket_table_size||18}" min="6" max="72" class="input-field text-xs text-center" style="width:52px" oninput="_updateTicketPreview()">
+                <button type="button" onclick="document.getElementById('ticket-table-size').stepUp();document.getElementById('ticket-table-size').dispatchEvent(new Event('input'))" style="width:24px;height:24px;border:1px solid #e5e7eb;border-radius:4px;cursor:pointer;font-size:14px;line-height:1">+</button>
+              </div>
+            </div>
+            <div>
+              <label class="text-xs text-gray-500 block mb-1">Cor da mesa</label>
+              <input id="ticket-table-color" type="color" value="${ev.ticket_table_color||'#000000'}" class="input-field" style="width:44px;height:32px;padding:2px" oninput="_updateTicketPreview()">
+            </div>
+          </div>
+          <p class="text-xs text-gray-400 mt-1">Arrasta o marcador 🟠 no PDF para posicionar. O texto aparece apenas se o convidado tiver uma mesa atribuída.</p>
+        </div>` : ''}
+
         <div class="mt-2">
           <label class="text-xs text-gray-500 block mb-1">Fonte do nome</label>
           <div class="flex gap-2 items-center flex-wrap">
@@ -240,15 +273,13 @@ function _initTicketLivePreview() {
   const wrap = document.getElementById('ticket-canvas-wrap');
   if (!wrap) return;
 
-  // Ouvir alterações nos controlos de estilo
-  const controls = ['ticket-name-size', 'ticket-qr-size', 'ticket-name-color', 'ticket-name-font'];
+  const controls = ['ticket-name-size', 'ticket-qr-size', 'ticket-name-color', 'ticket-name-font', 'ticket-table-size', 'ticket-table-color'];
   controls.forEach(id => {
     const el = document.getElementById(id);
-    if (el) el.addEventListener('input', _updateTicketPreview);
+    if (el) el.addEventListener('input', _updateTicketPreviewDebounced);
   });
 
-  // Actualizar a prévia quando os marcadores são arrastados
-  ['ticket-mark-name', 'ticket-mark-qr-canvas'].forEach(id => {
+  ['ticket-mark-name', 'ticket-mark-qr-canvas', 'ticket-mark-table'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.addEventListener('mouseup', _updateTicketPreview);
     if (el) el.addEventListener('touchend', _updateTicketPreview);
@@ -257,40 +288,61 @@ function _initTicketLivePreview() {
   _updateTicketPreview();
 }
 
-function _updateTicketPreview() {
+let _ticketPreviewTimer = null;
+function _updateTicketPreviewDebounced() {
+  // Actualizar o marcador visualmente de imediato (instantâneo)
+  _updateTicketMarkerStyles();
+  // Re-renderizar o QR com debounce (300ms após parar de mexer)
+  clearTimeout(_ticketPreviewTimer);
+  _ticketPreviewTimer = setTimeout(_updateTicketPreview, 300);
+}
+
+function _updateTicketMarkerStyles() {
   const wrap      = document.getElementById('ticket-canvas-wrap');
   const nameEl    = document.getElementById('ticket-mark-name');
-  const qrEl      = document.getElementById('ticket-mark-qr-canvas');
+  const tableEl   = document.getElementById('ticket-mark-table');
   const nameFont  = document.getElementById('ticket-name-font')?.value || 'Helvetica';
   const nameSize  = parseInt(document.getElementById('ticket-name-size')?.value || '24');
-  const qrSize    = parseInt(document.getElementById('ticket-qr-size')?.value   || '80');
+  const tableSize = parseInt(document.getElementById('ticket-table-size')?.value || '18');
   const nameColor = document.getElementById('ticket-name-color')?.value || '#000000';
-  if (!nameEl || !qrEl || !wrap) return;
+  const tableColor= document.getElementById('ticket-table-color')?.value || '#000000';
+  if (!wrap) return;
 
-  // Actualizar estilo do marcador de nome
   const scale = wrap.offsetWidth / (wrap._pdfWidth || wrap.offsetWidth);
-  const previewFontSize = Math.max(8, Math.round(nameSize * scale * 0.85));
-  nameEl.style.fontSize   = previewFontSize + 'px';
-  nameEl.style.color      = nameColor;
-  const fontMap = {
-    'Helvetica':'sans-serif','Helvetica-Bold':'sans-serif',
-    'Times-Roman':'serif','Times-Bold':'serif','Courier':'monospace'
-  };
-  nameEl.style.fontFamily = fontMap[nameFont] || 'sans-serif';
-  nameEl.style.fontWeight = nameFont.includes('Bold') ? '800' : '600';
+  const fontMap = { 'Helvetica':'sans-serif','Helvetica-Bold':'sans-serif','Times-Roman':'serif','Times-Bold':'serif','Courier':'monospace' };
 
-  // ✅ Redimensionar o QR em tempo real — redesenhar no canvas com o novo tamanho
+  if (nameEl) {
+    const previewFontSize = Math.max(8, Math.round(nameSize * scale * 0.85));
+    nameEl.style.fontSize   = previewFontSize + 'px';
+    nameEl.style.color      = '#fff';
+    nameEl.style.fontFamily = fontMap[nameFont] || 'sans-serif';
+    nameEl.style.fontWeight = nameFont.includes('Bold') ? '800' : '600';
+  }
+  if (tableEl) {
+    const tSize = Math.max(8, Math.round(tableSize * scale * 0.85));
+    tableEl.style.fontSize = tSize + 'px';
+  }
+}
+
+function _updateTicketPreview() {
+  const wrap   = document.getElementById('ticket-canvas-wrap');
+  const qrEl   = document.getElementById('ticket-mark-qr-canvas');
+  const qrSize = parseInt(document.getElementById('ticket-qr-size')?.value || '80');
+  if (!wrap) return;
+
+  _updateTicketMarkerStyles();
+
+  const scale = wrap.offsetWidth / (wrap._pdfWidth || wrap.offsetWidth);
   const previewQrSize = Math.max(20, Math.round(qrSize * scale));
-  if (typeof QRCode !== 'undefined') {
+  if (typeof QRCode !== 'undefined' && qrEl) {
     QRCode.toCanvas(qrEl, 'ADK:EXEMPLO', {
       width: previewQrSize, margin: 1,
       color: { dark: '#000000', light: '#ffffff' }
     }).then(() => {
-      // Manter a posição centrada após redimensionar
       qrEl.style.width  = previewQrSize + 'px';
       qrEl.style.height = previewQrSize + 'px';
     }).catch(() => {});
-  } else {
+  } else if (qrEl) {
     qrEl.width = qrEl.height = previewQrSize;
     qrEl.style.width = qrEl.style.height = previewQrSize + 'px';
   }
@@ -299,7 +351,7 @@ function _initTicketDrag() {
   const wrap = document.getElementById('ticket-canvas-wrap');
   if (!wrap) return;
 
-  ['ticket-mark-name', 'ticket-mark-qr-canvas'].forEach(id => {
+  ['ticket-mark-name', 'ticket-mark-qr-canvas', 'ticket-mark-table'].forEach(id => {
     const el = document.getElementById(id);
     if (!el) return;
 
@@ -378,6 +430,10 @@ async function saveTicketTemplate() {
   const qx = parseFloat(qrEl.style.left)   / 100;
   const qy = parseFloat(qrEl.style.top)    / 100;
 
+  const tableEl = document.getElementById('ticket-mark-table');
+  const tx = tableEl ? parseFloat(tableEl.style.left)/100 : (ev?.ticket_table_x || 0.5);
+  const ty = tableEl ? parseFloat(tableEl.style.top)/100  : (ev?.ticket_table_y || 0.9);
+
   await supabaseRequest(`events?id=eq.${eventId}`, 'PATCH', {
     ticket_name_x:    nx,  ticket_name_y:    ny,
     ticket_qr_x:      qx,  ticket_qr_y:      qy,
@@ -386,6 +442,9 @@ async function saveTicketTemplate() {
     ticket_name_color: document.getElementById('ticket-name-color')?.value || '#000000',
     ticket_name_font:  document.getElementById('ticket-name-font')?.value  || 'Helvetica',
     ticket_font_global: document.getElementById('ticket-font-global')?.checked || false,
+    ticket_table_x:   tx,  ticket_table_y: ty,
+    ticket_table_size: parseInt(document.getElementById('ticket-table-size')?.value || '18'),
+    ticket_table_color: document.getElementById('ticket-table-color')?.value || '#000000',
   });
   const ev = Store.events.find(e => e.id === eventId);
   if (ev) { ev.ticket_name_x=nx; ev.ticket_name_y=ny; ev.ticket_qr_x=qx; ev.ticket_qr_y=qy; }
@@ -522,6 +581,27 @@ async function generateGuestTicket(guestName, rsvpToken, eventId, skipNameEdit) 
     const qx = (ev.ticket_qr_x || 0.5) * width  - qrSize / 2;
     const qy = height - (ev.ticket_qr_y || 0.85) * height - qrSize / 2;
     page.drawImage(qrImage, { x: qx, y: qy, width: qrSize, height: qrSize });
+
+    // 4b. Desenhar mesa (apenas se preenchida)
+    const tableName = typeof skipNameEdit === 'string' ? skipNameEdit : null;  // 5.º arg é tableName
+    if (tableName && ev.ticket_table_x !== undefined) {
+      const tableSize  = ev.ticket_table_size || 18;
+      const tableFontP = PDFLib.PDFDocument;
+      const tHexColor  = (ev.ticket_table_color || '#000000').replace('#','');
+      const tr = parseInt(tHexColor.slice(0,2),16)/255;
+      const tg = parseInt(tHexColor.slice(2,4),16)/255;
+      const tb = parseInt(tHexColor.slice(4,6),16)/255;
+      const tx  = (ev.ticket_table_x || 0.5) * width;
+      const ty  = height - (ev.ticket_table_y || 0.9) * height;
+      const tw  = font.widthOfTextAtSize(tableName, tableSize);
+      page.drawText(tableName, {
+        x: tx - tw / 2,
+        y: ty - tableSize / 2,
+        size: tableSize,
+        font,
+        color: rgb(tr, tg, tb),
+      });
+    }
 
     // 5. Download directo — ZERO upload para o Supabase
     const pdfBytes = await doc.save();
