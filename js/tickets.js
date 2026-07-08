@@ -232,8 +232,10 @@ async function handleTicketTemplateUpload(input) {
 
 async function _renderTicketPreview(pdfUrl) {
   try {
-    // ✅ Renderizar a 1ª página do PDF com PDF.js para o utilizador ver
-    // o layout real e posicionar os marcadores correctamente.
+    // ✅ Carregar PDF.js lazily se ainda não estiver disponível
+    if (typeof pdfjsLib === 'undefined') {
+      await _loadPdfJs().catch(() => {});
+    }
     if (typeof pdfjsLib === 'undefined') {
       console.warn('PDF.js não carregado — usando placeholder');
       return;
