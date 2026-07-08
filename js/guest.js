@@ -317,14 +317,18 @@ async function renderGuestView() {
   // ✅ Aplicar vídeo de capa DEPOIS do merge dos visuals (cover_video_url vem de event_visuals)
   {
     const coverVideoUrl = eventData.cover_video_url;
-    const videoEl2 = document.getElementById('guest-hero-video');
-    const heroEl2  = document.getElementById('guest-hero-bg');
+    const videoFit = eventData.cover_video_fit || 'cover';
+    const videoEl2  = document.getElementById('guest-hero-video');
+    const heroEl2   = document.getElementById('guest-hero-bg');
     if (coverVideoUrl && coverVideoUrl.startsWith('http') && videoEl2) {
       videoEl2.src = coverVideoUrl;
+      videoEl2.style.objectFit = videoFit;
+      // Para "contain" (landscape), ajustar o fundo para preto
+      if (videoFit === 'contain' && heroEl2) heroEl2.style.background = '#000';
       videoEl2.classList.remove('hidden');
       videoEl2.load();
       videoEl2.play().catch(() => {});
-      if (heroEl2) heroEl2.style.background = 'none';
+      if (heroEl2 && videoFit === 'cover') heroEl2.style.background = 'none';
     }
   }
   // This was previously never loaded for guests — venue_ceremony/venue_civil/venue_reception
@@ -3441,15 +3445,33 @@ function renderSaveTheDateScreen(ev, decision) {
   }
 
   const rsvpBtn = document.getElementById('std-rsvp-btn');
-  if (rsvpBtn) rsvpBtn.onclick = () => {
+  if (rsvpBtn) {
+    // Verificar se o prazo de confirmação passou
     const evData = Store.guestEventData || window._evData;
-    const extUrl = evData?.external_rsvp_url;
-    if (extUrl) {
-      window.open(extUrl, '_blank', 'noopener');
-    } else if (typeof openRsvpDrawer === 'function') {
-      openRsvpDrawer();
+    const deadline = evData?.confirm_by_date;
+    const deadlineExpired = deadline && new Date(deadline) < new Date();
+
+    if (deadlineExpired) {
+      // Substituir botão por mensagem de prazo esgotado
+      const btnWrap = rsvpBtn.parentElement;
+      if (btnWrap) {
+        rsvpBtn.style.display = 'none';
+        const msg = document.createElement('div');
+        msg.style.cssText = 'text-align:center;padding:0.75rem 1.5rem;background:#fef2f2;border:1.5px solid #fca5a5;border-radius:999px;color:#dc2626;font-size:0.9rem;font-weight:700;display:inline-block;max-width:320px;margin:0 auto';
+        msg.innerHTML = `<span style="margin-right:6px">📅</span>O prazo para confirmação de presença terminou`;
+        btnWrap.appendChild(msg);
+      }
+    } else {
+      rsvpBtn.onclick = () => {
+        const extUrl = evData?.external_rsvp_url;
+        if (extUrl) {
+          window.open(extUrl, '_blank', 'noopener');
+        } else if (typeof openRsvpDrawer === 'function') {
+          openRsvpDrawer();
+        }
+      };
     }
-  };
+  }
 
   if (window._stdCountdownInterval) clearInterval(window._stdCountdownInterval);
   const labelEl = document.getElementById('std-countdown-label');

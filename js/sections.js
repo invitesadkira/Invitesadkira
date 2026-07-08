@@ -185,7 +185,14 @@ function buildSimpleInviteTemplate(ev) {
 
       <!-- 7. Confirmar presença -->
       <div style="text-align:center;margin-bottom:3rem">
-        <button onclick="(function(){var u=window._evData&&window._evData.external_rsvp_url;if(u)window.open(u,'_blank','noopener');else if(typeof openRsvpDrawer==='function')openRsvpDrawer();})()" style="background:${evColor};color:#fff;border:none;border-radius:999px;padding:0.9rem 2.6rem;font-weight:800;font-size:0.95rem;cursor:pointer;font-family:inherit;box-shadow:0 8px 24px rgba(0,0,0,0.18)">Confirmar Presença</button>
+        ${(() => {
+          const deadline = ev.confirm_by_date;
+          const expired = deadline && new Date(deadline) < new Date();
+          if (expired) {
+            return `<div style="display:inline-block;padding:0.75rem 1.5rem;background:#fef2f2;border:1.5px solid #fca5a5;border-radius:999px;color:#dc2626;font-size:0.88rem;font-weight:700">📅 O prazo para confirmação de presença terminou</div>`;
+          }
+          return `<button onclick="(function(){var u=window._evData&&window._evData.external_rsvp_url;if(u)window.open(u,'_blank','noopener');else if(typeof openRsvpDrawer==='function')openRsvpDrawer();})()" style="background:${evColor};color:#fff;border:none;border-radius:999px;padding:0.9rem 2.6rem;font-weight:800;font-size:0.95rem;cursor:pointer;font-family:inherit;box-shadow:0 8px 24px rgba(0,0,0,0.18)">Confirmar Presença</button>`;
+        })()}
       </div>
 
       <!-- 9. Local do evento (recepção, se diferente) + cronograma do dia -->

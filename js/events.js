@@ -945,6 +945,7 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
             if (type === 'youtube') return document.getElementById('evt-couple-video-yt-url')?.value?.trim() || null;
             return document.getElementById('evt-couple-video-url')?.value?.trim() || null;
           })(),
+          cover_video_fit: document.querySelector('input[name="cover-video-fit"]:checked')?.value || 'cover',
           video_audio_mode: document.querySelector('input[name="video-audio-mode"]:checked')?.value || 'pause_music',
           show_event_faq: document.getElementById('sw-event-faq')?.classList.contains('active') ? 'yes' : 'no',
           event_faq_items: (Store.eventFaqItems && Store.eventFaqItems.length) ? JSON.stringify(Store.eventFaqItems) : null,
@@ -2153,6 +2154,7 @@ function _fillEditForm(ev) {
   _setSwitch('sw-final-photo', _yesOrTrue(ev.show_final_photo), 'final-photo-extra');
   _setSwitch('sw-final-photo-names', ev.show_final_photo_names !== 'no');
   _setSwitch('sw-cover', ev.show_cover !== 'no', 'cover-section-wrap');
+  { const fit = ev.cover_video_fit || 'cover'; const r = document.getElementById(fit==='contain'?'cvf-contain':'cvf-cover'); if(r) r.checked = true; }
   { const fpUrl=document.getElementById('evt-final-photo-url'); const fpPrev=document.getElementById('final-photo-preview'); const fpWrap=document.getElementById('final-photo-preview-wrap');
     if(ev.final_photo_url){if(fpUrl)fpUrl.value=ev.final_photo_url;if(fpPrev)fpPrev.src=ev.final_photo_url;fpWrap?.classList.remove('hidden');} }
   { const cp=document.getElementById('evt-couple-photo-url'); const cpP=document.getElementById('couple-photo-preview');
