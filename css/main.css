@@ -1663,3 +1663,10 @@ h1.hero-couple-names-simple {
     display: block !important;
   }
 }
+
+/* Em mobile, o vídeo de capa preenche sempre o ecrã todo (sem barras) */
+@media (max-width: 767px) {
+  #guest-hero-video {
+    object-fit: cover !important;
+  }
+}
