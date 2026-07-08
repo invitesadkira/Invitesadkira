@@ -883,6 +883,8 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
       }
       
       toast('Evento atualizado com sucesso!');
+      // ✅ Limpar cache do convidado — as alterações aparecem imediatamente na próxima visita
+      _guestCacheClear(eventId);
 
       // ── Refresh the in-memory Store.events entry with the real saved data ──
       // The manual field-by-field updates above only cover some fields and

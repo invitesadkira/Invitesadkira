@@ -2,6 +2,26 @@
 const SUPABASE_URL = 'https://kdvgqjpwizplvvlggjtx.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtkdmdxanB3aXpwbHZ2bGdnanR4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA5NDMyMTgsImV4cCI6MjA5NjUxOTIxOH0.E-uDSHQopiDBbRqSUd-fjnz-ONiQGuTOLhdj2uvmVes';
 
+// ── Cache do lado do cliente ─────────────────────────────────────────────
+// Convidados que reentram no site dentro de 10 min não fazem pedidos novos
+const _GUEST_CACHE_TTL = 10 * 60 * 1000; // 10 minutos
+
+function _guestCacheSave(eventId, data) {
+  try { localStorage.setItem(`adk_ev_${eventId}`, JSON.stringify({ t: Date.now(), d: data })); } catch(e) {}
+}
+function _guestCacheLoad(eventId) {
+  try {
+    const raw = localStorage.getItem(`adk_ev_${eventId}`);
+    if (!raw) return null;
+    const { t, d } = JSON.parse(raw);
+    if (Date.now() - t > _GUEST_CACHE_TTL) { localStorage.removeItem(`adk_ev_${eventId}`); return null; }
+    return d;
+  } catch(e) { return null; }
+}
+function _guestCacheClear(eventId) {
+  try { localStorage.removeItem(`adk_ev_${eventId}`); } catch(e) {}
+}
+
 // ── Lazy loaders — bibliotecas pesadas carregadas apenas quando necessário ──
 function _loadScript(src) {
   return new Promise((res, rej) => {

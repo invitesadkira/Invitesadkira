@@ -410,6 +410,12 @@ async function renderGuestView() {
   Store.guestEventData = eventData;
   window._evData = eventData; // acesso rápido para botões inline no HTML
 
+  // ✅ Guardar no cache — visitas repetidas nos próximos 10 min não fazem pedidos ao Supabase
+  // Não cacheamos RSVPs (podem mudar) — apenas os dados estáticos do evento
+  const _toCache = Object.assign({}, eventData);
+  delete _toCache.confirmations; // RSVPs mudam — não cachear
+  _guestCacheSave(eventData.id || eventData.eventCode || Store.currentEventId, _toCache);
+
   // (Save the Date gate check happens at the END of this function, after
   // the full invite — including RSVP drawer and music player — has been
   // set up. This way the gate is just a visual overlay and everything
@@ -1053,8 +1059,17 @@ async function saveRSVPToSupabase(data, isUpdate) {
   }
 }
 
-// ✅ NOVA FUNÇÃO: Recarregar evento do Supabase
+// ✅ NOVA FUNÇÃO: Recarregar evento do Supabase (com cache de 10 min)
 async function reloadEventFromSupabase(eventId) {
+  // ✅ Verificar cache primeiro — evita pedidos desnecessários
+  const cached = _guestCacheLoad(eventId);
+  if (cached) {
+    dlog('✅ Evento carregado do cache local (sem pedido ao Supabase)');
+    Store.guestEventData = cached;
+    window._evData = cached;
+    return cached;
+  }
+
   try {
     dlog('🔄 Recarregando evento do Supabase:', eventId);
     
