@@ -1444,7 +1444,7 @@ function _startEventDetailsPolling(eventId) {
     if (!stillHere) { clearInterval(Store._eventDetailsPollInterval); Store._eventDetailsPollInterval = null; return; }
     try {
       const rows = await supabaseRequest(
-        `rsvps?event_id=eq.${eventId}&select=guest_name,attending,side,companions,kids,wants_gift,message,created_at,updated_at`
+        `rsvps?event_id=eq.${eventId}&is_manual_ticket=neq.true&select=guest_name,attending,side,companions,kids,wants_gift,message,created_at,updated_at`
       );
       const event = Store.events.find(e => e.id === eventId);
       if (!event || !Array.isArray(rows)) return;
@@ -2770,7 +2770,7 @@ async function searchEvent() {
       allowMessages: String(found.allow_messages).toLowerCase() === 'yes' || found.allow_messages === true,
       show_guest_messages: found.show_guest_messages,
       showGuestMessages: String(found.show_guest_messages).toLowerCase() === 'yes' || found.show_guest_messages === true,
-      confirmations: (found.rsvps || []).map(rsvp => ({
+      confirmations: (found.rsvps || []).filter(r => !r.is_manual_ticket).map(rsvp => ({
         name: rsvp.guest_name,
         attending: rsvp.attending === true || rsvp.attending === 'yes',
         side: rsvp.side ?? null,
@@ -3234,7 +3234,7 @@ async function checkURLForEvent() {
         event_color: eventData.event_color || null,
         story_text: eventData.story_text || null,
         invite_blessing: eventData.invite_blessing ?? '',
-        confirmations: (eventData.rsvps || []).map(rsvp => ({
+        confirmations: (eventData.rsvps || []).filter(r => !r.is_manual_ticket).map(rsvp => ({
           name: rsvp.guest_name,
           attending: rsvp.attending === true || rsvp.attending === 'yes',
           side: rsvp.side ?? null,
@@ -4422,7 +4422,7 @@ async function openIntakePreview(eventId) {
     if (dates.show_time)  evData.show_time = dates.show_time;
     if (!evData.confirm_by_date && dates.confirm_by_date) evData.confirm_by_date = dates.confirm_by_date;
 
-    evData.confirmations = (evBase.rsvps || []).map(r => ({
+    evData.confirmations = (evBase.rsvps || []).filter(r => !r.is_manual_ticket).map(r => ({
       name: r.guest_name, attending: r.attending, side: r.side,
       companions: r.companions ? r.companions.split('|').filter(Boolean) : [],
       kids: r.kids ? r.kids.split('|').filter(Boolean) : [],

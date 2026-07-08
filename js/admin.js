@@ -4220,9 +4220,10 @@ async function openTicketLimitModal(userId, username) {
       <button class="flex-1 btn-main" onclick="(async()=>{
         const v=parseInt(document.getElementById('tl-val').value)||50;
         const t=document.getElementById('tl-table').checked;
-        const res=await supabaseRequest('accounts?auth_uid=eq.${userId}','PATCH',{ticket_limit:v,tickets_with_table:t}).catch(()=>null);
-        if(!res){await supabaseRequest('accounts','POST',{auth_uid:'${userId}',ticket_limit:v,tickets_with_table:t}).catch(()=>{});}
-        toast('Configuração de tickets guardada!');
+        const uid='${userId}';
+        let res=await supabaseRequest('accounts?auth_uid=eq.${userId}','PATCH',{ticket_limit:v,tickets_with_table:t}).catch(()=>null);
+        if(!Array.isArray(res)||res.length===0){await supabaseRequest('accounts','POST',{auth_uid:uid,ticket_limit:v,tickets_with_table:t}).catch(()=>{});}
+        toast('Configuração de tickets guardada: '+v+' tickets');
         this.closest('.modal-overlay').remove();
       })()">Guardar</button>
       <button class="flex-1 btn-outline" onclick="this.closest('.modal-overlay').remove()">Cancelar</button>
