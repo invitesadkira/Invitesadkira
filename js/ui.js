@@ -125,7 +125,7 @@ async function openMediaLibraryPicker(applyUrlFn) {
     </div>
   </div>`;
   document.body.appendChild(modal);
-  if(window.lucide?.createIcons) lucide.createIcons();
+  if(window.lucide?.createIcons) lucide.createIcons(); else setTimeout(()=>{ if(window.lucide?.createIcons) lucide.createIcons(); }, 500);
 
   window._mediaLibraryApplyFn = applyUrlFn;
   window._mediaLibrarySelected = new Set();
@@ -306,7 +306,7 @@ function togglePassVisibility(inputId, btn) {
   const isPass = inp.type === 'password';
   inp.type = isPass ? 'text' : 'password';
   btn.innerHTML = isPass ? '<i data-lucide="eye-off" class="w-5 h-5"></i>' : '<i data-lucide="eye" class="w-5 h-5"></i>';
-  if(window.lucide?.createIcons) lucide.createIcons();
+  if(window.lucide?.createIcons) lucide.createIcons(); else setTimeout(()=>{ if(window.lucide?.createIcons) lucide.createIcons(); }, 500);
 }
 
 function toggleSwitch(el, extraId) {
@@ -644,7 +644,7 @@ function buildDrawerNav(user) {
       ${it.badge || ''}
     </button>
   `).join('<div class="drawer-sep"></div>');
-  if(window.lucide?.createIcons) lucide.createIcons();
+  if(window.lucide?.createIcons) lucide.createIcons(); else setTimeout(()=>{ if(window.lucide?.createIcons) lucide.createIcons(); }, 500);
 }
 function buildDashboardQuickGrid(user) {
   const isAdmin = user && user.role === 'admin';
@@ -665,7 +665,7 @@ function buildDashboardQuickGrid(user) {
       <div class="qc-icon"><i data-lucide="${it.icon}"></i></div>
       <div class="qc-label">${it.label}</div>
     </button>`).join('');
-  if(window.lucide?.createIcons) lucide.createIcons();
+  if(window.lucide?.createIcons) lucide.createIcons(); else setTimeout(()=>{ if(window.lucide?.createIcons) lucide.createIcons(); }, 500);
 }
 function buildAdminQuickGrid() {
   const grid = document.getElementById('admin-quick-grid');
@@ -697,7 +697,7 @@ function buildAdminQuickGrid() {
       <div class="qc-icon"><i data-lucide="${it.icon}"></i></div>
       <div class="qc-label">${it.label}</div>
     </button>`).join('');
-  if(window.lucide?.createIcons) lucide.createIcons();
+  if(window.lucide?.createIcons) lucide.createIcons(); else setTimeout(()=>{ if(window.lucide?.createIcons) lucide.createIcons(); }, 500);
 }
 
 
@@ -765,7 +765,7 @@ function _rsvpSetState(state) {
     successEl.classList.add('hidden');
     if (promoEl)  promoEl.classList.add('hidden');
   }
-  if(window.lucide?.createIcons) lucide.createIcons();
+  if(window.lucide?.createIcons) lucide.createIcons(); else setTimeout(()=>{ if(window.lucide?.createIcons) lucide.createIcons(); }, 500);
 }
 
 async function openRsvpDrawer() {

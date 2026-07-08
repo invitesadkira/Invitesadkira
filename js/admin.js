@@ -19,7 +19,7 @@ function renderPendingAccounts() {
         <p class="font-bold text-gray-700 mb-1">Nenhuma conta pendente</p>
         <p class="text-sm text-gray-400">Todas as contas foram revistas.</p>
       </div>`;
-    lucide.createIcons();
+    if(window.lucide?.createIcons) lucide.createIcons();
     return;
   }
   container.innerHTML = pending.map(u => `
@@ -45,7 +45,7 @@ function renderPendingAccounts() {
         </button>
       </div>
     </div>`).join('');
-  lucide.createIcons();
+  if(window.lucide?.createIcons) lucide.createIcons();
 }
 
 function approveFromPending(userId) {
@@ -106,7 +106,7 @@ function renderAdmin() {
   if (typeof renderAdminPendingSubmissions === 'function') renderAdminPendingSubmissions();
   if (typeof renderAdminLeadsPanel === 'function') renderAdminLeadsPanel();
   if (typeof renderStorageBar === 'function') renderStorageBar();
-  lucide.createIcons();
+  if(window.lucide?.createIcons) lucide.createIcons();
 }
 
 function filterAdminAccounts() {
@@ -132,7 +132,7 @@ function filterAdminAccounts() {
         <p class="text-gray-500">Nenhuma conta encontrada para: <strong>"${searchTerm}"</strong></p>
       </div>
     `;
-    lucide.createIcons();
+    if(window.lucide?.createIcons) lucide.createIcons();
     return;
   }
   
@@ -211,7 +211,7 @@ function renderAdminAccountsList(users) {
   }).join('');
 
   document.getElementById('admin-accounts').innerHTML = accountsHtml;
-  lucide.createIcons();
+  if(window.lucide?.createIcons) lucide.createIcons();
 }
 
 function adminLoginAs(userId) {
@@ -912,7 +912,7 @@ function showUploadGuestListModal() {
     </div>
   `;
   document.body.appendChild(modal);
-  lucide.createIcons();
+  if(window.lucide?.createIcons) lucide.createIcons();
 }
 
 function updateEventsList() {
@@ -968,7 +968,7 @@ function showUploadGiftsListModal() {
     </div>
   `;
   document.body.appendChild(modal);
-  lucide.createIcons();
+  if(window.lucide?.createIcons) lucide.createIcons();
 }
 
 function processGiftsList() {
@@ -2041,7 +2041,7 @@ async function openStorageManager() {
       </div>
     </div>`;
   document.body.appendChild(modal);
-  lucide.createIcons();
+  if(window.lucide?.createIcons) lucide.createIcons();
 }
 
 Store.storageFiles = [];
@@ -2111,7 +2111,7 @@ function renderStorageFiles() {
       </button>
     </div>`;
   }).join('');
-  lucide.createIcons();
+  if(window.lucide?.createIcons) lucide.createIcons();
 }
 
 // Descarrega qualquer ficheiro (imagem, música, fonte) para o computador/
@@ -2254,7 +2254,7 @@ async function openMusicFromStorage() {
         <button class="text-xs btn-main px-3 py-1" onclick="selectStorageMusic('${url}','${name}',this)">Usar</button>
       </div>`;
     }).join('');
-    lucide.createIcons();
+    if(window.lucide?.createIcons) lucide.createIcons();
   } catch(e) {
     document.getElementById('storage-music-list').innerHTML = '<p class="text-xs text-red-400">Erro ao carregar músicas.</p>';
   }
@@ -2282,7 +2282,7 @@ function renderFontsList() {
         <i data-lucide="trash-2" class="w-3 h-3"></i>
       </button>
     </div>`).join('');
-  lucide.createIcons();
+  if(window.lucide?.createIcons) lucide.createIcons();
 }
 
 async function deleteFontFromStorage(name, url, btn) {
@@ -3610,7 +3610,7 @@ function _renderOrdersList() {
   listEl.innerHTML = filtered.length
     ? filtered.map(_orderCardHTML).join('')
     : '<p style="text-align:center;color:#9ca3af;padding:1.5rem">Nenhuma encomenda encontrada.</p>';
-  lucide.createIcons();
+  if(window.lucide?.createIcons) lucide.createIcons();
 }
 
 async function adminSaveOrderNotes(orderId, notes) {
