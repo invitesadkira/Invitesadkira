@@ -13,7 +13,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script>tailwind.config = { theme: { extend: { colors: { teal: { 500: '#007f9f', 600: '#006b86' } } } } }</script>
   <!-- QRCode local — sem CDN -->
-  <script src="js/qrcode-mini.js?v=1783530524"></script>
+  <script src="js/qrcode-mini.js?v=1783531434"></script>
   <!-- Lucide icons — defer para não bloquear render -->
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.363.0/umd/lucide.min.js"
     onerror="window.lucide={createIcons:()=>{}}"></script>
@@ -22,7 +22,7 @@
   <!-- pdf-lib: carregado por _loadPdfLib() antes de gerar tickets -->
   <!-- pdf.js: carregado por _loadPdfJs() antes de pré-visualizar templates -->
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💌</text></svg>">
-  <link rel="stylesheet" href="css/main.css?v=1783530524">
+  <link rel="stylesheet" href="css/main.css?v=1783531434">
 </head>
 <body class="h-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
 
@@ -1579,9 +1579,9 @@ para testemunhar o seu enlace matrimonial</textarea>
     <!-- ── HERO (capa + nomes dos noivos) ── -->
     <div class="guest-hero" id="guest-hero">
      <div class="guest-hero-bg" id="guest-hero-bg"></div>
-     <!-- Vídeo de fundo desfocado (para vídeos landscape/widescreen) -->
+     <!-- Vídeo de fundo desfocado — apenas em ecrãs largos (tablet/desktop), cobre esquerda/direita -->
      <video id="guest-hero-video-blur" class="hidden" muted loop autoplay playsinline
-       style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;filter:blur(18px) brightness(0.7);transform:scale(1.08)"></video>
+       style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;filter:blur(24px) brightness(0.65)"></video>
      <!-- Vídeo principal -->
      <video id="guest-hero-video" class="hidden" muted loop autoplay playsinline
        style="position:absolute;inset:0;width:100%;height:100%;z-index:1"></video>
@@ -1589,7 +1589,7 @@ para testemunhar o seu enlace matrimonial</textarea>
      <div id="guest-hero-decor" class="hidden decor-corner-left" style="position:absolute;width:clamp(110px,22vw,190px);height:clamp(110px,22vw,190px);background-size:contain;background-repeat:no-repeat;pointer-events:none;z-index:1"></div>
      <div id="save-the-date-overlay" style="display:none;position:absolute;inset:0;flex-direction:column;align-items:center;justify-content:center;z-index:2"></div>
      <div class="guest-hero-content">
-      <div id="hero-couple-names" class="couple-names" style="font-size:2.4rem"></div>
+      <div id="hero-couple-names" class="couple-names" style="font-size:clamp(1.5rem,5vw,2.4rem)"></div>
       <span id="hero-subtitle-tagline" class="hero-subtitle-tagline hidden"></span>
      </div>
      <div class="scroll-hint" id="scroll-hint">
@@ -1844,21 +1844,21 @@ para testemunhar o seu enlace matrimonial</textarea>
   </a>
 
   <!-- ===================== SCRIPTS (ordem importa) ===================== -->
-  <script src="js/config.js?v=1783530524"></script>
-  <script src="js/store.js?v=1783530524"></script>
-  <script src="js/visuals.js?v=1783530524"></script>
-  <script src="js/venues.js?v=1783530524"></script>
-  <script src="js/rsvp.js?v=1783530524"></script>
-  <script src="js/ui.js?v=1783530524"></script>
-  <script src="js/auth.js?v=1783530524"></script>
-  <script src="js/dashboard.js?v=1783530524"></script>
-  <script src="js/events.js?v=1783530524"></script>
-  <script src="js/intake-wizard.js?v=1783530524"></script>
-  <script src="js/tickets.js?v=1783530524"></script>
-  <script src="js/guest.js?v=1783530524"></script>
-  <script src="js/sections.js?v=1783530524"></script>
-  <script src="js/admin.js?v=1783530524"></script>
-  <script src="js/router.js?v=1783530524"></script>
+  <script src="js/config.js?v=1783531434"></script>
+  <script src="js/store.js?v=1783531434"></script>
+  <script src="js/visuals.js?v=1783531434"></script>
+  <script src="js/venues.js?v=1783531434"></script>
+  <script src="js/rsvp.js?v=1783531434"></script>
+  <script src="js/ui.js?v=1783531434"></script>
+  <script src="js/auth.js?v=1783531434"></script>
+  <script src="js/dashboard.js?v=1783531434"></script>
+  <script src="js/events.js?v=1783531434"></script>
+  <script src="js/intake-wizard.js?v=1783531434"></script>
+  <script src="js/tickets.js?v=1783531434"></script>
+  <script src="js/guest.js?v=1783531434"></script>
+  <script src="js/sections.js?v=1783531434"></script>
+  <script src="js/admin.js?v=1783531434"></script>
+  <script src="js/router.js?v=1783531434"></script>
 
 </body>
 </html>

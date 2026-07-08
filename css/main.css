@@ -340,7 +340,7 @@ html.ev-gold-countdown .std-countdown-num {
    ══════════════════════════════════════════════════════════ */
 
 /* ── Hero ── */
-.guest-hero { position: relative; width: 100%; min-height: 100svh; max-height: 100svh; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; }
+.guest-hero { position: relative; width: 100%; min-height: 100svh; max-height: 100svh; min-height: 100dvh; max-height: 100dvh; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; background: #000; }
 @media (min-width: 900px) { .guest-hero { min-height: 70vh; max-height: 75vh; } }
 .guest-hero-bg { position: absolute; inset: 0; background-size: cover; background-position: center; background-repeat: no-repeat; }
 
@@ -1097,7 +1097,7 @@ html.ev-gold-countdown .std-countdown-num {
 
 /* ── Couple names responsive ── */
 .couple-names {
-  font-size: clamp(1.4rem, 6vw, 2.6rem) !important;
+  font-size: clamp(1.4rem, 4vw, 2.2rem) !important;
   animation: coupleEntrance 1.4s cubic-bezier(.22,1,.36,1) 0.3s both;
 }
 @keyframes coupleEntrance { from { opacity:0;transform:translateY(40px) scale(0.9); } to { opacity:1;transform:none; } }
@@ -1652,4 +1652,14 @@ h1.hero-couple-names-simple {
 .manual-no-circles .mi-icon img {
   width: 42px !important;
   height: 42px !important;
+}
+
+/* Vídeo blur de fundo — apenas em tablets e desktops */
+#guest-hero-video-blur {
+  display: none !important; /* oculto por defeito (mobile) */
+}
+@media (min-width: 768px) {
+  #guest-hero-video-blur.blur-active {
+    display: block !important;
+  }
 }

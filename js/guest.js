@@ -334,19 +334,19 @@ async function renderGuestView() {
       videoEl2.classList.remove('hidden');
       videoEl2.load();
       videoEl2.play().catch(() => {});
-      // Fundo desfocado — sempre cover independente do fit escolhido
-      if (videoBlurEl) {
+      // Blur de fundo — só activo em tablets/desktops (CSS oculta em mobile)
+      // Só faz sentido quando o vídeo não preenche a largura toda (contain)
+      if (videoBlurEl && videoFit === 'contain') {
         videoBlurEl.src = coverVideoUrl;
-        if (videoFit === 'contain') {
-          // Só mostra o blur quando o vídeo não preenche (landscape com contain)
-          videoBlurEl.classList.remove('hidden');
-          videoBlurEl.load();
-          videoBlurEl.play().catch(() => {});
-        }
-        if (heroEl2) heroEl2.style.background = '#000';
-      } else if (heroEl2 && videoFit === 'cover') {
-        heroEl2.style.background = 'none';
+        videoBlurEl.classList.remove('hidden');
+        videoBlurEl.classList.add('blur-active');
+        videoBlurEl.load();
+        videoBlurEl.play().catch(() => {});
+      } else if (videoBlurEl) {
+        videoBlurEl.classList.add('hidden');
+        videoBlurEl.classList.remove('blur-active');
       }
+      if (heroEl2) heroEl2.style.background = 'none';
     }
   }
   // This was previously never loaded for guests — venue_ceremony/venue_civil/venue_reception
