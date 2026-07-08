@@ -232,10 +232,8 @@ async function handleTicketTemplateUpload(input) {
 
 async function _renderTicketPreview(pdfUrl) {
   try {
-    // ✅ Carregar PDF.js lazily se ainda não estiver disponível
-    if (typeof pdfjsLib === 'undefined') {
-      await _loadPdfJs().catch(() => {});
-    }
+    // ✅ Renderizar a 1ª página do PDF com PDF.js para o utilizador ver
+    // o layout real e posicionar os marcadores correctamente.
     if (typeof pdfjsLib === 'undefined') {
       console.warn('PDF.js não carregado — usando placeholder');
       return;
@@ -1485,25 +1483,28 @@ async function _onQrScanned(text, eventId, evColor, scannerToken, cache) {
     return;
   }
 
-  // Incrementar contador de leituras
-  rsvp.scanCount = (rsvp.scanCount || 0) + 1;
-  _scSaveCache(scannerToken, cache);
+  // Detectar se tem acompanhante ("Nome e Acompanhante")
+  const hasCompanion  = / e /i.test(rsvp.name);
+  const mainName      = hasCompanion ? rsvp.name.split(/ e /i)[0].trim() : rsvp.name;
+  const companionName = hasCompanion ? rsvp.name.split(/ e /i).slice(1).join(' e ').trim() : '';
 
-  // Alertar se lido mais de 2x (possível partilha do convite)
-  if (rsvp.scanCount > 2) {
-    _scShowResult('warning', `⚠️ QR lido ${rsvp.scanCount}x`, `${rsvp.name} — Possível partilha do convite!`, 5000);
-    if (window._scVib && navigator.vibrate) navigator.vibrate([300, 100, 300, 100, 300]);
+  // Caso: já entrou completamente — não incrementar scanCount, apenas avisar
+  if (rsvp.checkedIn && (!hasCompanion || rsvp.companionCheckedIn)) {
+    _scShowResult('already', rsvp.name, 'Já entrou anteriormente');
     return;
   }
 
-  // Detectar se tem acompanhante ("Nome e Acompanhante")
-  const hasCompanion = / e /i.test(rsvp.name);
-  const mainName     = hasCompanion ? rsvp.name.split(/ e /i)[0].trim() : rsvp.name;
-  const companionName= hasCompanion ? rsvp.name.split(/ e /i).slice(1).join(' e ').trim() : '';
+  // Incrementar contador apenas para leituras que ainda fazem sentido
+  // (1ª entrada, ou acompanhante em falta)
+  rsvp.scanCount = (rsvp.scanCount || 0) + 1;
+  _scSaveCache(scannerToken, cache);
 
-  // Caso: já entrou completamente
-  if (rsvp.checkedIn && (!hasCompanion || rsvp.companionCheckedIn)) {
-    _scShowResult('already', rsvp.name, 'Já entrou anteriormente');
+  // Alertar se lido mais de 2x sem entrar (possível partilha do convite)
+  // Para convites com acompanhante, 2 leituras são normais (titular + acompanhante)
+  const maxScans = hasCompanion ? 3 : 2;
+  if (rsvp.scanCount > maxScans && !rsvp.checkedIn) {
+    _scShowResult('warning', `⚠️ QR lido ${rsvp.scanCount}x`, `${rsvp.name} — Possível partilha do convite!`, 5000);
+    if (window._scVib && navigator.vibrate) navigator.vibrate([300, 100, 300, 100, 300]);
     return;
   }
 
@@ -1689,11 +1690,21 @@ async function openTicketManager() {
 
   // Carregar RSVPs confirmados com estado do ticket
   const rsvps = await supabaseRequest(
-    `rsvps?event_id=eq.${eventId}&attending=eq.true&select=guest_name,rsvp_token,ticket_issued,ticket_issued_at,checked_in&order=guest_name&limit=500`
+    `rsvps?event_id=eq.${eventId}&attending=eq.true&select=guest_name,rsvp_token,ticket_issued,ticket_issued_at,checked_in,is_manual_ticket&order=guest_name&limit=500`
   ).catch(() => []) || [];
 
   const issued   = rsvps.filter(r => r.ticket_issued);
-  const pending  = rsvps.filter(r => !r.ticket_issued);
+  const pending  = rsvps.filter(r => !r.ticket_issued && !r.is_manual_ticket);
+
+  // Verificar limite de tickets
+  let ticketLimit = null, ticketUsed = issued.length;
+  try {
+    const userId = ev.user_id || ev.userId;
+    if (userId) {
+      const acc = await supabaseRequest(`accounts?auth_uid=eq.${userId}&select=ticket_limit&limit=1`);
+      ticketLimit = acc?.[0]?.ticket_limit ?? 50;
+    }
+  } catch(e) {}
 
   const modal = document.createElement('div');
   modal.className = 'modal-overlay';
@@ -1704,6 +1715,13 @@ async function openTicketManager() {
         <h3 class="text-base font-bold text-gray-800">Gerir Tickets</h3>
         <button onclick="this.closest('.modal-overlay').remove()" style="background:#f3f4f6;border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:1rem">×</button>
       </div>
+
+      ${ticketLimit !== null ? `
+      <!-- Contador de tickets -->
+      <div style="background:${ticketUsed>=ticketLimit?'#fef2f2':'#eff6ff'};border:1px solid ${ticketUsed>=ticketLimit?'#fca5a5':'#93c5fd'};border-radius:0.75rem;padding:0.6rem 0.9rem;margin-bottom:0.75rem;display:flex;align-items:center;justify-content:space-between">
+        <span class="text-sm font-semibold text-gray-700">🎫 Tickets gerados</span>
+        <span style="font-size:1.1rem;font-weight:800;color:${ticketUsed>=ticketLimit?'#dc2626':'#2563eb'}">${ticketUsed} / ${ticketLimit}</span>
+      </div>` : ''}
 
       <!-- Gerar ticket manual (para não confirmados) -->
       <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:0.75rem;padding:0.75rem;margin-bottom:0.75rem">
