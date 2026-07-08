@@ -1519,7 +1519,15 @@ async function handleCoupleVideoUpload(input) {
   if (!file) return;
   const MAX = 25 * 1024 * 1024;
   if (file.size > MAX) { toast('Vídeo demasiado grande. Máx. 50 MB.'); input.value = ''; return; }
-  toast('A carregar vídeo... pode demorar alguns segundos');
+
+  // Verificar se já existe vídeo carregado
+  const existing = document.getElementById('evt-couple-video-url')?.value;
+  if (existing && existing.startsWith('http')) {
+    if (!confirm('Já existe um vídeo carregado. Substituir pelo novo?')) { input.value = ''; return; }
+    try { const m=existing.match(/storage\/v1\/object\/public\/([^/]+)\/(.+)$/); if(m) await fetch(`${SUPABASE_URL}/storage/v1/object/${m[1]}/${m[2]}`,{method:'DELETE',headers:{'apikey':SUPABASE_ANON_KEY,'Authorization':`Bearer ${SUPABASE_ANON_KEY}`}}); } catch(e){}
+  }
+
+  toast('A carregar vídeo...');
   try {
     const ext = file.name.split('.').pop().toLowerCase();
     const fileName = `couple_video_${Date.now()}.${ext}`;

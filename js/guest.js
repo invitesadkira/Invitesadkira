@@ -104,8 +104,15 @@ async function renderGuestView() {
     }
   }
   
-  // ✅ CRÍTICO: Tentar PRIMEIRO usar guestEventData (carregado da busca/URL)
-  // DEPOIS tentar Store.events (se estiver logado)
+  // ✅ CRÍTICO: Limpar dados do evento anterior se o evento actual é diferente
+  // Sem isto, a capa/vídeo/dados de um evento aparecem noutro evento
+  if (Store.guestEventData && Store.guestEventData.id && 
+      Store.guestEventData.id !== Store.currentEventId &&
+      Store.guestEventData.event_code !== Store.currentEventId) {
+    Store.guestEventData = null;
+    window._evData = null;
+  }
+
   let eventData = Store.guestEventData;
   
   if (!eventData) {

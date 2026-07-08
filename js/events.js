@@ -1,4 +1,38 @@
 // ===================== CREATE EVENT =====================
+
+// ── Verificação de Features (allowed_features) ────────────────────────────
+function _hasFeature(featureKey) {
+  if (Store.adminModeActive) return true;
+  const acc = Store.currentAccount;
+  if (!acc) return true;
+  try {
+    const f = typeof acc.allowed_features === 'string' ? JSON.parse(acc.allowed_features) : (acc.allowed_features || {});
+    if (!(featureKey in f)) return true;
+    return f[featureKey] === true || f[featureKey] === 'yes';
+  } catch(e) { return true; }
+}
+
+async function _loadCurrentAccount() {
+  if (Store.currentAccount) return;
+  try {
+    const uid = Store.currentUser?.id || Store.userId;
+    if (!uid) return;
+    const acc = await supabaseRequest(`accounts?auth_uid=eq.${uid}&select=id,allowed_features,ticket_limit,tickets_with_table,undo_scans_remaining&limit=1`);
+    if (acc?.[0]) Store.currentAccount = acc[0];
+  } catch(e) { console.warn('_loadCurrentAccount:', e); }
+}
+
+function _applyFeatureRestrictions() {
+  // Ocultar abas baseadas nas features
+  const map = { 'video':'Vídeo', 'music':'Música', 'tickets':'Tickets', 'gallery':'Galeria' };
+  Object.entries(map).forEach(([feat, label]) => {
+    if (!_hasFeature(feat)) {
+      document.querySelectorAll('.event-tab-btn, .tab-btn').forEach(btn => {
+        if (btn.textContent.trim() === label) btn.style.display = 'none';
+      });
+    }
+  });
+}
 // ✅ Helper partilhado: a galeria guarda-se sempre com 1 URL por linha (é o
 // que o textarea do editor usa, o que o botão "Escolher da Biblioteca"
 // usa, e o que a página do convidado lê). Remove linhas vazias e fotos
