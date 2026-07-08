@@ -519,6 +519,8 @@ async function generateGuestTicket(guestName, rsvpToken, eventId, skipNameEdit) 
   toast('A gerar ticket...');
   try {
     // Verificar se as bibliotecas estão carregadas
+    // ✅ Carregar pdf-lib lazily se ainda não estiver carregado
+    await _loadPdfLib().catch(() => {});
     if (typeof PDFLib === 'undefined') { toast('Biblioteca PDF não carregada. Aguarda e tenta novamente.'); return; }
     if (typeof QRCode === 'undefined') { toast('Biblioteca QR não carregada. Aguarda e tenta novamente.'); return; }
 
@@ -1319,7 +1321,7 @@ async function _scDownloadReport(eventId, eventTitle) {
   const suspicious = entries.filter(r => (r.scanCount||0) > 2).sort((a,b) => (b.scanCount||0)-(a.scanCount||0));
 
   if (!window.jspdf?.jsPDF && !window.jsPDF) {
-    await new Promise((res,rej)=>{ const s=document.createElement('script'); s.src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'; s.onload=res; s.onerror=rej; document.head.appendChild(s); });
+    await _loadJsPDF().catch(() => {});
   }
   const J = (window.jspdf||window).jsPDF;
   const doc = new J({ orientation:'portrait', unit:'mm', format:'a4' });

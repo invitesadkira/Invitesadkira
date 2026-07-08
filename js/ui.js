@@ -125,7 +125,7 @@ async function openMediaLibraryPicker(applyUrlFn) {
     </div>
   </div>`;
   document.body.appendChild(modal);
-  lucide.createIcons();
+  if(window.lucide?.createIcons) lucide.createIcons();
 
   window._mediaLibraryApplyFn = applyUrlFn;
   window._mediaLibrarySelected = new Set();
@@ -306,7 +306,7 @@ function togglePassVisibility(inputId, btn) {
   const isPass = inp.type === 'password';
   inp.type = isPass ? 'text' : 'password';
   btn.innerHTML = isPass ? '<i data-lucide="eye-off" class="w-5 h-5"></i>' : '<i data-lucide="eye" class="w-5 h-5"></i>';
-  lucide.createIcons();
+  if(window.lucide?.createIcons) lucide.createIcons();
 }
 
 function toggleSwitch(el, extraId) {
@@ -644,7 +644,7 @@ function buildDrawerNav(user) {
       ${it.badge || ''}
     </button>
   `).join('<div class="drawer-sep"></div>');
-  lucide.createIcons();
+  if(window.lucide?.createIcons) lucide.createIcons();
 }
 function buildDashboardQuickGrid(user) {
   const isAdmin = user && user.role === 'admin';
@@ -665,7 +665,7 @@ function buildDashboardQuickGrid(user) {
       <div class="qc-icon"><i data-lucide="${it.icon}"></i></div>
       <div class="qc-label">${it.label}</div>
     </button>`).join('');
-  lucide.createIcons();
+  if(window.lucide?.createIcons) lucide.createIcons();
 }
 function buildAdminQuickGrid() {
   const grid = document.getElementById('admin-quick-grid');
@@ -697,7 +697,7 @@ function buildAdminQuickGrid() {
       <div class="qc-icon"><i data-lucide="${it.icon}"></i></div>
       <div class="qc-label">${it.label}</div>
     </button>`).join('');
-  lucide.createIcons();
+  if(window.lucide?.createIcons) lucide.createIcons();
 }
 
 
@@ -765,7 +765,7 @@ function _rsvpSetState(state) {
     successEl.classList.add('hidden');
     if (promoEl)  promoEl.classList.add('hidden');
   }
-  lucide.createIcons();
+  if(window.lucide?.createIcons) lucide.createIcons();
 }
 
 async function openRsvpDrawer() {
@@ -837,7 +837,7 @@ function setMusicPlayingUI(playing) {
   const icon = document.getElementById('music-play-icon');
   const eq   = document.getElementById('music-equalizer');
   const sub  = document.getElementById('music-sub-text');
-  if (icon) { icon.setAttribute('data-lucide', playing ? 'pause' : 'play'); lucide.createIcons(); }
+  if (icon) { icon.setAttribute('data-lucide', playing ? 'pause' : 'play'); if(window.lucide?.createIcons) lucide.createIcons(); }
   if (eq)   eq.classList.toggle('paused', !playing);
   if (sub)  sub.textContent = playing ? 'A tocar' : 'Clique para tocar';
 

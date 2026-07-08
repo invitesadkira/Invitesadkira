@@ -2,6 +2,36 @@
 const SUPABASE_URL = 'https://kdvgqjpwizplvvlggjtx.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtkdmdxanB3aXpwbHZ2bGdnanR4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA5NDMyMTgsImV4cCI6MjA5NjUxOTIxOH0.E-uDSHQopiDBbRqSUd-fjnz-ONiQGuTOLhdj2uvmVes';
 
+// ── Lazy loaders — bibliotecas pesadas carregadas apenas quando necessário ──
+function _loadScript(src) {
+  return new Promise((res, rej) => {
+    if (document.querySelector(`script[src="${src}"]`)) { res(); return; }
+    const s = document.createElement('script');
+    s.src = src; s.onload = res; s.onerror = rej;
+    document.head.appendChild(s);
+  });
+}
+async function _loadJsPDF() {
+  if (window.jspdf?.jsPDF || window.jsPDF) return;
+  await _loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+}
+async function _loadPdfLib() {
+  if (window.PDFLib) return;
+  await _loadScript('https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js')
+    .catch(() => _loadScript('https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js'));
+}
+async function _loadPdfJs() {
+  if (window.pdfjsLib) return;
+  await _loadScript('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js');
+}
+// Lucide fallback — evita crash se o CDN falhou
+if (typeof window !== 'undefined') {
+  if (!window.lucide) window.lucide = { createIcons: () => {} };
+  document.addEventListener('DOMContentLoaded', () => {
+    if (!window.lucide?.createIcons) window.lucide = { createIcons: () => {} };
+  });
+}
+
 // ✅ DEBUG: desliga os logs verbosos (incluem corpo de pedidos/respostas, por
 // vezes com dados sensíveis) fora de desenvolvimento. Muda para `true`
 // manualmente no browser (`DEBUG_NETWORK = true`) quando precisares de depurar.

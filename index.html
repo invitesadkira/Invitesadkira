@@ -4,23 +4,25 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>AdKira — Confirmação de Presença</title>
+  <!-- Fontes críticas — preconnect acelera o DNS -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com">
   <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,600;0,700;0,800;0,900;1,600;1,700&family=Great+Vibes&display=swap" rel="stylesheet">
+  <!-- Tailwind — crítico para o UI -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Bibliotecas de exportação em PDF (lista de confirmações + lista de presentes) -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-  <!-- PDF-lib: manipulação de PDFs no browser (tickets dos convidados) -->
-  <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
-  <!-- PDF.js: renderizar PDFs como canvas (pré-visualização do template) -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-  <!-- QRCode: gerador local, sem dependência CDN -->
-  <script src="js/qrcode-mini.js?v=1783525240"></script>
   <script>tailwind.config = { theme: { extend: { colors: { teal: { 500: '#007f9f', 600: '#006b86' } } } } }</script>
-  <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.js"></script>
+  <!-- QRCode local — sem CDN -->
+  <script src="js/qrcode-mini.js?v=1783526961"></script>
+  <!-- Lucide icons — defer para não bloquear render -->
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/lucide/0.363.0/umd/lucide.min.js"
+    onerror="window.lucide={createIcons:()=>{}}"></script>
+  <!-- PDF libs — carregadas lazily apenas quando necessário -->
+  <!-- jsPDF: carregado por _loadJsPDF() antes de gerar relatórios -->
+  <!-- pdf-lib: carregado por _loadPdfLib() antes de gerar tickets -->
+  <!-- pdf.js: carregado por _loadPdfJs() antes de pré-visualizar templates -->
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💌</text></svg>">
-  <link rel="stylesheet" href="css/main.css?v=1783525240">
+  <link rel="stylesheet" href="css/main.css?v=1783526961">
 </head>
 <body class="h-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
 
@@ -1834,21 +1836,21 @@ para testemunhar o seu enlace matrimonial</textarea>
   </a>
 
   <!-- ===================== SCRIPTS (ordem importa) ===================== -->
-  <script src="js/config.js?v=1783525240"></script>
-  <script src="js/store.js?v=1783525240"></script>
-  <script src="js/visuals.js?v=1783525240"></script>
-  <script src="js/venues.js?v=1783525240"></script>
-  <script src="js/rsvp.js?v=1783525240"></script>
-  <script src="js/ui.js?v=1783525240"></script>
-  <script src="js/auth.js?v=1783525240"></script>
-  <script src="js/dashboard.js?v=1783525240"></script>
-  <script src="js/events.js?v=1783525240"></script>
-  <script src="js/intake-wizard.js?v=1783525240"></script>
-  <script src="js/tickets.js?v=1783525240"></script>
-  <script src="js/guest.js?v=1783525240"></script>
-  <script src="js/sections.js?v=1783525240"></script>
-  <script src="js/admin.js?v=1783525240"></script>
-  <script src="js/router.js?v=1783525240"></script>
+  <script src="js/config.js?v=1783526961"></script>
+  <script src="js/store.js?v=1783526961"></script>
+  <script src="js/visuals.js?v=1783526961"></script>
+  <script src="js/venues.js?v=1783526961"></script>
+  <script src="js/rsvp.js?v=1783526961"></script>
+  <script src="js/ui.js?v=1783526961"></script>
+  <script src="js/auth.js?v=1783526961"></script>
+  <script src="js/dashboard.js?v=1783526961"></script>
+  <script src="js/events.js?v=1783526961"></script>
+  <script src="js/intake-wizard.js?v=1783526961"></script>
+  <script src="js/tickets.js?v=1783526961"></script>
+  <script src="js/guest.js?v=1783526961"></script>
+  <script src="js/sections.js?v=1783526961"></script>
+  <script src="js/admin.js?v=1783526961"></script>
+  <script src="js/router.js?v=1783526961"></script>
 
 </body>
 </html>
