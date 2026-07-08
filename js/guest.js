@@ -325,17 +325,28 @@ async function renderGuestView() {
   {
     const coverVideoUrl = eventData.cover_video_url;
     const videoFit = eventData.cover_video_fit || 'cover';
-    const videoEl2  = document.getElementById('guest-hero-video');
-    const heroEl2   = document.getElementById('guest-hero-bg');
+    const videoEl2     = document.getElementById('guest-hero-video');
+    const videoBlurEl  = document.getElementById('guest-hero-video-blur');
+    const heroEl2      = document.getElementById('guest-hero-bg');
     if (coverVideoUrl && coverVideoUrl.startsWith('http') && videoEl2) {
       videoEl2.src = coverVideoUrl;
       videoEl2.style.objectFit = videoFit;
-      // Para "contain" (landscape), ajustar o fundo para preto
-      if (videoFit === 'contain' && heroEl2) heroEl2.style.background = '#000';
       videoEl2.classList.remove('hidden');
       videoEl2.load();
       videoEl2.play().catch(() => {});
-      if (heroEl2 && videoFit === 'cover') heroEl2.style.background = 'none';
+      // Fundo desfocado — sempre cover independente do fit escolhido
+      if (videoBlurEl) {
+        videoBlurEl.src = coverVideoUrl;
+        if (videoFit === 'contain') {
+          // Só mostra o blur quando o vídeo não preenche (landscape com contain)
+          videoBlurEl.classList.remove('hidden');
+          videoBlurEl.load();
+          videoBlurEl.play().catch(() => {});
+        }
+        if (heroEl2) heroEl2.style.background = '#000';
+      } else if (heroEl2 && videoFit === 'cover') {
+        heroEl2.style.background = 'none';
+      }
     }
   }
   // This was previously never loaded for guests — venue_ceremony/venue_civil/venue_reception

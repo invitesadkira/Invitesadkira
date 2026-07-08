@@ -23,14 +23,40 @@ async function _loadCurrentAccount() {
 }
 
 function _applyFeatureRestrictions() {
-  // Ocultar abas baseadas nas features
-  const map = { 'video':'Vídeo', 'music':'Música', 'tickets':'Tickets', 'gallery':'Galeria' };
-  Object.entries(map).forEach(([feat, label]) => {
-    if (!_hasFeature(feat)) {
-      document.querySelectorAll('.event-tab-btn, .tab-btn').forEach(btn => {
-        if (btn.textContent.trim() === label) btn.style.display = 'none';
-      });
-    }
+  if (Store.adminModeActive) return; // admin god vê tudo
+
+  // Mapeia feature → texto do botão de aba
+  const tabLabelMap = {
+    'video':    ['Vídeo'],
+    'music':    ['Música'],
+    'tickets':  ['Tickets'],
+    'gallery':  ['Galeria', 'Fotos'],
+  };
+
+  Object.entries(tabLabelMap).forEach(([feature, labels]) => {
+    if (_hasFeature(feature)) return; // permitido — não tocar
+
+    // Ocultar o botão da aba
+    document.querySelectorAll('.event-tab-btn, [role="tab"]').forEach(btn => {
+      if (labels.some(l => btn.textContent.trim().includes(l))) {
+        btn.style.display = 'none';
+      }
+    });
+
+    // Ocultar o painel da aba se estiver visível
+    document.querySelectorAll('.event-tab-pane').forEach(pane => {
+      const key = pane.dataset.tab || '';
+      if (labels.some(l => key.toLowerCase().includes(l.toLowerCase().slice(0,4)))) {
+        pane.style.display = 'none';
+      }
+    });
+
+    // Ocultar itens do menu lateral
+    document.querySelectorAll('.sidebar-item, .nav-item').forEach(item => {
+      if (labels.some(l => item.textContent.trim().includes(l))) {
+        item.style.display = 'none';
+      }
+    });
   });
 }
 // ✅ Helper partilhado: a galeria guarda-se sempre com 1 URL por linha (é o
@@ -2040,6 +2066,9 @@ function _fillEditForm(ev) {
   if (ovEl) { ovEl.value = ev.bg_overlay !== undefined ? ev.bg_overlay : 35; document.getElementById('bg-overlay-val').textContent = ovEl.value + '%'; }
 
   _setSwitch('sw-bible', _yesOrTrue(ev.show_bible), 'bible-extra');
+
+  // ✅ Aplicar restrições de features — ocultar abas que o admin desactivou
+  _loadCurrentAccount().then(() => _applyFeatureRestrictions());
   document.getElementById('evt-bible-text').value = ev.bible_text || '';
   document.getElementById('evt-bible-ref').value  = ev.bible_ref  || '';
   { const bt2 = document.getElementById('evt-bible-text-2'); if (bt2) bt2.value = ev.bible_text_2 || ''; }

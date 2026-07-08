@@ -834,10 +834,13 @@ function extractYouTubeId(url) {
 }
 
 function setMusicPlayingUI(playing) {
-  const icon = document.getElementById('music-play-icon');
   const eq   = document.getElementById('music-equalizer');
   const sub  = document.getElementById('music-sub-text');
-  if (icon) { icon.setAttribute('data-lucide', playing ? 'pause' : 'play'); if(window.lucide?.createIcons) lucide.createIcons(); }
+  // Trocar entre ícone play e pause (SVG inline, sem depender do Lucide)
+  const svgPlay  = document.getElementById('music-svg-play');
+  const svgPause = document.getElementById('music-svg-pause');
+  if (svgPlay)  svgPlay.style.display  = playing ? 'none' : '';
+  if (svgPause) svgPause.style.display = playing ? '' : 'none';
   if (eq)   eq.classList.toggle('paused', !playing);
   if (sub)  sub.textContent = playing ? 'A tocar' : 'Clique para tocar';
 
