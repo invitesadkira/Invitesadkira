@@ -899,6 +899,7 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
           youtube_video_url: document.getElementById('evt-youtube-video-url')?.value?.trim() || null,
           youtube_video_title: document.getElementById('evt-youtube-video-title')?.value?.trim() || null,
           couplemsg_size: document.getElementById('evt-couplemsg-size')?.value || '0.95',
+          couplemsg_bold: document.getElementById('evt-couplemsg-bold')?.checked ? 'yes' : 'no',
           couplemsg_body_font: document.getElementById('evt-couplemsg-body-font')?.value || null,
           couplemsg_signature: document.getElementById('evt-couplemsg-signature')?.value?.trim() || null,
           couplemsg_sig_font: document.getElementById('evt-couplemsg-sig-font')?.value || null,
@@ -2133,6 +2134,7 @@ function _fillEditForm(ev) {
   _setSwitch('sw-decor', _yesOrTrue(ev.show_decor), 'decor-extra');
   _setSwitch('sw-couplemsg', _yesOrTrue(ev.show_couplemsg), 'couplemsg-extra');
   { const ct = document.getElementById('evt-couplemsg-text'); if(ct) ct.value = ev.couplemsg_text || ''; }
+  { const cb = document.getElementById('evt-couplemsg-bold'); if(cb) cb.checked = ev.couplemsg_bold === 'yes'; }
   { const bf=document.getElementById('evt-couplemsg-body-font'); if(bf&&ev.couplemsg_body_font){ if(ev.couplemsg_body_font.startsWith('http')){const o=document.createElement('option');o.value=ev.couplemsg_body_font;o.textContent=ev.couplemsg_body_font.split('/').pop().replace(/\.[^.]+$/,'')+'  (carregada)';bf.appendChild(o);}bf.value=ev.couplemsg_body_font;} }
   { const cs=document.getElementById('evt-couplemsg-signature'); if(cs) cs.value=ev.couplemsg_signature||''; }
   { const cf=document.getElementById('evt-couplemsg-sig-font'); if(cf&&ev.couplemsg_sig_font){

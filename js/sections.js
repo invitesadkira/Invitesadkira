@@ -1189,7 +1189,7 @@ function buildStorySection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
   if (storyStyle === 'photo-side' && ev.story_photo_url) {
     return _SD + `<div class="event-section story-section">
       <div class="section-inner">
-        <h2 class="section-title reveal" style="text-align:center;margin-bottom:1.5rem">${escapeHTML(_getSectionTitle(ev,'story','Nossa História'))}</h2>
+        ${(()=>{const _t=_getSectionTitle(ev,'story','Nossa História');return _t?`<h2 class="section-title reveal" style="text-align:center;margin-bottom:1.5rem">${escapeHTML(_t)}</h2>`:''})()} 
         <div class="reveal" style="display:flex;gap:1.5rem;align-items:center;flex-wrap:wrap;max-width:560px;margin:0 auto">
           <div style="flex:1 1 220px;min-width:200px;border-radius:1rem;overflow:hidden;aspect-ratio:4/5">
             <img src="${ev.story_photo_url}" style="width:100%;height:100%;object-fit:cover" alt="">
@@ -1208,7 +1208,7 @@ function buildStorySection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
       <div class="section-inner" style="text-align:center;max-width:520px;margin:0 auto">
         <div class="reveal">
           <svg width="32" height="32" viewBox="0 0 24 24" fill="${evColor}" style="opacity:0.35;margin-bottom:0.5rem"><path d="M9.983 3v7.391c0 5.704-3.731 9.57-8.983 10.609l-.995-2.151c2.432-.917 3.995-3.638 3.995-5.849h-4v-10h9.983zm14.017 0v7.391c0 5.704-3.748 9.57-9 10.609l-.996-2.151c2.433-.917 3.996-3.638 3.996-5.849h-3.983v-10h9.983z"/></svg>
-          <h2 class="section-title" style="margin-bottom:1rem">${escapeHTML(_getSectionTitle(ev,'story','Nossa História'))}</h2>
+          ${(()=>{const _t=_getSectionTitle(ev,'story','Nossa História');return _t?`<h2 class="section-title" style="margin-bottom:1rem">${escapeHTML(_t)}</h2>`:''})()} 
           <p style="font-size:${storySize}rem;color:${storyTextColor};line-height:1.85;font-style:italic;white-space:pre-line">${escapeHTML(ev.story_text)}</p>
         </div>
       </div>
@@ -1256,7 +1256,7 @@ function buildStorySection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
 
     return _SD + `<div class="event-section story-section">
       <div class="section-inner">
-        <h2 class="section-title reveal" style="text-align:center;margin-bottom:2.5rem">${escapeHTML(_getSectionTitle(ev,'story','Nossa História'))}</h2>
+        ${(()=>{const _t=_getSectionTitle(ev,'story','Nossa História');return _t?`<h2 class="section-title reveal" style="text-align:center;margin-bottom:2.5rem">${escapeHTML(_t)}</h2>`:''})()} 
         <div class="story-timeline" style="--ev-color:${evColor}">
           <div class="story-line"></div>
           ${rows}
@@ -1269,7 +1269,7 @@ function buildStorySection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
   return _SD + `<div class="event-section story-section">
     <div class="section-inner" style="text-align:center">
       <div class="reveal">
-        <h2 class="section-title">${escapeHTML(_getSectionTitle(ev,'story','Nossa História'))}</h2>
+        ${(()=>{const _t=_getSectionTitle(ev,'story','Nossa História');return _t?`<h2 class="section-title">${escapeHTML(_t)}</h2>`:''})()} 
         <p class="story-text" style="font-size:${storySize}rem">${escapeHTML(ev.story_text)}</p>
       </div>
     </div>
@@ -2748,7 +2748,10 @@ function buildCoupleMsgSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="${evColor}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
       </div>
       <h3 class="section-title">${escapeHTML(title)}</h3>
-      <p style="font-size:${parseFloat(ev.couplemsg_size)||0.95}rem;color:#374151;line-height:1.75;max-width:460px;margin:0 auto;white-space:pre-wrap;${bodyFontStyle}">${escapeHTML(ev.couplemsg_text || '')}</p>
+      <p style="font-size:${parseFloat(ev.couplemsg_size)||0.95}rem;color:#374151;line-height:1.75;max-width:460px;margin:0 auto;white-space:pre-wrap;${ev.couplemsg_bold==='yes'?'font-weight:700;':''} ${bodyFontStyle}">${
+        // Suporte a **negrito** inline
+        escapeHTML(ev.couplemsg_text||'').replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>')
+      }</p>
       ${sigHtml}
     </div>
   </div>`;
@@ -3113,7 +3116,7 @@ function openSectionTitlesEditor() {
   modal.className = 'modal-overlay';
   modal.innerHTML = `<div class="modal-content bg-white rounded-2xl p-5 max-w-md w-full" style="max-height:85vh;overflow-y:auto">
     <h3 class="text-base font-bold text-gray-800 mb-1">✏️ Editar Títulos das Secções</h3>
-    <p class="text-xs text-gray-400 mb-3">Deixa vazio para usar o título padrão.</p>
+    <p class="text-xs text-gray-400 mb-3">Deixa vazio para usar o título padrão. Escreve um <strong>espaço</strong> para não mostrar nenhum título nessa secção.</p>
     <div class="space-y-2">
       ${Object.entries(SECTION_TITLE_DEFAULTS).map(([key, def]) => `
         <div>
@@ -3146,7 +3149,12 @@ async function saveSectionTitles(modal) {
 function _getSectionTitle(ev, key, defaultTitle) {
   try {
     const titles = JSON.parse(ev?.section_titles || '{}');
-    return titles[key] || defaultTitle;
+    if (key in titles) {
+      const val = titles[key];
+      if (val === ' ' || val === '') return ''; // espaço ou vazio = sem título
+      return val || defaultTitle;
+    }
+    return defaultTitle;
   } catch(e) { return defaultTitle; }
 }
 
