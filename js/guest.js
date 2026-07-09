@@ -3161,10 +3161,6 @@ function _wireIntroScreenButton(screenId, onOpen) {
     // Fade out suavemente em vez de remover de imediato — isto disfarça
     // qualquer instante em que o conteúdo por trás ainda esteja a desenhar
     // (imagem de capa a carregar, etc.), evitando um "salto" visual brusco.
-    screen.style.transition = 'opacity 0.35s ease';
-    screen.style.opacity = '0';
-    setTimeout(() => screen.remove(), 350);
-
     const audio = document.getElementById('guest-audio');
     if (audio && audio.src) { audio.muted = false; audio.play().then(() => setMusicPlayingUI(true)).catch(() => {}); }
     const ytFrame = document.getElementById('yt-music-frame');
@@ -3185,6 +3181,28 @@ function _wireIntroScreenButton(screenId, onOpen) {
       setTimeout(cmd, 300);
     }
     if (typeof onOpen === 'function') onOpen();
+
+    if (screen.dataset.opening === '1') return;
+    screen.dataset.opening = '1';
+    screen.style.pointerEvents = 'none';
+    screen.style.cursor = 'progress';
+
+    const revealWhenReady = (attempt = 0) => {
+      const guestScreen = document.getElementById('screen-guest');
+      const stillLoading = guestScreen && guestScreen.classList.contains('std-pending');
+      if (stillLoading && attempt < 80) {
+        setTimeout(() => revealWhenReady(attempt + 1), 100);
+        return;
+      }
+
+      // Reveal only after the invite behind this photo is ready. Some mobile
+      // browsers can otherwise expose the old commercial screen underneath.
+      screen.style.transition = 'opacity 0.35s ease';
+      screen.style.opacity = '0';
+      setTimeout(() => screen.remove(), 350);
+    };
+
+    revealWhenReady();
   };
 }
 

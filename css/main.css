@@ -10,6 +10,10 @@
 html, body { height: 100%; margin: 0; width: 100%; overflow-x: hidden; }
 :root { --ev-color: #007f9f; }
 
+/* Local fallback for Tailwind's .hidden utility. If the Tailwind CDN is slow
+   or blocked in WhatsApp/iPhone browsers, inactive screens must stay hidden. */
+.hidden { display: none !important; }
+
 /* ── Brand buttons (dashboard/admin — always AdKira teal) ── */
 .btn-main {
   background: #007f9f; color: #fff; border-radius: 0.75rem;
