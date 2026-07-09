@@ -137,6 +137,13 @@ let _forceNextLoad = false;
 function invalidateEventsCache() { _forceNextLoad = true; }
 
 async function loadEventosComDelay() {
+  // ✅ CRÍTICO: Se estamos a mostrar um evento a um convidado, NÃO mudar de ecrã
+  const guestScreen = document.getElementById('screen-guest');
+  const isShowingGuest = guestScreen && !guestScreen.classList.contains('hidden');
+  if (isShowingGuest) {
+    dlog('📍 Ecrã de convidado activo — loadEventosComDelay não vai mudar de ecrã');
+    return false;
+  }
   const now = Date.now();
   if (!_forceNextLoad && Store.events && Store.events.length > 0 && (now - _lastLoad) < _CACHE_TTL) {
     dlog('📦 Cache OK — não recarrega eventos');
@@ -435,9 +442,13 @@ async function loadEventosComDelay() {
   
   if (eventFromURL) {
     dlog('📍 Evento encontrado na URL');
-    // Load session in background if logged in (for back button functionality)
-    if (token && userId) loadEventosComDelay().catch(() => {});
+    // ✅ CRÍTICO: Ir para o evento PRIMEIRO, ANTES de qualquer outra coisa
     Router.go(eventFromURL);
+    // Carregar sessão em background MAS garantir que não muda de ecrã
+    // O utilizador logado pode voltar atrás depois — mas o evento abre sempre
+    if (token && userId) {
+      loadEventosComDelay().catch(() => {});
+    }
   } else {
     // ✅ PASSO 5: Só depois carrega eventos (se sessão existe)
     const sessaoCarregada = await loadEventosComDelay();
