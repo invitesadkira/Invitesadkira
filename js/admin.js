@@ -1,4 +1,4 @@
-// ===================== ADMIN =====================
+﻿// ===================== ADMIN =====================
 
 // ===================== CONTAS POR APROVAR =====================
 function openPendingAccounts() {
@@ -6,7 +6,7 @@ function openPendingAccounts() {
 }
 
 function renderPendingAccounts() {
-  if (!Store.currentUser || Store.currentUser.role !== 'admin') { Router.go('admin'); return; }
+  if (!Store.currentUser || !isAdminRole(Store.currentUser.role)) { Router.go('admin'); return; }
   const container = document.getElementById('pending-accounts-list');
   if (!container) return;
   const pending = (Store.users || []).filter(u => u.status === 'pending');
@@ -75,13 +75,13 @@ function rejectFromPending(userId) {
 
 // ===================== ADMIN PANEL =====================
 function renderAdmin() {
-  if (!Store.currentUser || Store.currentUser.role !== 'admin') { Router.go('dashboard'); return; }
+  if (!Store.currentUser || !isAdminRole(Store.currentUser.role)) { Router.go('dashboard'); return; }
 
   // Quick grid do admin
   buildAdminQuickGrid();
   renderAdminBusinessOverview();
 
-  const nonAdminUsers = Store.users.filter(u => u.role !== 'admin' && u.status !== 'deleted');
+  const nonAdminUsers = Store.users.filter(u => !isAdminRole(u.role) && u.status !== 'deleted');
   const active = nonAdminUsers.filter(u => u.status === 'active').length;
   const pending = nonAdminUsers.filter(u => u.status === 'pending').length;
 
@@ -111,7 +111,7 @@ function renderAdmin() {
 
 function filterAdminAccounts() {
   const searchTerm = document.getElementById('admin-search-input').value.toLowerCase().trim();
-  const nonAdminUsers = Store.users.filter(u => u.role !== 'admin' && u.status !== 'deleted');
+  const nonAdminUsers = Store.users.filter(u => !isAdminRole(u.role) && u.status !== 'deleted');
   
   if (!searchTerm) {
     renderAdminAccountsList(nonAdminUsers);
@@ -141,7 +141,7 @@ function filterAdminAccounts() {
 
 function clearAdminSearch() {
   document.getElementById('admin-search-input').value = '';
-  const nonAdminUsers = Store.users.filter(u => u.role !== 'admin' && u.status !== 'deleted');
+  const nonAdminUsers = Store.users.filter(u => !isAdminRole(u.role) && u.status !== 'deleted');
   renderAdminAccountsList(nonAdminUsers);
 }
 
@@ -159,7 +159,7 @@ function renderAdminAccountsList(users) {
     const userPhone = escapeHTML(u.phone || 'N/A');
     const userId = escapeHTML(u.id || 'N/A');
     const userStatusClass = statusColors[u.status] || statusColors['active'] || 'bg-green-100 text-green-700';
-    const eventLimit = u.eventLimit !== null ? u.eventLimit : '∞';
+    const eventLimit = u.eventLimit !== null ? u.eventLimit : 'âˆž';
     const adminLabel = escapeHTML(u.adminLabel || '-');
     const userRole = u.role || 'user';
     
@@ -175,7 +175,7 @@ function renderAdminAccountsList(users) {
     html += '<div class="p-2 rounded" style="background:var(--app-bg)"><p class="mb-0.5" style="color:var(--app-muted)">Username</p><p class="font-semibold break-all" style="color:var(--app-ink)">' + userPhone + '</p></div>';
     html += '<div class="p-2 rounded" style="background:var(--app-bg)"><p class="mb-0.5" style="color:var(--app-muted)">Tipo</p><p class="font-semibold" style="color:var(--app-ink)">' + (userRole === 'moderator' ? 'Moderador' : 'Utilizador') + '</p></div>';
     html += '<div class="p-2 rounded" style="background:var(--app-bg)"><p class="mb-0.5" style="color:var(--app-muted)">Nome Admin</p><p class="font-semibold" style="color:var(--app-ink)">' + adminLabel + '</p></div>';
-    html += '<div class="p-2 rounded" style="background:var(--app-bg)"><p class="mb-0.5" style="color:var(--app-muted)">Senha</p><p class="font-mono text-xs break-all" style="color:var(--app-ink)">•••••••• <button class="text-teal-600 underline font-sans not-italic" style="font-size:0.68rem" onclick="changeUserPassword(\'' + u.id + '\')">redefinir</button></p></div>';
+    html += '<div class="p-2 rounded" style="background:var(--app-bg)"><p class="mb-0.5" style="color:var(--app-muted)">Senha</p><p class="font-mono text-xs break-all" style="color:var(--app-ink)">â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢ <button class="text-teal-600 underline font-sans not-italic" style="font-size:0.68rem" onclick="changeUserPassword(\'' + u.id + '\')">redefinir</button></p></div>';
     html += '<div class="p-2 rounded" style="background:var(--app-bg)"><p class="mb-0.5" style="color:var(--app-muted)">Status</p><span class="inline-block px-2 py-0.5 rounded-full font-semibold ' + userStatusClass + '">' + userStatus + '</span></div>';
     html += '<div class="p-2 rounded" style="background:var(--app-bg)"><p class="mb-0.5" style="color:var(--app-muted)">Eventos</p><p class="font-semibold" style="color:var(--app-ink)">' + userEvents + '/' + eventLimit + '</p></div>';
     html += '</div>';
@@ -187,10 +187,10 @@ function renderAdminAccountsList(users) {
     html += '<button class="text-xs bg-purple-500 hover:bg-purple-600 text-white rounded-lg py-1.5 px-3 font-semibold transition" onclick="toggleModeratorRole(\'' + u.id + '\')">' + (userRole === 'moderator' ? 'Utilizador' : 'Moderador') + '</button>';
     html += '<button class="text-xs bg-slate-500 hover:bg-slate-600 text-white rounded-lg py-1.5 px-3 font-semibold transition" onclick="changeUserPassword(\'' + u.id + '\')">Senha</button>';
     html += '<button class="text-xs bg-orange-500 hover:bg-orange-600 text-white rounded-lg py-1.5 px-3 font-semibold transition" onclick="changeUserPhone(\'' + u.id + '\')">Username</button>';
-    html += '<button class="text-xs bg-violet-600 hover:bg-violet-700 text-white rounded-lg py-1.5 px-3 font-semibold transition" onclick="openUserFeaturesModal(\'' + u.id + '\')">🔐 Permissões</button>';
-    html += '<button class="text-xs bg-rose-500 hover:bg-rose-600 text-white rounded-lg py-1.5 px-3 font-semibold transition" onclick="openTicketLimitModal(\'' + (u.auth_uid||u.id) + '\',\'' + escapeHTML(u.username||u.email||u.id) + '\')">🎫 Tickets</button>';
-    html += '<button class="text-xs bg-orange-500 hover:bg-orange-600 text-white rounded-lg py-1.5 px-3 font-semibold transition" onclick="resetUndoScans(\'' + (u.auth_uid||u.id) + '\',\'' + escapeHTML(u.username||u.email||u.id) + '\')">↩ Repor Desfazer</button>';
-    html += '<button class="text-xs ' + (u.edit_locked ? 'bg-green-600 hover:bg-green-700' : 'bg-yellow-600 hover:bg-yellow-700') + ' text-white rounded-lg py-1.5 px-3 font-semibold transition" onclick="adminToggleEditLock(\'' + u.id + '\',' + !!u.edit_locked + ')">' + (u.edit_locked ? '🔓 Desbloquear Edição' : '🔒 Bloquear Edição') + '</button>';
+    html += '<button class="text-xs bg-violet-600 hover:bg-violet-700 text-white rounded-lg py-1.5 px-3 font-semibold transition" onclick="openUserFeaturesModal(\'' + u.id + '\')">ðŸ” Permissões</button>';
+    html += '<button class="text-xs bg-rose-500 hover:bg-rose-600 text-white rounded-lg py-1.5 px-3 font-semibold transition" onclick="openTicketLimitModal(\'' + (u.auth_uid||u.id) + '\',\'' + escapeHTML(u.username||u.email||u.id) + '\')">ðŸŽ« Tickets</button>';
+    html += '<button class="text-xs bg-orange-500 hover:bg-orange-600 text-white rounded-lg py-1.5 px-3 font-semibold transition" onclick="resetUndoScans(\'' + (u.auth_uid||u.id) + '\',\'' + escapeHTML(u.username||u.email||u.id) + '\')">â†© Repor Desfazer</button>';
+    html += '<button class="text-xs ' + (u.edit_locked ? 'bg-green-600 hover:bg-green-700' : 'bg-yellow-600 hover:bg-yellow-700') + ' text-white rounded-lg py-1.5 px-3 font-semibold transition" onclick="adminToggleEditLock(\'' + u.id + '\',' + !!u.edit_locked + ')">' + (u.edit_locked ? 'ðŸ”“ Desbloquear Edição' : 'ðŸ”’ Bloquear Edição') + '</button>';
     
     if (Store.events.some(e => e.userId === u.id)) {
       html += '<button class="text-xs bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg py-1.5 px-3 font-semibold transition" onclick="showUserEventOptions(\'' + u.id + '\')">Eventos</button>';
@@ -262,8 +262,8 @@ function adminAction(userId, action) {
   } else if (action === 'block') {
     const u = Store.users.find(u => u.id === userId);
     if (u) {
-      // 🔒 PROTEÇÃO: conta admin nunca pode ser bloqueada
-      if (u.role === 'admin' || u.phone === 'invitesadkira@gmail.com') {
+      // ðŸ”’ PROTEÇÃO: conta admin nunca pode ser bloqueada
+      if (isAdminRole(u.role) || u.phone === 'invitesadkira@gmail.com') {
         toast('Operacao bloqueada: conta de administrador nao pode ser alterada.');
         return;
       }
@@ -296,9 +296,9 @@ function adminAction(userId, action) {
         <div class="bg-red-50 rounded-lg p-3 mb-4">
           <p class="text-xs text-red-700 font-semibold mb-1">⚠️ Esta acção é irreversível:</p>
           <ul class="text-xs text-red-600 space-y-1">
-            <li>• A conta será eliminada permanentemente</li>
-            <li>• Todos os eventos desta conta serão eliminados</li>
-            <li>• Todas as confirmações de presença serão eliminadas</li>
+            <li>â€¢ A conta será eliminada permanentemente</li>
+            <li>â€¢ Todos os eventos desta conta serão eliminados</li>
+            <li>â€¢ Todas as confirmações de presença serão eliminadas</li>
           </ul>
         </div>
         <div class="flex gap-2">
@@ -320,8 +320,8 @@ async function confirmAdminDeleteUser(userId, modal) {
   const user = Store.users.find(u => u.id === userId);
   if (!user) { modal.remove(); return; }
 
-  // 🔒 Admin God can NEVER be deleted
-  if (user.role === 'admin' || user.phone === 'invitesadkira@gmail.com') {
+  // ðŸ”’ Admin God can NEVER be deleted
+  if (isAdminRole(user.role) || user.phone === 'invitesadkira@gmail.com') {
     modal.remove();
     toast('Conta de administrador não pode ser eliminada.');
     return;
@@ -408,7 +408,7 @@ async function adminToggleEditLock(userId, currentlyLocked) {
   if (!confirm(`Tens a certeza que queres ${label} para este utilizador?`)) return;
   try {
     await supabaseRequest(`accounts?id=eq.${userId}`, 'PATCH', { edit_locked: newValue });
-    toast(newValue ? '🔒 Edição bloqueada!' : '🔓 Edição desbloqueada!');
+    toast(newValue ? 'ðŸ”’ Edição bloqueada!' : 'ðŸ”“ Edição desbloqueada!');
     // Refresh user list
     document.getElementById('admin-users-panel')?.querySelectorAll('button')
       ?.forEach(b => { if (b.textContent.includes('Utilizadores')) b.click(); });
@@ -434,7 +434,7 @@ function setEventLimit(userId) {
         <div>
           <label class="block text-sm font-semibold text-gray-600 mb-1">Limite de Eventos</label>
           <input id="event-limit-input" type="number" min="0" max="100" value="${user.eventLimit !== null ? user.eventLimit : ''}" class="input-field" placeholder="0 = sem limite">
-          <p class="text-xs text-gray-400 mt-1">Deixe vazio ou 0 para sem limite (∞)</p>
+          <p class="text-xs text-gray-400 mt-1">Deixe vazio ou 0 para sem limite (âˆž)</p>
         </div>
       </div>
       
@@ -453,7 +453,7 @@ function editEventURL(eventId) {
   if (!event) return;
   
   // APENAS admin pode trocar código
-  if (Store.currentUser.role !== 'admin') {
+  if (!isAdminRole(Store.currentUser.role)) {
     toast('Apenas administrador pode alterar o código do evento.');
     return;
   }
@@ -523,7 +523,7 @@ function saveEventURL(eventId, modal) {
     // ✅ CRÍTICO: Atualizar URL do navegador com o novo código
     const newURL = `${window.location.origin}${window.location.pathname}?event=${newCode}`;
     window.history.replaceState({ eventCode: newCode }, document.title, newURL);
-    dlog('🔗 URL do navegador atualizada para:', newURL);
+    dlog('ðŸ”— URL do navegador atualizada para:', newURL);
     
     modal.remove();
     toast(`URL alterada de "${oldCode}" para "${newCode}"`);
@@ -619,7 +619,7 @@ function exportCSV() {
 
 // ✅ EXPORTAR SCHEMA COMPLETO DO SUPABASE
 async function exportSupabaseSchema() {
-  if (!Store.currentUser || Store.currentUser.role !== 'admin') {
+  if (!Store.currentUser || !isAdminRole(Store.currentUser.role)) {
     toast('Apenas admin pode exportar schema.');
     return;
   }
@@ -627,7 +627,7 @@ async function exportSupabaseSchema() {
   toast('Carregando schema do Supabase...');
   
   try {
-    // 🎯 PASSO 1: Carregar TODAS as tabelas de dados
+    // ðŸŽ¯ PASSO 1: Carregar TODAS as tabelas de dados
     dlog('📥 Carregando dados do Supabase...');
     
     const accountsData = await supabaseRequest('accounts?select=*');
@@ -641,7 +641,7 @@ async function exportSupabaseSchema() {
     dlog('  RSVPs:', rsvpsData?.length || 0);
     dlog('  Presentes:', giftsData?.length || 0);
     
-    // 🎯 PASSO 2: Definir schema das tabelas
+    // ðŸŽ¯ PASSO 2: Definir schema das tabelas
     const schema = {
       version: '1.0',
       exported_at: new Date().toISOString(),
@@ -726,7 +726,7 @@ async function exportSupabaseSchema() {
       
       statistics: {
         total_accounts: accountsData?.length || 0,
-        total_admins: (accountsData || []).filter(a => a.role === 'admin').length,
+        total_admins: (accountsData || []).filter(a => isAdminRole(a.role)).length,
         total_users: (accountsData || []).filter(a => a.role === 'user').length,
         total_events: eventsData?.length || 0,
         total_rsvps: rsvpsData?.length || 0,
@@ -737,77 +737,77 @@ async function exportSupabaseSchema() {
       }
     };
     
-    // 🎯 PASSO 3: Gerar documento texto formatado
+    // ðŸŽ¯ PASSO 3: Gerar documento texto formatado
     let textContent = '';
     
-    textContent += '═══════════════════════════════════════════════════════════════════════════\n';
+    textContent += 'â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•\n';
     textContent += '                    SCHEMA DA BASE DE DADOS - SUPABASE\n';
     textContent += '                     RSVP EVENT MANAGEMENT SYSTEM\n';
-    textContent += '═══════════════════════════════════════════════════════════════════════════\n\n';
+    textContent += 'â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•\n\n';
     
     textContent += ` Data de Exportação: ${new Date().toLocaleString('pt-PT')}\n`;
     textContent += `URL do Supabase: ${SUPABASE_URL}\n`;
     textContent += ` Versão do Schema: ${schema.version}\n\n`;
     
-    // ─── ESTATÍSTICAS ───
-    textContent += '┌─ ESTATÍSTICAS GERAIS ───────────────────────────────────────────────────┐\n';
-    textContent += `│ Total de Contas (Utilizadores):     ${String(schema.statistics.total_accounts).padEnd(40)}\n`;
-    textContent += `│ • Administradores:                  ${String(schema.statistics.total_admins).padEnd(40)}\n`;
-    textContent += `│ • Utilizadores Normais:             ${String(schema.statistics.total_users).padEnd(40)}\n`;
-    textContent += `│ Total de Eventos:                   ${String(schema.statistics.total_events).padEnd(40)}\n`;
-    textContent += `│ Total de Confirmações (RSVPs):      ${String(schema.statistics.total_rsvps).padEnd(40)}\n`;
-    textContent += `│ Total de Presentes:                 ${String(schema.statistics.total_gifts).padEnd(40)}\n`;
-    textContent += `│ Média de Confirmações por Evento:   ${String(schema.statistics.average_confirmations_per_event).padEnd(40)}\n`;
-    textContent += '└───────────────────────────────────────────────────────────────────────────┘\n\n';
+    // â”€â”€â”€ ESTATÍSTICAS â”€â”€â”€
+    textContent += 'â”Œâ”€ ESTATÍSTICAS GERAIS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”\n';
+    textContent += `â”‚ Total de Contas (Utilizadores):     ${String(schema.statistics.total_accounts).padEnd(40)}\n`;
+    textContent += `â”‚ â€¢ Administradores:                  ${String(schema.statistics.total_admins).padEnd(40)}\n`;
+    textContent += `â”‚ â€¢ Utilizadores Normais:             ${String(schema.statistics.total_users).padEnd(40)}\n`;
+    textContent += `â”‚ Total de Eventos:                   ${String(schema.statistics.total_events).padEnd(40)}\n`;
+    textContent += `â”‚ Total de Confirmações (RSVPs):      ${String(schema.statistics.total_rsvps).padEnd(40)}\n`;
+    textContent += `â”‚ Total de Presentes:                 ${String(schema.statistics.total_gifts).padEnd(40)}\n`;
+    textContent += `â”‚ Média de Confirmações por Evento:   ${String(schema.statistics.average_confirmations_per_event).padEnd(40)}\n`;
+    textContent += 'â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜\n\n';
     
-    // ─── DESCRIÇÃO DAS TABELAS ───
-    textContent += '═════════════════════════════════════════════════════════════════════════════\n';
+    // â”€â”€â”€ DESCRIÇÃO DAS TABELAS â”€â”€â”€
+    textContent += 'â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•\n';
     textContent += '                          ESTRUTURA DAS TABELAS\n';
-    textContent += '═════════════════════════════════════════════════════════════════════════════\n\n';
+    textContent += 'â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•\n\n';
     
     Object.entries(schema.tables).forEach(([tableName, tableInfo]) => {
-      textContent += `┌─ TABELA: ${tableName.toUpperCase()} ─────────────────────────────────────────────────┐\n`;
-      textContent += `│ ${tableInfo.description}\n`;
-      textContent += `│ Registos: ${tableInfo.data.length}\n`;
-      textContent += '├─ COLUNAS:\n';
+      textContent += `â”Œâ”€ TABELA: ${tableName.toUpperCase()} â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”\n`;
+      textContent += `â”‚ ${tableInfo.description}\n`;
+      textContent += `â”‚ Registos: ${tableInfo.data.length}\n`;
+      textContent += 'â”œâ”€ COLUNAS:\n';
       
       Object.entries(tableInfo.columns).forEach(([colName, colDef]) => {
-        textContent += `│   • ${colName}: ${colDef}\n`;
+        textContent += `â”‚   â€¢ ${colName}: ${colDef}\n`;
       });
       
       if (tableInfo.data.length > 0) {
-        textContent += '├─ AMOSTRA DE DADOS (primeiros 3 registos):\n';
-        textContent += '│\n';
+        textContent += 'â”œâ”€ AMOSTRA DE DADOS (primeiros 3 registos):\n';
+        textContent += 'â”‚\n';
         
         tableInfo.data.slice(0, 3).forEach((row, idx) => {
-          textContent += `│   Registo ${idx + 1}:\n`;
+          textContent += `â”‚   Registo ${idx + 1}:\n`;
           Object.entries(row).forEach(([key, value]) => {
             const displayValue = typeof value === 'string' && value.length > 50 
               ? value.substring(0, 47) + '...' 
               : String(value);
-            textContent += `│     - ${key}: ${displayValue}\n`;
+            textContent += `â”‚     - ${key}: ${displayValue}\n`;
           });
-          textContent += '│\n';
+          textContent += 'â”‚\n';
         });
       }
       
-      textContent += '└───────────────────────────────────────────────────────────────────────────┘\n\n';
+      textContent += 'â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜\n\n';
     });
     
-    // ─── RELACIONAMENTOS ───
-    textContent += '═════════════════════════════════════════════════════════════════════════════\n';
+    // â”€â”€â”€ RELACIONAMENTOS â”€â”€â”€
+    textContent += 'â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•\n';
     textContent += '                       RELACIONAMENTOS ENTRE TABELAS\n';
-    textContent += '═════════════════════════════════════════════════════════════════════════════\n\n';
+    textContent += 'â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•\n\n';
     
     Object.entries(schema.relationships).forEach(([relationship, description]) => {
       textContent += `${relationship}\n`;
-      textContent += `  └─ ${description}\n\n`;
+      textContent += `  â””â”€ ${description}\n\n`;
     });
     
-    // ─── QUERIES ÚTEIS ───
-    textContent += '═════════════════════════════════════════════════════════════════════════════\n';
+    // â”€â”€â”€ QUERIES ÚTEIS â”€â”€â”€
+    textContent += 'â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•\n';
     textContent += '                       QUERIES SQL ÚTEIS (Supabase)\n';
-    textContent += '═════════════════════════════════════════════════════════════════════════════\n\n';
+    textContent += 'â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•\n\n';
     
     textContent += '# Listar todos os utilizadores activos:\n';
     textContent += 'SELECT id, phone, role, status, event_limit FROM accounts WHERE status = \'active\';\n\n';
@@ -824,27 +824,27 @@ async function exportSupabaseSchema() {
     textContent += '# Convidados que querem presentear:\n';
     textContent += 'SELECT * FROM rsvps WHERE wants_gift = \'yes\' AND attending = \'yes\';\n\n';
     
-    // ─── DICAS ───
-    textContent += '═════════════════════════════════════════════════════════════════════════════\n';
+    // â”€â”€â”€ DICAS â”€â”€â”€
+    textContent += 'â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•\n';
     textContent += '                              NOTAS IMPORTANTES\n';
-    textContent += '═════════════════════════════════════════════════════════════════════════════\n\n';
+    textContent += 'â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•\n\n';
     
     textContent += '  SEGURANÇA:\n';
-    textContent += '    • As senhas são armazenadas em texto simples (INSEGURO para produção)\n';
-    textContent += '    • Implementar bcrypt ou hashing de senha para ambientes reais\n';
-    textContent += '    • Nunca compartilhe este arquivo com terceiros\n\n';
+    textContent += '    â€¢ As senhas são armazenadas em texto simples (INSEGURO para produção)\n';
+    textContent += '    â€¢ Implementar bcrypt ou hashing de senha para ambientes reais\n';
+    textContent += '    â€¢ Nunca compartilhe este arquivo com terceiros\n\n';
     
     textContent += 'DADOS:\n';
-    textContent += '    • Campos de data/hora usam timezone: UTC\n';
-    textContent += '    • Acompanhantes e crianças são armazenados como texto separado por |\n';
-    textContent += '    • A coluna confirm_by_date pode conter data+hora (formato misto)\n\n';
+    textContent += '    â€¢ Campos de data/hora usam timezone: UTC\n';
+    textContent += '    â€¢ Acompanhantes e crianças são armazenados como texto separado por |\n';
+    textContent += '    â€¢ A coluna confirm_by_date pode conter data+hora (formato misto)\n\n';
     
     textContent += ' SINCRONIZAÇÃO:\n';
-    textContent += '    • O sistema sincroniza automaticamente com Supabase a cada operação\n';
-    textContent += '    • Mudanças feitas directamente no Supabase são refletidas no app\n';
-    textContent += '    • Criar um backup regular desta schema\n\n';
+    textContent += '    â€¢ O sistema sincroniza automaticamente com Supabase a cada operação\n';
+    textContent += '    â€¢ Mudanças feitas directamente no Supabase são refletidas no app\n';
+    textContent += '    â€¢ Criar um backup regular desta schema\n\n';
     
-    textContent += '═════════════════════════════════════════════════════════════════════════════\n';
+    textContent += 'â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•\n';
     textContent += 'Fim do Documento\n';
     
     // Criar arquivo e baixar
@@ -891,7 +891,7 @@ function showUploadGuestListModal() {
       <label class="block text-sm font-semibold text-gray-600 mb-1">Utilizador</label>
       <select id="guest-list-user" class="input-field mb-4" onchange="updateEventsList()">
         <option value="">-- Selecione um usuário --</option>
-        ${Store.users.filter(u => u.role !== 'admin' && u.status !== 'deleted').map(u => {
+        ${Store.users.filter(u => !isAdminRole(u.role) && u.status !== 'deleted').map(u => {
           const userEventCount = Store.events.filter(e => e.userId === u.id).length;
           return `<option value="${u.id}">${u.phone} (${userEventCount} evento${userEventCount !== 1 ? 's' : ''})</option>`;
         }).join('')}
@@ -1031,7 +1031,7 @@ function parseGiftsListText(text) {
     if (isCategory) {
       currentCategory = line;
     } else {
-      let giftName = line.replace(/^[\s\-\*•\.]+/, '').trim();
+      let giftName = line.replace(/^[\s\-\*â€¢\.]+/, '').trim();
       
       if (giftName && giftName.length > 2) {
         gifts.push({
@@ -1097,7 +1097,7 @@ function processGuestList() {
     });
     
     // ✅ CRÍTICO: Salvar TODOS os convidados no Supabase
-    dlog('💾 Salvando convidados no Supabase...');
+    dlog('ðŸ’¾ Salvando convidados no Supabase...');
     saveGuestListToSupabase(eventId, event.confirmations);
     
     document.querySelector('.modal-overlay').remove();
@@ -1130,7 +1130,7 @@ async function saveGuestListToSupabase(eventId, confirmations) {
         updated_at: new Date().toISOString()
       };
       
-      dlog('  📝 Salvando convidado:', { name: conf.name, attending: rsvpData.attending });
+      dlog('  ðŸ“ Salvando convidado:', { name: conf.name, attending: rsvpData.attending });
       
       // Verificar se já existe (para UPDATE em vez de INSERT)
       const existingRsvps = await supabaseRequest(
@@ -1140,7 +1140,7 @@ async function saveGuestListToSupabase(eventId, confirmations) {
       
       if (existingRsvps && existingRsvps.length > 0) {
         // Já existe - fazer UPDATE
-        dlog('  🔄 Convidado já existe, atualizando...');
+        dlog('  🔎 Convidado já existe, atualizando...');
         const updateResult = await supabaseRequest(
           `rsvps?event_id=eq.${eventId}&guest_name=eq.${encodeURIComponent(conf.name)}`,
           'PATCH',
@@ -1149,7 +1149,7 @@ async function saveGuestListToSupabase(eventId, confirmations) {
         dlog('  ✅ RSVP atualizado');
       } else {
         // Novo - fazer INSERT
-        dlog('  ➕ Novo convidado, inserindo...');
+        dlog('  âž• Novo convidado, inserindo...');
         const createResult = await supabaseRequest('rsvps', 'POST', rsvpData);
         dlog('  ✅ RSVP criado:', createResult);
       }
@@ -1186,16 +1186,16 @@ function parseGuestListText(text) {
     
     // ✅ PASSO 3: Detectar se é uma linha de acompanhante (começa com +)
     if (line.includes('+') && line.includes('acompanhante')) {
-      dlog('⏭️ Pulando linha de acompanhante:', line);
+      dlog('â­ï¸ Pulando linha de acompanhante:', line);
       i++;
       continue;
     }
     
     // ✅ PASSO 4: Agora processamos o NOME
-    const hasEmoji = line.includes('👰');
+    const hasEmoji = line.includes('ðŸ‘°');
     
     // Remover APENAS o emoji, manter o resto do nome intacto
-    let name = line.replace(/\s*👰\s*/g, '').trim();
+    let name = line.replace(/\s*ðŸ‘°\s*/g, '').trim();
     
     // Se não houver nome, pular
     if (!name || name.length < 2) {
@@ -1216,7 +1216,7 @@ function parseGuestListText(text) {
       
       // Se a próxima linha contém "+X acompanhante(s):"
       if (nextLine.includes('+') && nextLine.includes('acompanhante')) {
-        dlog('🤝 Acompanhantes encontrados:', nextLine);
+        dlog('ðŸ¤ Acompanhantes encontrados:', nextLine);
         
         // Extrair tudo depois dos ":"
         const colonIndex = nextLine.indexOf(':');
@@ -1235,7 +1235,7 @@ function parseGuestListText(text) {
               const singleCompanion = companionText.trim();
               if (singleCompanion && singleCompanion.length > 1) {
                 companions = [singleCompanion]; // ✅ Nome COMPLETO sem split
-                dlog('  📝 1 acompanhante (SEM SPLIT de vírgula):', companions);
+                dlog('  ðŸ“ 1 acompanhante (SEM SPLIT de vírgula):', companions);
               }
             } else {
               // Se espera múltiplos (2+), SIM separar por vírgula
@@ -1244,7 +1244,7 @@ function parseGuestListText(text) {
                 .map(s => s.trim())
                 .filter(s => s && s !== 'Definir' && s.length > 1);
               
-              dlog(`  📝 ${expectedCount} acompanhante(s) (COM SPLIT):`, companions);
+              dlog(`  ðŸ“ ${expectedCount} acompanhante(s) (COM SPLIT):`, companions);
             }
           }
         }
@@ -1441,16 +1441,16 @@ function showImportSummary(stats, format) {
      Importação de ${format.toUpperCase()} concluída!
     
     Utilizadores:
-    • ${stats.newUsers} novo(s)
-    • ${stats.updatedUsers} atualizado(s)
+    â€¢ ${stats.newUsers} novo(s)
+    â€¢ ${stats.updatedUsers} atualizado(s)
     
     Eventos:
-    • ${stats.newEvents} novo(s)
-    • ${stats.mergedEvents} merge com existentes
+    â€¢ ${stats.newEvents} novo(s)
+    â€¢ ${stats.mergedEvents} merge com existentes
     
     Confirmações:
-    • ${stats.newConfirmations} adicionada(s)
-    • ${stats.skippedConfirmations} ignorada(s) (duplicadas)
+    â€¢ ${stats.newConfirmations} adicionada(s)
+    â€¢ ${stats.skippedConfirmations} ignorada(s) (duplicadas)
   `;
 
   // Criar modal de resumo
@@ -1946,7 +1946,7 @@ function toggleModeratorRole(userId) {
   if (!user) return;
 
   // Apenas admin pode atribuir role de moderador
-  if (!Store.currentUser || Store.currentUser.role !== 'admin') {
+  if (!Store.currentUser || !isAdminRole(Store.currentUser.role)) {
     toast('Apenas admin pode atribuir role de moderador!');
     return;
   }
@@ -2005,7 +2005,7 @@ function confirmToggleModeratorRole(userId, newRole, modal) {
 
 // ===================== STORAGE MANAGER =====================
 async function openStorageManager() {
-  if (!Store.currentUser || Store.currentUser.role !== 'admin') return;
+  if (!Store.currentUser || !isAdminRole(Store.currentUser.role)) return;
   const modal = document.createElement('div');
   modal.className = 'modal-overlay';
   modal.id = 'storage-manager-modal';
@@ -2437,7 +2437,7 @@ function toggleFaqItem(id) {
 }
 
 async function openFaqEditor() {
-  if (!Store.currentUser || Store.currentUser.role !== 'admin') return;
+  if (!Store.currentUser || !isAdminRole(Store.currentUser.role)) return;
   const faqs = await loadFAQ();
   const modal = document.createElement('div');
   modal.className = 'modal-overlay';
@@ -2657,7 +2657,7 @@ async function loadDemoEvent() {
 
 // ===================== ADMIN: CREATE USER ACCOUNT =====================
 function openCreateUserModal() {
-  if (!Store.currentUser || Store.currentUser.role !== 'admin') return;
+  if (!Store.currentUser || !isAdminRole(Store.currentUser.role)) return;
   const modal = document.createElement('div');
   modal.className = 'modal-overlay';
   modal.innerHTML = `
@@ -2743,7 +2743,7 @@ async function createUserAccount(btn) {
 
 // ===================== ADMIN: SET DEMO EVENT =====================
 async function setDemoEventFromInput() {
-  if (!Store.currentUser || Store.currentUser.role !== 'admin') return;
+  if (!Store.currentUser || !isAdminRole(Store.currentUser.role)) return;
   const input = document.getElementById('demo-event-id-input');
   const eventId = input?.value?.trim();
   if (!eventId) { toast('Insere o ID ou código do evento.'); return; }
@@ -2794,8 +2794,8 @@ function copyIban(iban) {
 }
 
 function showAdminUserPicker() {
-  if (!Store.currentUser || Store.currentUser.role !== 'admin') return;
-  const users = (Store.users || []).filter(u => u.role !== 'admin');
+  if (!Store.currentUser || !isAdminRole(Store.currentUser.role)) return;
+  const users = (Store.users || []).filter(u => !isAdminRole(u.role));
   if (!users.length) { toast('Nenhum utilizador disponível.'); return; }
   const modal = document.createElement('div');
   modal.className = 'modal-overlay';
@@ -2833,7 +2833,7 @@ function impersonateUser(userId, userPhone, btn) {
 
 // ===================== PACKAGE EDITOR =====================
 const DEFAULT_PACKAGES = [
-  { name: 'Único', price: '79 999 Kz', people: '∞', invites: 'Envio ilimitado para quantas pessoas desejares', description: 'Envie sem limites, obs.: não leva nomes dos convidados no PDF e nem QR Code.', badge: 'Novo', featured: false },
+  { name: 'Único', price: '79 999 Kz', people: 'âˆž', invites: 'Envio ilimitado para quantas pessoas desejares', description: 'Envie sem limites, obs.: não leva nomes dos convidados no PDF e nem QR Code.', badge: 'Novo', featured: false },
   { name: 'Básico',   price: '99 999 Kz',  people: 110, invites: '60–66 convites digitais',  description: '', badge: 'Básico',   color: '#e0f2fe', textColor: '#0369a1' },
   { name: 'Popular',  price: '159 999 Kz', people: 230, invites: '126–136 convites digitais', description: '', badge: 'Popular',  color: '#fef3c7', textColor: '#92400e', featured: true },
   { name: 'Premium',  price: '219 999 Kz', people: 300, invites: '166–176 convites digitais', description: '', badge: 'Premium',  color: '#e0fdf4', textColor: '#065f46' },
@@ -2848,7 +2848,7 @@ async function loadPackages() {
 }
 
 async function openPackageEditor() {
-  if (!Store.currentUser || Store.currentUser.role !== 'admin') return;
+  if (!Store.currentUser || !isAdminRole(Store.currentUser.role)) return;
   const pkgs = await loadPackages();
   Store._editPackages = JSON.parse(JSON.stringify(pkgs));
 
@@ -2916,7 +2916,7 @@ async function savePackages(btn) {
 
 // ===================== INTAKE LINK PICKER (for admin) =====================
 function openIntakeLinkPicker() {
-  if (!Store.currentUser || Store.currentUser.role !== 'admin') return;
+  if (!Store.currentUser || !isAdminRole(Store.currentUser.role)) return;
   const events = Store.events || [];
   if (!events.length) { toast('Nenhum evento encontrado. Cria ou carrega eventos primeiro.'); return; }
 
@@ -3178,9 +3178,9 @@ async function openSiteNoticesManager() {
       <input id="notice-title" class="input-field mb-2 text-sm" placeholder="Título (ex: Manutenção Programada)">
       <textarea id="notice-msg" class="input-field mb-2 text-sm" rows="2" placeholder="Mensagem detalhada..."></textarea>
       <select id="notice-type" class="input-field mb-2 text-sm">
-        <option value="info">ℹ️ Informação</option>
+        <option value="info">â„¹ï¸ Informação</option>
         <option value="warning">⚠️ Aviso</option>
-        <option value="maintenance">🔧 Manutenção</option>
+        <option value="maintenance">ðŸ”§ Manutenção</option>
       </select>
       <input id="notice-until" type="datetime-local" class="input-field mb-2 text-sm">
       <button onclick="adminCreateNotice()" class="btn-main text-sm w-full">Publicar Aviso</button>
@@ -3239,7 +3239,7 @@ async function renderLandingReviews() {
   if (!rows || !rows.length) { grid.innerHTML = '<p style="text-align:center;color:#9ca3af;grid-column:1/-1">Ainda não há avaliações. Sê o primeiro!</p>'; return; }
   grid.innerHTML = rows.map(r => `
     <div style="background:#fff;border-radius:1rem;padding:1.25rem;box-shadow:0 2px 12px rgba(0,0,0,0.07)">
-      <div style="display:flex;gap:2px;margin-bottom:0.5rem">${'★'.repeat(r.stars)}<span style="color:#e5e7eb">${'★'.repeat(5-r.stars)}</span></div>
+      <div style="display:flex;gap:2px;margin-bottom:0.5rem">${'â˜…'.repeat(r.stars)}<span style="color:#e5e7eb">${'â˜…'.repeat(5-r.stars)}</span></div>
       ${r.review ? `<p style="font-size:0.85rem;color:#374151;font-style:italic;margin-bottom:0.5rem">"${escapeHTML(r.review)}"</p>` : ''}
       <p style="font-size:0.75rem;font-weight:700;color:#6b7280">${r.anonymous ? '— Anónimo' : '— ' + escapeHTML(r.name)}</p>
       ${r.created_at ? `<p style="font-size:0.68rem;color:#9ca3af">${new Date(r.created_at).toLocaleDateString('pt-PT')}</p>` : ''}
@@ -3254,7 +3254,7 @@ function openLeaveReview() {
   modal.innerHTML = `<div style="background:#fff;border-radius:1.25rem;padding:1.75rem;max-width:420px;width:100%;text-align:center">
     <h3 style="font-size:1.1rem;font-weight:800;color:#1e293b;margin-bottom:0.25rem">A sua avaliação</h3>
     <p style="font-size:0.82rem;color:#6b7280;margin-bottom:1rem">Ajuda-nos a melhorar e a inspirar outros clientes.</p>
-    <div id="star-selector" style="font-size:2rem;letter-spacing:0.1em;margin-bottom:1rem;cursor:pointer">★★★★★</div>
+    <div id="star-selector" style="font-size:2rem;letter-spacing:0.1em;margin-bottom:1rem;cursor:pointer">â˜…â˜…â˜…â˜…â˜…</div>
     <input id="rev-name" class="input-field" placeholder="O seu nome (obrigatório)" style="margin-bottom:0.4rem">
     <label style="display:flex;align-items:center;gap:0.4rem;font-size:0.78rem;color:#6b7280;margin-bottom:0.6rem;cursor:pointer">
       <input type="checkbox" id="rev-anon" style="width:14px;height:14px">
@@ -3270,13 +3270,13 @@ function openLeaveReview() {
   const starEl = document.getElementById('star-selector');
   function updateStars(n) {
     selectedStars = n;
-    starEl.innerHTML = '★'.repeat(n) + '<span style="color:#e5e7eb">' + '★'.repeat(5-n) + '</span>';
+    starEl.innerHTML = 'â˜…'.repeat(n) + '<span style="color:#e5e7eb">' + 'â˜…'.repeat(5-n) + '</span>';
   }
   updateStars(5);
   [1,2,3,4,5].forEach(n => {
     const span = document.createElement('span');
     span.style.cssText = 'cursor:pointer;font-size:2rem';
-    span.textContent = '★';
+    span.textContent = 'â˜…';
     span.onmouseenter = () => updateStars(n);
     span.onclick = () => updateStars(n);
   });
@@ -3284,7 +3284,7 @@ function openLeaveReview() {
   starEl.innerHTML = '';
   [1,2,3,4,5].forEach(n => {
     const span = document.createElement('span');
-    span.textContent = '★';
+    span.textContent = 'â˜…';
     span.style.cssText = `cursor:pointer;color:${n<=selectedStars?'#fbbf24':'#e5e7eb'};transition:color 0.1s`;
     span.onmouseenter = () => { [].forEach.call(starEl.children, (s,i) => s.style.color = i<n?'#fbbf24':'#e5e7eb'); };
     span.onmouseleave = () => { [].forEach.call(starEl.children, (s,i) => s.style.color = i<selectedStars?'#fbbf24':'#e5e7eb'); };
@@ -3400,7 +3400,7 @@ function openNotificationsPanel() {
   });
 }
 
-// ── Admin: send notification to all users ──
+// â”€â”€ Admin: send notification to all users â”€â”€
 function openSendNotificationModal() {
   const modal = document.createElement('div');
   modal.id = '_send-notif-modal';
@@ -3516,20 +3516,20 @@ async function renderAdminBusinessOverview() {
         ${overdue.slice(0, 4).map(o => `
           <div style="display:flex;justify-content:space-between;align-items:center;padding:0.4rem 0;border-bottom:1px solid #fee2e2;font-size:0.78rem">
             <span style="color:#374151">${escapeHTML(o.customer_name)} · entrega era ${new Date(o.delivery_date).toLocaleDateString('pt-PT')}</span>
-            <a href="https://wa.me/${(o.whatsapp||'').replace(/\\D/g,'')}" target="_blank" style="color:#0f766e;font-weight:700;text-decoration:none;flex-shrink:0;margin-left:0.5rem">WhatsApp →</a>
+            <a href="https://wa.me/${(o.whatsapp||'').replace(/\\D/g,'')}" target="_blank" style="color:#0f766e;font-weight:700;text-decoration:none;flex-shrink:0;margin-left:0.5rem">WhatsApp â†’</a>
           </div>`).join('')}
         ${overdue.length > 4 ? `<p style="font-size:0.72rem;color:#9ca3af;margin-top:0.4rem">+ ${overdue.length - 4} outra(s) — ver em "Encomendas"</p>` : ''}
       </div>` : ''}
   `;
 
-  // ── Bloqueio global de edição (todas as contas de uma vez) ──
+  // â”€â”€ Bloqueio global de edição (todas as contas de uma vez) â”€â”€
   try {
     const lockRows = await supabaseRequest('site_config?key=eq.global_edit_lock&select=value&limit=1');
     const isLocked = lockRows && lockRows[0] && lockRows[0].value === 'yes';
     el.innerHTML += `
       <div style="background:${isLocked ? '#fef2f2' : '#f8fafc'};border:1.5px solid ${isLocked ? '#fecaca' : '#e5e7eb'};border-radius:0.85rem;padding:0.9rem 1rem;margin-top:0.75rem;display:flex;align-items:center;justify-content:space-between;gap:0.75rem">
         <div>
-          <p style="font-size:0.82rem;font-weight:800;color:${isLocked ? '#b91c1c' : '#374151'};margin:0">🔒 Bloqueio de edição — todas as contas</p>
+          <p style="font-size:0.82rem;font-weight:800;color:${isLocked ? '#b91c1c' : '#374151'};margin:0">ðŸ”’ Bloqueio de edição — todas as contas</p>
           <p style="font-size:0.72rem;color:#6b7280;margin:0.2rem 0 0">${isLocked ? 'Ligado: nenhum organizador (exceto admin) pode editar eventos, Save the Date ou Dress Code + Presentes agora.' : 'Desligado: cada conta segue a sua própria regra (ver "Bloquear Edição" individual em Contas).'}</p>
         </div>
         <button onclick="adminToggleGlobalEditLock(${isLocked})" style="flex-shrink:0;background:${isLocked ? '#16a34a' : '#dc2626'};color:#fff;border:none;border-radius:0.5rem;padding:0.5rem 0.9rem;font-size:0.75rem;font-weight:700;cursor:pointer">${isLocked ? 'Desbloquear Todos' : 'Bloquear Todos'}</button>
@@ -3591,7 +3591,7 @@ function _orderCardHTML(o) {
     </div>
     <textarea id="notes-${o.id}" placeholder="Nota interna (só tu vês)..." style="width:100%;font-size:0.72rem;border:1px solid #e5e7eb;border-radius:0.5rem;padding:0.4rem 0.6rem;margin-bottom:0.5rem;resize:vertical;min-height:32px;font-family:inherit;color:#374151" onblur="adminSaveOrderNotes('${o.id}', this.value)">${escapeHTML(o.admin_notes || '')}</textarea>
     <div style="display:flex;gap:0.4rem;flex-wrap:wrap">
-      ${waDigits ? `<a href="https://wa.me/${waDigits}" target="_blank" rel="noopener" style="background:#dcfce7;color:#166534;border-radius:0.5rem;padding:0.3rem 0.7rem;font-size:0.7rem;font-weight:700;text-decoration:none;display:inline-flex;align-items:center;gap:0.3rem">💬 WhatsApp</a>` : ''}
+      ${waDigits ? `<a href="https://wa.me/${waDigits}" target="_blank" rel="noopener" style="background:#dcfce7;color:#166534;border-radius:0.5rem;padding:0.3rem 0.7rem;font-size:0.7rem;font-weight:700;text-decoration:none;display:inline-flex;align-items:center;gap:0.3rem">ðŸ’¬ WhatsApp</a>` : ''}
       ${!o.access_token ? `<button onclick="adminGenerateOrderToken('${o.id}')" style="background:#007f9f;color:#fff;border:none;border-radius:0.5rem;padding:0.3rem 0.7rem;font-size:0.7rem;font-weight:700;cursor:pointer">Gerar Código</button>` : `<button onclick="copyOrderToken('${o.access_token}')" style="background:#f3f4f6;color:#374151;border:none;border-radius:0.5rem;padding:0.3rem 0.7rem;font-size:0.7rem;font-weight:600;cursor:pointer">Copiar Código</button>`}
       <button onclick="adminUpdateOrderStatus('${o.id}','paid_70')" style="background:#e0f2fe;color:#0369a1;border:none;border-radius:0.5rem;padding:0.3rem 0.7rem;font-size:0.7rem;cursor:pointer">Marcar 70% Pago</button>
       <button onclick="adminUpdateOrderStatus('${o.id}','paid_100')" style="background:#dcfce7;color:#166534;border:none;border-radius:0.5rem;padding:0.3rem 0.7rem;font-size:0.7rem;cursor:pointer">Marcar 100% Pago</button>
@@ -3714,7 +3714,7 @@ async function openReviewsManager() {
       ${(reviews||[]).map(r => `<div style="background:#f8fafc;border-radius:0.75rem;padding:0.85rem;margin-bottom:0.6rem;border:1px solid #e5e7eb">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:0.4rem">
           <div>
-            <div style="color:#fbbf24;font-size:0.9rem">${'★'.repeat(r.stars)}<span style="color:#e5e7eb">${'★'.repeat(5-r.stars)}</span></div>
+            <div style="color:#fbbf24;font-size:0.9rem">${'â˜…'.repeat(r.stars)}<span style="color:#e5e7eb">${'â˜…'.repeat(5-r.stars)}</span></div>
             <p style="font-size:0.75rem;color:#6b7280;margin:0.15rem 0 0">${r.anonymous ? 'Anónimo' : escapeHTML(r.name)} · ${new Date(r.created_at).toLocaleDateString('pt-PT')}</p>
           </div>
           <button onclick="adminDeleteReview('${r.id}')" style="background:#fee2e2;color:#991b1b;border:none;border-radius:0.4rem;padding:0.25rem 0.6rem;font-size:0.68rem;cursor:pointer;flex-shrink:0">Apagar</button>
@@ -4124,7 +4124,7 @@ async function adminSaveDemoEvents() {
   if (typeof renderLandingDemos === 'function') renderLandingDemos();
 }
 
-// ── Painel de leads — respostas ao questionário do evento de exemplo ──
+// â”€â”€ Painel de leads — respostas ao questionário do evento de exemplo â”€â”€
 async function renderAdminLeadsPanel() {
   const container = document.getElementById('admin-leads-panel');
   if (!container) return;
@@ -4148,7 +4148,7 @@ async function renderAdminLeadsPanel() {
             </div>
             ${r.contact ? `<p class="text-xs text-gray-700 mt-0.5 font-semibold">${escapeHTML(r.contact)}</p>` : '<p class="text-xs text-gray-400 mt-0.5">Sem contacto</p>'}
             ${r.when_month ? `<p class="text-xs text-gray-500">Evento: ${r.when_month}</p>` : ''}
-            <p class="text-xs text-gray-400">Gostou: ${r.liked==='yes'?'😍 Sim':'😐 Mais ou menos'}</p>
+            <p class="text-xs text-gray-400">Gostou: ${r.liked==='yes'?'ðŸ˜ Sim':'ðŸ˜ Mais ou menos'}</p>
           </div>
           <button class="text-xs text-red-400 font-semibold" onclick="(async()=>{await supabaseRequest('lead_inquiries?id=eq.${r.id}','DELETE',{});renderAdminLeadsPanel();toast('Eliminado.');})()">Eliminar</button>
         </div>`;
@@ -4156,7 +4156,7 @@ async function renderAdminLeadsPanel() {
   } catch(e) { console.warn('Erro ao carregar leads:', e); }
 }
 
-// ── Sistema de permissões por utilizador ─────────────────────────────────
+// â”€â”€ Sistema de permissões por utilizador â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Admin God pode activar/desactivar funcionalidades individualmente ou
 // em bloco para cada utilizador. Sem restrições definidas = tudo activo.
 const FEATURE_DEFS = [
@@ -4200,11 +4200,11 @@ async function openTicketLimitModal(userId, username) {
   const modal = document.createElement('div');
   modal.className = 'modal-overlay';
   modal.innerHTML = `<div class="modal-content bg-white rounded-2xl p-5" style="max-width:380px">
-    <h3 class="text-base font-bold text-gray-800 mb-1">🎫 Limite de Tickets</h3>
+    <h3 class="text-base font-bold text-gray-800 mb-1">ðŸŽ« Limite de Tickets</h3>
     <p class="text-xs text-gray-500 mb-3">Utilizador: <strong>${escapeHTML(username)}</strong></p>
     <p class="text-xs text-gray-400 mb-2">Define quantos tickets este cliente pode gerar no total (para todos os seus eventos).</p>
     <div class="flex items-center gap-3 mb-4">
-      <button onclick="document.getElementById('tl-val').value=Math.max(0,parseInt(document.getElementById('tl-val').value||0)-5)" style="width:36px;height:36px;border-radius:50%;border:1px solid #e5e7eb;background:#f9fafb;font-size:1.2rem;cursor:pointer;font-weight:700">−</button>
+      <button onclick="document.getElementById('tl-val').value=Math.max(0,parseInt(document.getElementById('tl-val').value||0)-5)" style="width:36px;height:36px;border-radius:50%;border:1px solid #e5e7eb;background:#f9fafb;font-size:1.2rem;cursor:pointer;font-weight:700">âˆ’</button>
       <input id="tl-val" type="number" min="0" max="9999" value="${current}" class="input-field text-center text-lg font-bold flex-1" style="max-width:120px">
       <button onclick="document.getElementById('tl-val').value=parseInt(document.getElementById('tl-val').value||0)+5" style="width:36px;height:36px;border-radius:50%;border:1px solid #e5e7eb;background:#f9fafb;font-size:1.2rem;cursor:pointer;font-weight:700">+</button>
     </div>
@@ -4213,7 +4213,7 @@ async function openTicketLimitModal(userId, username) {
     </div>
     <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg mt-3 mb-1">
       <div>
-        <span class="text-sm font-semibold text-gray-700">🪑 Tickets com mesa</span>
+        <span class="text-sm font-semibold text-gray-700">ðŸª‘ Tickets com mesa</span>
         <p class="text-xs text-gray-400">Permite associar número/nome de mesa a cada ticket gerado</p>
       </div>
       <input type="checkbox" id="tl-table" ${withTable?'checked':''} class="w-5 h-5 cursor-pointer accent-teal-500">
@@ -4280,13 +4280,13 @@ async function openUserFeaturesModal(userId) {
 
 // Verificar se o utilizador actual tem acesso a uma funcionalidade
 function userHasFeature(featureKey) {
-  if (!Store.currentUser || Store.currentUser.role === 'admin') return true;
+  if (!Store.currentUser || isAdminRole(Store.currentUser.role)) return true;
   const user = (Store.users || []).find(u => u.id === Store.currentUser.id) || Store.currentUser;
   const perms = _getFeaturePerms(user);
   return perms[featureKey] !== false; // por omissão, tudo activo
 }
 
-// ── Barra de armazenamento estilo Windows ──────────────────────────────────
+// â”€â”€ Barra de armazenamento estilo Windows â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 async function renderStorageBar() {
   const container = document.getElementById('admin-storage-bar');
   if (!container) return;
@@ -4296,8 +4296,8 @@ async function renderStorageBar() {
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
         <span style="font-size:0.8rem;font-weight:700;color:#374151">Armazenamento Supabase</span>
       </div>
-      <button onclick="renderStorageBar()" style="font-size:0.65rem;color:#6b7280;background:none;border:none;cursor:pointer">🔄 Actualizar</button>
-      <button onclick="openVideoManager()" style="font-size:0.65rem;color:#7c3aed;background:none;border:none;cursor:pointer;font-weight:600">🎬 Gerir Vídeos</button>
+      <button onclick="renderStorageBar()" style="font-size:0.65rem;color:#6b7280;background:none;border:none;cursor:pointer">🔎 Actualizar</button>
+      <button onclick="openVideoManager()" style="font-size:0.65rem;color:#7c3aed;background:none;border:none;cursor:pointer;font-weight:600">ðŸŽ¬ Gerir Vídeos</button>
     </div>
     <div id="storage-bar-wrap"><p style="font-size:0.75rem;color:#9ca3af">A calcular...</p></div>
   </div>`;
@@ -4375,7 +4375,7 @@ async function renderStorageBar() {
       <p style="font-size:0.65rem;color:#9ca3af;margin-top:0.4rem">
         ⚠️ Apenas ficheiros (fotos, PDFs). O espaço da base de dados (500MB) é calculado separadamente pelo Supabase.
       </p>
-      ${usedPct > 80 ? `<p style="font-size:0.72rem;color:#ef4444;margin-top:0.4rem;font-weight:600">🔴 Pouco espaço disponível. Considera o plano Pro ($25/mês).</p>` : ''}`;
+      ${usedPct > 80 ? `<p style="font-size:0.72rem;color:#ef4444;margin-top:0.4rem;font-weight:600">ðŸ”´ Pouco espaço disponível. Considera o plano Pro ($25/mês).</p>` : ''}`;
 
   } catch(e) {
     document.getElementById('storage-bar-wrap').innerHTML =
@@ -4383,14 +4383,14 @@ async function renderStorageBar() {
   }
 }
 
-// ── Gestor de Vídeos (admin god) ─────────────────────────────────────────
+// â”€â”€ Gestor de Vídeos (admin god) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 async function openVideoManager() {
   const modal = document.createElement('div');
   modal.className = 'modal-overlay';
   modal.id = 'video-manager-modal';
   modal.innerHTML = `<div class="modal-content bg-white rounded-2xl p-5" style="max-width:600px;max-height:88vh;overflow-y:auto">
     <div class="flex items-center justify-between mb-3">
-      <h3 class="text-base font-bold text-gray-800">🎬 Gerir Vídeos do Storage</h3>
+      <h3 class="text-base font-bold text-gray-800">ðŸŽ¬ Gerir Vídeos do Storage</h3>
       <button onclick="this.closest('.modal-overlay').remove()" style="background:#f3f4f6;border:none;border-radius:50%;width:28px;height:28px;cursor:pointer">×</button>
     </div>
     <div id="video-manager-list"><p class="text-xs text-gray-400">A carregar...</p></div>
@@ -4421,7 +4421,7 @@ async function openVideoManager() {
     list.innerHTML = `
       <div class="flex justify-between items-center mb-2">
         <span class="text-xs text-gray-500">${allVideos.length} vídeo(s) encontrado(s)</span>
-        <button onclick="_deleteAllVideos()" class="text-xs text-red-600 font-semibold">🗑 Eliminar todos</button>
+        <button onclick="_deleteAllVideos()" class="text-xs text-red-600 font-semibold">ðŸ—‘ Eliminar todos</button>
       </div>
       <div class="space-y-2">
         ${allVideos.map(f => {
@@ -4433,7 +4433,7 @@ async function openVideoManager() {
               <p class="text-xs font-semibold text-gray-700 truncate">${f.name}</p>
               <p class="text-xs text-gray-400">${size} · ${f.bucket}</p>
             </div>
-            <button onclick="_deleteVideo('${f.name}','${f.bucket}',this.closest('[data-bucket]'))" class="text-xs text-red-500 font-semibold px-2 py-1 border border-red-200 rounded">🗑</button>
+            <button onclick="_deleteVideo('${f.name}','${f.bucket}',this.closest('[data-bucket]'))" class="text-xs text-red-500 font-semibold px-2 py-1 border border-red-200 rounded">ðŸ—‘</button>
           </div>`;
         }).join('')}
       </div>`;
@@ -4469,3 +4469,4 @@ async function _deleteAllVideos() {
   toast(`${videos.length} vídeo(s) eliminados.`);
   document.getElementById('video-manager-modal')?.remove();
 }
+

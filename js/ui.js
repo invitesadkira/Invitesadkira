@@ -1,4 +1,4 @@
-// ===================== TIPO DE EVENTO: adaptar rótulos do formulário =====================
+﻿// ===================== TIPO DE EVENTO: adaptar rótulos do formulário =====================
 // Casamento/Noivado mantêm a linguagem de "noivos". Aniversário (adultos)
 // troca para linguagem de uma só pessoa — sem reescrever a estrutura de
 // dados (continua a usar groom_name internamente, só muda o texto visível).
@@ -111,14 +111,14 @@ async function openMediaLibraryPicker(applyUrlFn) {
     <p class="text-xs text-gray-500 mb-3">Clica numa foto para a reaproveitar. Marca várias com a caixinha para descarregar ou eliminar de uma vez.</p>
     <div id="media-library-toolbar" class="hidden items-center gap-2 mb-2" style="display:none">
       <span id="media-library-selected-count" class="text-xs font-semibold text-gray-600">0 selecionadas</span>
-      <button class="text-xs font-semibold text-teal-600" onclick="_downloadSelectedMediaLibraryItems()">⬇ Descarregar</button>
-      <button class="text-xs font-semibold text-red-600 ml-auto" onclick="_deleteSelectedMediaLibraryItems()">🗑 Eliminar selecionadas</button>
+      <button class="text-xs font-semibold text-teal-600" onclick="_downloadSelectedMediaLibraryItems()">â¬‡ Descarregar</button>
+      <button class="text-xs font-semibold text-red-600 ml-auto" onclick="_deleteSelectedMediaLibraryItems()">ðŸ—‘ Eliminar selecionadas</button>
     </div>
     <div class="flex items-center justify-between mb-2">
       <label class="flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer">
         <input type="checkbox" id="media-library-select-all" onchange="_toggleSelectAllMediaLibrary(this.checked)"> Seleccionar tudo
       </label>
-      <button class="text-xs font-semibold text-red-600" onclick="_deleteAllMediaLibraryItems()">🗑 Eliminar tudo</button>
+      <button class="text-xs font-semibold text-red-600" onclick="_deleteAllMediaLibraryItems()">ðŸ—‘ Eliminar tudo</button>
     </div>
     <div id="media-library-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:0.6rem">
       <p style="grid-column:1/-1;text-align:center;color:#9ca3af;padding:1rem;font-size:0.85rem">A carregar...</p>
@@ -166,7 +166,7 @@ function _renderMediaLibraryGrid(items) {
       <button onclick="event.stopPropagation();_useMediaLibraryItem('${item.url}')" style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,127,159,0.9);color:#fff;border:none;font-size:11px;font-weight:700;padding:5px 0;cursor:pointer;z-index:2;letter-spacing:0.03em">✓ Usar</button>
       <img src="${item.url}" loading="lazy" style="width:100%;height:100%;object-fit:cover" onerror="this.parentElement.style.opacity='0.35'">
       <span style="position:absolute;bottom:0;left:0;right:0;background:linear-gradient(transparent,rgba(0,0,0,0.7));color:#fff;font-size:0.6rem;padding:0.3rem 0.4rem;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHTML(item.label || 'Imagem')}</span>
-      <button onclick="event.stopPropagation();downloadFileFromUrl('${item.url}', (window._mediaLibraryItems[${idx}].label||'foto').replace(/[^a-z0-9]+/gi,'_')+'.jpg')" title="Descarregar" style="position:absolute;top:3px;right:29px;width:22px;height:22px;border-radius:50%;background:rgba(0,127,159,0.92);color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:0.7rem;line-height:0">⬇</button>
+      <button onclick="event.stopPropagation();downloadFileFromUrl('${item.url}', (window._mediaLibraryItems[${idx}].label||'foto').replace(/[^a-z0-9]+/gi,'_')+'.jpg')" title="Descarregar" style="position:absolute;top:3px;right:29px;width:22px;height:22px;border-radius:50%;background:rgba(0,127,159,0.92);color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:0.7rem;line-height:0">â¬‡</button>
       <button onclick="event.stopPropagation();_deleteMediaLibraryItem(${idx})" title="Eliminar" style="position:absolute;top:3px;right:3px;width:22px;height:22px;border-radius:50%;background:rgba(239,68,68,0.92);color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:0.7rem;line-height:0">✕</button>
     </div>`).join('');
 }
@@ -587,7 +587,7 @@ function showTopbar(user) {
   const du = document.getElementById('drawer-username');
   if (du) du.textContent = user ? (user.phone || user.id || '—') : '—';
   const dr = document.getElementById('drawer-role');
-  if (dr) dr.textContent = user && user.role === 'admin' ? 'Administrador do Sistema' : 'Conta Standard';
+  if (dr) dr.textContent = user && isAdminRole(user.role) ? 'Administrador do Sistema' : 'Conta Standard';
   buildDrawerNav(user);
 }
 function hideTopbar() {
@@ -614,7 +614,7 @@ function closeDrawer() {
 function buildDrawerNav(user) {
   const nav = document.getElementById('drawer-nav');
   if (!nav || !user) return;
-  const isAdmin = user.role === 'admin';
+  const isAdmin = isAdminRole(user.role);
 
   // Count pending accounts for badge
   const pendingCount = isAdmin ? (Store.users || []).filter(u => u.status === 'pending').length : 0;
@@ -647,7 +647,7 @@ function buildDrawerNav(user) {
   if(window.lucide?.createIcons) lucide.createIcons(); else setTimeout(()=>{ if(window.lucide?.createIcons) lucide.createIcons(); }, 500);
 }
 function buildDashboardQuickGrid(user) {
-  const isAdmin = user && user.role === 'admin';
+  const isAdmin = user && isAdminRole(user.role);
   const grid = document.getElementById('dashboard-quick-grid');
   if (!grid) return;
   const items = isAdmin ? [
@@ -702,11 +702,11 @@ function buildAdminQuickGrid() {
 
 
 // ===================== RSVP DRAWER =====================
-// ── RSVP Drawer state machine ──────────────────────────────────────────
+// â”€â”€ RSVP Drawer state machine â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // States: FORM | SUCCESS
-// Transitions: open → check storage → FORM or SUCCESS
-//              submit → save → SUCCESS
-//              editGuestResponse → clear storage → FORM
+// Transitions: open â†’ check storage â†’ FORM or SUCCESS
+//              submit â†’ save â†’ SUCCESS
+//              editGuestResponse â†’ clear storage â†’ FORM
 
 // Check if current device guest has confirmed — first check in-memory, then Supabase
 function _rsvpGetConfirmedName(eventId) {
@@ -862,7 +862,7 @@ function setMusicPlayingUI(playing) {
   }
 }
 
-// ── Abas do editor de evento ──────────────────────────────────────────────
+// â”€â”€ Abas do editor de evento â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Uma aba por cada secção individual do convite (estilo Chrome) — substitui
 // o antigo formulário gigante numa só página. Lista única, usada para
 // construir a barra de abas e para saber para onde voltar por defeito.
@@ -894,7 +894,7 @@ function buildEventEditorTabs() {
   _applySavedEventTabLayout();
 }
 
-// ── Alternar entre abas horizontais (estilo Chrome) e lista vertical ──
+// â”€â”€ Alternar entre abas horizontais (estilo Chrome) e lista vertical â”€â”€
 function _applySavedEventTabLayout() {
   const layout = document.getElementById('event-editor-layout');
   const lbl = document.getElementById('tab-layout-toggle-label');
@@ -954,7 +954,7 @@ function toggleMusicPlayer() {
   }
 }
 
-// ── Ícone de som do Save the Date (junto à foto de capa) ────────────────
+// â”€â”€ Ícone de som do Save the Date (junto à foto de capa) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // ✅ Diferente do botão flutuante normal (que pausa/toca): este nunca pausa
 // a música — apenas silencia/activa o som, mantendo a reprodução contínua.
 // Pensado para um único ícone simples de "som", como pedido.
@@ -1097,7 +1097,7 @@ function _startAudioFullyManual(audio, sub) {
     }).catch(() => {
       // Browser blocked autoplay entirely (expected on most https hosts)
       setMusicPlayingUI(false);
-      if (sub) sub.textContent = 'Toca para ouvir ♪';
+      if (sub) sub.textContent = 'Toca para ouvir â™ª';
 
       // Pulse the music player to draw attention
       const playerEl = document.getElementById('guest-music-player');
@@ -1111,7 +1111,7 @@ function _startAudioFullyManual(audio, sub) {
       const floatBtn = document.getElementById('floating-music-btn');
       if (floatBtn) { floatBtn.classList.add('visible'); floatBtn.title = 'Tocar música'; }
 
-      // ── Mobile autoplay unlock ──
+      // â”€â”€ Mobile autoplay unlock â”€â”€
       // iOS Safari and most mobile browsers only honor audio.play() when
       // called synchronously inside a genuine user-gesture event handler.
       // 'scroll' events — even ones caused by a touch swipe — are NOT
@@ -1326,7 +1326,7 @@ function clearGuestConfirmationFromStorage(eventId) {
 
 
 // ===================== COUPLE SIZE =====================
-// ── Generic copy-to-clipboard with visual feedback on the trigger button ──
+// â”€â”€ Generic copy-to-clipboard with visual feedback on the trigger button â”€â”€
 function copyToClipboard(text, btnEl) {
   const cleanText = String(text).replace(/\s+/g, '');
   const doFeedback = () => {
@@ -1394,7 +1394,7 @@ function changeTitlesSize(delta) {
   if (lbl) lbl.textContent = v + 'rem';
 }
 
-// ── Layout "Cartão" — toggle do campo de fundo ───────────────────────
+// â”€â”€ Layout "Cartão" — toggle do campo de fundo â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 document.addEventListener('change', function(e) {
   if (e.target && e.target.id === 'evt-invite-layout') {
     const wrap = document.getElementById('card-bg-wrap');
@@ -1661,7 +1661,7 @@ function removeStdIntroPhoto(variant) {
   toast('Foto de abertura removida.');
 }
 
-// ── Limit text input to max N words ──
+// â”€â”€ Limit text input to max N words â”€â”€
 function limitToThreeWords(input, max) {
   max = max || 3;
   const words = input.value.trim().split(/\s+/).filter(Boolean);
@@ -1848,7 +1848,7 @@ function removeScratchPhoto() {
   toast('Foto removida.');
 }
 
-// ── Save the Date: campos "espelho" de data/prazo ──────────────────────────
+// â”€â”€ Save the Date: campos "espelho" de data/prazo â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Estes campos dentro da secção do Save the Date são sincronizados com os
 // campos principais do formulário (evt-date / evt-deadline), nas duas
 // direções, para que o organizador possa configurar a data directamente
@@ -1876,10 +1876,10 @@ function syncStdMirrorsFromMain() {
   if (mirrorDeadline && mainDeadline) mirrorDeadline.value = mainDeadline;
 }
 
-// ── Flores nas secções — gestor e renderização ───────────────────────
+// â”€â”€ Flores nas secções — gestor e renderização â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // O admin carrega uma imagem PNG (flores, folhas, etc.) e escolhe em
 // que canto de que secção aparece. Ficam guardadas em event_visuals
-// como JSON no campo section_florals. ──────────────────────────────────
+// como JSON no campo section_florals. â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function openSectionFloralPicker() {
   let florals = [];
   try { florals = JSON.parse(document.getElementById('evt-section-florals')?.value || '[]'); } catch(e) {}
@@ -1999,7 +1999,7 @@ function applySectionFlorals(floralsJson) {
   });
 }
 
-// ── Fundos de imagem por secção ────────────────────────────────────────────
+// â”€â”€ Fundos de imagem por secção â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const _SC_BG_SECTIONS = [
   'Abertura / Bênção','Texto Bíblico','Nomes dos Noivos','Texto do Convite',
   'Nomes dos Pais','Galeria de Fotos','Locais','Dress Code','Cronograma',
@@ -2160,3 +2160,4 @@ function applySectionBgs(bgsJson) {
     if (inner) inner.style.zIndex   = '1';
   });
 }
+

@@ -1,13 +1,13 @@
-// ============================================================================
+﻿// ============================================================================
 // ASSISTENTE DE PREENCHIMENTO — passo a passo, uma pergunta de cada vez.
 // Substitui o antigo formulário longo (openIntakeFormMain) pelo link que o
 // admin God envia ao cliente. Suporta: avançar, saltar (quando opcional),
 // e voltar atrás para editar qualquer resposta já dada.
 //
 // Ramificações:
-//  - Se "Quer Save the Date?" = Sim → pergunta nomes/data/prazo já aqui, e
+//  - Se "Quer Save the Date?" = Sim â†’ pergunta nomes/data/prazo já aqui, e
 //    essas perguntas NÃO voltam a aparecer mais tarde no fluxo principal.
-//  - Se "Vai ter sugestões de presentes?" = Sim → pergunta IBAN ou Lista, e
+//  - Se "Vai ter sugestões de presentes?" = Sim â†’ pergunta IBAN ou Lista, e
 //    só mostra os campos do tipo escolhido.
 // ============================================================================
 
@@ -20,7 +20,7 @@ let _iwForwardStack = []; // o que foi "desfeito" ao clicar Voltar — se a
 let _iwEventId = null;
 let _iwSteps = [];         // recalculado a cada passo (por causa dos ramos)
 
-// ── Construção dos passos, em ordem, respeitando os ramos ──────────────
+// â”€â”€ Construção dos passos, em ordem, respeitando os ramos â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function _iwComputeSteps(state) {
   const isEngagement = state.event_type === 'engagement';
   const isBirthday   = state.event_type === 'birthday';
@@ -46,14 +46,14 @@ function _iwComputeSteps(state) {
     sub:'Pode escrever o nome da cor ou descrever. É só uma indicação — o administrador define depois as cores exactas.',
     type:'colors_notes', skippable:false });
 
-  // ── Nomes ─────────────────────────────────────────────────────────────
+  // â”€â”€ Nomes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   add({ key:'names', q: isEngagement ? 'Nomes dos noivos' : isBirthday ? 'Nome do/a aniversariante' : 'Nomes dos noivos', type:'names', skippable:false });
 
-  // ── Data ──────────────────────────────────────────────────────────────
+  // â”€â”€ Data â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   add({ key:'date', q:'Data do evento', type:'date', skippable:false });
   add({ key:'confirm_by_date', q:'Até quando os convidados podem confirmar presença?', type:'date', skippable:true });
 
-  // ── Texto do convite ───────────────────────────────────────────────────
+  // â”€â”€ Texto do convite â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (!isBirthday) {
     add({ key:'blessing', q:'Frase de bênção (opcional)', sub:'Ex: "Com a bênção de Deus e das nossas famílias"', type:'text', skippable:true });
     add({ key:'bible', q:'Texto bíblico (opcional)', type:'bible', skippable:true });
@@ -65,11 +65,11 @@ function _iwComputeSteps(state) {
     add({ key:'parents', q:'Nomes dos pais', type:'parents', skippable:true });
   }
 
-  // ── Foto e galeria ─────────────────────────────────────────────────────
+  // â”€â”€ Foto e galeria â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   add({ key:'cover', q:'Foto de capa do convite', type:'image', skippable:true });
   add({ key:'gallery', q:'Fotos para a galeria', sub:'Até 8 fotos.', type:'images_multi', skippable:true });
 
-  // ── Locais ─────────────────────────────────────────────────────────────
+  // â”€â”€ Locais â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (isWedding) {
     add({ key:'venue_civil',     q:'Cerimónia Civil',      sub:'Local, data e horário (se houver).', type:'venue',        skippable:true });
     add({ key:'venue_ceremony',  q:'Cerimónia Religiosa',  sub:'Local, data e horário (se houver).', type:'venue',        skippable:true });
@@ -80,7 +80,7 @@ function _iwComputeSteps(state) {
     add({ key:'venue_reception', q:"Copo d'Água / Receção", sub:'Local e horário.', type:'venue_simple', skippable:true });
   }
 
-  // ── Estilo e detalhes ─────────────────────────────────────────────────
+  // â”€â”€ Estilo e detalhes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   add({ key:'dresscode', q:'Dress Code (opcional)', type:'dresscode', skippable:true });
   add({ key:'manual',    q:'Manual do bom convidado (opcional)', sub:'Um item por linha.', type:'lines', skippable:true });
   add({ key:'schedule',  q:'Cronograma do dia (opcional)', sub:'Um momento por linha. Ex: "16h00 — Cerimónia"', type:'lines', skippable:true });
@@ -93,13 +93,13 @@ function _iwComputeSteps(state) {
   add({ key:'youtube',   q:'Vídeo do YouTube (opcional)', sub:'Aparece embutido no convite — o convidado não é levado para o YouTube.', type:'youtube', skippable:true });
   add({ key:'final_photo', q:'Foto final (opcional)', sub:'Aparece no final do convite.', type:'image', skippable:true });
 
-  // ── RSVP ──────────────────────────────────────────────────────────────
+  // â”€â”€ RSVP â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   add({ key:'companions', q:'Os convidados podem trazer acompanhantes?', type:'yesno_max', skippable:true });
   add({ key:'kids',       q:'Os convidados podem trazer crianças?',      type:'yesno_max', skippable:true });
   add({ key:'messages',   q:'Os convidados podem deixar felicitações/recados?', type:'yesno', skippable:true });
   add({ key:'edit_rsvp',  q:'Os convidados podem editar a resposta depois de confirmar?', type:'yesno', skippable:true });
 
-  // ── Presentes ─────────────────────────────────────────────────────────
+  // â”€â”€ Presentes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   add({ key:'gifts', q:'Vai ter sugestões de presentes?', type:'yesno', skippable:false });
   if (state.gifts === 'yes') {
     add({ key:'gift_type', q:'Prefere indicar um IBAN, ou uma lista de presentes?', type:'select', skippable:false,
@@ -114,7 +114,7 @@ function _iwComputeSteps(state) {
   return steps;
 }
 
-// ── Entrada ──────────────────────────────────────────────────────────────
+// â”€â”€ Entrada â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 async function openIntakeWizard(eventId) {
   _iwEventId = eventId || null;
   _iwState = {};
@@ -262,7 +262,7 @@ function _iwAdvance(step, unchanged) {
   _iwRenderStep(next.key);
 }
 
-// ── Desenhar o corpo de cada tipo de pergunta ───────────────────────────
+// â”€â”€ Desenhar o corpo de cada tipo de pergunta â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function _iwRenderBody(step) {
   const body = document.getElementById('iw-step-body');
   const val = _iwState[step.key];
@@ -472,7 +472,7 @@ function _iwRemoveGalleryImage(index) {
   _iwPersistProgress();
 }
 
-// ── Ler a resposta actual do ecrã ───────────────────────────────────────
+// â”€â”€ Ler a resposta actual do ecrã â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function _iwExtractValue(step) {
   const g = id => document.getElementById(id)?.value?.trim() || '';
   const body = document.getElementById('iw-step-body');
@@ -557,7 +557,7 @@ function _iwExtractValue(step) {
   return { value: undefined };
 }
 
-// ── Guardar tudo, no final ──────────────────────────────────────────────
+// â”€â”€ Guardar tudo, no final â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 async function _iwFinish() {
   const s = _iwState;
   const card = document.getElementById('iw-step-card');
@@ -605,14 +605,14 @@ async function _iwFinish() {
   }
 }
 
-// ── Aplicar um conjunto de respostas (do assistente) a um evento real —
+// â”€â”€ Aplicar um conjunto de respostas (do assistente) a um evento real —
 // reaproveitado tanto pelo fim do assistente (quando já há evento) como
 // pelo admin, mais tarde, ao associar uma submissão pendente a um evento
-// (novo ou já existente). ────────────────────────────────────────────────
+// (novo ou já existente). â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 async function _iwApplyStateToEvent(s, eventId, statusFn) {
   const status = statusFn || (() => {});
 
-  // ── Tabela events ──
+  // â”€â”€ Tabela events â”€â”€
   const eventsPatch = { event_type: s.event_type || null, invite_layout: s.layout || 'sections' };
   if (s.names) { eventsPatch.groom_name = s.names.groom || null; eventsPatch.bride_name = s.names.bride || null; }
   if (s.date) eventsPatch.date = s.date;
@@ -642,7 +642,7 @@ async function _iwApplyStateToEvent(s, eventId, statusFn) {
     await saveEventDates(eventId, { event_date: s.date || null, confirm_by_date: s.confirm_by_date || null }).catch(() => {});
   }
 
-  // ── event_visuals ──
+  // â”€â”€ event_visuals â”€â”€
   status('A guardar conteúdo do convite...');
   const visualsPatch = {};
   if (s.colors) visualsPatch.intake_color_notes = `Cor principal: ${s.colors.c1}${s.colors.c2 ? ` | 2ª cor: ${s.colors.c2}` : ''}`;
@@ -670,16 +670,16 @@ async function _iwApplyStateToEvent(s, eventId, statusFn) {
 
   if (Object.keys(visualsPatch).length) await saveEventVisuals(eventId, visualsPatch);
 
-  // ── Lista de presentes (tabela dedicada "gifts") ──
+  // â”€â”€ Lista de presentes (tabela dedicada "gifts") â”€â”€
   if (s.gift_type === 'list' && s.gift_list) {
     status('A guardar lista de presentes...');
-    const giftNames = s.gift_list.split('\n').map(l => l.trim().replace(/^[\s\-\*•\.]+/, '')).filter(l => l && l.length > 1);
+    const giftNames = s.gift_list.split('\n').map(l => l.trim().replace(/^[\s\-\*â€¢\.]+/, '')).filter(l => l && l.length > 1);
     for (const name of giftNames) {
       await supabaseRequest('gifts', 'POST', { event_id: eventId, name, category: 'Sem categoria', reserved: false }).catch(() => {});
     }
   }
 
-  // ── event_venues ──
+  // â”€â”€ event_venues â”€â”€
   status('A guardar locais...');
   const venuesPatch = {};
   if (s.venue_civil) { venuesPatch.venue_civil = s.venue_civil.name; venuesPatch.venue_civil_date = s.venue_civil.date || null; venuesPatch.venue_civil_time = s.venue_civil.time || null; }
@@ -688,7 +688,7 @@ async function _iwApplyStateToEvent(s, eventId, statusFn) {
   if (Object.keys(venuesPatch).length) { venuesPatch.show_venues = 'yes'; await saveEventVenues(eventId, venuesPatch).catch(() => {}); }
 }
 
-// ── Painel do admin: submissões pendentes (ainda sem evento) ────────────
+// â”€â”€ Painel do admin: submissões pendentes (ainda sem evento) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 async function renderAdminPendingSubmissions() {
   const container = document.getElementById('admin-pending-submissions');
   if (!container) return;
@@ -754,7 +754,7 @@ async function _iwCreateEventFromSubmission(submissionId) {
     if (freshUsers) Store.users = freshUsers;
   } catch(e) {}
 
-  const clients = (Store.users || []).filter(u => u.role !== 'admin' && u.status !== 'deleted');
+  const clients = (Store.users || []).filter(u => !isAdminRole(u.role) && u.status !== 'deleted');
   const modal = document.createElement('div');
   modal.className = 'modal-overlay';
   modal.innerHTML = `<div class="modal-content bg-white rounded-2xl p-6" style="max-width:420px">
@@ -846,6 +846,7 @@ async function _iwConfirmApplyToExisting(submissionId, eventId, modalEl) {
     toast('Erro ao aplicar. Tenta novamente.');
   }
 }
+
 
 
 
