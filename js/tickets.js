@@ -414,14 +414,15 @@ async function handleTicketFontUpload(input) {
   if (!Store.availableFonts) Store.availableFonts = [];
   if (!Store.availableFonts.find(f => f.name === fontName)) {
     Store.availableFonts.push({ name: fontName, url });
-    await supabaseRequest('event_visuals?event_id=eq.' + Store.currentEventId, 'PATCH',
-      { custom_font_url: url, custom_font_family: fontName }).catch(() => {});
   }
+  // ✅ Guardar o URL directamente no ticket_name_font para persistir entre sessões
+  await supabaseRequest('events?id=eq.' + Store.currentEventId, 'PATCH',
+    { ticket_name_font: url }).catch(() => {});
   // Adicionar ao selector
   const sel = document.getElementById('ticket-name-font');
   if (sel) {
     const opt = document.createElement('option');
-    opt.value = 'custom:' + fontName;
+    opt.value = url; // ✅ URL directamente, não "custom:NomeFonte"
     opt.textContent = fontName + ' (carregada)';
     opt.selected = true;
     sel.appendChild(opt);
@@ -572,23 +573,30 @@ async function generateGuestTicket(guestName, rsvpToken, eventId, skipNameEdit) 
     };
 
     let font;
-    if (fontName.startsWith('custom:') || (fontName.startsWith('http') && (fontName.endsWith('.ttf')||fontName.endsWith('.otf')||fontName.endsWith('.woff')))) {
+    const isCustomFont = fontName.startsWith('custom:') || 
+                         fontName.startsWith('http') || 
+                         fontName.startsWith('//');
+    if (isCustomFont) {
       // Fonte personalizada — carregar do URL e incorporar no PDF
       try {
-        // Obter URL: se for "custom:NomeFonte", procurar em availableFonts
-        let fontUrl = fontName.startsWith('http') ? fontName : null;
-        if (!fontUrl) {
-          const fontRecord = (Store.availableFonts||[]).find(f => 'custom:'+f.name === fontName);
+        let fontUrl = null;
+        if (fontName.startsWith('http') || fontName.startsWith('//')) {
+          fontUrl = fontName; // URL directo
+        } else if (fontName.startsWith('custom:')) {
+          const name = fontName.replace('custom:', '');
+          const fontRecord = (Store.availableFonts||[]).find(f => f.name === name);
           fontUrl = fontRecord?.url;
         }
         if (fontUrl) {
           const fontBytes = await fetch(fontUrl).then(r => r.arrayBuffer());
           font = await doc.embedFont(fontBytes);
+          console.log('[TICKET] Fonte personalizada incorporada:', fontUrl);
         } else {
+          console.warn('[TICKET] URL da fonte não encontrado para:', fontName);
           font = await doc.embedFont(StandardFonts.Helvetica);
         }
       } catch(e) {
-        console.warn('Custom font load failed, using Helvetica:', e);
+        console.warn('[TICKET] Falha ao carregar fonte personalizada, usando Helvetica:', e);
         font = await doc.embedFont(StandardFonts.Helvetica);
       }
     } else {

@@ -1311,7 +1311,13 @@ function renderEventDetails() {
     if (exampleLabel) exampleLabel.textContent = event.is_example_event === true ? 'Remover de Exemplo' : 'Marcar como Exemplo';
   }
 
-  const confirmations = event.confirmations || [];
+  // ✅ Filtrar tickets manuais das confirmações (não devem aparecer aqui)
+  // A coluna is_manual_ticket pode não existir na BD se o SQL ainda não foi corrido
+  // O filtro por rsvp_token 'manual_' serve como backup
+  const confirmations = (event.confirmations || []).filter(c => 
+    !c.is_manual_ticket && 
+    !(c.token || c.rsvp_token || '').startsWith('manual_')
+  );
   const confirmed = confirmations.filter(c => c.attending === true || c.attending === 'yes');
   const declined = confirmations.filter(c => c.attending === false || c.attending === 'no' || !c.attending);
   const totalPeople = confirmed.reduce((sum, c) => sum + 1 + (c.companions || []).length + (c.kids || []).length, 0);
