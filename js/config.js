@@ -42,7 +42,12 @@ async function _loadPdfLib() {
 }
 async function _loadPdfJs() {
   if (window.pdfjsLib) return;
-  await _loadScript('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js');
+  await _loadScript('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js')
+    .catch(() => _loadScript('https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.min.js'));
+  if (window.pdfjsLib) {
+    window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+      'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  }
 }
 // Lucide fallback — evita crash se o CDN falhou
 if (typeof window !== 'undefined') {

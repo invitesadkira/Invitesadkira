@@ -353,6 +353,9 @@ async function handleMusicFileUpload(input) {
 function saveEventWithCover(eventId, title, date, time, deadline, coverImageURL, allowComp, maxComp, allowGifts, allowKids, maxKids, allowSides, side1Name, side2Name, allowMessages, showGuestMessages, musicUrl, musicTitle, ibanMessage, ibanNumber, ibanHolder, ibanFooter, vis, submitBtn, originalText) {
   const finalDeadline = deadline && deadline.trim() !== '' ? deadline : date;
   const v = vis || {};
+  // ✅ ibanNumber2 e ibanHolder2 vêm dentro do objecto vis
+  const ibanNumber2 = v.ibanNumber2 || null;
+  const ibanHolder2 = v.ibanHolder2 || null;
   const eventData = {
     id: eventId, user_id: Store.currentUser.id, title, date, time,
     confirm_by_date: finalDeadline,
