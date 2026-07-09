@@ -1002,6 +1002,7 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
           show_final_photo: document.getElementById('sw-final-photo')?.classList.contains('active') ? 'yes' : 'no',
           show_final_photo_names: document.getElementById('sw-final-photo-names')?.classList.contains('active') !== false ? 'yes' : 'no',
           show_cover: document.getElementById('sw-cover')?.classList.contains('active') ? 'yes' : 'no',
+          show_decor: document.getElementById('sw-hero-ornament')?.classList.contains('active') ? 'yes' : 'no',
           final_photo_url: document.getElementById('evt-final-photo-url')?.value || null,
           couple_photo_url: document.getElementById('evt-couple-photo-url')?.value || null,
           couple_video_url: (() => {
@@ -2111,6 +2112,7 @@ function _fillEditForm(ev) {
   // Foto Final, Local, etc. ficavam todos vazios sem nenhum aviso visível).
   try { Store.eventManualItems = ev.manual_items ? JSON.parse(ev.manual_items) : null; }
   catch(e) { console.error('Falha ao interpretar manual_items, a ignorar:', e); Store.eventManualItems = null; }
+  Store._manualItemsEventId = ev.id || ev.event_code; // ✅ Marcar a que evento pertencem
 
   _setSwitch('sw-schedule', _yesOrTrue(ev.show_schedule), 'schedule-extra');
   try { Store.eventScheduleItems = ev.schedule_items ? JSON.parse(ev.schedule_items) : null; }
@@ -2224,6 +2226,7 @@ function _fillEditForm(ev) {
   _setSwitch('sw-final-photo', _yesOrTrue(ev.show_final_photo), 'final-photo-extra');
   _setSwitch('sw-final-photo-names', ev.show_final_photo_names !== 'no');
   _setSwitch('sw-cover', ev.show_cover !== 'no', 'cover-section-wrap');
+  _setSwitch('sw-hero-ornament', _yesOrTrue(ev.show_decor));
   { const fit = ev.cover_video_fit || 'cover'; const r = document.getElementById(fit==='contain'?'cvf-contain':'cvf-cover'); if(r) r.checked = true; }
   { const fpUrl=document.getElementById('evt-final-photo-url'); const fpPrev=document.getElementById('final-photo-preview'); const fpWrap=document.getElementById('final-photo-preview-wrap');
     if(ev.final_photo_url){if(fpUrl)fpUrl.value=ev.final_photo_url;if(fpPrev)fpPrev.src=ev.final_photo_url;fpWrap?.classList.remove('hidden');} }
@@ -3798,7 +3801,7 @@ async function openIntakeFormMain(eventId) {
           <div style="border:1.5px solid #e5e7eb;border-radius:0.75rem;padding:1rem;background:#fafafa">
             <p style="font-size:0.85rem;font-weight:700;color:#374151;margin-bottom:0.25rem">Manual do Bom Convidado <span style="font-weight:400;color:#6b7280">(opcional)</span></p>
             <p style="font-size:0.72rem;color:#9ca3af;margin-bottom:0.6rem">Os itens por omissão já são partilhados com todos os convidados. Podes personalizar para o teu evento.</p>
-            <button type="button" onclick="openManualEditor()" style="background:#007f9f;color:#fff;border:none;border-radius:0.6rem;padding:0.6rem 1rem;font-size:0.82rem;font-weight:700;cursor:pointer">Editar Manual do Bom Convidado</button>
+            <button type="button" onclick="openManualEditor(Store.currentEventId||Store._intakeEventId)" style="background:#007f9f;color:#fff;border:none;border-radius:0.6rem;padding:0.6rem 1rem;font-size:0.82rem;font-weight:700;cursor:pointer">Editar Manual do Bom Convidado</button>
           </div>
 
           <div style="border:1.5px solid #e5e7eb;border-radius:0.75rem;padding:1rem;background:#fafafa">

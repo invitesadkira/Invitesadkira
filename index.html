@@ -16,14 +16,14 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script>tailwind.config = { theme: { extend: { colors: { teal: { 500: '#007f9f', 600: '#006b86' } } } } }</script>
   <!-- QRCode local — sem CDN -->
-  <script src="js/qrcode-mini.js?v=1783579479"></script>
-  <script src="js/icons.js?v=1783579479"></script>
+  <script src="js/qrcode-mini.js?v=1783615351"></script>
+  <script src="js/icons.js?v=1783615351"></script>
   <!-- PDF libs — carregadas lazily apenas quando necessário -->
   <!-- jsPDF: carregado por _loadJsPDF() antes de gerar relatórios -->
   <!-- pdf-lib: carregado por _loadPdfLib() antes de gerar tickets -->
   <!-- pdf.js: carregado por _loadPdfJs() antes de pré-visualizar templates -->
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💌</text></svg>">
-  <link rel="stylesheet" href="css/main.css?v=1783579479">
+  <link rel="stylesheet" href="css/main.css?v=1783615351">
 </head>
 <body class="h-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
 
@@ -351,6 +351,14 @@
         </div>
        </div>
        </div><!-- /cover-section-wrap -->
+       <!-- Ornamento independente -->
+       <div class="flex items-center justify-between mt-3">
+        <div>
+         <span class="text-sm font-semibold text-gray-700">Ornamento da Capa</span>
+         <p class="text-xs text-gray-400">A flor/decoração no canto da foto de capa. Funciona de forma independente.</p>
+        </div>
+        <div id="sw-hero-ornament" class="switch" onclick="(()=>{toggleSwitch(this); const d=document.getElementById('sw-decor'); if(this.classList.contains('active')){if(d&&!d.classList.contains('active'))d.click();} else {const decorEl=document.getElementById('guest-hero-decor');if(decorEl)decorEl.classList.add('hidden');}})()"></div>
+       </div>
        <input id="cover-input" type="file" accept="image/*" class="hidden" onchange="previewCover(this)"> <label class="block text-sm font-semibold text-gray-600 mb-1">Título do Evento</label> <input id="evt-title" class="input-field mb-3" placeholder="Ex: Casamento Ana &amp; Pedro" required>
        <div class="grid grid-cols-2 gap-3 mb-3">
         <div>
@@ -747,12 +755,12 @@ A vossa presença neste dia tão especial é, para nós, o maior presente. No en
        </div><!-- /pane tipo-estilo -->
        <div class="event-tab-pane hidden" data-tab="midia-capa">
         <div class="flex items-center justify-between">
-         <span id="lbl-couple-names" class="text-sm font-semibold text-gray-700">Nomes dos Noivos no Hero</span>
+         <span id="lbl-couple-names" class="text-sm font-semibold text-gray-700">Nome(s) no Hero</span>
          <div id="sw-couple" class="switch active" onclick="toggleSwitch(this, 'couple-extra')"></div>
         </div>
         <div id="couple-extra" class="pl-4 space-y-2">
-         <input id="evt-groom-name" type="text" class="input-field" placeholder="Nome do Noivo / Aniversariante">
-         <input id="evt-bride-name" type="text" class="input-field" placeholder="Nome da Noiva (opcional)">
+         <input id="evt-groom-name" type="text" class="input-field" placeholder="Nome principal (Noivo / Aniversariante / etc.)">
+         <input id="evt-bride-name" type="text" class="input-field" placeholder="2º nome (Noiva / opcional — deixa vazio para nome único)">
          <label class="text-xs text-gray-500 block mt-2">Frase por baixo dos nomes (opcional)</label>
          <input id="evt-hero-subtitle" type="text" class="input-field" placeholder="Ex: Bodas de Prata, Noivado, Convite...">
          <p class="text-xs text-gray-400 mt-1">Aparece sobre a foto de capa, por baixo dos nomes, em letras pequenas e diferentes. Deixa vazio para não mostrar nada.</p>
@@ -1134,7 +1142,7 @@ para testemunhar o seu enlace matrimonial</textarea>
         </div>
         <div id="manual-extra" class="pl-4">
          <p class="text-xs text-gray-500">Os itens por omissão são partilhados por todos. Pode editar para este evento.</p>
-         <button type="button" class="mt-1 text-xs text-teal-600 font-semibold" onclick="openManualEditor()">Editar itens do manual</button>
+         <button type="button" class="mt-1 text-xs text-teal-600 font-semibold" onclick="openManualEditor(Store.currentEventId)">Editar itens do manual</button>
          <label class="text-xs font-semibold text-gray-600 block mt-3 mb-1">Estilo visual</label>
          <select id="evt-manual-style" class="input-field text-sm">
           <option value="cards">Cartões em grelha</option>
@@ -1845,21 +1853,21 @@ para testemunhar o seu enlace matrimonial</textarea>
   </a>
 
   <!-- ===================== SCRIPTS (ordem importa) ===================== -->
-  <script src="js/config.js?v=1783579479"></script>
-  <script src="js/store.js?v=1783579479"></script>
-  <script src="js/visuals.js?v=1783579479"></script>
-  <script src="js/venues.js?v=1783579479"></script>
-  <script src="js/rsvp.js?v=1783579479"></script>
-  <script src="js/ui.js?v=1783579479"></script>
-  <script src="js/auth.js?v=1783579479"></script>
-  <script src="js/dashboard.js?v=1783579479"></script>
-  <script src="js/events.js?v=1783579479"></script>
-  <script src="js/intake-wizard.js?v=1783579479"></script>
-  <script src="js/tickets.js?v=1783579479"></script>
-  <script src="js/guest.js?v=1783579479"></script>
-  <script src="js/sections.js?v=1783579479"></script>
-  <script src="js/admin.js?v=1783579479"></script>
-  <script src="js/router.js?v=1783579479"></script>
+  <script src="js/config.js?v=1783615351"></script>
+  <script src="js/store.js?v=1783615351"></script>
+  <script src="js/visuals.js?v=1783615351"></script>
+  <script src="js/venues.js?v=1783615351"></script>
+  <script src="js/rsvp.js?v=1783615351"></script>
+  <script src="js/ui.js?v=1783615351"></script>
+  <script src="js/auth.js?v=1783615351"></script>
+  <script src="js/dashboard.js?v=1783615351"></script>
+  <script src="js/events.js?v=1783615351"></script>
+  <script src="js/intake-wizard.js?v=1783615351"></script>
+  <script src="js/tickets.js?v=1783615351"></script>
+  <script src="js/guest.js?v=1783615351"></script>
+  <script src="js/sections.js?v=1783615351"></script>
+  <script src="js/admin.js?v=1783615351"></script>
+  <script src="js/router.js?v=1783615351"></script>
 
 </body>
 </html>

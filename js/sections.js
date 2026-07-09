@@ -1718,13 +1718,14 @@ function buildScheduleSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
 
 
 // ===================== MANUAL EDITOR =====================
-async function openManualEditor() {
-  // ✅ CORREÇÃO: a fonte de verdade é SEMPRE a tabela event_visuals (é onde
-  // saveManualItems() grava). Antes, este editor confiava primeiro numa
-  // variável em memória (Store.eventManualItems) que podia estar
-  // desactualizada — isso fazia o organizador editar "por cima" de uma
-  // versão antiga e perder itens que já tinha guardado, sem aviso nenhum.
-  const eventId = Store.currentEventId || Store._intakeEventId;
+async function openManualEditor(explicitEventId) {
+  // ✅ CRÍTICO: usar sempre o ID explícito se passado, evita usar o evento errado
+  const eventId = explicitEventId || Store.currentEventId || Store._intakeEventId;
+  console.log('[MANUAL] openManualEditor para eventId:', eventId, '| Store.currentEventId:', Store.currentEventId);
+
+  // ✅ Bloquear o eventId globalmente para que saveManualItems use o certo
+  // mesmo que Store.currentEventId mude entretanto
+  window._manualEditorEventId = eventId;
   let items = null;
 
   if (eventId) {
@@ -1740,8 +1741,8 @@ async function openManualEditor() {
 
   // Ainda não há nada gravado em event_visuals (ex.: evento criado há pouco,
   // ou edição em curso nesta mesma sessão que ainda não recarregou) — usa o
-  // que está em memória.
-  if (!items && Store.eventManualItems) {
+  // que está em memória MAS APENAS se for do mesmo evento
+  if (!items && Store.eventManualItems && Store._manualItemsEventId === eventId) {
     items = JSON.parse(JSON.stringify(Store.eventManualItems));
   }
 
@@ -1882,11 +1883,14 @@ async function saveManualItems() {
     it.text = (document.getElementById('mi-text-' + i)?.value || it.text).replace(/\\n/g, '\n');
     it.icon = document.getElementById('mi-icon-' + i)?.value || it.icon;
   });
-  Store.eventManualItems = items;
 
-  // Persist immediately to Supabase
-  const eventId = Store.currentEventId || Store._intakeEventId;
-  dlog('📝 saveManualItems — a guardar para eventId:', eventId, 'itens:', items);
+  // ✅ CRÍTICO: usar o eventId bloqueado quando o modal foi aberto
+  // Nunca usar Store.currentEventId aqui — pode ter mudado entretanto
+  const eventId = window._manualEditorEventId || Store.currentEventId || Store._intakeEventId;
+  console.log('[MANUAL] saveManualItems para eventId:', eventId);
+
+  Store.eventManualItems = items;
+  Store._manualItemsEventId = eventId;
   if (!eventId) {
     console.error('❌ saveManualItems: nenhum eventId disponível (Store.currentEventId e Store._intakeEventId estão ambos vazios). As alterações NÃO foram guardadas no Supabase, apenas em memória.');
     toast('Erro: não foi possível identificar o evento. As alterações podem não ter sido guardadas.');
