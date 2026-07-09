@@ -1,4 +1,4 @@
-// ── Ícones SVG inline — sem dependência de CDN ──────────────────────────
+// ── Ícones SVG inline com MutationObserver ─────────────────────────────
 const _ICONS = {
   'alert-circle':'<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>',
   'alert-triangle':'<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
@@ -51,7 +51,7 @@ const _ICONS = {
   'smartphone':'<rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/>',
   'sparkles':'<path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M3 5h4"/><path d="M19 17v4"/><path d="M17 19h4"/>',
   'star':'<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
-  'ticket':'<path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><line x1="9" y1="4.5" x2="9" y2="19.5" stroke-dasharray="2 2"/>',
+  'ticket':'<path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/>',
   'trash-2':'<polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/>',
   'type':'<polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/>',
   'upload':'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>',
@@ -64,25 +64,48 @@ const _ICONS = {
   'circle':'<circle cx="12" cy="12" r="10"/>',
 };
 
-function _lucideCreateIcons(root) {
-  (root||document).querySelectorAll('i[data-lucide]').forEach(el => {
-    const name = el.getAttribute('data-lucide');
-    const path = _ICONS[name] || _ICONS['circle'];
-    const cls  = el.getAttribute('class') || '';
-    const sizeMap = {'w-3':12,'w-4':16,'w-5':20,'w-6':24,'w-7':28,'w-8':32,'w-10':40};
-    let size = 20;
-    for (const [c,s] of Object.entries(sizeMap)) { if (cls.includes(c)) { size=s; break; } }
-    const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
-    svg.setAttribute('width',size); svg.setAttribute('height',size);
-    svg.setAttribute('viewBox','0 0 24 24'); svg.setAttribute('fill','none');
-    svg.setAttribute('stroke','currentColor'); svg.setAttribute('stroke-width','2');
-    svg.setAttribute('stroke-linecap','round'); svg.setAttribute('stroke-linejoin','round');
-    const style = el.getAttribute('style'); if(style) svg.setAttribute('style',style);
-    svg.setAttribute('class', cls.replace(/\bw-\d+\b|\bh-\d+\b/g,'').trim());
-    svg.innerHTML = path;
-    el.replaceWith(svg);
-  });
+function _convertIcon(el) {
+  const name = el.getAttribute('data-lucide');
+  if (!name) return;
+  const path = _ICONS[name] || _ICONS['circle'];
+  const cls  = el.getAttribute('class') || '';
+  const style = el.getAttribute('style') || '';
+  const sizeMap = {'w-3':12,'w-4':16,'w-5':20,'w-6':24,'w-7':28,'w-8':32,'w-10':40,'w-12':48};
+  let size = 20;
+  for (const [c,s] of Object.entries(sizeMap)) { if (cls.includes(c)) { size=s; break; } }
+  const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+  svg.setAttribute('width',size); svg.setAttribute('height',size);
+  svg.setAttribute('viewBox','0 0 24 24'); svg.setAttribute('fill','none');
+  svg.setAttribute('stroke','currentColor'); svg.setAttribute('stroke-width','2');
+  svg.setAttribute('stroke-linecap','round'); svg.setAttribute('stroke-linejoin','round');
+  if (style) svg.setAttribute('style', style);
+  const cleanCls = cls.replace(/\b[wh]-\d+\b/g,'').trim();
+  if (cleanCls) svg.setAttribute('class', cleanCls);
+  svg.innerHTML = path;
+  el.replaceWith(svg);
 }
 
-window.lucide = { createIcons: () => _lucideCreateIcons(document) };
+function _lucideCreateIcons(root) {
+  (root || document).querySelectorAll('i[data-lucide]').forEach(_convertIcon);
+}
+
+// ✅ MutationObserver — converte ícones automaticamente sempre que o DOM muda
+// Resolve o problema de timing onde os ícones são adicionados dinamicamente
+const _iconObserver = new MutationObserver(mutations => {
+  let found = false;
+  for (const m of mutations) {
+    for (const node of m.addedNodes) {
+      if (node.nodeType !== 1) continue;
+      if (node.hasAttribute?.('data-lucide')) { _convertIcon(node); found = true; }
+      node.querySelectorAll?.('i[data-lucide]').forEach(el => { _convertIcon(el); found = true; });
+    }
+  }
+});
+_iconObserver.observe(document.documentElement, { childList: true, subtree: true });
+
+// Converter ícones já existentes no DOM
+document.addEventListener('DOMContentLoaded', () => _lucideCreateIcons(document));
+
+// API compatível com Lucide original
+window.lucide = { createIcons: (opts) => _lucideCreateIcons(opts?.el || document) };
 window._lucideCreateIcons = _lucideCreateIcons;
