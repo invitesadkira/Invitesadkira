@@ -17,7 +17,7 @@ async function _loadCurrentAccount() {
   try {
     const uid = Store.currentUser?.id || Store.userId;
     if (!uid) return;
-    const acc = await supabaseRequest(`accounts?auth_uid=eq.${uid}&select=id,allowed_features,ticket_limit,tickets_with_table,undo_scans_remaining&limit=1`);
+    const acc = await supabaseRequest(`accounts?id=eq.${uid}&select=id,allowed_features,ticket_limit,tickets_with_table,undo_scans_remaining&limit=1`);
     if (acc?.[0]) Store.currentAccount = acc[0];
   } catch(e) { console.warn('_loadCurrentAccount:', e); }
 }
