@@ -4191,7 +4191,9 @@ async function resetUndoScans(userId, username) {
 }
 
 async function openTicketLimitModal(userId, username) {
+  console.log('[ADK tickets] openTicketLimitModal userId:', userId, 'username:', username);
   const acc = await supabaseRequest(`accounts?auth_uid=eq.${userId}&select=ticket_limit,tickets_with_table&limit=1`).catch(() => []);
+  console.log('[ADK tickets] conta encontrada:', acc);
   const current     = acc?.[0]?.ticket_limit ?? 50;
   const withTable   = acc?.[0]?.tickets_with_table ?? false;
 
@@ -4221,9 +4223,15 @@ async function openTicketLimitModal(userId, username) {
         const v=parseInt(document.getElementById('tl-val').value)||50;
         const t=document.getElementById('tl-table').checked;
         const uid='${userId}';
-        let res=await supabaseRequest('accounts?auth_uid=eq.${userId}','PATCH',{ticket_limit:v,tickets_with_table:t}).catch(()=>null);
-        if(!Array.isArray(res)||res.length===0){await supabaseRequest('accounts','POST',{auth_uid:uid,ticket_limit:v,tickets_with_table:t}).catch(()=>{});}
-        toast('Configuração de tickets guardada: '+v+' tickets');
+        console.log('[ADK tickets] A guardar limite:', v, 'para auth_uid:', uid);
+        const res=await supabaseRequest('accounts?auth_uid=eq.${userId}','PATCH',{ticket_limit:v,tickets_with_table:t}).catch(e=>{console.error('[ADK tickets] PATCH erro:',e);return null;});
+        console.log('[ADK tickets] Resultado PATCH:', res);
+        if(!Array.isArray(res)||res.length===0){
+          console.warn('[ADK tickets] PATCH não actualizou nenhuma linha. auth_uid correcto?', uid);
+          toast('⚠️ Erro: utilizador não encontrado. Verifica o auth_uid.');
+          return;
+        }
+        toast('✅ Limite guardado: '+v+' tickets');
         this.closest('.modal-overlay').remove();
       })()">Guardar</button>
       <button class="flex-1 btn-outline" onclick="this.closest('.modal-overlay').remove()">Cancelar</button>
