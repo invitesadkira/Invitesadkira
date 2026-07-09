@@ -188,8 +188,8 @@ function renderAdminAccountsList(users) {
     html += '<button class="text-xs bg-slate-500 hover:bg-slate-600 text-white rounded-lg py-1.5 px-3 font-semibold transition" onclick="changeUserPassword(\'' + u.id + '\')">Senha</button>';
     html += '<button class="text-xs bg-orange-500 hover:bg-orange-600 text-white rounded-lg py-1.5 px-3 font-semibold transition" onclick="changeUserPhone(\'' + u.id + '\')">Username</button>';
     html += '<button class="text-xs bg-violet-600 hover:bg-violet-700 text-white rounded-lg py-1.5 px-3 font-semibold transition" onclick="openUserFeaturesModal(\'' + u.id + '\')">🔐 Permissões</button>';
-    html += '<button class="text-xs bg-rose-500 hover:bg-rose-600 text-white rounded-lg py-1.5 px-3 font-semibold transition" onclick="openTicketLimitModal(\'' + u.id + '\',\'' + escapeHTML(u.username||u.email||u.id) + '\')">🎫 Tickets</button>';
-    html += '<button class="text-xs bg-orange-500 hover:bg-orange-600 text-white rounded-lg py-1.5 px-3 font-semibold transition" onclick="resetUndoScans(\'' + u.id + '\',\'' + escapeHTML(u.username||u.email||u.id) + '\')">↩ Repor Desfazer</button>';
+    html += '<button class="text-xs bg-rose-500 hover:bg-rose-600 text-white rounded-lg py-1.5 px-3 font-semibold transition" onclick="openTicketLimitModal(\'' + (u.auth_uid||u.id) + '\',\'' + escapeHTML(u.username||u.email||u.id) + '\')">🎫 Tickets</button>';
+    html += '<button class="text-xs bg-orange-500 hover:bg-orange-600 text-white rounded-lg py-1.5 px-3 font-semibold transition" onclick="resetUndoScans(\'' + (u.auth_uid||u.id) + '\',\'' + escapeHTML(u.username||u.email||u.id) + '\')">↩ Repor Desfazer</button>';
     html += '<button class="text-xs ' + (u.edit_locked ? 'bg-green-600 hover:bg-green-700' : 'bg-yellow-600 hover:bg-yellow-700') + ' text-white rounded-lg py-1.5 px-3 font-semibold transition" onclick="adminToggleEditLock(\'' + u.id + '\',' + !!u.edit_locked + ')">' + (u.edit_locked ? '🔓 Desbloquear Edição' : '🔒 Bloquear Edição') + '</button>';
     
     if (Store.events.some(e => e.userId === u.id)) {
@@ -4207,7 +4207,7 @@ async function openTicketLimitModal(userId, username) {
       <button onclick="document.getElementById('tl-val').value=parseInt(document.getElementById('tl-val').value||0)+5" style="width:36px;height:36px;border-radius:50%;border:1px solid #e5e7eb;background:#f9fafb;font-size:1.2rem;cursor:pointer;font-weight:700">+</button>
     </div>
     <div class="flex gap-2 flex-wrap mb-2">
-      ${[10,25,50,100,200,500].map(v => `<button onclick="document.getElementById('tl-val').value=${v}" class="text-xs bg-gray-100 hover:bg-gray-200 rounded-lg px-3 py-1.5 font-semibold transition">${v}</button>`).join('')}
+      ${[10,25,50,100,200,300,500].map(v => `<button onclick="document.getElementById('tl-val').value=${v}" class="text-xs bg-gray-100 hover:bg-gray-200 rounded-lg px-3 py-1.5 font-semibold transition">${v}</button>`).join('')}
     </div>
     <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg mt-3 mb-1">
       <div>
