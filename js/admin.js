@@ -4185,14 +4185,14 @@ async function resetUndoScans(userId, username) {
   const val = prompt(`Repor usos de "Desfazer Scans" para ${username}.\n\nNovo número de usos (padrão: 4):`, '4');
   if (val === null) return;
   const n = parseInt(val) || 4;
-  const res = await supabaseRequest(`accounts?auth_uid=eq.${userId}`, 'PATCH', { undo_scans_remaining: n }).catch(() => null);
+  const res = await supabaseRequest(`accounts?id=eq.${userId}`, 'PATCH', { undo_scans_remaining: n }).catch(() => null);
   if (!res) await supabaseRequest('accounts', 'POST', { user_id: userId, undo_scans_remaining: n }).catch(() => {});
   toast(`Usos de desfazer reposto para ${n} — ${username}`);
 }
 
 async function openTicketLimitModal(userId, username) {
   console.log('[ADK tickets] openTicketLimitModal userId:', userId, 'username:', username);
-  const acc = await supabaseRequest(`accounts?auth_uid=eq.${userId}&select=ticket_limit,tickets_with_table&limit=1`).catch(() => []);
+  const acc = await supabaseRequest(`accounts?id=eq.${userId}&select=ticket_limit,tickets_with_table&limit=1`).catch(() => []);
   console.log('[ADK tickets] conta encontrada:', acc);
   const current     = acc?.[0]?.ticket_limit ?? 50;
   const withTable   = acc?.[0]?.tickets_with_table ?? false;
@@ -4224,7 +4224,7 @@ async function openTicketLimitModal(userId, username) {
         const t=document.getElementById('tl-table').checked;
         const uid='${userId}';
         console.log('[ADK tickets] A guardar limite:', v, 'para auth_uid:', uid);
-        const res=await supabaseRequest('accounts?auth_uid=eq.${userId}','PATCH',{ticket_limit:v,tickets_with_table:t}).catch(e=>{console.error('[ADK tickets] PATCH erro:',e);return null;});
+        const res=await supabaseRequest('accounts?id=eq.${userId}','PATCH',{ticket_limit:v,tickets_with_table:t}).catch(e=>{console.error('[ADK tickets] PATCH erro:',e);return null;});
         console.log('[ADK tickets] Resultado PATCH:', res);
         if(!Array.isArray(res)||res.length===0){
           console.warn('[ADK tickets] PATCH não actualizou nenhuma linha. auth_uid correcto?', uid);
