@@ -6,6 +6,20 @@
   #007f9f      = AdKira brand colour (dashboards, admin, buttons)
 */
 
+/* ── CRÍTICO: Fallback para Tailwind CDN lento (iPhone/WhatsApp/Safari) ──
+   Estas regras NÃO dependem do Tailwind CDN — garantem que os ecrãs
+   correctos aparecem mesmo que o CDN demore ou falhe.              ── */
+.hidden { display: none !important; }
+.flex   { display: flex !important; }
+.block  { display: block !important; }
+.inline-flex { display: inline-flex !important; }
+.grid   { display: grid !important; }
+.invisible { visibility: hidden !important; }
+.opacity-0 { opacity: 0 !important; }
+/* Garantir que apenas o ecrã activo aparece */
+.page-section { display: none; }
+.page-section:not(.hidden) { display: block; }
+
 *, *::before, *::after { font-family: 'Quicksand', sans-serif; box-sizing: border-box; }
 html, body { height: 100%; margin: 0; width: 100%; overflow-x: hidden; }
 :root { --ev-color: #007f9f; }

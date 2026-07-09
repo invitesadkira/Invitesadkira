@@ -3158,15 +3158,18 @@ function _wireIntroScreenButton(screenId, onOpen) {
   const screen = document.getElementById(screenId);
   if (!screen) return;
   screen.onclick = () => {
-    // Fade out suavemente em vez de remover de imediato — isto disfarça
-    // qualquer instante em que o conteúdo por trás ainda esteja a desenhar
-    // (imagem de capa a carregar, etc.), evitando um "salto" visual brusco.
-    screen.style.transition = 'opacity 0.35s ease';
-    screen.style.opacity = '0';
-    setTimeout(() => screen.remove(), 350);
+    // ✅ Verificar que o evento está carregado antes de remover a tela de abertura
+    // Se o conteúdo ainda não está pronto (rede lenta), aguarda até 3 segundos
+    const guestContent = document.getElementById('guest-hero') || document.getElementById('guest-event-sections');
+    const eventLoaded = !!(Store.guestEventData || window._evData);
 
-    const audio = document.getElementById('guest-audio');
-    if (audio && audio.src) { audio.muted = false; audio.play().then(() => setMusicPlayingUI(true)).catch(() => {}); }
+    const doOpen = () => {
+      screen.style.transition = 'opacity 0.35s ease';
+      screen.style.opacity = '0';
+      setTimeout(() => screen.remove(), 350);
+
+      const audio = document.getElementById('guest-audio');
+      if (audio && audio.src) { audio.muted = false; audio.play().then(() => setMusicPlayingUI(true)).catch(() => {}); }
     const ytFrame = document.getElementById('yt-music-frame');
     if (ytFrame && ytFrame.src) {
       let att = 0;
@@ -3185,6 +3188,26 @@ function _wireIntroScreenButton(screenId, onOpen) {
       setTimeout(cmd, 300);
     }
     if (typeof onOpen === 'function') onOpen();
+    }; // end doOpen
+
+    if (eventLoaded) {
+      doOpen();
+    } else {
+      // Evento ainda a carregar — mostrar indicador e aguardar
+      const loadingEl = document.createElement('div');
+      loadingEl.style.cssText = 'position:absolute;bottom:2rem;left:0;right:0;text-align:center;color:rgba(0,0,0,0.5);font-size:0.85rem;font-family:sans-serif';
+      loadingEl.textContent = 'A abrir o convite...';
+      screen.appendChild(loadingEl);
+
+      let waited = 0;
+      const waitInterval = setInterval(() => {
+        waited += 200;
+        if (Store.guestEventData || window._evData || waited > 4000) {
+          clearInterval(waitInterval);
+          doOpen();
+        }
+      }, 200);
+    }
   };
 }
 
