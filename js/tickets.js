@@ -232,10 +232,22 @@ async function handleTicketTemplateUpload(input) {
 
 async function _renderTicketPreview(pdfUrl) {
   try {
-    // ✅ Renderizar a 1ª página do PDF com PDF.js para o utilizador ver
-    // o layout real e posicionar os marcadores correctamente.
+    // ✅ Carregar PDF.js lazily se ainda não estiver carregado
     if (typeof pdfjsLib === 'undefined') {
-      console.warn('PDF.js não carregado — usando placeholder');
+      await _loadPdfJs().catch(() => {});
+    }
+    if (typeof pdfjsLib === 'undefined') {
+      console.warn('PDF.js falhou a carregar — a mostrar placeholder');
+      const canvas = document.getElementById('ticket-preview-canvas');
+      if (canvas) {
+        const ctx = canvas.getContext('2d');
+        canvas.width = 595; canvas.height = 842;
+        ctx.fillStyle = '#f9fafb'; ctx.fillRect(0,0,595,842);
+        ctx.strokeStyle = '#e5e7eb'; ctx.strokeRect(10,10,575,822);
+        ctx.fillStyle = '#9ca3af'; ctx.font = '14px sans-serif'; ctx.textAlign = 'center';
+        ctx.fillText('PDF não disponível — arrasta os marcadores para posicionar',297,421);
+        document.getElementById('ticket-canvas-wrap')?.classList.remove('hidden');
+      }
       return;
     }
     pdfjsLib.GlobalWorkerOptions.workerSrc =
