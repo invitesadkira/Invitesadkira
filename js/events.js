@@ -1426,7 +1426,9 @@ function renderEventDetails() {
     }).join('');
   }
 
-  lucide.createIcons();
+  if(window.lucide?.createIcons) lucide.createIcons(); else setTimeout(()=>{ if(window.lucide?.createIcons) lucide.createIcons(); },300);
+  // Re-render icons inline for the confirmation list (fallback)
+  if (window._lucideCreateIcons) _lucideCreateIcons(confContainer);
   _startEventDetailsPolling(event.id);
 }
 
