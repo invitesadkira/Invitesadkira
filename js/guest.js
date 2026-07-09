@@ -106,7 +106,10 @@ async function renderGuestView() {
   
   // ✅ CRÍTICO: Limpar dados do evento anterior se o evento actual é diferente
   // Sem isto, a capa/vídeo/dados de um evento aparecem noutro evento
-  if (Store.guestEventData && Store.guestEventData.id && 
+  // NOTA: só limpar se Store.currentEventId está definido — se não estiver,
+  // é porque o evento ainda está a carregar (ex: cache hit no iPhone) e
+  // não devemos limpar dados válidos
+  if (Store.guestEventData && Store.guestEventData.id && Store.currentEventId &&
       Store.guestEventData.id !== Store.currentEventId &&
       Store.guestEventData.event_code !== Store.currentEventId) {
     Store.guestEventData = null;
@@ -1067,6 +1070,8 @@ async function reloadEventFromSupabase(eventId) {
     dlog('✅ Evento carregado do cache local (sem pedido ao Supabase)');
     Store.guestEventData = cached;
     window._evData = cached;
+    // ✅ Garantir que currentEventId está definido mesmo com cache
+    if (!Store.currentEventId) Store.currentEventId = eventId;
     return cached;
   }
 
