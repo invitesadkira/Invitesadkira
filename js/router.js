@@ -1,4 +1,4 @@
-﻿// ===================== ROUTER =====================
+// ===================== ROUTER =====================
 const Router = {
   go(screen) {
     // ✅ Guardar onde a pessoa estava, para um refresh a trazer de volta
@@ -33,7 +33,7 @@ const Router = {
     }
     closeDrawer();
     // Screen-specific init
-    if (screen === 'settings' && isAdminRole(Store.currentUser?.role)) {
+    if (screen === 'settings' && Store.currentUser?.role === 'admin') {
       if (typeof loadCurrentDemoEvent !== 'undefined') loadCurrentDemoEvent();
       if (typeof loadAvailableFonts !== 'undefined') loadAvailableFonts();
       if (typeof checkAndRenewDemoEvent !== 'undefined') checkAndRenewDemoEvent();
@@ -51,7 +51,7 @@ const Router = {
       const faqContainer = document.getElementById('faq-container');
       if (faqContainer && typeof renderFAQ !== 'undefined') renderFAQ(faqContainer);
       const faqEditBtn = document.getElementById('faq-edit-btn');
-      if (faqEditBtn) faqEditBtn.classList.toggle('hidden', !Store.currentUser || !isAdminRole(Store.currentUser.role));
+      if (faqEditBtn) faqEditBtn.classList.toggle('hidden', !Store.currentUser || Store.currentUser.role !== 'admin');
     }
     if (screen === 'home') {
       const faqContainer = document.getElementById('faq-container');
@@ -67,7 +67,7 @@ const Router = {
       if (typeof renderLandingHeroShowcase !== 'undefined') renderLandingHeroShowcase();
       // Botão "Editar Vitrine" do hero — só visível para admin
       const heroShowcaseBtn = document.getElementById('hero-showcase-edit-btn');
-      if (heroShowcaseBtn) heroShowcaseBtn.classList.toggle('hidden', !Store.currentUser || !isAdminRole(Store.currentUser.role));
+      if (heroShowcaseBtn) heroShowcaseBtn.classList.toggle('hidden', !Store.currentUser || Store.currentUser.role !== 'admin');
       // Load notices
       if (typeof loadAndShowNotices !== 'undefined') loadAndShowNotices();
       // Load delivery text (editable by admin)
@@ -79,7 +79,7 @@ const Router = {
       }).catch(() => {});
       // Show FAQ edit button only for admin
       const faqEdit = document.getElementById('faq-edit-btn');
-      if (faqEdit) faqEdit.classList.toggle('hidden', !Store.currentUser || !isAdminRole(Store.currentUser.role));
+      if (faqEdit) faqEdit.classList.toggle('hidden', !Store.currentUser || Store.currentUser.role !== 'admin');
       // Analytics: log commercial site visit (once per session, fire-and-forget)
       if (!window._stdCommercialVisitLogged) {
         window._stdCommercialVisitLogged = true;
@@ -130,7 +130,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const impersonatingUserId = localStorage.getItem('adminImpersonatingUserId');
   const impersonatingUserPhone = localStorage.getItem('adminImpersonatingUserPhone');
 
-  // â”€â”€ Event loading cache (5 min TTL to reduce Supabase calls) â”€â”€
+  // ── Event loading cache (5 min TTL to reduce Supabase calls) ──
 const _CACHE_TTL = 5 * 60 * 1000;
 let _lastLoad = 0;
 let _forceNextLoad = false;
@@ -139,7 +139,7 @@ function invalidateEventsCache() { _forceNextLoad = true; }
 async function loadEventosComDelay() {
   const now = Date.now();
   if (!_forceNextLoad && Store.events && Store.events.length > 0 && (now - _lastLoad) < _CACHE_TTL) {
-    dlog('ðŸ“¦ Cache OK — não recarrega eventos');
+    dlog('📦 Cache OK — não recarrega eventos');
     renderDashboard();
     return;
   }
@@ -168,7 +168,7 @@ async function loadEventosComDelay() {
       await new Promise(r => setTimeout(r, 500));
       
       try {
-        if (isAdminRole(userRole) && impersonatingUserId) {
+        if (userRole === 'admin' && impersonatingUserId) {
           dlog('Admin em modo cliente restaurado apos refresh:', impersonatingUserId);
           Store.adminModeActive = true;
           Store.adminOriginalUser = { id: userId, phone: userPhone || 'admin', role: 'admin', status: 'active' };
@@ -179,14 +179,14 @@ async function loadEventosComDelay() {
         }
 
         // ✅ SE É ADMIN: carregar TODAS as contas e TODOS os eventos
-        if (isAdminRole(userRole)) {
-          dlog('🏠â€ðŸ’¼ Admin detectado - carregando dados administrativos...');
+        if (userRole === 'admin') {
+          dlog('👨‍💼 Admin detectado - carregando dados administrativos...');
           
           // Carregar TODAS as contas (excluindo admins)
           const allAccounts = await supabaseRequest(`accounts?role=eq.user&select=id,phone,password,role,status,created_at,event_limit,admin_label&limit=500&order=created_at.desc`);
           dlog('✅ Contas carregadas:', allAccounts?.length || 0);
           
-          Store.users = (allAccounts || []).filter(a => !isAdminRole(a.role) && a.status !== 'deleted').map(u => ({
+          Store.users = (allAccounts || []).filter(a => a.role !== 'admin' && a.status !== 'deleted').map(u => ({
             id: u.id,
             phone: u.phone,
             password: u.password,
@@ -451,42 +451,33 @@ async function loadEventosComDelay() {
         const savedScreen = sessionStorage.getItem('lastScreen');
         const savedEventId = sessionStorage.getItem('lastEventId');
         if (savedScreen && document.getElementById('screen-' + savedScreen)) {
-          const eventScreens = ['event-details', 'create-event', 'gifts'];
-          const needsEvent = eventScreens.includes(savedScreen);
-          const eventStillExists = !needsEvent || (savedEventId && (Store.events || []).some(e => e.id === savedEventId || e.eventCode === savedEventId || e.event_code === savedEventId));
-          if (!eventStillExists) {
-            sessionStorage.removeItem('lastScreen');
-            sessionStorage.removeItem('lastEventId');
+          if (savedEventId) Store.currentEventId = savedEventId;
+          if (savedScreen === 'create-event' && savedEventId) {
+            // O formulário de edição precisa de ser reaberto pela função
+            // própria, para vir preenchido — só mudar de ecrã mostraria
+            // o formulário vazio.
+            editEventWithLockCheck();
           } else {
-            if (savedEventId) Store.currentEventId = savedEventId;
-            if (savedScreen === 'create-event' && savedEventId) {
-              // O formulário de edição precisa de ser reaberto pela função
-              // própria, para vir preenchido — só mudar de ecrã mostraria
-              // o formulário vazio.
-              editEventWithLockCheck();
-            } else {
-              Router.go(savedScreen);
-            }
-            _restored = true;
+            Router.go(savedScreen);
           }
+          _restored = true;
         }
       } catch(e) {}
       if (!_restored) Router.go('dashboard');
     } else {
-      dlog('ðŸ  Navegando para home');
+      dlog('🏠 Navegando para home');
       Router.go('home');
 
-      // â”€â”€ Landing nav scroll effect â”€â”€
+      // ── Landing nav scroll effect ──
       window.addEventListener('scroll', () => {
         const nav = document.getElementById('landing-nav');
         if (nav) nav.classList.toggle('scrolled', window.scrollY > 60);
       }, { passive: true });
 
-      // â”€â”€ Show WhatsApp float on landing â”€â”€
+      // ── Show WhatsApp float on landing ──
       const _waBtn = document.getElementById('wa-float-btn');
       if (_waBtn) _waBtn.style.display = 'flex';
     }
   }
 });
-
 

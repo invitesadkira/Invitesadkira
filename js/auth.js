@@ -1,4 +1,4 @@
-﻿async function handleRegister(e) {
+async function handleRegister(e) {
   e.preventDefault();
   const accessToken = document.getElementById('reg-access-token')?.value?.trim().toUpperCase();
   const phone = document.getElementById('reg-phone').value.trim();
@@ -235,7 +235,7 @@ async function handleLoginSecure(e) {
   Store.currentUser = { id: user.id, phone: user.phone, role: user.role || 'user', status: 'active' };
   toast('Bem-vindo! Carregando seus dados...');
   if (typeof invalidateEventsCache !== 'undefined') invalidateEventsCache();
-  Router.go(isAdminRole(user.role) ? 'admin' : 'dashboard');
+  Router.go(user.role === 'admin' ? 'admin' : 'dashboard');
 }
 
 // ============================================================================
@@ -243,7 +243,7 @@ async function handleLoginSecure(e) {
 // Supabase Auth, para o RLS conseguir verificar "és mesmo o dono disto?"
 // ============================================================================
 // Segue supabase/04_fase3_guia_migracao.md antes de activar isto. Resumo:
-//   1. Cria as contas equivalentes no Supabase Auth (painel â†’ Authentication)
+//   1. Cria as contas equivalentes no Supabase Auth (painel → Authentication)
 //   2. Liga-as à tabela accounts via a coluna auth_uid
 //   3. Só DEPOIS troca os onsubmit dos formulários para chamarem
 //      loginViaSupabaseAuth / registerViaSupabaseAuth, e chama
@@ -410,7 +410,7 @@ async function handleLogin(e) {
     _clearLoginAttempts(phone);
     const user = result.account;
     if (user.status === 'pending') {
-      errEl.textContent = 'â³ Sua conta ainda não foi aprovada pelo administrador.';
+      errEl.textContent = '⏳ Sua conta ainda não foi aprovada pelo administrador.';
       errEl.classList.remove('hidden');
       return;
     }
@@ -426,7 +426,7 @@ async function handleLogin(e) {
     Store.currentUser = { id: user.id, phone: user.phone, role: user.role || 'user', status: 'active' };
     toast('Bem-vindo! Carregando seus dados...');
   if (typeof invalidateEventsCache !== 'undefined') invalidateEventsCache();
-    Router.go(isAdminRole(user.role) ? 'admin' : 'dashboard');
+    Router.go(user.role === 'admin' ? 'admin' : 'dashboard');
     return;
   }
   
@@ -470,7 +470,7 @@ async function handleLogin(e) {
     _clearLoginAttempts(phone);
     const authedUser = result.account;
     if (authedUser.status === 'pending') {
-      errEl.textContent = 'â³ Sua conta ainda não foi aprovada pelo administrador.';
+      errEl.textContent = '⏳ Sua conta ainda não foi aprovada pelo administrador.';
       errEl.classList.remove('hidden');
       return;
     }
@@ -486,7 +486,7 @@ async function handleLogin(e) {
     Store.currentUser = { id: authedUser.id, phone: authedUser.phone, role: authedUser.role || 'user', status: 'active' };
     toast('Bem-vindo! Carregando seus dados...');
   if (typeof invalidateEventsCache !== 'undefined') invalidateEventsCache();
-    Router.go(isAdminRole(authedUser.role) ? 'admin' : 'dashboard');
+    Router.go(authedUser.role === 'admin' ? 'admin' : 'dashboard');
     return;
   }
   
@@ -504,15 +504,15 @@ async function handleLogin(e) {
 
   // ✅ CRÍTICO: Verificar se conta está APROVADA pelo admin
   if (user.status === 'pending') {
-    dlog('â³ Conta pendente de aprovação:', phone);
-    errEl.textContent = 'â³ Sua conta ainda não foi aprovada pelo administrador.';
+    dlog('⏳ Conta pendente de aprovação:', phone);
+    errEl.textContent = '⏳ Sua conta ainda não foi aprovada pelo administrador.';
     errEl.classList.remove('hidden');
     return;
   }
 
   // ✅ CRÍTICO: Verificar se conta foi BLOQUEADA
   if (user.status === 'blocked') {
-    dlog('ðŸš« Conta bloqueada:', phone);
+    dlog('🚫 Conta bloqueada:', phone);
     errEl.textContent = 'Sua conta foi bloqueada. Contacte o administrador.';
     errEl.classList.remove('hidden');
     return;
@@ -520,7 +520,7 @@ async function handleLogin(e) {
   
   // ✅ CRÍTICO: Verificar se conta foi DELETADA (não deveria chegar aqui, mas é proteção extra)
   if (user.status === 'deleted' || user.deleted_at) {
-    dlog('ðŸ—‘ï¸ Conta deletada:', phone);
+    dlog('🗑️ Conta deletada:', phone);
     errEl.textContent = 'Esta conta foi eliminada. Não é possível fazer login.';
     errEl.classList.remove('hidden');
     return;
@@ -554,10 +554,10 @@ async function handleLogin(e) {
   localStorage.setItem('userPhone', user.phone);
   localStorage.setItem('userRole', userRole);
 
-  // â”€â”€ Increment login count and check for notices to show â”€â”€
+  // ── Increment login count and check for notices to show ──
   // NOTE: admin god accounts never see maintenance notices or review prompts —
   // those are user-facing features and the admin's own login isn't a "customer" event.
-  if (!isAdminRole(userRole)) {
+  if (userRole !== 'admin') {
     const newLoginCount = (user.login_count || 0) + 1;
     supabaseRequest(`accounts?id=eq.${user.id}`, 'PATCH', { login_count: newLoginCount }).catch(() => {});
     Store.currentUser.loginCount = newLoginCount;
@@ -575,16 +575,16 @@ async function handleLogin(e) {
     }
   }
 
-  // â”€â”€ Track login for analytics (admin logins excluded — see visit_log) â”€â”€
-  if (!isAdminRole(userRole)) {
+  // ── Track login for analytics (admin logins excluded — see visit_log) ──
+  if (userRole !== 'admin') {
     supabaseRequest('visit_log', 'POST', { visit_type: 'user_login', account_id: user.id }).catch(() => {});
   }
 
   toast('Bem-vindo! Carregando seus dados...');
 
-  // ðŸŽ¯ Carregar dados do Supabase
-  if (isAdminRole(user.role)) {
-    dlog('🏠â€ðŸ’¼ Admin logado - carregando dados administrativos...');
+  // 🎯 Carregar dados do Supabase
+  if (user.role === 'admin') {
+    dlog('👨‍💼 Admin logado - carregando dados administrativos...');
     
     // ✅ AGUARDAR um pouco para garantir conexão
     await new Promise(r => setTimeout(r, 300));
@@ -592,7 +592,7 @@ async function handleLogin(e) {
     // ✅ CARREGA 1: TODAS AS CONTAS
     const allAccounts = await supabaseRequest(`accounts?select=id,phone,password,role,status,created_at,event_limit,admin_label&limit=500&order=created_at.desc`);
     
-    Store.users = (allAccounts || []).filter(a => !isAdminRole(a.role) && a.status !== 'deleted').map(u => ({
+    Store.users = (allAccounts || []).filter(a => a.role !== 'admin' && a.status !== 'deleted').map(u => ({
       id: u.id,
       phone: u.phone,
       password: u.password,
@@ -760,7 +760,7 @@ function editAdminLabel(userId) {
   if (!user) return;
 
   // Apenas admin pode alterar
-  if (!Store.currentUser || !isAdminRole(Store.currentUser.role)) {
+  if (!Store.currentUser || Store.currentUser.role !== 'admin') {
     toast('Apenas admin pode atribuir nomes!');
     return;
   }
@@ -776,7 +776,7 @@ function editAdminLabel(userId) {
         <div>
           <label class="block text-sm font-semibold text-gray-600 mb-1">Nome Identificador</label>
           <input id="admin-label-input" type="text" class="input-field" placeholder="Ex: João Silva - Casamento" value="${user.adminLabel || ''}">
-          <p class="text-xs text-gray-400 mt-1">Este nome é apenas para VOCÃŠ identificar este utilizador. O utilizador NÃO vê isto.</p>
+          <p class="text-xs text-gray-400 mt-1">Este nome é apenas para VOCÊ identificar este utilizador. O utilizador NÃO vê isto.</p>
         </div>
       </div>
       
@@ -803,7 +803,7 @@ function saveAdminLabel(userId, modal) {
     return;
   }
 
-  dlog('ðŸ’¾ Salvando admin label:', { userId, label });
+  dlog('💾 Salvando admin label:', { userId, label });
 
   // ✅ Atualizar Store PRIMEIRO
   user.adminLabel = label && label.length > 0 ? label : null;
@@ -885,7 +885,7 @@ function changeUserPhone(userId) {
   if (!user) return;
 
   // Apenas admin pode alterar username
-  if (!Store.currentUser || !isAdminRole(Store.currentUser.role)) {
+  if (!Store.currentUser || Store.currentUser.role !== 'admin') {
     toast('Apenas admin pode alterar username!');
     return;
   }
@@ -924,7 +924,7 @@ function changeUserId(userId) {
   if (!user) return;
 
   // Apenas admin pode alterar ID
-  if (!Store.currentUser || !isAdminRole(Store.currentUser.role)) {
+  if (!Store.currentUser || Store.currentUser.role !== 'admin') {
     toast('Apenas admin pode alterar ID!');
     return;
   }
@@ -980,7 +980,7 @@ function saveUserId(userId, modal) {
   const oldId = user.id;
   
   // ✅ PASSO 1: Atualizar TODOS os eventos deste utilizador
-  dlog('🔎 Atualizando user_id em todos os eventos...');
+  dlog('🔄 Atualizando user_id em todos os eventos...');
   const userEvents = Store.events.filter(e => e.userId === oldId || e.user_id === oldId);
   
   userEvents.forEach(event => {
@@ -996,7 +996,7 @@ function saveUserId(userId, modal) {
   
   // ✅ PASSO 3: Sincronizar utilizador no Supabase
   // ⚠️ CRÍTICO: Deletar o registo antigo e criar um novo com o novo ID
-  dlog('🔎 Atualizando ID do utilizador no Supabase...');
+  dlog('🔄 Atualizando ID do utilizador no Supabase...');
   
   // Primeiro, copiar os dados do utilizador antigo
   const userData = {
@@ -1061,7 +1061,7 @@ function saveUserPhone(userId, modal) {
 }
 
 
-// â”€â”€ Show active site notices up to 2 times per logged-in user â”€â”€
+// ── Show active site notices up to 2 times per logged-in user ──
 async function _checkAndShowLoginNotices(userId) {
   const notices = await supabaseRequest(`site_notices?active=eq.true&select=id,title,message,type&order=created_at.desc&limit=5`).catch(() => []);
   if (!notices || !notices.length) return;
@@ -1109,13 +1109,13 @@ function _showNoticeModal(notice) {
   modal.onclick = e => { if (e.target === modal) modal.remove(); };
 }
 
-// â”€â”€ Review prompt on 5th login â”€â”€
+// ── Review prompt on 5th login ──
 function _showReviewPrompt(userId) {
   const modal = document.createElement('div');
   modal.id = '_review-prompt-modal';
   modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:99999;display:flex;align-items:center;justify-content:center;padding:1rem';
   modal.innerHTML = `<div style="background:#fff;border-radius:1.25rem;padding:1.75rem;max-width:400px;width:100%;text-align:center">
-    <div style="font-size:2rem;margin-bottom:0.5rem">â­</div>
+    <div style="font-size:2rem;margin-bottom:0.5rem">⭐</div>
     <h3 style="font-size:1.05rem;font-weight:800;color:#1e293b;margin-bottom:0.5rem">Gostas da AdKira?</h3>
     <p style="font-size:0.85rem;color:#6b7280;margin-bottom:1.25rem">A tua opinião ajuda-nos a crescer. Gostarias de deixar uma avaliação rápida?</p>
     <button onclick="document.getElementById('_review-prompt-modal').remove(); if(typeof openLeaveReview==='function') openLeaveReview();" style="background:#007f9f;color:#fff;border:none;border-radius:999px;padding:0.75rem 2rem;font-weight:700;cursor:pointer;width:100%;margin-bottom:0.5rem;font-family:inherit">Avaliar Agora</button>
@@ -1126,4 +1126,3 @@ function _showReviewPrompt(userId) {
   // Mark as requested so it never shows again
   supabaseRequest(`accounts?id=eq.${userId}`, 'PATCH', { review_requested: true }).catch(() => {});
 }
-

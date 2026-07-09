@@ -58,10 +58,6 @@ if (typeof window !== 'undefined') {
 const DEBUG_NETWORK = false;
 function dlog(...args) { if (DEBUG_NETWORK) console.log(...args); }
 
-function isAdminRole(role) {
-  return ['admin', 'god', 'superadmin', 'owner'].includes(String(role || '').toLowerCase());
-}
-
 // ===================== SEGURANÇA: HELPERS PARTILHADOS =====================
 // Única fonte de verdade para escapar texto antes de o inserir em innerHTML.
 // Usa-se em QUALQUER sítio onde texto vindo de convidados/utilizadores

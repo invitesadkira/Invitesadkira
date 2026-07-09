@@ -1,9 +1,9 @@
-﻿// ===================== DASHBOARD =====================
+// ===================== DASHBOARD =====================
 function renderDashboard() {
   if (!Store.currentUser) { Router.go('home'); return; }
   
   // Admin não tem acesso ao dashboard de eventos
-  if (isAdminRole(Store.currentUser.role) && !Store.adminModeActive) { Router.go('admin'); return; }
+  if (Store.currentUser.role === 'admin' && !Store.adminModeActive) { Router.go('admin'); return; }
 
   // Saudação personalizada
   const greet = document.getElementById('dashboard-greeting');
@@ -26,7 +26,7 @@ function renderDashboard() {
 
   // Show font upload button only for admins
   const fontUploadBtn = document.getElementById('btn-font-upload');
-  if (fontUploadBtn) fontUploadBtn.classList.toggle('hidden', !isAdminRole(Store.currentUser.role));
+  if (fontUploadBtn) fontUploadBtn.classList.toggle('hidden', Store.currentUser.role !== 'admin');
 
   const returnAdminBtn = document.getElementById('drawer-btn-return-admin');
   const adminBadge = document.getElementById('admin-mode-badge');
@@ -89,7 +89,7 @@ function renderDashboard() {
 
 // ✅ NOVA FUNÇÃO: Limpar formulário ANTES de ir para create-event
 function goToCreateEvent() {
-  dlog('🔎 Limpando formulário para novo evento...');
+  dlog('🔄 Limpando formulário para novo evento...');
   
   // ✅ Limpar TODOS os campos do formulário
   document.getElementById('evt-title').value = '';
@@ -106,16 +106,6 @@ function goToCreateEvent() {
   document.getElementById('cover-img').classList.add('hidden');
   document.getElementById('cover-placeholder').classList.remove('hidden');
   document.getElementById('cover-input').value = '';
-  const coverVideoUrl = document.getElementById('evt-cover-video-url');
-  const coverVideoPreview = document.getElementById('cover-video-preview');
-  const coverVideoWrap = document.getElementById('cover-video-preview-wrap');
-  if (coverVideoUrl) coverVideoUrl.value = '';
-  if (coverVideoPreview) {
-    coverVideoPreview.pause();
-    coverVideoPreview.removeAttribute('src');
-    coverVideoPreview.load();
-  }
-  if (coverVideoWrap) coverVideoWrap.classList.add('hidden');
   
   // ✅ Limpar switches - ESTADO PADRÃO
   document.getElementById('sw-companions').classList.remove('active');
@@ -221,4 +211,3 @@ function _copyScanner(scannerToken) {
     toast('Link do leitor copiado!');
   });
 }
-

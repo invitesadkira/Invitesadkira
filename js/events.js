@@ -1,6 +1,6 @@
-﻿// ===================== CREATE EVENT =====================
+// ===================== CREATE EVENT =====================
 
-// â”€â”€ Verificação de Features (allowed_features) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Verificação de Features (allowed_features) ────────────────────────────
 function _hasFeature(featureKey) {
   if (Store.adminModeActive) return true;
   const acc = Store.currentAccount;
@@ -25,7 +25,7 @@ async function _loadCurrentAccount() {
 function _applyFeatureRestrictions() {
   if (Store.adminModeActive) return; // admin god vê tudo
 
-  // Mapeia feature â†’ texto do botão de aba
+  // Mapeia feature → texto do botão de aba
   const tabLabelMap = {
     'video':    ['Vídeo'],
     'music':    ['Música'],
@@ -72,7 +72,7 @@ function _dedupeGalleryUrls(text) {
 async function handleCreateEvent(e) {
   e.preventDefault();
   
-  // ðŸ”’ Prevenir submissão dupla
+  // 🔒 Prevenir submissão dupla
   const submitBtn = e.target.querySelector('button[type="submit"]');
   if (submitBtn.disabled) {
     dlog('⚠️ Submissão duplicada bloqueada');
@@ -129,7 +129,7 @@ async function handleCreateEvent(e) {
   if (deadline && deadlineTime) {
     deadlineWithTime = `${deadline} ${deadlineTime}`;
   }
-  dlog('ðŸ’¾ Deadline salvo como:', deadlineWithTime);
+  dlog('💾 Deadline salvo como:', deadlineWithTime);
   
   const allowComp = document.getElementById('sw-companions').classList.contains('active');
   const allowGifts = document.getElementById('sw-gifts').classList.contains('active');
@@ -257,7 +257,7 @@ async function uploadCoverImageToSupabase(base64Image, eventId) {
       body: blob
     });
     
-    dlog('ðŸ“¡ Resposta do upload:', response.status, response.statusText);
+    dlog('📡 Resposta do upload:', response.status, response.statusText);
     
     if (!response.ok) {
       const errorText = await response.text();
@@ -285,7 +285,7 @@ async function uploadCoverImageToSupabase(base64Image, eventId) {
   }
 }
 
-// â”€â”€ Upload de MP3/áudio para Supabase Storage â”€â”€
+// ── Upload de MP3/áudio para Supabase Storage ──
 async function uploadMusicFileToSupabase(file) {
   const bucketName = 'event-music';
   // Keep original filename (sanitise special chars only)
@@ -450,7 +450,7 @@ function saveEventWithCover(eventId, title, date, time, deadline, coverImageURL,
         iban_holder: ibanHolder || null,
         iban_number_2: ibanNumber2 || null, iban_holder_2: ibanHolder2 || null,
         iban_footer: ibanFooter || null,
-        // â”€â”€ Visual / Sections â”€â”€
+        // ── Visual / Sections ──
         show_couple: v.showCouple ? 'yes' : 'no',
         groom_name: v.groomName || null,
         bride_name: v.brideName || null,
@@ -642,7 +642,7 @@ async function deleteImageFromSupabase(fileName) {
     const bucketName = 'event-covers';
     const deleteURL = `${SUPABASE_URL}/storage/v1/object/${bucketName}/${fileName}`;
     
-    dlog('ðŸ—‘ï¸ Deletando imagem:', fileName);
+    dlog('🗑️ Deletando imagem:', fileName);
     
     const response = await fetch(deleteURL, {
       method: 'DELETE',
@@ -701,7 +701,7 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
     ? side2NameInput.value.trim() 
     : 'Grupo 2';
 
-  dlog('ðŸ’¾ Atualizando evento no Supabase:', {
+  dlog('💾 Atualizando evento no Supabase:', {
     eventId,
     title,
     date,
@@ -886,7 +886,7 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
       // ✅ Limpar cache do convidado — as alterações aparecem imediatamente na próxima visita
       _guestCacheClear(eventId);
 
-      // â”€â”€ Refresh the in-memory Store.events entry with the real saved data â”€â”€
+      // ── Refresh the in-memory Store.events entry with the real saved data ──
       // The manual field-by-field updates above only cover some fields and
       // have repeatedly missed others (rsvp_enabled, save_the_date_enabled,
       // std_* fields, personalized_links_enabled, venue fields, etc.) —
@@ -1105,7 +1105,7 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
       const btn = form.querySelector('button[type="submit"]');
       btn.textContent = 'Criar Evento';
       
-      // ðŸ”’ Re-habilitar botão ANTES de navegar - COM VERIFICAÇÃO SEGURA
+      // 🔒 Re-habilitar botão ANTES de navegar - COM VERIFICAÇÃO SEGURA
       if (submitBtn && typeof submitBtn === 'object') {
         try {
           submitBtn.disabled = false;
@@ -1117,14 +1117,14 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
       }
       
       // ✅ CRÍTICO: VOLTA PARA DETALHES (NÃO para dashboard)
-      dlog('🔎 Navegando para event-details com eventId:', eventId);
+      dlog('🔄 Navegando para event-details com eventId:', eventId);
       Store.currentEventId = eventId;
       Router.go('event-details');
     } else {
       console.error('❌ Resposta vazia do Supabase');
       toast(' Erro ao atualizar evento. Tente novamente.');
       
-      // ðŸ”’ Re-habilitar botão - COM VERIFICAÇÃO SEGURA
+      // 🔒 Re-habilitar botão - COM VERIFICAÇÃO SEGURA
       if (submitBtn && typeof submitBtn === 'object') {
         try {
           submitBtn.disabled = false;
@@ -1139,7 +1139,7 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
     console.error('❌ Erro ao atualizar evento:', error);
     toast(' Erro ao atualizar evento. Tente novamente.');
     
-    // ðŸ”’ Re-habilitar botão - COM VERIFICAÇÃO SEGURA
+    // 🔒 Re-habilitar botão - COM VERIFICAÇÃO SEGURA
     if (submitBtn && typeof submitBtn === 'object') {
       try {
         submitBtn.disabled = false;
@@ -1166,12 +1166,12 @@ function renderEventDetails() {
 
   // Show intake link only for admin
   const intakeBtn = document.getElementById('btn-intake-link');
-  if (intakeBtn) intakeBtn.style.display = (isAdminRole(Store.currentUser?.role)) ? 'inline-flex' : 'none';
+  if (intakeBtn) intakeBtn.style.display = (Store.currentUser?.role === 'admin') ? 'inline-flex' : 'none';
 
   // ✅ Aplicar permissões de funcionalidades — esconder botões desactivados
   // pelo admin god para este utilizador específico.
   // Excepção: quando o admin god está em modo impersonação, vê SEMPRE tudo.
-  const isRealAdmin = isAdminRole(Store.currentUser?.role) || Store.adminModeActive;
+  const isRealAdmin = Store.currentUser?.role === 'admin' || Store.adminModeActive;
   if (typeof userHasFeature === 'function' && !isRealAdmin) {
     const featureButtonMap = {
       'view_as_guest':      ['[onclick="viewAsGuest()"]'],
@@ -1225,7 +1225,7 @@ function renderEventDetails() {
   const coverImage = event.cover_image;
   const coverEl = document.getElementById('detail-cover');
   
-  dlog('ðŸ–¼ï¸ Renderizando capa do evento:');
+  dlog('🖼️ Renderizando capa do evento:');
   dlog('  Event ID:', event.id);
   dlog('  Cover Image:', coverImage);
   dlog('  É URL HTTP?', coverImage && coverImage.startsWith('http'));
@@ -1261,7 +1261,7 @@ function renderEventDetails() {
 
   const ownerUserId = event.userId || event.user_id;
   const isOwner = Store.currentUser && Store.currentUser.id === ownerUserId;
-  const isAdmin = (Store.currentUser && isAdminRole(Store.currentUser.role)) || Store.adminModeActive;
+  const isAdmin = (Store.currentUser && Store.currentUser.role === 'admin') || Store.adminModeActive;
 
   document.getElementById('detail-rsvp-toggle').classList.toggle('hidden', !isOwner);
   
@@ -1297,8 +1297,8 @@ function renderEventDetails() {
   // preciso usá-lo. Por isso verificamos também a identidade original
   // (Store.adminOriginalUser), guardada antes de entrar em impersonação.
   const isRealAdminGod = !!(
-    (Store.currentUser && isAdminRole(Store.currentUser.role)) ||
-    (Store.adminModeActive && Store.adminOriginalUser && isAdminRole(Store.adminOriginalUser.role))
+    (Store.currentUser && Store.currentUser.role === 'admin') ||
+    (Store.adminModeActive && Store.adminOriginalUser && Store.adminOriginalUser.role === 'admin')
   );
   const exampleBtn = document.getElementById('btn-example-event');
   if (exampleBtn) {
@@ -1346,7 +1346,7 @@ function renderEventDetails() {
   document.getElementById('detail-stats').innerHTML = stats.map(s => '<div class="stat-card ' + s.color + ' rounded-xl p-4 text-center"><i data-lucide="' + s.icon + '" class="w-5 h-5 mx-auto mb-1"></i><div class="text-2xl font-bold">' + s.value + '</div><div class="text-xs font-semibold mt-1">' + s.label + '</div></div>').join('');
 
 
-  // â”€â”€ Gallery & Cover management widget — removido do dashboard a pedido
+  // ── Gallery & Cover management widget — removido do dashboard a pedido
   // (existia logo depois das estatísticas; a gestão de fotos já está
   // disponível, e fica melhor, dentro do editor do evento em "Editar").
   // Se já existir de uma sessão anterior (sem refresh), só escondê-lo.
@@ -1358,17 +1358,17 @@ function renderEventDetails() {
   if (confirmations.length === 0) {
     confContainer.innerHTML = '<p class="text-gray-400 text-sm">Nenhuma confirmação ainda.</p>';
   } else {
-    // ðŸ“Œ Obter timestamp do último download
+    // 📌 Obter timestamp do último download
     const lastDownloadKey = `last_download_${Store.currentEventId}`;
     const lastDownloadTime = localStorage.getItem(lastDownloadKey);
     
     dlog('🔍 Renderizando confirmações:');
     dlog('  Último download:', lastDownloadTime);
     
-    // ðŸ“Œ Determinar se confirmação é nova
+    // 📌 Determinar se confirmação é nova
     const isNewConfirmation = (conf) => {
       if (!lastDownloadTime) {
-        dlog('  â„¹ï¸ Primeiro download - nenhuma é nova:', conf.name);
+        dlog('  ℹ️ Primeiro download - nenhuma é nova:', conf.name);
         return false; // Primeiro download, nenhuma é nova
       }
       
@@ -1432,7 +1432,7 @@ function renderEventDetails() {
   _startEventDetailsPolling(event.id);
 }
 
-// â”€â”€ Atualização automática das confirmações, sem precisar de refresh â”€â”€
+// ── Atualização automática das confirmações, sem precisar de refresh ──
 // Em vez de WebSockets/Supabase Realtime (que exigiriam carregar uma
 // biblioteca nova só para isto), repete-se periodicamente o mesmo pedido
 // que já é feito ao abrir a página — simples, e cobre exactamente o que foi
@@ -1599,7 +1599,7 @@ function downloadGiftsPDF() {
   htmlContent += `
       <div class="footer">
         <p> Evento: ${escapeHTML(ev.title)}</p>
-        <p>Â© Created By AdKira 2026</p>
+        <p>© Created By AdKira 2026</p>
       </div>
     </body>
     </html>
@@ -1671,7 +1671,7 @@ function downloadPDF() {
     return header + body;
   });
 
-  // â”€â”€ Resumo (mesmo estilo da lista de presentes) â”€â”€
+  // ── Resumo (mesmo estilo da lista de presentes) ──
   const totalCompanions = confirmed.reduce((sum, c) => sum + (c.companions || []).length, 0);
   const totalKids = confirmed.reduce((sum, c) => sum + (c.kids || []).length, 0);
   const totalPeople = confirmed.length + totalCompanions + totalKids;
@@ -1739,7 +1739,7 @@ function downloadPDF() {
   htmlContent += `
       <div class="footer">
         <p>Evento: ${escapeHTML(ev.title || '')}</p>
-        <p>Â© Created By AdKira 2026</p>
+        <p>© Created By AdKira 2026</p>
       </div>
     </body>
     </html>
@@ -1776,11 +1776,11 @@ function downloadPDF() {
 }
 function manageGifts() { Router.go('gifts'); }
 
-// â”€â”€ Edit with lock check: respects edit_locked flag (por conta) e
+// ── Edit with lock check: respects edit_locked flag (por conta) e
 // global_edit_lock (todas as contas) — admin/impersonação sempre passa,
 // porque está a ajudar o cliente.
 async function _checkEditingAllowed() {
-  const isAdminSession = isAdminRole(Store.currentUser?.role) || Store.adminModeActive;
+  const isAdminSession = Store.currentUser?.role === 'admin' || Store.adminModeActive;
   if (isAdminSession) return true;
 
   if (Store.currentUser && Store.currentUser.edit_locked === true) {
@@ -1810,7 +1810,7 @@ async function editEvent() {
 
   const ownerUserId = evStore.userId || evStore.user_id;
   const isOwner = ownerUserId === Store.currentUser.id;
-  const isAdmin = isAdminRole(Store.currentUser.role) || Store.adminModeActive;
+  const isAdmin = Store.currentUser.role === 'admin' || Store.adminModeActive;
   if (!isOwner && !isAdmin) {
     toast('Apenas o organizador ou admin pode editar o evento.');
     return;
@@ -2145,17 +2145,6 @@ function _fillEditForm(ev) {
     document.getElementById('evt-cover-video-url').value = ev.cover_video_url;
     const preview = document.getElementById('cover-video-preview');
     if (preview) { preview.src = ev.cover_video_url; document.getElementById('cover-video-preview-wrap')?.classList.remove('hidden'); }
-  } else {
-    const videoUrlEl = document.getElementById('evt-cover-video-url');
-    const preview = document.getElementById('cover-video-preview');
-    const previewWrap = document.getElementById('cover-video-preview-wrap');
-    if (videoUrlEl) videoUrlEl.value = '';
-    if (preview) {
-      preview.pause();
-      preview.removeAttribute('src');
-      preview.load();
-    }
-    if (previewWrap) previewWrap.classList.add('hidden');
   }
   const _validColorChoices = ['primary','secondary','black','silver','gold','custom'];
   const btnColorChoiceEl = document.getElementById('evt-button-color-choice');
@@ -2320,7 +2309,7 @@ function _fillEditForm(ev) {
   form.onsubmit = (e) => {
     e.preventDefault();
     
-    // ðŸ”’ Prevenir submissão dupla
+    // 🔒 Prevenir submissão dupla
     const submitBtn = e.target.querySelector('button[type="submit"]');
     if (submitBtn.disabled) {
       dlog('⚠️ Submissão duplicada bloqueada');
@@ -2677,7 +2666,7 @@ async function searchEvent() {
     }
     
     // ✅ PASSO 2: Debug - mostrar TODOS os codes
-    dlog('ðŸ”Ž Debug - Primeiros 5 eventos:');
+    dlog('🔎 Debug - Primeiros 5 eventos:');
     allEvents.slice(0, 5).forEach((e, i) => {
       dlog(`  ${i}. ID: "${e.id}" | event_code: "${e.event_code}" | title: ${e.title}`);
     });
@@ -2826,7 +2815,7 @@ function cleanId(id) {
   
   // ✅ CRÍTICO: Remover prefixo "id. " se existir
   if (str.startsWith('id. ')) {
-    dlog('ðŸ§¹ Limpando ID com prefixo "id. ":', str);
+    dlog('🧹 Limpando ID com prefixo "id. ":', str);
     str = str.replace(/^id\.\s*/, '').trim();
     dlog('   Resultado:', str);
   }
@@ -2836,7 +2825,7 @@ function cleanId(id) {
 
 // ✅ FUNÇÃO CRÍTICA: Reparar dados corrompidos no Supabase
 async function repairCorruptedData() {
-  if (!Store.currentUser || !isAdminRole(Store.currentUser.role)) {
+  if (!Store.currentUser || Store.currentUser.role !== 'admin') {
     toast('Apenas admin pode reparar dados.');
     return;
   }
@@ -2917,7 +2906,7 @@ async function executeRepairCorruptedData(modal) {
       const eventId = event.id;
       const eventTitle = event.title || 'Sem título';
       
-      addLog(`â³ [${i + 1}/${allEventsData.length}] Analisando: "${eventTitle}"`);
+      addLog(`⏳ [${i + 1}/${allEventsData.length}] Analisando: "${eventTitle}"`);
       
       let needsUpdate = false;
       const updateData = {};
@@ -3007,12 +2996,12 @@ async function executeRepairCorruptedData(modal) {
       await new Promise(resolve => setTimeout(resolve, 200));
     }
     
-    addLog('â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•');
+    addLog('═════════════════════════════════════════');
     addLog('📊 RESUMO FINAL DA REPARAÇÃO:');
     addLog(`  ✅ Campos reparados: ${fixed}`);
     addLog(`  ❌ Erros encontrados: ${errors}`);
     addLog(`   Total de eventos processados: ${allEventsData.length}`);
-    addLog('â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•');
+    addLog('═════════════════════════════════════════');
     
     if (errors > 0) {
       addLog('');
@@ -3062,54 +3051,15 @@ function isValidEventCode(code) {
   return isValid;
 }
 
-function _cleanURLCodeCandidate(value) {
-  if (!value) return '';
-  let code = String(value).trim();
-  try { code = decodeURIComponent(code); } catch(e) {}
-  code = code
-    .replace(/[\u200B-\u200D\uFEFF]/g, '')
-    .replace(/^['"`]+|['"`]+$/g, '')
-    .trim();
-  code = code.split(/[?#&\s]/)[0] || '';
-  code = code.replace(/^\/+|\/+$/g, '');
-  if (code.includes('/')) code = code.split('/').filter(Boolean).pop() || '';
-  return /^[a-z0-9]+$/i.test(code) ? code.toUpperCase() : code;
-}
-
-function getEventCodeFromURL() {
-  const keys = ['event', 'e', 'code', 'codigo', 'convite'];
-  const sources = [
-    window.location.search || '',
-    (window.location.hash || '').replace(/^#\/?/, '?')
-  ];
-
-  for (const source of sources) {
-    if (!source) continue;
-    const params = new URLSearchParams(source.startsWith('?') ? source : '?' + source);
-    for (const key of keys) {
-      const code = _cleanURLCodeCandidate(params.get(key));
-      if (code) return code;
-    }
-  }
-
-  const pathParts = (window.location.pathname || '').split('/').filter(Boolean);
-  const lastPart = _cleanURLCodeCandidate(pathParts[pathParts.length - 1] || '');
-  if (lastPart && !/^(index\.html?|home|login|register|pricing|faq|invitesadkira-main)$/i.test(lastPart)) {
-    return lastPart;
-  }
-
-  return '';
-}
-
 async function checkURLForEvent() {
   // Detectar parâmetro 'event' na URL
   // Funciona com: [seudominio.com]?event=CODIGO
   // ✅ NOVO: Suporta ?event=ABC&gifts=only para ir DIRETO para presentes
   const params = new URLSearchParams(window.location.search);
-  let eventCode = getEventCodeFromURL();
+  let eventCode = params.get('event');
   const giftsOnly = params.get('gifts') === 'only';
 
-  // â”€â”€ Personalized guest link detection â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Personalized guest link detection ───────────────────────────────
   // A personalized link looks like the base event code with a short suffix
   // appended (e.g. base "XY5EFFRA" + suffix "SSDOSAC" = "XY5EFFRASSDOSAC").
   // If this URL's code doesn't match an event directly, check whether it's
@@ -3132,7 +3082,7 @@ async function checkURLForEvent() {
         eventCode = evByIdRows[0].event_code || evByIdRows[0].id;
       }
 
-      // â”€â”€ Security check: does THIS browser own this personalized link? â”€â”€
+      // ── Security check: does THIS browser own this personalized link? ──
       // The ONLY place a claim is ever written is in rsvp.js, at the exact
       // moment a guest confirms their own attendance — never here. Opening
       // a personalized link must NEVER silently grant ownership to whoever
@@ -3143,7 +3093,7 @@ async function checkURLForEvent() {
     }
   }
 
-  dlog('ðŸ”— URL Detection iniciado. Event code:', eventCode, 'Gifts only:', giftsOnly);
+  dlog('🔗 URL Detection iniciado. Event code:', eventCode, 'Gifts only:', giftsOnly);
   
   if (eventCode) {
     dlog('📍 Event code encontrado na URL:', eventCode);
@@ -3154,8 +3104,7 @@ async function checkURLForEvent() {
     dlog('🔍 Procurando por event_code=', eventCode);
     
     // ✅ Query otimizada: procurar por event_code OU id, com LIMIT 1
-    const encodedEventCode = encodeURIComponent(eventCode);
-    const _eventLookupQuery = `events?or=(event_code.eq.${encodedEventCode},id.eq.${encodedEventCode})&select=id,user_id,title,date,time,confirm_by_date,cover_image,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,rsvp_enabled,allow_edit_rsvp,save_the_date_enabled,release_type,release_date,is_invite_released,std_title,std_subtitle,std_font_family,std_name_size,std_title_size,std_intro_enabled,std_intro_text,std_intro_photo_url,std_intro_photo_mobile_url,std_intro_photo_desktop_url,std_intro_on_invite,std_show_cover,std_cover_url,std_cover_mobile_url,std_cover_desktop_url,std_scratch_enabled,std_scratch_mode,std_scratch_photo_url,std_scratch_text,std_date_style,std_extra_phrase,std_extra_phrase_enabled,is_example_event,scanner_token,ticket_template_url,ticket_name_x,ticket_name_y,ticket_qr_x,ticket_qr_y,ticket_name_size,ticket_qr_size,ticket_name_color,ticket_name_font,std_show_iban,personalized_links_enabled,show_rsvp_in_full_invite,show_guest_name_in_invite,allow_messages,show_guest_messages,music_url,music_title,iban_message,iban_number,iban_holder,iban_footer,iban_number_2,iban_holder_2,groom_name,bride_name,couple_size,show_couple,bg_url,bg_overlay,bible_text,bible_ref,show_bible,invite_text,show_invite,groom_parents,bride_parents,show_parents,gallery_urls,show_gallery,show_manual,manual_items,show_schedule,schedule_items,custom_font_family,section_order,story_text,invite_blessing,event_color,show_decor,decor_side_url,decor_ornament_url,decor_top_url,decor_top_position,decor_bottom_left_url,decor_bottom_right_url,rsvps(guest_name,attending,side,companions,kids,wants_gift,message,owner_reply,rsvp_token,ticket_issued,checked_in,created_at,updated_at),gifts(id,name,category,reserved,reserved_by,quantity,image_url)&limit=1`;
+    const _eventLookupQuery = `events?or=(event_code.eq.${eventCode},id.eq.${eventCode})&select=id,user_id,title,date,time,confirm_by_date,cover_image,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,rsvp_enabled,allow_edit_rsvp,save_the_date_enabled,release_type,release_date,is_invite_released,std_title,std_subtitle,std_font_family,std_name_size,std_title_size,std_intro_enabled,std_intro_text,std_intro_photo_url,std_intro_photo_mobile_url,std_intro_photo_desktop_url,std_intro_on_invite,std_show_cover,std_cover_url,std_cover_mobile_url,std_cover_desktop_url,std_scratch_enabled,std_scratch_mode,std_scratch_photo_url,std_scratch_text,std_date_style,std_extra_phrase,std_extra_phrase_enabled,is_example_event,scanner_token,ticket_template_url,ticket_name_x,ticket_name_y,ticket_qr_x,ticket_qr_y,ticket_name_size,ticket_qr_size,ticket_name_color,ticket_name_font,std_show_iban,personalized_links_enabled,show_rsvp_in_full_invite,show_guest_name_in_invite,allow_messages,show_guest_messages,music_url,music_title,iban_message,iban_number,iban_holder,iban_footer,iban_number_2,iban_holder_2,groom_name,bride_name,couple_size,show_couple,bg_url,bg_overlay,bible_text,bible_ref,show_bible,invite_text,show_invite,groom_parents,bride_parents,show_parents,gallery_urls,show_gallery,show_manual,manual_items,show_schedule,schedule_items,custom_font_family,section_order,story_text,invite_blessing,event_color,show_decor,decor_side_url,decor_ornament_url,decor_top_url,decor_top_position,decor_bottom_left_url,decor_bottom_right_url,rsvps(guest_name,attending,side,companions,kids,wants_gift,message,owner_reply,rsvp_token,ticket_issued,checked_in,created_at,updated_at),gifts(id,name,category,reserved,reserved_by,quantity,image_url)&limit=1`;
 
     let eventsData = await supabaseRequest(_eventLookupQuery).catch(() => null);
 
@@ -3175,7 +3124,7 @@ async function checkURLForEvent() {
     if (eventsData && eventsData.length > 0) {
       dlog('✅ Evento encontrado no Supabase!');
       const eventData = eventsData[0];
-      dlog('ðŸ”– STD — valores brutos recebidos da query principal:', {
+      dlog('🔖 STD — valores brutos recebidos da query principal:', {
         save_the_date_enabled: eventData.save_the_date_enabled,
         release_type: eventData.release_type,
         is_invite_released: eventData.is_invite_released,
@@ -3184,7 +3133,7 @@ async function checkURLForEvent() {
         std_show_cover: eventData.std_show_cover,
       });
 
-      // â”€â”€ Evento exemplar: renovar datas automaticamente se necessário â”€â”€
+      // ── Evento exemplar: renovar datas automaticamente se necessário ──
       // Fire-and-forget — nunca bloqueia o carregamento da página do convidado.
       if (eventData.is_example_event === true && typeof _autoRenewExampleEventDates === 'function') {
         _autoRenewExampleEventDates(eventData).catch(() => {});
@@ -3211,7 +3160,7 @@ async function checkURLForEvent() {
       dlog('✅ Event code final:', finalEventCode);
       
       const normalizedEvent = {
-        // â”€â”€ CRÍTICO: herdar automaticamente TODOS os campos vindos da query â”€â”€
+        // ── CRÍTICO: herdar automaticamente TODOS os campos vindos da query ──
         // Isto existe porque, durante meses, este objecto era construído à
         // mão, campo a campo. Cada vez que uma nova funcionalidade adicionava
         // uma coluna nova (ex: std_cover_url, std_scratch_enabled, release_type,
@@ -3221,7 +3170,7 @@ async function checkURLForEvent() {
         // só porque ninguém os tinha listado nesta construção. O spread abaixo
         // garante que QUALQUER coluna pedida na query SELECT chega sempre ao
         // convidado, sem excepção — só os campos que precisam mesmo de
-        // transformação (strings 'yes'/'no' â†’ boolean, renomes, defaults)
+        // transformação (strings 'yes'/'no' → boolean, renomes, defaults)
         // são explicitamente sobrepostos depois.
         ...eventData,
 
@@ -3316,7 +3265,7 @@ async function checkURLForEvent() {
       dlog('✅ Evento carregado do Supabase e pronto para guest view:', normalizedEvent.title);
       dlog('  Código final do evento:', finalEventCode);
       dlog('  Allow Sides:', normalizedEvent.allowSides);
-      dlog('ðŸ”¬ TRACE std_cover_url logo após normalizedEvent:', normalizedEvent.std_cover_url);
+      dlog('🔬 TRACE std_cover_url logo após normalizedEvent:', normalizedEvent.std_cover_url);
       if (giftsOnly && normalizedEvent.allowGifts) {
         return 'gifts';
       }
@@ -3331,7 +3280,7 @@ async function checkURLForEvent() {
 
 // Mostrar modal para gerenciar compatibilidade de URLs antigos
 function showLegacyURLManager() {
-  if (!Store.currentUser || !isAdminRole(Store.currentUser.role)) {
+  if (!Store.currentUser || Store.currentUser.role !== 'admin') {
     toast('Apenas admin pode acessar isso.');
     return;
   }
@@ -3443,7 +3392,7 @@ function saveLegacyEventCodes() {
 
 // ✅ NOVA FUNÇÃO: Limpar todos os event_codes inválidos (com prefixo "id. ")
 async function cleanupEventCodes() {
-  if (!Store.currentUser || !isAdminRole(Store.currentUser.role)) {
+  if (!Store.currentUser || Store.currentUser.role !== 'admin') {
     toast('Apenas admin pode fazer isso.');
     return;
   }
@@ -3527,7 +3476,7 @@ async function executeCleanupEventCodes(modal) {
         
         // Gerar novo código válido
         const newCode = generateValidEventCode();
-        addLog(`   â†’ Gerando novo código: ${newCode}`);
+        addLog(`   → Gerando novo código: ${newCode}`);
         
         // Atualizar no Supabase
         const updateResult = await supabaseRequest(
@@ -3877,7 +3826,7 @@ async function openIntakeFormMain(eventId) {
     </div>`;
   document.body.appendChild(modal);
 
-  // â”€â”€ Pre-fill fields with existing event data â”€â”€
+  // ── Pre-fill fields with existing event data ──
   const _pf = (id, val) => { const el = document.getElementById(id); if (el && val) el.value = val; };
   _pf('int-groom',         ev.groom_name);
   _pf('int-bride',         ev.bride_name);
@@ -3901,11 +3850,11 @@ async function openIntakeFormMain(eventId) {
   _pf('int-dresscode',         ev.dresscode_text);
   _pf('int-dresscode-detail',  ev.dresscode_detail);
 
-  // â”€â”€ Load existing manual/schedule items into Store so editors show current data â”€â”€
+  // ── Load existing manual/schedule items into Store so editors show current data ──
   Store.eventManualItems   = ev.manual_items   ? (() => { try { return JSON.parse(ev.manual_items); } catch(e) { return null; } })() : null;
   Store.eventScheduleItems = ev.schedule_items ? (() => { try { return JSON.parse(ev.schedule_items); } catch(e) { return null; } })() : null;
 
-  // â”€â”€ Pre-fill gallery with existing photos â”€â”€
+  // ── Pre-fill gallery with existing photos ──
   if (ev.gallery_urls) {
     const existingUrls = ev.gallery_urls.split('\n').map(u => u.trim()).filter(Boolean);
     existingUrls.slice(0, 8).forEach((url, i) => {
@@ -3925,7 +3874,7 @@ async function openIntakeFormMain(eventId) {
   }
 
 
-  // â”€â”€ Pre-fill existing cover photo â”€â”€
+  // ── Pre-fill existing cover photo ──
   const existingCover = ev.cover_image || null;
   if (existingCover) {
     const prevWrap = document.getElementById('int-cover-preview-wrap');
@@ -3954,10 +3903,10 @@ async function openIntakeFormMain(eventId) {
     }
   }
 
-  // â”€â”€ Pre-fill existing gallery photos â”€â”€
+  // ── Pre-fill existing gallery photos ──
   const galleryStr = ev.gallery_urls || '';
   const existingGallery = galleryStr.split('|').filter(u => u && u.trim() !== '' && u !== '__DELETE__');
-  dlog('[Intake] gallery_urls:', galleryStr, 'â†’', existingGallery);
+  dlog('[Intake] gallery_urls:', galleryStr, '→', existingGallery);
   existingGallery.slice(0, 4).forEach((url, i) => {
     const prev = document.getElementById(`int-gal-preview-${i}`);
     const icon = document.getElementById(`int-gal-icon-${i}`);
@@ -4000,7 +3949,7 @@ async function openIntakeFormMain(eventId) {
     slot.appendChild(xBtn);
   });
 
-  // â”€â”€ Auto-save intake form to sessionStorage (persist on tab close/reopen) â”€â”€
+  // ── Auto-save intake form to sessionStorage (persist on tab close/reopen) ──
   const _intakeKey = `intake_draft_${eventId}`;
   const _savedDraft = sessionStorage.getItem(_intakeKey);
   if (_savedDraft) {
@@ -4031,10 +3980,10 @@ async function openIntakeFormMain(eventId) {
   const _origSubmit = window._intakeSubmitFn;
   window._intakeDraftKey = _intakeKey;
 
-  // â”€â”€ Gallery slot state â”€â”€
+  // ── Gallery slot state ──
   const _galleryUploaded = [null, null, null, null];
 
-  // â”€â”€ Submit handler â”€â”€
+  // ── Submit handler ──
   document.getElementById('intake-form').onsubmit = async (e) => {
     e.preventDefault();
     const btn = document.getElementById('int-submit-btn');
@@ -4161,7 +4110,7 @@ function generateIntakeLink(eventId) {
 }
 
 function showIntakeLink(eventId) {
-  if (!Store.currentUser || !isAdminRole(Store.currentUser.role)) {
+  if (!Store.currentUser || Store.currentUser.role !== 'admin') {
     toast('Apenas o administrador pode gerar este link.');
     return;
   }
@@ -4255,7 +4204,7 @@ async function handleDecorOrnamentUpload(input) {
   }
 }
 
-// â”€â”€ Intake form helpers â”€â”€
+// ── Intake form helpers ──
 function intakePreviewCover(input) {
   const file = input.files[0];
   if (!file) return;
@@ -4299,12 +4248,12 @@ function intakeRemoveGalleryPhoto(idx) {
   if (fileInput) fileInput.value = '';
 }
 
-// â”€â”€ Intake token management â”€â”€
-// â”€â”€ Link de preenchimento SEM evento ainda criado — o cliente preenche
+// ── Intake token management ──
+// ── Link de preenchimento SEM evento ainda criado — o cliente preenche
 // tudo primeiro; o admin associa as respostas a um evento depois (novo ou
-// já existente). â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// já existente). ─────────────────────────────────────────────────────────
 async function generateStandaloneIntakeLink() {
-  if (!Store.currentUser || !isAdminRole(Store.currentUser.role)) {
+  if (!Store.currentUser || Store.currentUser.role !== 'admin') {
     toast('Apenas o administrador pode gerar este link.');
     return;
   }
@@ -4350,7 +4299,7 @@ async function markIntakeTokenUsed(token) {
   await supabaseRequest(`intake_tokens?token=eq.${token}`, 'PATCH', { used: true, used_at: new Date().toISOString() });
 }
 
-// â”€â”€ Delete cover/gallery photos â”€â”€
+// ── Delete cover/gallery photos ──
 async function deleteCoverPhoto(eventId) {
   if (!confirm('Remover a foto de capa?')) return;
   await supabaseRequest(`events?id=eq.${eventId}`, 'PATCH', { cover_image: null });
@@ -4399,7 +4348,7 @@ async function deleteGalleryPhoto(eventId, urlToRemove) {
   toast('Foto removida da galeria.');
 }
 
-// â”€â”€ Download guest list as CSV â”€â”€
+// ── Download guest list as CSV ──
 function downloadGuestListCSV() {
   const ev = Store.events.find(e => e.id === Store.currentEventId);
   if (!ev || !ev.confirmations || ev.confirmations.length === 0) {
@@ -4426,7 +4375,7 @@ function downloadGuestListCSV() {
   toast('Lista exportada!');
 }
 
-// â”€â”€ Intake Preview Mode â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Intake Preview Mode ──────────────────────────────────────────────────
 async function openIntakePreview(eventId) {
   const overlay = document.createElement('div');
   overlay.style.cssText = 'position:fixed;inset:0;background:#f8fafc;z-index:99999;overflow-y:auto;font-family:Quicksand,sans-serif';
@@ -4891,7 +4840,7 @@ async function openDressGiftsEditor() {
   lucide.createIcons();
 }
 
-// â”€â”€ Lista de Lojas de Presentes â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Lista de Lojas de Presentes ─────────────────────────────────────────
 function _getGiftStores() {
   try { return JSON.parse(document.getElementById('dg2-gift-stores')?.value || '[]'); } catch(e) { return []; }
 }
@@ -4950,7 +4899,7 @@ function addGiftStore() {
   _renderGiftStoresList();
 }
 
-// â”€â”€ Galeria de fotos do Dress Code (pode ter várias) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Galeria de fotos do Dress Code (pode ter várias) ────────────────────
 function renderDresscodeImagesPreview() {
   const input = document.getElementById('dg2-dresscode-image-urls');
   const wrap = document.getElementById('dg2-dresscode-images-preview');
@@ -5039,8 +4988,8 @@ async function adminToggleExampleEvent() {
   // página de um evento de outra pessoa. Ver explicação igual junto ao
   // botão, em renderEventDetails().
   const isRealAdminGod = !!(
-    (Store.currentUser && isAdminRole(Store.currentUser.role)) ||
-    (Store.adminModeActive && Store.adminOriginalUser && isAdminRole(Store.adminOriginalUser.role))
+    (Store.currentUser && Store.currentUser.role === 'admin') ||
+    (Store.adminModeActive && Store.adminOriginalUser && Store.adminOriginalUser.role === 'admin')
   );
   if (!isRealAdminGod) {
     toast('Apenas o administrador pode marcar eventos como exemplo.');
@@ -5056,7 +5005,7 @@ async function adminToggleExampleEvent() {
     await supabaseRequest(`events?id=eq.${eventId}`, 'PATCH', { is_example_event: newValue });
     ev.is_example_event = newValue;
     toast(newValue
-      ? 'â­ Evento marcado como exemplar! As datas serão renovadas automaticamente sempre que se aproximarem do fim.'
+      ? '⭐ Evento marcado como exemplar! As datas serão renovadas automaticamente sempre que se aproximarem do fim.'
       : 'Evento removido da lista de exemplares.');
     const exampleLabel = document.getElementById('btn-example-event-label');
     if (exampleLabel) exampleLabel.textContent = newValue ? 'Remover de Exemplo' : 'Marcar como Exemplo';
@@ -5070,7 +5019,7 @@ async function adminToggleExampleEvent() {
   }
 }
 
-// â”€â”€ Auto-renovação de datas para eventos exemplares â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Auto-renovação de datas para eventos exemplares ─────────────────────────
 // Sempre que um evento marcado como "exemplar" (is_example_event = true) é
 // aberto — seja por um possível cliente a quem o link foi enviado, seja pelo
 // próprio organizador/admin — verificamos se a data do evento ou o prazo de
@@ -5113,7 +5062,7 @@ async function _autoRenewExampleEventDates(ev, forceNow) {
     try { await saveEventDates(ev.id, { event_date: fmtDate(newEventDate), confirm_by_date: fmtDate(newDeadlineDate) }); } catch(e) {}
     ev.date = fmtDate(newEventDate);
     ev.confirm_by_date = fmtDate(newDeadlineDate);
-    dlog('🔎 Evento exemplar renovado automaticamente:', { id: ev.id, newDate: ev.date, newDeadline: ev.confirm_by_date });
+    dlog('🔄 Evento exemplar renovado automaticamente:', { id: ev.id, newDate: ev.date, newDeadline: ev.confirm_by_date });
   } catch(e) {
     console.warn('Falha ao renovar datas do evento exemplar:', e);
   }
@@ -5136,4 +5085,3 @@ async function handleStd2ScratchPhotoUpload(input) {
     toast('Foto carregada!');
   } catch(e) { toast('Erro ao carregar a foto.'); }
 }
-

@@ -1,7 +1,7 @@
-﻿// ===================== GUEST VIEW =====================
-// â”€â”€ Lista de fontes do Google disponíveis para o texto normal (corpo) e
+// ===================== GUEST VIEW =====================
+// ── Lista de fontes do Google disponíveis para o texto normal (corpo) e
 // para o texto bíblico. Carregadas só quando escolhidas, para não pesar a
-// página com fontes que ninguém usa. â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// página com fontes que ninguém usa. ──────────────────────────────────
 const GOOGLE_BODY_FONTS = ['Inter','Lato','Poppins','Montserrat','Nunito','Merriweather','Lora','Playfair Display','Cormorant Garamond','Quicksand','Roboto','Open Sans'];
 function _loadGoogleFontIfNeeded(fontName) {
   if (!fontName || !GOOGLE_BODY_FONTS.includes(fontName)) return; // fonte própria carregada — já tem @font-face via loadAvailableFonts()
@@ -63,7 +63,7 @@ async function renderGuestView() {
     document.getElementById('std-loading-veil')?.remove();
   }, 8000);
 
-  // â”€â”€ Personalized guest link lock screen â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Personalized guest link lock screen ─────────────────────────────
   // If this URL is a personalized link (set by checkURLForEvent via
   // Store._lockedGuestName/_guestLinkCode) AND this browser's own RSVP
   // confirmation for this event doesn't match that name, someone other
@@ -123,7 +123,7 @@ async function renderGuestView() {
       const appRoot = document.getElementById('app-root');
       if (appRoot) {
         appRoot.innerHTML = `<div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2rem;text-align:center;background:#f8fafc">
-          <div style="font-size:3rem;margin-bottom:1rem">ðŸ’Œ</div>
+          <div style="font-size:3rem;margin-bottom:1rem">💌</div>
           <h2 style="font-size:1.4rem;font-weight:800;color:#1e293b;margin-bottom:0.5rem">Este evento não foi encontrado</h2>
           <p style="color:#6b7280;margin-bottom:1.5rem;max-width:380px">O link pode ter expirado ou o evento foi removido. Verifique com quem te enviou o convite.</p>
           <a href="/" style="background:#007f9f;color:#fff;padding:0.75rem 2rem;border-radius:999px;font-weight:700;text-decoration:none">Ir para o início</a>
@@ -137,7 +137,7 @@ async function renderGuestView() {
     eventData = ev;
   }
 
-  // â”€â”€ Sincronizar o estado local de confirmação com a base de dados real â”€â”€
+  // ── Sincronizar o estado local de confirmação com a base de dados real ──
   // Se o organizador eliminou a confirmação deste convidado no painel admin,
   // o localStorage deste browser ainda diria "confirmado" — isso bloquearia
   // o Save the Date para sempre, mesmo sem confirmação real na BD. Aqui
@@ -152,20 +152,20 @@ async function renderGuestView() {
         c => c.name && c.name.toLowerCase() === localConfirmation.name.toLowerCase() && c.attending === true
       );
       if (!stillExistsInDb) {
-        dlog('🔎 Confirmação local não encontrada na base de dados (foi eliminada pelo organizador) — a repor o Save the Date.');
+        dlog('🔄 Confirmação local não encontrada na base de dados (foi eliminada pelo organizador) — a repor o Save the Date.');
         rsvpClearConfirmed(eventData.id);
       }
     }
   }
 
-  // â”€â”€ Analytics: log this guest visit once per event id load â”€â”€
+  // ── Analytics: log this guest visit once per event id load ──
   // (deliberately fire-and-forget, never blocks rendering)
   if (eventData.id && Store._lastTrackedGuestEventId !== eventData.id) {
     Store._lastTrackedGuestEventId = eventData.id;
     supabaseRequest('visit_log', 'POST', { visit_type: 'guest_view', event_id: eventData.id }).catch(() => {});
   }
   
-  dlog('ðŸ‘¤ renderGuestView - Dados do evento:', {
+  dlog('👤 renderGuestView - Dados do evento:', {
     id: eventData.id,
     title: eventData.title,
     confirm_by_date: eventData.confirm_by_date,
@@ -187,7 +187,7 @@ async function renderGuestView() {
     return;
   }
 
-  // â”€â”€ Capa: vídeo (se houver) ou foto/gradiente, como já era â”€â”€
+  // ── Capa: vídeo (se houver) ou foto/gradiente, como já era ──
   const showCover = eventData.show_cover !== 'no';
   const coverImage = showCover ? (eventData.cover_image || eventData.cover || '') : '';
   // cover_video_url vem dos visuals — será aplicado após o merge abaixo
@@ -195,24 +195,6 @@ async function renderGuestView() {
   const heroSection = document.getElementById('guest-hero');
   if (!showCover && heroSection) { heroSection.style.display = 'none'; }
   const videoEl = document.getElementById('guest-hero-video');
-  const videoBlurInitial = document.getElementById('guest-hero-video-blur');
-  if (videoEl) {
-    videoEl.pause();
-    videoEl.removeAttribute('src');
-    videoEl.load();
-    videoEl.classList.add('hidden');
-  }
-  if (videoBlurInitial) {
-    videoBlurInitial.pause();
-    videoBlurInitial.removeAttribute('src');
-    videoBlurInitial.load();
-    videoBlurInitial.classList.add('hidden');
-    videoBlurInitial.classList.remove('blur-active');
-  }
-  if (heroEl) {
-    heroEl.style.backgroundImage = '';
-    heroEl.style.background = '';
-  }
   // Aplicar imagem de capa inicial (antes dos visuals carregarem)
   if (heroEl && coverImage && coverImage.startsWith('http')) {
     heroEl.style.backgroundImage = `url('${coverImage}')`;
@@ -222,7 +204,7 @@ async function renderGuestView() {
 
   // guest-title hidden — couple names not shown in CTA section
 
-  // â”€â”€ Check event expiry â”€â”€
+  // ── Check event expiry ──
   if (eventData.expires_at) {
     const expiry = new Date(eventData.expires_at);
     if (expiry < new Date()) {
@@ -238,7 +220,7 @@ async function renderGuestView() {
     }
   }
 
-  // â”€â”€ Load date/time from dedicated table BEFORE snapshotting _keepFields â”€â”€
+  // ── Load date/time from dedicated table BEFORE snapshotting _keepFields ──
   // (must run first: _keepFields below captures these values to protect them
   // from being overwritten by the visuals merge later, so it needs the
   // freshest data, not whatever checkURLForEvent's initial fetch had)
@@ -257,7 +239,7 @@ async function renderGuestView() {
     if (!eventData.confirm_by_date && dates.confirm_by_date) eventData.confirm_by_date = dates.confirm_by_date;
   } catch(e) { console.warn('loadEventDates failed:', e); }
 
-  // â”€â”€ Load visual settings from event_visuals table â”€â”€
+  // ── Load visual settings from event_visuals table ──
   // Save ALL critical fields that must NEVER be overwritten by the visuals table
   const _keepFields = {
     // dates
@@ -326,7 +308,7 @@ async function renderGuestView() {
     console.log('[ADK invite_order] final value after merge:', eventData.invite_order);
   }
 
-    // â”€â”€ Analytics: log this guest visit (once per render, fire-and-forget) â”€â”€
+    // ── Analytics: log this guest visit (once per render, fire-and-forget) ──
     // Skip when the organiser is previewing their own event ("Ver como Convidado")
     if (!Store.viewingAsGuestFromOrganizer) {
       const _visitEventId = eventData.id || Store.currentEventId;
@@ -365,20 +347,6 @@ async function renderGuestView() {
         videoBlurEl.classList.remove('blur-active');
       }
       if (heroEl2) heroEl2.style.background = 'none';
-    } else {
-      if (videoEl2) {
-        videoEl2.pause();
-        videoEl2.removeAttribute('src');
-        videoEl2.load();
-        videoEl2.classList.add('hidden');
-      }
-      if (videoBlurEl) {
-        videoBlurEl.pause();
-        videoBlurEl.removeAttribute('src');
-        videoBlurEl.load();
-        videoBlurEl.classList.add('hidden');
-        videoBlurEl.classList.remove('blur-active');
-      }
     }
   }
   // This was previously never loaded for guests — venue_ceremony/venue_civil/venue_reception
@@ -397,7 +365,7 @@ async function renderGuestView() {
     console.warn('event_venues load failed:', e);
   }
 
-  // â”€â”€ Fallback: if critical visual fields still null, reload from events table directly â”€â”€
+  // ── Fallback: if critical visual fields still null, reload from events table directly ──
   // NOTE: only fields that actually exist as columns on the `events` table belong here.
   // couplemsg_text, dresscode_*, parents_size live ONLY in event_visuals (no fallback needed
   // there since loadEventVisuals already tried). std_* and release_* live on `events` directly.
@@ -438,7 +406,7 @@ async function renderGuestView() {
     }
   });
 
-  // â”€â”€ CRITICAL: Update Store.guestEventData with fully merged eventData â”€â”€
+  // ── CRITICAL: Update Store.guestEventData with fully merged eventData ──
   Store.guestEventData = eventData;
   window._evData = eventData; // acesso rápido para botões inline no HTML
 
@@ -453,7 +421,7 @@ async function renderGuestView() {
   // set up. This way the gate is just a visual overlay and everything
   // underneath remains fully functional once unlocked.)
 
-  // â”€â”€ Apply event color — AFTER all merges â”€â”€
+  // ── Apply event color — AFTER all merges ──
   // Check both sources: visuals table first, then events table, then default
   const _evCol = eventData.event_color || '#007f9f';
   document.documentElement.style.setProperty('--ev-color', _evCol);
@@ -552,13 +520,13 @@ async function renderGuestView() {
     const stdActive = eventData.save_the_date_enabled === true || eventData.save_the_date_enabled === 'true';
     const wantsBothRsvp = eventData.show_rsvp_in_full_invite === true || eventData.show_rsvp_in_full_invite === 'true';
     const hideDueToStd = stdActive && !wantsBothRsvp;
-    dlog('ðŸ”– RSVP section visibility check:', { rsvp_enabled: eventData.rsvp_enabled, stdActive, wantsBothRsvp, hideDueToStd });
+    dlog('🔖 RSVP section visibility check:', { rsvp_enabled: eventData.rsvp_enabled, stdActive, wantsBothRsvp, hideDueToStd });
     _rsvpSec.style.display = (rsvpIsDisabled || hideDueToStd) ? 'none' : '';
   }
   // Also apply to music player icon
   document.querySelectorAll('.music-icon').forEach(el => el.style.background = _evCol);
 
-  // â”€â”€ Apply custom font â”€â”€
+  // ── Apply custom font ──
   if (eventData.custom_font_family) {
     const fontName = eventData.custom_font_family;
     document.documentElement.style.setProperty('--event-font', `'${fontName}', serif`);
@@ -576,9 +544,9 @@ async function renderGuestView() {
     document.documentElement.style.removeProperty('--event-font');
   }
 
-  // â”€â”€ Fonte do texto normal das secções (Presentes/IBAN, Manual,
+  // ── Fonte do texto normal das secções (Presentes/IBAN, Manual,
   // Cronograma, Dress Code, Mensagem dos Noivos, História, FAQ, Texto do
-  // Convite, Pais) — separada da fonte dos nomes, que já existia. â”€â”€
+  // Convite, Pais) — separada da fonte dos nomes, que já existia. ──
   _loadGoogleFontIfNeeded(eventData.body_font_family);
   document.documentElement.style.setProperty('--ev-body-font', eventData.body_font_family ? `'${eventData.body_font_family}', sans-serif` : 'inherit');
   document.documentElement.style.setProperty('--ev-body-scale', (parseFloat(eventData.body_text_scale) || 100) / 100);
@@ -590,13 +558,13 @@ async function renderGuestView() {
     if (gsc) gsc.style.background = eventData.bg_color;
   }
 
-  // â”€â”€ Texto bíblico: negrito, itálico, e fonte própria (opcional) â”€â”€
+  // ── Texto bíblico: negrito, itálico, e fonte própria (opcional) ──
   _loadGoogleFontIfNeeded(eventData.bible_font_family);
   document.documentElement.style.setProperty('--ev-bible-font', eventData.bible_font_family ? `'${eventData.bible_font_family}', serif` : 'inherit');
   document.documentElement.style.setProperty('--ev-bible-weight', eventData.bible_bold === 'yes' ? '700' : '400');
   document.documentElement.style.setProperty('--ev-bible-style', eventData.bible_italic === 'yes' ? 'italic' : 'normal');
 
-  // â”€â”€ Render couple names â”€â”€
+  // ── Render couple names ──
   renderHeroCoupleNames(eventData);
 
   // ===== MUSIC PLAYER =====
@@ -619,7 +587,7 @@ async function renderGuestView() {
         (oldFrame && oldFrame.src && oldFrame.dataset.currentMusicUrl === musicUrl) ||
         (guestAudio && guestAudio.src && guestAudio.dataset.currentMusicUrl === musicUrl);
       if (continuousOk && alreadyPlayingSame) {
-        dlog('ðŸŽµ Música contínua — já a tocar a mesma faixa, sem reiniciar.');
+        dlog('🎵 Música contínua — já a tocar a mesma faixa, sem reiniciar.');
       } else {
         if (oldFrame) { oldFrame.src = ''; oldFrame.dataset.playing = '0'; }
         if (guestAudio) { guestAudio.pause(); guestAudio.src = ''; }
@@ -666,7 +634,7 @@ async function renderGuestView() {
     document.getElementById('std-screen-overlay')?.remove();
   }
 
-  // â”€â”€ Tela de abertura com foto, também no convite completo â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Tela de abertura com foto, também no convite completo ──────────────
   // Mostra-se quando: (a) não há Save the Date activo, ou (b) há Save the
   // Date mas o organizador activou "Mostrar também antes do convite
   // completo" (std_intro_on_invite). Nunca aparece duas vezes na mesma
@@ -705,14 +673,14 @@ async function renderGuestView() {
   const showTimeRaw = eventData.show_time !== undefined ? eventData.show_time : eventData.showTime;
   const showTime = String(showTimeRaw).toLowerCase() === 'yes' || showTimeRaw === true;
   
-  dlog('ðŸ‘¤ Guest view - Verificando show_time:', { raw: showTimeRaw, string: String(showTimeRaw), parsed: showTime });
+  dlog('👤 Guest view - Verificando show_time:', { raw: showTimeRaw, string: String(showTimeRaw), parsed: showTime });
   
   // ✅ NOVO: Mostrar hora APENAS se show_time está ativo (true ou 'yes')
   const timeDisplay = showTime 
     ? formatDate(eventData.date) + ' às ' + eventData.time
     : formatDate(eventData.date);
   
-  dlog('ðŸ‘¤ Guest view - Time display:', { showTime, timeDisplay });
+  dlog('👤 Guest view - Time display:', { showTime, timeDisplay });
   
   // guest-date removed:  timeDisplay;
   
@@ -729,7 +697,7 @@ async function renderGuestView() {
     deadlineDate = eventData.date;
   }
   
-  dlog('ðŸ‘¤ GUEST VIEW - Deadline para convidado:');
+  dlog('👤 GUEST VIEW - Deadline para convidado:');
   dlog('  confirm_by_date:', eventData.confirm_by_date);
   dlog('  deadline:', eventData.deadline);
   dlog('  date:', eventData.date);
@@ -745,7 +713,7 @@ async function renderGuestView() {
 
   const closeInfo = getRSVPCloseInfo(eventData);
 
-  // â”€â”€ All RSVP state and rendering handled by rsvp.js â”€â”€
+  // ── All RSVP state and rendering handled by rsvp.js ──
   if (typeof _rsvpRender === 'function') {
     _rsvpRender('FORM');
   }
@@ -834,11 +802,11 @@ function renderGuestMessageWall(eventData) {
                 <p style="font-size:0.7rem;font-weight:700;color:#9ca3af;margin-bottom:0.2rem">Resposta do organizador</p>
                 <p style="font-size:0.82rem;color:#374151;font-style:italic">${escapeHTML(item.ownerReply)}</p>
               </div>` : ''}
-            ${(Store.currentUser && (isAdminRole(Store.currentUser.role) || Store.currentUser.id === (Store.events.find(e=>e.id===Store.currentEventId)||{}).user_id)) ? `
+            ${(Store.currentUser && (Store.currentUser.role === 'admin' || Store.currentUser.id === (Store.events.find(e=>e.id===Store.currentEventId)||{}).user_id)) ? `
               <div style="margin-top:0.6rem;text-align:right">
                 <button onclick="replyToGuestMessage('${escapeHTML(item.name).replace(/'/g,"\\'")}','${escapeHTML(item.ownerReply||'').replace(/'/g,"\\'")}','${Store.currentEventId}')"
                   style="font-size:0.7rem;color:${evColor};font-weight:700;background:none;border:1px solid ${evColor}33;border-radius:999px;padding:0.2rem 0.7rem;cursor:pointer">
-                  ${item.ownerReply ? 'âœï¸ Editar resposta' : 'â†© Responder'}
+                  ${item.ownerReply ? '✏️ Editar resposta' : '↩ Responder'}
                 </button>
               </div>` : ''}
           </div>
@@ -964,7 +932,7 @@ function handleRSVP(e) {
   const kids = [...document.querySelectorAll('[data-kid]')].map(i => i.value.trim()).filter(Boolean);
   const messageText = document.getElementById('rsvp-message')?.value?.trim() || '';
 
-  dlog('ðŸ“ Processando RSVP:', { name, attending, side, companions, kids });
+  dlog('📝 Processando RSVP:', { name, attending, side, companions, kids });
 
   // ✅ CRÍTICO: Verificar se JÁ EXISTE resposta anterior para este convidado
   const existingConfIndex = ev.confirmations ? ev.confirmations.findIndex(c => c.name.toLowerCase() === name.toLowerCase()) : -1;
@@ -990,7 +958,7 @@ function handleRSVP(e) {
 
   if (existingConfIndex !== -1 && ev.confirmations) {
     // ✅ JÁ EXISTE - fazer UPDATE
-    dlog('🔎 Atualizando resposta anterior (índice:', existingConfIndex, ')');
+    dlog('🔄 Atualizando resposta anterior (índice:', existingConfIndex, ')');
     
     ev.confirmations[existingConfIndex] = {
       name: name,
@@ -1007,7 +975,7 @@ function handleRSVP(e) {
     saveRSVPToSupabase(eventData, true);
   } else {
     // ✅ NOVO - fazer INSERT
-    dlog('âœ¨ Adicionando nova resposta');
+    dlog('✨ Adicionando nova resposta');
     
     if (!ev.confirmations) ev.confirmations = [];
     ev.confirmations.push({
@@ -1062,10 +1030,10 @@ async function saveRSVPToSupabase(data, isUpdate) {
       );
       if (response) {
         dlog('✅ RSVP atualizado no Supabase');
-        // ðŸ“¢ Enviar notificação em tempo real
+        // 📢 Enviar notificação em tempo real
         sendRealtimeNotification(data);
         // ✅ CRÍTICO: Aguardar um pouco e depois recarregar
-        dlog('â³ Aguardando 500ms antes de recarregar evento...');
+        dlog('⏳ Aguardando 500ms antes de recarregar evento...');
         await new Promise(r => setTimeout(r, 500));
         await reloadEventFromSupabase(data.event_id);
       } else {
@@ -1076,10 +1044,10 @@ async function saveRSVPToSupabase(data, isUpdate) {
       const response = await supabaseRequest('rsvps', 'POST', data);
       if (response && response.length > 0) {
         dlog('✅ RSVP criado no Supabase');
-        // ðŸ“¢ Enviar notificação em tempo real
+        // 📢 Enviar notificação em tempo real
         sendRealtimeNotification(data);
         // ✅ CRÍTICO: Aguardar um pouco e depois recarregar
-        dlog('â³ Aguardando 500ms antes de recarregar evento...');
+        dlog('⏳ Aguardando 500ms antes de recarregar evento...');
         await new Promise(r => setTimeout(r, 500));
         await reloadEventFromSupabase(data.event_id);
       } else {
@@ -1103,7 +1071,7 @@ async function reloadEventFromSupabase(eventId) {
   }
 
   try {
-    dlog('🔎 Recarregando evento do Supabase:', eventId);
+    dlog('🔄 Recarregando evento do Supabase:', eventId);
     
     // Buscar evento COM JOIN para presentes e RSVPs
     const eventData = await supabaseRequest(`events?id=eq.${eventId}&select=id,title,date,time,user_id,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,music_url,music_title,iban_message,iban_number,iban_holder,iban_footer,iban_number_2,iban_holder_2,groom_name,bride_name,couple_size,show_couple,bg_url,bg_overlay,bible_text,bible_ref,show_bible,invite_text,show_invite,invite_order,groom_parents,bride_parents,show_parents,gallery_urls,show_gallery,show_manual,manual_items,show_schedule,schedule_items,custom_font_family,section_order,story_text,invite_blessing,event_color,confirm_by_date,cover_image,event_code,gifts(id,name,category,reserved,reserved_by,quantity,image_url),rsvps(guest_name,attending,side,companions,kids,wants_gift,message,created_at,updated_at,is_manual_ticket)`);
@@ -1227,7 +1195,7 @@ async function reloadEventFromSupabase(eventId) {
   }
 }
 
-// ðŸ“¢ NOTIFICAÇÃO EM TEMPO REAL
+// 📢 NOTIFICAÇÃO EM TEMPO REAL
 function sendRealtimeNotification(rsvpData) {
   const event = Store.events.find(e => e.id === rsvpData.event_id);
   if (!event) return;
@@ -1282,12 +1250,12 @@ function sendRealtimeNotification(rsvpData) {
       setTimeout(() => notif.remove(), 400);
     }, 5000);
     
-    // ðŸ”” Som de notificação (opcional)
+    // 🔔 Som de notificação (opcional)
     playNotificationSound();
   }
 }
 
-// ðŸ”” Som de notificação
+// 🔔 Som de notificação
 function playNotificationSound() {
   // Usar API de Web Audio para criar som simples
   try {
@@ -1755,7 +1723,7 @@ async function _selectGiftInModal(giftId, element) {
   }
   if (alreadyMine) { toast('Já escolheste este presente!'); return; }
 
-  // â”€â”€ Não sabemos ainda quem é o convidado: pedir o nome antes de continuar â”€â”€
+  // ── Não sabemos ainda quem é o convidado: pedir o nome antes de continuar ──
   if (!guestName) {
     const coupleLabel = ev.title || [ev.groom_name, ev.bride_name].filter(Boolean).join(' & ') || 'Escolher Presente';
     const typed = await askGuestNameModal(coupleLabel);
@@ -1801,7 +1769,7 @@ async function _selectGiftInModal(giftId, element) {
 
 
 function backFromGifts() {
-  dlog('ðŸ‘ˆ Voltando da tela de presentes');
+  dlog('👈 Voltando da tela de presentes');
   dlog('  guestEventData:', Store.guestEventData ? 'Sim' : 'Não');
   dlog('  currentEventId:', Store.currentEventId);
   
@@ -1810,7 +1778,7 @@ function backFromGifts() {
   const giftsOnly = params.get('gifts') === 'only';
   
   if (giftsOnly) {
-    dlog('ðŸ  URL com modo gifts-only detectado - voltando para home');
+    dlog('🏠 URL com modo gifts-only detectado - voltando para home');
     Router.go('home');
   }
   // Se temos guestEventData, voltar para guest view (RSVP)
@@ -1860,7 +1828,7 @@ function renderGiftsManager(ev) {
         const claimants = _giftClaimants(g);
         const qty = _giftQuantity(g);
         const badge = qty > 1 ? `<span class="text-[0.6rem] font-semibold px-1 py-0.5 rounded bg-blue-50 text-blue-600 flex-shrink-0">${claimants.length}/${qty}</span>` : '';
-        const thumb = g.imageUrl ? `<img src="${g.imageUrl}" style="width:18px;height:18px;border-radius:4px;object-fit:cover;flex-shrink:0">` : '<span class="text-teal-400 flex-shrink-0">â—¯</span>';
+        const thumb = g.imageUrl ? `<img src="${g.imageUrl}" style="width:18px;height:18px;border-radius:4px;object-fit:cover;flex-shrink:0">` : '<span class="text-teal-400 flex-shrink-0">◯</span>';
         html += '<div class="flex items-center gap-2 group hover:bg-gray-50 px-1 rounded transition text-xs">' + thumb + '<span class="text-gray-700 flex-1 truncate">' + escapeHTML(g.name) + '</span>' + badge + '<div class="flex gap-1 opacity-0 group-hover:opacity-100 transition"><button class="text-gray-300 hover:text-teal-500 p-0.5" onclick="editGiftModal(\'' + g.id + '\')"><i data-lucide="edit" class="w-3 h-3"></i></button><button class="text-gray-300 hover:text-red-500 p-0.5" onclick="deleteGift(\'' + g.id + '\')"><i data-lucide="trash-2" class="w-3 h-3"></i></button></div></div>';
       });
       
@@ -1879,7 +1847,7 @@ function renderGiftsManager(ev) {
 function renderGiftsGuest(ev) {
   let html = '';
 
-  // â”€â”€ IBAN card (se configurado) â”€â”€
+  // ── IBAN card (se configurado) ──
   if (ev.iban_number) {
     html += `
       <div class="iban-card mb-5">
@@ -1897,7 +1865,7 @@ function renderGiftsGuest(ev) {
       </div>`;
   }
 
-  // â”€â”€ Lista de presentes â”€â”€
+  // ── Lista de presentes ──
   const categories = {};
   ev.gifts.forEach(g => {
     const cat = g.category || 'Sem categoria';
@@ -1955,12 +1923,12 @@ async function toggleGiftSelection(giftId, element) {
   // ✅ Obter o NOME DO CONVIDADO correto (tentar TODAS as fontes)
   let guestName = null;
   
-  // 1ï¸âƒ£ Tentar sessão armazenada
+  // 1️⃣ Tentar sessão armazenada
   if (Store.currentGuestSession?.guestName) {
     guestName = Store.currentGuestSession.guestName;
     dlog('✅ Nome obtido da sessão:', guestName);
   }
-  // 2ï¸âƒ£ Tentar input do formulário (se estiver visível)
+  // 2️⃣ Tentar input do formulário (se estiver visível)
   else if (document.getElementById('rsvp-name')) {
     const nameInput = document.getElementById('rsvp-name').value?.trim();
     if (nameInput) {
@@ -1968,12 +1936,12 @@ async function toggleGiftSelection(giftId, element) {
       dlog('✅ Nome obtido do input:', guestName);
     }
   }
-  // 3ï¸âƒ£ Nome guardado anteriormente (escolheu presente sem ter confirmado presença)
+  // 3️⃣ Nome guardado anteriormente (escolheu presente sem ter confirmado presença)
   if (!guestName) {
     const saved = _resolveKnownGuestName(ev.id);
     if (saved) { guestName = saved; dlog('✅ Nome obtido da memória de presentes:', guestName); }
   }
-  // 4ï¸âƒ£ Fallback (não deveria chegar aqui)
+  // 4️⃣ Fallback (não deveria chegar aqui)
   if (!guestName) {
     guestName = 'Convidado Anónimo';
     dlog('⚠️ Nome padrão usado:', guestName);
@@ -1981,7 +1949,7 @@ async function toggleGiftSelection(giftId, element) {
     _rememberGiftGuestName(ev.id, guestName);
   }
   
-  dlog('ðŸ‘¤ Nome do convidado FINAL:', { guestName, session: Store.currentGuestSession });
+  dlog('👤 Nome do convidado FINAL:', { guestName, session: Store.currentGuestSession });
 
   const claimants = _giftClaimants(gift);
   const qty = _giftQuantity(gift);
@@ -2001,7 +1969,7 @@ async function toggleGiftSelection(giftId, element) {
     _giftClaimants(g).some(c => normalizeGuestName(c) === normalizeGuestName(guestName))
   );
 
-  dlog('ðŸŽ Verificação de presente anterior:', {
+  dlog('🎁 Verificação de presente anterior:', {
     guestName,
     giftIdAtual: giftId,
     outrosPresentes: otherReservedGifts,
@@ -2017,7 +1985,7 @@ async function toggleGiftSelection(giftId, element) {
     if (!released) { toast('Não foi possível trocar agora. Tenta novamente.'); return; }
   }
 
-  dlog('ðŸŽ Escolhendo presente:', { giftId, giftName: gift.name, chosenBy: guestName });
+  dlog('🎁 Escolhendo presente:', { giftId, giftName: gift.name, chosenBy: guestName });
 
   const newClaimants = [...claimants, guestName];
   const newReservedByStr = newClaimants.join('|');
@@ -2038,7 +2006,7 @@ async function toggleGiftSelection(giftId, element) {
   }
   
   // ✅ CRÍTICO: Recarregar evento do Supabase para garantir que dono vê a mudança
-  dlog('🔎 Recarregando evento do Supabase para sincronizar com dono...');
+  dlog('🔄 Recarregando evento do Supabase para sincronizar com dono...');
   reloadEventFromSupabase(ev.id).then(() => {
     dlog('✅ Evento recarregado. Dono verá a mudança em tempo real.');
   });
@@ -2074,8 +2042,8 @@ function addGiftsFromTextarea() {
   
   let added = 0;
   lines.forEach(line => {
-    // Remover símbolos decorativos (â—¯, â€¢, -, *, etc)
-    let name = line.replace(/^[\sâ—¯â€¢\-\*\.]+/, '').trim();
+    // Remover símbolos decorativos (◯, •, -, *, etc)
+    let name = line.replace(/^[\s◯•\-\*\.]+/, '').trim();
     
     if (name && name.length > 1) {
       // Verificar se já existe
@@ -2395,7 +2363,7 @@ async function reserveGift(giftId) {
     const guestName = Store.currentGuestSession?.guestName || document.getElementById('rsvp-name')?.value || 'Convidado';
     gift.reserved = true; 
     gift.reservedBy = guestName; 
-    dlog('ðŸŽ Presente reservado:', { giftName: gift.name, reservedBy: guestName });
+    dlog('🎁 Presente reservado:', { giftName: gift.name, reservedBy: guestName });
     await updateGiftReservationInSupabase(giftId, true, guestName);
   }
   Router.go('gift-confirmed');
@@ -2423,7 +2391,7 @@ function editGuestResponse() {
     if (nameInput) nameInput.value = storedName;
   }
 
-  // â”€â”€ Restore all form sections using same logic as initGuestRsvp â”€â”€
+  // ── Restore all form sections using same logic as initGuestRsvp ──
   const ev = Store.guestEventData;
   if (ev) {
     // sides
@@ -2652,7 +2620,7 @@ function confirmDeleteConfirmation(confIndex, modal) {
   const conf = ev.confirmations[confIndex];
   const guestName = conf.name;
   
-  dlog('ðŸ—‘ï¸ Iniciando exclusão de RSVP:', {
+  dlog('🗑️ Iniciando exclusão de RSVP:', {
     eventId: Store.currentEventId,
     guestName: guestName,
     confIndex: confIndex
@@ -2722,7 +2690,7 @@ function removeBgPhoto(variant) {
   toast('Foto de fundo removida.');
 }
 
-// â”€â”€ Detecção de fotos duplicadas â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Detecção de fotos duplicadas ────────────────────────────────────────────
 // Calcula um hash SHA-256 real do conteúdo do ficheiro (não apenas do nome ou
 // tamanho), usando a Web Crypto API nativa do browser — isto identifica com
 // 100% de certeza se é EXACTAMENTE a mesma imagem, mesmo que tenha sido
@@ -2831,7 +2799,7 @@ async function handleGalleryUpload(input) {
   renderGalleryOrderPreview();
 }
 
-// â”€â”€ Ordem da galeria: escolher qual foto é a primeira e qual é a última â”€â”€
+// ── Ordem da galeria: escolher qual foto é a primeira e qual é a última ──
 function renderGalleryOrderPreview() {
   const ta = document.getElementById('evt-gallery-urls');
   const wrap = document.getElementById('gallery-order-preview');
@@ -2848,11 +2816,11 @@ function renderGalleryOrderPreview() {
       <div style="position:absolute;bottom:0;left:0;right:0;display:flex">
         <button type="button" onclick="toggleGalleryPhoto(${i})" title="${disabled?'Activar foto':'Desactivar foto'}"
           style="flex:1;background:${disabled?'rgba(34,197,94,0.85)':'rgba(239,68,68,0.75)'};color:#fff;border:none;font-size:0.55rem;font-weight:800;padding:3px 0;cursor:pointer">
-          ${disabled?'ðŸ‘ Mostrar':'ðŸš« Ocultar'}
+          ${disabled?'👁 Mostrar':'🚫 Ocultar'}
         </button>
         <button type="button" onclick="removeGalleryPhoto(${i})" title="Remover"
           style="flex:1;background:rgba(0,0,0,0.6);color:#fff;border:none;font-size:0.55rem;font-weight:800;padding:3px 0;cursor:pointer;border-left:1px solid rgba(255,255,255,0.2)">
-          ðŸ—‘ Apagar
+          🗑 Apagar
         </button>
       </div>
     </div>`;
@@ -2902,7 +2870,7 @@ function removeGalleryPhoto(index) {
 
 // ===================== FONT UPLOAD (ADMIN ONLY) =====================
 function showFontUploadModal() {
-  if (!Store.currentUser || !isAdminRole(Store.currentUser.role)) return;
+  if (!Store.currentUser || Store.currentUser.role !== 'admin') return;
   const modal = document.createElement('div');
   modal.className = 'modal-overlay';
   modal.innerHTML = `
@@ -3083,7 +3051,7 @@ async function handleBibleFontUpload(input) {
   } catch(e) { toast('Erro ao carregar fonte.'); }
 }
 
-// â”€â”€ Share guest event â”€â”€
+// ── Share guest event ──
 function shareGuestEvent() {
   const ev = Store.guestEventData;
   const title = ev ? ev.title : 'Convite Digital';
@@ -3109,9 +3077,9 @@ function _evaluateSaveTheDate(ev) {
     is_invite_released: ev.is_invite_released,
     release_date: ev.release_date,
   };
-  // Feature off entirely â†’ always show full invite (current behaviour)
+  // Feature off entirely → always show full invite (current behaviour)
   if (!ev.save_the_date_enabled || ev.save_the_date_enabled === false || ev.save_the_date_enabled === 'no') {
-    dlog('ðŸšª STD Gate: OFF (save_the_date_enabled is falsy) â†’', diag);
+    dlog('🚪 STD Gate: OFF (save_the_date_enabled is falsy) →', diag);
     return { showSaveTheDate: false };
   }
 
@@ -3120,10 +3088,10 @@ function _evaluateSaveTheDate(ev) {
   // Condition C: Manual — admin/organiser controls is_invite_released directly
   if (releaseType === 'manual') {
     if (ev.is_invite_released === true || ev.is_invite_released === 'yes') {
-      dlog('ðŸšª STD Gate: OFF — manual release, is_invite_released=true â†’', diag);
+      dlog('🚪 STD Gate: OFF — manual release, is_invite_released=true →', diag);
       return { showSaveTheDate: false };
     }
-    dlog('ðŸšª STD Gate: ON — manual release, not yet released â†’', diag);
+    dlog('🚪 STD Gate: ON — manual release, not yet released →', diag);
     return { showSaveTheDate: true, reason: 'manual' };
   }
 
@@ -3153,12 +3121,12 @@ function _evaluateSaveTheDate(ev) {
   return { showSaveTheDate: false };
 }
 
-// â”€â”€ Bloco de data do evento dentro do Save the Date — estilo configurável â”€â”€
-// â”€â”€ Tela de abertura com foto — reutilizável no Save the Date E no convite â”€â”€
+// ── Bloco de data do evento dentro do Save the Date — estilo configurável ──
+// ── Tela de abertura com foto — reutilizável no Save the Date E no convite ──
 // Detecta se o ecrã é de telemóvel ou computador (via largura da janela) e
 // escolhe a foto certa entre as duas que o organizador carregou. Se só uma
 // foi carregada, usa essa em qualquer dispositivo.
-// â”€â”€ Escolhe a foto certa (mobile/desktop) consoante a largura do ecrã â”€â”€â”€â”€â”€â”€
+// ── Escolhe a foto certa (mobile/desktop) consoante a largura do ecrã ──────
 // Função genérica reutilizada para a tela de abertura, a foto de capa do
 // Save the Date, e a foto de fundo do convite. Se só uma variante foi
 // carregada, usa essa em qualquer dispositivo; "legacyUrl" é o campo antigo
@@ -3193,6 +3161,10 @@ function _wireIntroScreenButton(screenId, onOpen) {
     // Fade out suavemente em vez de remover de imediato — isto disfarça
     // qualquer instante em que o conteúdo por trás ainda esteja a desenhar
     // (imagem de capa a carregar, etc.), evitando um "salto" visual brusco.
+    screen.style.transition = 'opacity 0.35s ease';
+    screen.style.opacity = '0';
+    setTimeout(() => screen.remove(), 350);
+
     const audio = document.getElementById('guest-audio');
     if (audio && audio.src) { audio.muted = false; audio.play().then(() => setMusicPlayingUI(true)).catch(() => {}); }
     const ytFrame = document.getElementById('yt-music-frame');
@@ -3213,28 +3185,6 @@ function _wireIntroScreenButton(screenId, onOpen) {
       setTimeout(cmd, 300);
     }
     if (typeof onOpen === 'function') onOpen();
-
-    if (screen.dataset.opening === '1') return;
-    screen.dataset.opening = '1';
-    screen.style.pointerEvents = 'none';
-    screen.style.cursor = 'progress';
-
-    const revealWhenReady = (attempt = 0) => {
-      const guestScreen = document.getElementById('screen-guest');
-      const stillLoading = guestScreen && guestScreen.classList.contains('std-pending');
-      if (stillLoading && attempt < 80) {
-        setTimeout(() => revealWhenReady(attempt + 1), 100);
-        return;
-      }
-
-      // Reveal only after the invite behind this photo is ready. Some mobile
-      // browsers can otherwise expose the old commercial screen underneath.
-      screen.style.transition = 'opacity 0.35s ease';
-      screen.style.opacity = '0';
-      setTimeout(() => screen.remove(), 350);
-    };
-
-    revealWhenReady();
   };
 }
 
@@ -3273,7 +3223,7 @@ function _buildStdDateBlock(eventDateLabel, evColor, style) {
     </div>`;
 }
 
-// â”€â”€ Contagem regressiva do Save the Date — mesmos 7 estilos do convite â”€â”€
+// ── Contagem regressiva do Save the Date — mesmos 7 estilos do convite ──
 // Reaproveita a mesma escolha "countdown_style" do editor: antes, esta
 // contagem (do Save the Date) e a do convite completo eram duas coisas
 // completamente separadas, cada uma com o seu próprio visual fixo — mudar
@@ -3392,7 +3342,7 @@ function renderSaveTheDateScreen(ev, decision) {
   const deadlineLabel   = hasRealDeadline ? `Confirmar até ${deadlineParsed.label}` : null;
 
   // Diagnostic: log what data actually arrived so debugging is easy
-  dlog('ðŸ”– Save the Date — dados:', {
+  dlog('🔖 Save the Date — dados:', {
     std_cover_url_completo: coverUrl,
     std_cover_url_comprimento: coverUrl ? coverUrl.length : 0,
     bg_url: ev.bg_url ? '✓' : '✗',
@@ -3484,7 +3434,7 @@ function renderSaveTheDateScreen(ev, decision) {
         <p id="std-countdown-label" style="font-size:0.6rem;text-transform:uppercase;letter-spacing:0.1em;opacity:0.5;margin-bottom:0.4rem;font-weight:700">A calcular...</p>
         ${_buildStdCountdownUnits(evColor, ev.countdown_style || 'cards')}
       </div>
-      <p id="std-rsvp-status-text" class="std-anim std-anim-6" style="font-size:0.82rem;color:${alreadyConfirmed ? '#16a34a' : '#6b7280'};margin-bottom:0.7rem;font-weight:600;min-height:1.1em">${alreadyConfirmed ? 'Obrigado por confirmar! Já contamos consigo. ðŸŽ‰' : (_stdHasDeclined ? 'A sua resposta foi registada — obrigado por avisar.' : '')}</p>
+      <p id="std-rsvp-status-text" class="std-anim std-anim-6" style="font-size:0.82rem;color:${alreadyConfirmed ? '#16a34a' : '#6b7280'};margin-bottom:0.7rem;font-weight:600;min-height:1.1em">${alreadyConfirmed ? 'Obrigado por confirmar! Já contamos consigo. 🎉' : (_stdHasDeclined ? 'A sua resposta foi registada — obrigado por avisar.' : '')}</p>
       <div class="std-anim std-anim-6">${rsvpBtnHtml}</div>
       ${(countdownTarget && !_stdExistingResponse) ? `<p class="std-anim std-anim-7" style="font-size:0.73rem;color:#9ca3af;margin-top:0.5rem;font-weight:500">Confirmar até ${countdownTarget.label}</p>` : ''}
       ${(ev.std_show_iban === true && ev.iban_number) ? `
@@ -3541,7 +3491,7 @@ function renderSaveTheDateScreen(ev, decision) {
         rsvpBtn.style.display = 'none';
         const msg = document.createElement('div');
         msg.style.cssText = 'text-align:center;padding:0.75rem 1.5rem;background:#fef2f2;border:1.5px solid #fca5a5;border-radius:999px;color:#dc2626;font-size:0.9rem;font-weight:700;display:inline-block;max-width:320px;margin:0 auto';
-        msg.innerHTML = `<span style="margin-right:6px">ðŸ“…</span>O prazo para confirmação de presença terminou`;
+        msg.innerHTML = `<span style="margin-right:6px">📅</span>O prazo para confirmação de presença terminou`;
         btnWrap.appendChild(msg);
       }
     } else {
@@ -3615,7 +3565,7 @@ function renderSaveTheDateScreen(ev, decision) {
       const btn=document.getElementById('std-rsvp-btn');
       if(btn){btn.style.background='#16a34a';btn.style.boxShadow='0 4px 16px #16a34a55';btn.innerHTML='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span>Presença Confirmada</span>';}
       const st=document.getElementById('std-rsvp-status-text');
-      if(st){st.textContent='Obrigado por confirmar! Já contamos consigo. ðŸŽ‰';st.style.color='#16a34a';}
+      if(st){st.textContent='Obrigado por confirmar! Já contamos consigo. 🎉';st.style.color='#16a34a';}
     } else if (confirmed && confirmed.attending === false) {
       // ✅ Declinar também é uma resposta — antes disto o botão ficava
       // exactamente igual a "nunca respondido", como se a recusa não
@@ -3641,7 +3591,7 @@ function renderSaveTheDateScreen(ev, decision) {
   };
 }
 
-// â”€â”€ Questionário de captação de leads — só no evento de exemplo â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Questionário de captação de leads — só no evento de exemplo ────────
 // Aparece no fundo da página depois de o visitante ter rolado o suficiente
 // para ver o convite. Três perguntas: gostou? quer um? quando?
 // As respostas ficam guardadas na tabela "lead_inquiries" (criada pela
@@ -3663,8 +3613,8 @@ function _initLeadQuestionnaire(ev) {
       <div id="lq-step-1">
         <p style="font-size:0.92rem;font-weight:700;color:#1e293b;margin-bottom:0.85rem">Gostou deste tipo de convite digital?</p>
         <div style="display:flex;gap:0.7rem;justify-content:center">
-          <button onclick="window._lqAnswer('liked','yes')" class="lq-btn" style="flex:1;max-width:140px;padding:0.8rem;border-radius:0.75rem;border:1.5px solid #e5e7eb;background:#fff;cursor:pointer;font-weight:700;font-size:0.9rem">ðŸ˜ Sim!</button>
-          <button onclick="window._lqAnswer('liked','no')" class="lq-btn" style="flex:1;max-width:140px;padding:0.8rem;border-radius:0.75rem;border:1.5px solid #e5e7eb;background:#fff;cursor:pointer;font-weight:700;font-size:0.9rem">ðŸ˜ Mais ou menos</button>
+          <button onclick="window._lqAnswer('liked','yes')" class="lq-btn" style="flex:1;max-width:140px;padding:0.8rem;border-radius:0.75rem;border:1.5px solid #e5e7eb;background:#fff;cursor:pointer;font-weight:700;font-size:0.9rem">😍 Sim!</button>
+          <button onclick="window._lqAnswer('liked','no')" class="lq-btn" style="flex:1;max-width:140px;padding:0.8rem;border-radius:0.75rem;border:1.5px solid #e5e7eb;background:#fff;cursor:pointer;font-weight:700;font-size:0.9rem">😐 Mais ou menos</button>
         </div>
       </div>
       <div id="lq-step-2" style="display:none">
@@ -3683,7 +3633,7 @@ function _initLeadQuestionnaire(ev) {
         </div>
       </div>
       <div id="lq-done" style="display:none">
-        <p style="font-size:2rem;margin-bottom:0.5rem">ðŸ™</p>
+        <p style="font-size:2rem;margin-bottom:0.5rem">🙏</p>
         <p style="font-size:1rem;font-weight:700;color:#1e293b;margin-bottom:0.3rem">Obrigado pelo seu feedback!</p>
         <p style="font-size:0.85rem;color:#6b7280">Entraremos em contacto consigo em breve.</p>
       </div>
@@ -3740,4 +3690,3 @@ function _initLeadQuestionnaire(ev) {
   }, { threshold: 0.3 });
   obs.observe(wrap);
 }
-
