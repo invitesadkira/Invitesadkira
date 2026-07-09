@@ -438,17 +438,35 @@ async function loadEventosComDelay() {
   }
 
   // ✅ PASSO 4: Verificar URL PRIMEIRO (evita flash do dashboard)
+  // ✅ CRÍTICO: Se o URL tem ?event=, NUNCA navegar para home ou dashboard
+  const _urlParams = new URLSearchParams(window.location.search);
+  const _eventCodeInURL = _urlParams.get('event');
+
   const eventFromURL = await checkURLForEvent();
   
   if (eventFromURL) {
     dlog('📍 Evento encontrado na URL');
-    // ✅ CRÍTICO: Ir para o evento PRIMEIRO, ANTES de qualquer outra coisa
+    // ✅ Ir para o evento PRIMEIRO, antes de qualquer outra coisa
     Router.go(eventFromURL);
-    // Carregar sessão em background MAS garantir que não muda de ecrã
-    // O utilizador logado pode voltar atrás depois — mas o evento abre sempre
+    // Carregar sessão em background SEM mudar de ecrã
     if (token && userId) {
       loadEventosComDelay().catch(() => {});
     }
+  } else if (_eventCodeInURL) {
+    // checkURLForEvent falhou (rede lenta/timeout) mas o código está na URL
+    // Mostrar o ecrã de convidado na mesma — ele vai tentar carregar o evento
+    dlog('⚠️ checkURLForEvent falhou mas há ?event= no URL — a mostrar ecrã de convidado');
+    Store.currentEventId = _eventCodeInURL;
+    Router.go('guest');
+    // Tentar carregar o evento novamente após 1 segundo
+    setTimeout(async () => {
+      try {
+        await renderEventDetails(_eventCodeInURL);
+      } catch(e) {
+        // Se falhar de novo, tentar via renderGuestView
+        if (typeof renderGuestView === 'function') renderGuestView(_eventCodeInURL);
+      }
+    }, 1000);
   } else {
     // ✅ PASSO 5: Só depois carrega eventos (se sessão existe)
     const sessaoCarregada = await loadEventosComDelay();

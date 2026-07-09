@@ -3118,6 +3118,13 @@ async function checkURLForEvent() {
       await new Promise(r => setTimeout(r, 700));
       eventsData = await supabaseRequest(_eventLookupQuery).catch(() => null);
     }
+
+    // 3ª tentativa para redes muito lentas (iPhone/WhatsApp)
+    if (!eventsData || eventsData.length === 0) {
+      dlog('⚠️ 2ª tentativa falhou — última tentativa em 1500ms...');
+      await new Promise(r => setTimeout(r, 1500));
+      eventsData = await supabaseRequest(_eventLookupQuery).catch(() => null);
+    }
     
     dlog('📥 Resultado da busca:', eventsData?.length === 1 ? 'Encontrado' : 'Não encontrado');
     
