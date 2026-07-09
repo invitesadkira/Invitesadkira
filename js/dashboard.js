@@ -125,6 +125,23 @@ function goToCreateEvent() {
   btn.disabled = false;
   btn.style.opacity = '1';
   btn.textContent = 'Criar Evento';
+
+  // ✅ Limpar campos de vídeo/capa para não mostrar dados de outro evento
+  const coverVideoUrl = document.getElementById('evt-cover-video-url');
+  if (coverVideoUrl) coverVideoUrl.value = '';
+  const coverVideoPreview = document.getElementById('cover-video-preview');
+  if (coverVideoPreview) { coverVideoPreview.src = ''; }
+  const coverVideoWrap = document.getElementById('cover-video-preview-wrap');
+  if (coverVideoWrap) coverVideoWrap.classList.add('hidden');
+  const coverImg = document.getElementById('cover-img');
+  if (coverImg) { coverImg.src = ''; coverImg.classList.add('hidden'); }
+  const coverPlaceholder = document.getElementById('cover-placeholder');
+  if (coverPlaceholder) coverPlaceholder.classList.remove('hidden');
+  // Limpar campos de galeria, música, etc.
+  ['evt-gallery-urls','evt-music-url','evt-music-title','evt-title','evt-date','evt-time'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
   
   dlog('✅ Formulário limpo e pronto para novo evento');
   if (typeof renderGalleryOrderPreview === 'function') renderGalleryOrderPreview();

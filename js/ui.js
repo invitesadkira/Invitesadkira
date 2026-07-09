@@ -362,10 +362,13 @@ async function removeCoverVideoFromForm() {
   const urlEl = document.getElementById('evt-cover-video-url');
   const url = urlEl?.value;
   
-  // Apagar do Supabase Storage se houver URL
-  if (url && url.startsWith('http')) {
+  // ✅ Só apagar do Supabase se o URL pertence ao evento actual
+  // Se for um evento novo (sem ID) ou o URL veio de outro evento, NÃO apagar
+  const currentEventId = Store.currentEventId || Store._intakeEventId;
+  const urlBelongsToThisEvent = url && url.startsWith('http') && currentEventId;
+  
+  if (urlBelongsToThisEvent) {
     try {
-      // Extrair bucket e filename do URL
       const match = url.match(/storage\/v1\/object\/public\/([^/]+)\/(.+)$/);
       if (match) {
         const [, bucket, fileName] = match;
