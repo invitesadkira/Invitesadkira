@@ -1760,13 +1760,16 @@ async function openTicketManager() {
             <span style="width:28px;height:28px;border-radius:50%;background:${r.checked_in?'#dcfce7':r.ticket_issued?'#ede9fe':'#f3f4f6'};display:flex;align-items:center;justify-content:center;font-size:0.75rem;flex-shrink:0">
               ${r.checked_in ? '✅' : r.ticket_issued ? '🎫' : '⏳'}
             </span>
-            <span style="flex:1;font-size:0.85rem;font-weight:600;color:#1e293b">${escapeHTML(r.guest_name)}</span>
+            <span style="flex:1;font-size:0.85rem;font-weight:600;color:#1e293b">${escapeHTML(r.guest_name)}${r.is_manual_ticket ? ' <span style="font-size:0.6rem;background:#fef3c7;color:#92400e;border-radius:4px;padding:1px 5px;font-weight:700">MANUAL</span>' : ''}</span>
             <span style="font-size:0.65rem;color:#9ca3af;margin-right:0.25rem">${r.ticket_issued ? 'emitido' : 'por emitir'}</span>
             <button class="tm-gen-btn"
               data-idx="${idx}"
               style="background:${r.ticket_issued?'#ede9fe':'#007f9f'};color:${r.ticket_issued?'#7c3aed':'#fff'};border:none;border-radius:0.4rem;padding:0.3rem 0.6rem;font-size:0.7rem;font-weight:700;cursor:pointer;white-space:nowrap">
               ${r.ticket_issued ? '↺ Gerar de novo' : '↓ Gerar ticket'}
             </button>
+            <button class="tm-del-btn" data-idx="${idx}" data-token="${escapeHTML(r.rsvp_token)}" data-manual="${r.is_manual_ticket?'1':'0'}"
+              style="background:#fef2f2;color:#dc2626;border:1px solid #fca5a5;border-radius:0.4rem;padding:0.3rem 0.5rem;font-size:0.75rem;cursor:pointer;flex-shrink:0"
+              title="Eliminar ticket">🗑</button>
           </div>`).join('')}
       </div>
     </div>`;
@@ -1778,6 +1781,31 @@ async function openTicketManager() {
     btn.addEventListener('click', () => {
       const r = rsvps[parseInt(btn.dataset.idx)];
       if (r) generateGuestTicket(r.guest_name, r.rsvp_token);
+    });
+  });
+
+  document.querySelectorAll('.tm-del-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const r = rsvps[parseInt(btn.dataset.idx)];
+      if (!r) return;
+      const isManual = btn.dataset.manual === '1';
+      const msg = isManual
+        ? `Eliminar completamente o ticket manual de "${r.guest_name}"?`
+        : `Retirar o ticket de "${r.guest_name}"? (A confirmação de presença fica intacta)`;
+      if (!confirm(msg)) return;
+
+      if (isManual) {
+        // Ticket manual — eliminar o registo inteiramente
+        await supabaseRequest(`rsvps?rsvp_token=eq.${r.rsvp_token}&event_id=eq.${eventId}`, 'DELETE').catch(() => {});
+      } else {
+        // Ticket de confirmado — apenas remover o ticket, manter o RSVP
+        await supabaseRequest(`rsvps?rsvp_token=eq.${r.rsvp_token}&event_id=eq.${eventId}`, 'PATCH',
+          { ticket_issued: false, ticket_issued_at: null }
+        ).catch(() => {});
+      }
+      toast('Ticket eliminado.');
+      document.getElementById('ticket-manager-modal')?.remove();
+      try { await openTicketManager(); } catch(e) {}
     });
   });
 
