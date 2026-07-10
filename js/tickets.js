@@ -516,13 +516,15 @@ async function generateGuestTicket(guestName, rsvpToken, eventId, skipNameEdit) 
     }
   } catch(e) { console.warn('Ticket limit check failed:', e); }
 
-  // Garantir que os campos do ticket estão actualizados
-  if (!ev.ticket_template_url) {
-    try {
-      const fresh = await supabaseRequest(`events?id=eq.${ev.id}&select=ticket_template_url,ticket_name_x,ticket_name_y,ticket_qr_x,ticket_qr_y,ticket_name_size,ticket_qr_size,ticket_name_color,ticket_name_font,scanner_token&limit=1`);
-      if (fresh && fresh[0]) Object.assign(ev, fresh[0]);
-    } catch(e) {}
-  }
+  // ✅ Sempre recarregar os campos do ticket para garantir que ticket_name_font
+  // e outros campos estão actualizados (evita usar dados cached desactualizados)
+  try {
+    const fresh = await supabaseRequest(`events?id=eq.${ev.id}&select=ticket_template_url,ticket_name_x,ticket_name_y,ticket_qr_x,ticket_qr_y,ticket_name_size,ticket_qr_size,ticket_name_color,ticket_name_font,scanner_token,ticket_table_x,ticket_table_y,ticket_table_size,ticket_table_color&limit=1`);
+    if (fresh && fresh[0]) {
+      Object.assign(ev, fresh[0]);
+      console.log('[TICKET] ticket_name_font carregado:', fresh[0].ticket_name_font);
+    }
+  } catch(e) { console.warn('[TICKET] Falha ao recarregar campos do ticket:', e); }
 
   if (!ev.ticket_template_url) {
     toast('Configure o template PDF primeiro.');
