@@ -1937,11 +1937,16 @@ function _sanitizeIconValue(v) {
 
 function openScheduleEditor(clientMode) {
   clientMode = clientMode || (typeof Store._isClientIntakeContext !== 'undefined' && Store._isClientIntakeContext);
+  const eventId = Store.currentEventId || Store._intakeEventId;
+
+  // ✅ Bloquear eventId para que saveScheduleItems use o certo
+  window._scheduleEditorEventId = eventId;
+
   let items;
-  if (Store.eventScheduleItems) {
+  // Só usar Store.eventScheduleItems se pertence ao evento actual
+  if (Store.eventScheduleItems && Store._scheduleItemsEventId === eventId) {
     items = JSON.parse(JSON.stringify(Store.eventScheduleItems));
   } else {
-    const eventId = Store.currentEventId || Store._intakeEventId;
     const evFromStore = eventId ? Store.events.find(e => e.id === eventId) : null;
     if (evFromStore && evFromStore.schedule_items) {
       try { items = JSON.parse(JSON.stringify(JSON.parse(evFromStore.schedule_items))); }
@@ -2380,10 +2385,11 @@ async function saveScheduleItems() {
   items.sort((a, b) => _parseScheduleTimeToMinutes(a.time) - _parseScheduleTimeToMinutes(b.time));
 
   Store.eventScheduleItems = items;
+  Store._scheduleItemsEventId = window._scheduleEditorEventId || Store.currentEventId || Store._intakeEventId;
 
-  // Persist immediately to Supabase — don't wait for the main event form save
-  const eventId = Store.currentEventId || Store._intakeEventId;
-  dlog('📝 saveScheduleItems — a guardar para eventId:', eventId, 'itens (ordenados):', items);
+  // ✅ Usar o eventId bloqueado quando o modal foi aberto
+  const eventId = window._scheduleEditorEventId || Store.currentEventId || Store._intakeEventId;
+  console.log('[SCHEDULE] saveScheduleItems para eventId:', eventId);
   if (!eventId) {
     console.error('❌ saveScheduleItems: nenhum eventId disponível. As alterações NÃO foram guardadas no Supabase.');
     toast('Erro: não foi possível identificar o evento.');

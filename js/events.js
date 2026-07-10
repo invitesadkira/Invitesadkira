@@ -2032,6 +2032,20 @@ function _fillEditForm(ev) {
   { const i2=document.getElementById('evt-iban-number-2'); const h2i=document.getElementById('_iban2val'); const v=ev.iban_number_2||''; if(i2)i2.value=v; if(h2i)h2i.value=v; }
   { const h2=document.getElementById('evt-iban-holder-2'); const hh=document.getElementById('_iban2holder'); const v=ev.iban_holder_2||''; if(h2)h2.value=v; if(hh)hh.value=v; }
 
+  // ✅ CRÍTICO: Limpar campos sensíveis antes de preencher com dados do novo evento
+  // Evita que dados do evento anterior contaminem este evento
+  const _clearFields = ['evt-couplemsg-text','evt-groom-name','evt-bride-name',
+    'evt-hero-subtitle','evt-story-text','evt-invite-text','evt-bible-text',
+    'evt-music-url','evt-music-title'];
+  _clearFields.forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+  // Limpar Schedule e Manual da memória se eram de outro evento
+  if (Store._scheduleItemsEventId && Store._scheduleItemsEventId !== (ev.id||ev.event_code)) {
+    Store.eventScheduleItems = null; Store._scheduleEditorEventId = null;
+  }
+  if (Store._manualItemsEventId && Store._manualItemsEventId !== (ev.id||ev.event_code)) {
+    Store.eventManualItems = null; Store._manualEditorEventId = null;
+  }
+
   // Visual / Sections
   _setSwitch('sw-couple', _yesOrTrue(ev.show_couple), 'couple-extra');
   document.getElementById('evt-groom-name').value = ev.groom_name || '';
@@ -2121,7 +2135,7 @@ function _fillEditForm(ev) {
   Store._manualItemsEventId = ev.id || ev.event_code; // ✅ Marcar a que evento pertencem
 
   _setSwitch('sw-schedule', _yesOrTrue(ev.show_schedule), 'schedule-extra');
-  try { Store.eventScheduleItems = ev.schedule_items ? JSON.parse(ev.schedule_items) : null; }
+  try { Store.eventScheduleItems = ev.schedule_items ? JSON.parse(ev.schedule_items) : null; Store._scheduleItemsEventId = ev.id || ev.event_code; }
   catch(e) { console.error('Falha ao interpretar schedule_items, a ignorar:', e); Store.eventScheduleItems = null; }
 
   // Section order
@@ -3872,6 +3886,7 @@ async function openIntakeFormMain(eventId) {
   // ── Load existing manual/schedule items into Store so editors show current data ──
   Store.eventManualItems   = ev.manual_items   ? (() => { try { return JSON.parse(ev.manual_items); } catch(e) { return null; } })() : null;
   Store.eventScheduleItems = ev.schedule_items ? (() => { try { return JSON.parse(ev.schedule_items); } catch(e) { return null; } })() : null;
+  Store._scheduleItemsEventId = ev.id || ev.event_code;
 
   // ── Pre-fill gallery with existing photos ──
   if (ev.gallery_urls) {
