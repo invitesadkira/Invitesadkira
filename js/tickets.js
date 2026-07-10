@@ -401,34 +401,42 @@ function _initTicketDrag() {
 async function handleTicketFontUpload(input) {
   const file = input.files[0];
   if (!file) return;
-  const allowed = ['.ttf','.otf','.woff','.woff2'];
+  const allowed = ['.ttf','.otf','.woff'];
   if (!allowed.some(ext => file.name.toLowerCase().endsWith(ext))) {
-    toast('Apenas .ttf, .otf, .woff, .woff2');
+    toast('Usa .ttf ou .otf — .woff2 não é suportado pelo gerador de PDF');
     return;
   }
   toast('A carregar fonte...');
-  const url = await uploadImageToStorage(file, 'event-covers', 'Fonte ticket');
-  if (!url) return;
-  const fontName = file.name.replace(/\.[^.]+$/, '');
-  // Guardar na lista de fontes disponíveis
-  if (!Store.availableFonts) Store.availableFonts = [];
-  if (!Store.availableFonts.find(f => f.name === fontName)) {
-    Store.availableFonts.push({ name: fontName, url });
+  try {
+    const ext = file.name.split('.').pop().toLowerCase();
+    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
+    const fileName = `font_ticket_${Date.now()}_${safeName}`;
+    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/event-covers/${fileName}`, {
+      method: 'POST',
+      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/octet-stream', 'x-upsert': 'true' },
+      body: file
+    });
+    if (!res.ok) throw new Error(await res.text());
+    const url = `${SUPABASE_URL}/storage/v1/object/public/event-covers/${fileName}`;
+    const fontName = file.name.replace(/\.[^.]+$/, '');
+    if (!Store.availableFonts) Store.availableFonts = [];
+    if (!Store.availableFonts.find(f => f.name === fontName)) Store.availableFonts.push({ name: fontName, url });
+    // ✅ Guardar URL directamente — lida no generateGuestTicket
+    await supabaseRequest('events?id=eq.' + Store.currentEventId, 'PATCH', { ticket_name_font: url }).catch(() => {});
+    const sel = document.getElementById('ticket-name-font');
+    if (sel) {
+      // Remove opção anterior com mesmo nome
+      Array.from(sel.options).forEach(o => { if(o.textContent.includes(fontName)) o.remove(); });
+      const opt = document.createElement('option');
+      opt.value = url; opt.textContent = fontName + ' (carregada)'; opt.selected = true;
+      sel.appendChild(opt);
+    }
+    toast(`✅ Fonte "${fontName}" carregada! Gera um ticket para testar.`);
+    _updateTicketPreview();
+  } catch(e) {
+    toast('Erro ao carregar fonte: ' + e.message);
+    console.error('[TICKET FONT]', e);
   }
-  // ✅ Guardar o URL directamente no ticket_name_font para persistir entre sessões
-  await supabaseRequest('events?id=eq.' + Store.currentEventId, 'PATCH',
-    { ticket_name_font: url }).catch(() => {});
-  // Adicionar ao selector
-  const sel = document.getElementById('ticket-name-font');
-  if (sel) {
-    const opt = document.createElement('option');
-    opt.value = url; // ✅ URL directamente, não "custom:NomeFonte"
-    opt.textContent = fontName + ' (carregada)';
-    opt.selected = true;
-    sel.appendChild(opt);
-  }
-  toast('Fonte carregada e seleccionada!');
-  _updateTicketPreview();
 }
 
 async function saveTicketTemplate() {
@@ -566,6 +574,7 @@ async function generateGuestTicket(guestName, rsvpToken, eventId, skipNameEdit) 
 
     // 3. Escrever nome com a fonte e cor escolhidas
     const fontName = ev.ticket_name_font || 'Helvetica';
+    console.log('[TICKET PDF] ticket_name_font:', fontName);
     const fontMap = {
       'Helvetica': StandardFonts.Helvetica,
       'Helvetica-Bold': StandardFonts.HelveticaBold,
@@ -1710,9 +1719,9 @@ async function openTicketManager() {
     return;
   }
 
-  // Carregar RSVPs confirmados com estado do ticket
+  // Carregar RSVPs confirmados com estado do ticket (inclui companions para nome completo)
   const rsvps = await supabaseRequest(
-    `rsvps?event_id=eq.${eventId}&attending=eq.true&select=guest_name,rsvp_token,ticket_issued,ticket_issued_at,checked_in,is_manual_ticket&order=guest_name&limit=500`
+    `rsvps?event_id=eq.${eventId}&attending=eq.true&select=guest_name,rsvp_token,ticket_issued,ticket_issued_at,checked_in,is_manual_ticket,companions&order=guest_name&limit=500`
   ).catch(() => []) || [];
 
   const issued   = rsvps.filter(r => r.ticket_issued);
@@ -1802,7 +1811,13 @@ async function openTicketManager() {
   document.querySelectorAll('.tm-gen-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const r = rsvps[parseInt(btn.dataset.idx)];
-      if (r) generateGuestTicket(r.guest_name, r.rsvp_token);
+      if (r) {
+        // ✅ Incluir acompanhante no nome do ticket se existir
+        const companions = r.companions;
+        const companionName = Array.isArray(companions) ? companions[0]?.name || companions[0] : (typeof companions === 'string' ? companions : null);
+        const fullName = companionName ? `${r.guest_name} e ${companionName}` : r.guest_name;
+        generateGuestTicket(fullName, r.rsvp_token);
+      }
     });
   });
 
