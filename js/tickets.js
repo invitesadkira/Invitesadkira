@@ -588,22 +588,36 @@ async function generateGuestTicket(guestName, rsvpToken, eventId, skipNameEdit) 
                          fontName.startsWith('http') || 
                          fontName.startsWith('//');
     if (isCustomFont) {
-      // Fonte personalizada — carregar do URL e incorporar no PDF
+      // Fonte personalizada — precisa de fontkit registado no pdf-lib
       try {
+        // Carregar fontkit se ainda não estiver disponível
+        if (!window.fontkit) {
+          await _loadScript('https://unpkg.com/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js');
+        }
+        if (!window.fontkit) throw new Error('fontkit não carregou');
+
+        // Registar fontkit no documento
+        doc.registerFontkit(window.fontkit);
+
         let fontUrl = null;
         if (fontName.startsWith('http') || fontName.startsWith('//')) {
-          fontUrl = fontName; // URL directo
+          fontUrl = fontName;
         } else if (fontName.startsWith('custom:')) {
           const name = fontName.replace('custom:', '');
           const fontRecord = (Store.availableFonts||[]).find(f => f.name === name);
           fontUrl = fontRecord?.url;
+          // Se não encontrou em memória, tentar buscar do evento guardado
+          if (!fontUrl) {
+            console.warn('[TICKET] Fonte não encontrada em Store.availableFonts para:', name);
+          }
         }
         if (fontUrl) {
+          console.log('[TICKET] A carregar fonte de:', fontUrl);
           const fontBytes = await fetch(fontUrl).then(r => r.arrayBuffer());
           font = await doc.embedFont(fontBytes);
-          console.log('[TICKET] Fonte personalizada incorporada:', fontUrl);
+          console.log('[TICKET] ✅ Fonte incorporada com sucesso');
         } else {
-          console.warn('[TICKET] URL da fonte não encontrado para:', fontName);
+          console.warn('[TICKET] URL da fonte não encontrado, usando Helvetica');
           font = await doc.embedFont(StandardFonts.Helvetica);
         }
       } catch(e) {
