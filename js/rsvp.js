@@ -518,6 +518,7 @@ function rsvpOpenFelicitacoes() {
   const ev = Store.guestEventData;
   const evColor = ev?.event_color || '#007f9f';
   const messages = (ev?.confirmations || []).filter(c => c.message && String(c.message).trim());
+  const rsvpEnabled = ev?.rsvp_enabled !== false;
 
   const overlay = document.createElement('div');
   overlay.id = 'felicitacoes-overlay';
@@ -528,10 +529,11 @@ function rsvpOpenFelicitacoes() {
       <span class="fc-quote" style="color:${evColor}">"</span>
       <p class="fc-message">${escapeHTML(item.message)}</p>
       <div class="fc-name" style="color:${evColor}">— ${escapeHTML(item.name)}</div>
+      ${rsvpEnabled ? `
       <span class="fc-attending ${item.attending ? 'fc-yes' : 'fc-no'}" style="display:inline-flex;align-items:center;gap:0.25rem;font-size:0.68rem;font-weight:700;padding:2px 8px;border-radius:999px;margin-top:0.35rem;background:${item.attending?'#dcfce7':'#fee2e2'};color:${item.attending?'#166534':'#991b1b'}">
         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round">${item.attending ? '<polyline points="20 6 9 17 4 12"/>' : '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>'}</svg>
         ${item.attending ? 'Confirmado' : 'Não confirmado'}
-      </span>
+      </span>` : ''}
       ${item.ownerReply ? `<div style="margin-top:0.6rem;padding-top:0.5rem;border-top:1px solid #f3f4f6"><p style="font-size:0.7rem;font-weight:700;color:#9ca3af;margin-bottom:0.15rem">Resposta do organizador</p><p style="font-size:0.8rem;color:#374151;font-style:italic">${escapeHTML(item.ownerReply)}</p></div>` : ''}
     </div>`) .join('') :
     `<div style="text-align:center;padding:3rem 1rem;color:#9ca3af">

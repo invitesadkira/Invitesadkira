@@ -796,10 +796,11 @@ function renderGuestMessageWall(eventData) {
             <span class="fc-quote">"</span>
             <p class="fc-message">${escapeHTML(item.message)}</p>
             <div class="fc-name">${escapeHTML(item.name)}</div>
+            ${eventData.rsvp_enabled !== false ? `
             <span class="felicitation-card fc-attending ${item.attending ? 'fc-yes' : 'fc-no'}" style="background:none;border:none;padding:0;box-shadow:none;border-top:none;margin-top:0.35rem;display:inline-flex">
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="color:${item.attending ? '#166534' : '#991b1b'}"><polyline points="${item.attending ? '20 6 9 17 4 12' : '18 6 6 18 M6 6 18 18'}"/></svg>
               ${item.attending ? 'Confirmado' : 'Não confirmado'}
-            </span>
+            </span>` : ''}
             ${item.ownerReply ? `
               <div style="margin-top:0.75rem;padding-top:0.6rem;border-top:1px solid #e5e7eb">
                 <p style="font-size:0.7rem;font-weight:700;color:#9ca3af;margin-bottom:0.2rem">Resposta do organizador</p>
