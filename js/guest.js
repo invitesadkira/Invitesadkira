@@ -223,12 +223,26 @@ async function renderGuestView() {
     }
   }
 
+  // ── Disparar os 3 pedidos independentes (dates, visuals, venues) em ──
+  // paralelo, em vez de um atrás do outro. Nenhum depende do resultado
+  // dos outros — todos só precisam do id do evento — por isso pedir um
+  // de cada vez só somava latência de rede sem necessidade (bem notado
+  // em ligações lentas: 3 pedidos em fila viram 1 pedido em paralelo).
+  // Os resultados são aplicados a seguir pela MESMA ordem de sempre,
+  // para não alterar nenhuma regra de "quem ganha" em caso de conflito.
+  const _evIdForLoad = eventData.id || Store.currentEventId;
+  const [_datesResult, _visualsResult, _venuesResult] = await Promise.allSettled([
+    loadEventDates(_evIdForLoad),
+    loadEventVisuals(_evIdForLoad),
+    loadEventVenues(_evIdForLoad)
+  ]);
+
   // ── Load date/time from dedicated table BEFORE snapshotting _keepFields ──
   // (must run first: _keepFields below captures these values to protect them
   // from being overwritten by the visuals merge later, so it needs the
   // freshest data, not whatever checkURLForEvent's initial fetch had)
   try {
-    const dates = await loadEventDates(eventData.id || Store.currentEventId);
+    const dates = _datesResult.status === 'fulfilled' ? _datesResult.value : {};
     if (dates.event_date) eventData.date      = dates.event_date;
     if (dates.event_time) eventData.time      = dates.event_time;
     if (dates.show_time)  eventData.show_time = dates.show_time;
@@ -300,7 +314,7 @@ async function renderGuestView() {
   // ✅ DEBUG — rastrear invite_order
   console.log('[ADK invite_order] events table value:', eventData.invite_order);
 
-  const visuals = await loadEventVisuals(eventData.id || Store.currentEventId);
+  const visuals = _visualsResult.status === 'fulfilled' ? _visualsResult.value : {};
   if (visuals && Object.keys(visuals).length > 0) {
     console.log('[ADK invite_order] event_visuals value:', visuals.invite_order);
     Object.keys(visuals).forEach(k => {
@@ -337,9 +351,15 @@ async function renderGuestView() {
       videoEl2.classList.remove('hidden');
       videoEl2.load();
       videoEl2.play().catch(() => {});
-      // Blur de fundo — só activo em tablets/desktops (CSS oculta em mobile)
-      // Só faz sentido quando o vídeo não preenche a largura toda (contain)
-      if (videoBlurEl && videoFit === 'contain') {
+      // Blur de fundo — só activo em tablets/desktops (CSS oculta em mobile
+      // via display:none abaixo de 768px). Antes disto, o JS carregava e
+      // tocava este vídeo em TODOS os ecrãs, incluindo telemóvel — onde
+      // fica sempre invisível — descarregando o vídeo de capa a DOBRAR
+      // para a maioria dos convidados (que abrem o convite no telemóvel).
+      // Agora só se descarrega quando o ecrã é largo o suficiente para o
+      // efeito realmente aparecer, poupando metade do egress de vídeo.
+      const _isWideEnoughForBlur = window.matchMedia('(min-width: 768px)').matches;
+      if (videoBlurEl && videoFit === 'contain' && _isWideEnoughForBlur) {
         videoBlurEl.src = coverVideoUrl;
         videoBlurEl.classList.remove('hidden');
         videoBlurEl.classList.add('blur-active');
@@ -348,6 +368,7 @@ async function renderGuestView() {
       } else if (videoBlurEl) {
         videoBlurEl.classList.add('hidden');
         videoBlurEl.classList.remove('blur-active');
+        videoBlurEl.removeAttribute('src');
       }
       if (heroEl2) heroEl2.style.background = 'none';
     }
@@ -356,7 +377,7 @@ async function renderGuestView() {
   // etc. live ONLY in event_venues, never in the events table, so without this call
   // "Locais do Evento" could never appear no matter how it was configured.
   try {
-    const venues = await loadEventVenues(eventData.id || Store.currentEventId);
+    const venues = _venuesResult.status === 'fulfilled' ? _venuesResult.value : {};
     if (venues && Object.keys(venues).length > 0) {
       Object.keys(venues).forEach(k => {
         if (k !== 'event_id' && k !== 'updated_at' && venues[k] !== null && venues[k] !== undefined) {
