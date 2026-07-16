@@ -725,7 +725,7 @@ async function renderGuestView() {
   renderGuestMessageWall(eventData);
 }
 
-async function replyToGuestMessage(guestName, currentReply, eventId) {
+async function replyToGuestMessage(guestName, currentReply, eventId, guestMessage) {
   const evId = eventId || Store.currentEventId;
   const modal = document.createElement('div');
   modal.className = 'modal-overlay';
@@ -733,6 +733,10 @@ async function replyToGuestMessage(guestName, currentReply, eventId) {
     <div class="modal-content bg-white rounded-2xl p-6" style="max-width:420px">
       <h3 class="text-base font-bold text-gray-800 mb-1">Responder a ${escapeHTML(guestName)}</h3>
       <p class="text-xs text-gray-400 mb-3">A resposta aparece visível por baixo do recado, no mural de mensagens.</p>
+      <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:0.6rem;padding:0.7rem;margin-bottom:0.8rem">
+        <p class="text-xs font-semibold text-gray-500 mb-1">Recado de ${escapeHTML(guestName)}:</p>
+        <p class="text-sm text-gray-700" style="white-space:pre-wrap">${escapeHTML(guestMessage || '(sem texto)')}</p>
+      </div>
       <textarea id="owner-reply-text" class="input-field" rows="3" placeholder="Escreva a sua resposta...">${escapeHTML(currentReply || '')}</textarea>
       <div class="flex gap-2 mt-3">
         <button class="flex-1 btn-main" onclick="(async ()=>{
@@ -809,7 +813,7 @@ function renderGuestMessageWall(eventData) {
               </div>` : ''}
             ${(Store.currentUser && (Store.currentUser.role === 'admin' || Store.currentUser.id === (Store.events.find(e=>e.id===Store.currentEventId)||{}).user_id)) ? `
               <div style="margin-top:0.6rem;text-align:right">
-                <button onclick="replyToGuestMessage('${escapeHTML(item.name).replace(/'/g,"\\'")}','${escapeHTML(item.ownerReply||'').replace(/'/g,"\\'")}','${Store.currentEventId}')"
+                <button onclick="replyToGuestMessage('${escapeHTML(item.name).replace(/'/g,"\\'")}','${escapeHTML(item.ownerReply||'').replace(/'/g,"\\'")}','${Store.currentEventId}','${escapeHTML(item.message||'').replace(/'/g,"\\'")}')"
                   style="font-size:0.7rem;color:${evColor};font-weight:700;background:none;border:1px solid ${evColor}33;border-radius:999px;padding:0.2rem 0.7rem;cursor:pointer">
                   ${item.ownerReply ? '✏️ Editar resposta' : '↩ Responder'}
                 </button>

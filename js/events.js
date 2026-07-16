@@ -1439,7 +1439,8 @@ function renderEventDetails() {
       if (c.message && isOwner) {
         const safeReplyName = escapeHTML(c.name || '').replace(/'/g, "\\'");
         const safeReplyText = escapeHTML(c.owner_reply || '').replace(/'/g, "\\'");
-        replyMessageBtn = '<button class="text-teal-500 hover:text-teal-600 transition p-1" title="Responder recado" onclick="replyToGuestMessage(\'' + safeReplyName + '\',\'' + safeReplyText + '\',\'' + event.id + '\')"><i data-lucide="message-square" class="w-4 h-4"></i></button>';
+        const safeGuestMsg = escapeHTML(c.message || '').replace(/'/g, "\\'");
+        replyMessageBtn = '<button class="text-teal-500 hover:text-teal-600 transition p-1" title="Responder recado" onclick="replyToGuestMessage(\'' + safeReplyName + '\',\'' + safeReplyText + '\',\'' + event.id + '\',\'' + safeGuestMsg + '\')"><i data-lucide="message-square" class="w-4 h-4"></i></button>';
       }
       
       const sideLabel = getSideLabel(c.side, event);
