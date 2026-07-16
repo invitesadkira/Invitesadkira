@@ -56,6 +56,21 @@ const MIGRATION_TABLES = [
 // nas tabelas (depois de reescritos) apontarem para o sítio certo.
 const MIGRATION_BUCKETS = ['event-covers', 'event-videos', 'event-music', 'ticket-templates', 'event-media'];
 
+// Algumas tabelas não têm "id" como chave primária/coluna — usam "event_id"
+// ou "key" directamente. Isto é usado tanto para EXPORTAR (para não pedir
+// "order by id" numa coluna que não existe — isso fazia o pedido falhar
+// silenciosamente e a tabela ficava vazia no backup, sem nenhum aviso
+// visível) como para IMPORTAR (on_conflict correcto, para o upsert
+// funcionar em vez de ser sempre rejeitado).
+const MIGRATION_KEY_COLUMN = {
+  event_dates: 'event_id',
+  event_visuals: 'event_id',
+  event_venues: 'event_id',
+  site_config: 'key',
+  guest_links: 'code',
+  intake_tokens: 'token',
+};
+
 function openMigrationTool() {
   if (!Store.currentUser || Store.currentUser.role !== 'admin') return;
   document.getElementById('migration-modal')?.remove();
@@ -70,15 +85,27 @@ function openMigrationTool() {
         em 3 passos. O projecto novo fica independente do actual no final.
       </p>
 
+      <div style="border:1px solid #f59e0b;background:#fffbeb;border-radius:0.6rem;padding:0.9rem;margin-bottom:0.9rem">
+        <h4 class="text-sm font-bold text-gray-700 mb-2">Projecto ANTIGO (de onde vêm os dados)</h4>
+        <p class="text-xs text-gray-500 mb-2">
+          Preenche sempre estes campos, independentemente de para onde o site esteja configurado neste momento
+          (<code>js/config.js</code>) — assim a exportação nunca depende disso.
+        </p>
+        <label class="text-xs font-semibold text-gray-600 block mb-1">URL do projecto antigo</label>
+        <input id="migration-old-url" class="input-field text-sm mb-2" placeholder="https://xxxx.supabase.co">
+        <label class="text-xs font-semibold text-gray-600 block mb-1">Anon Key do projecto antigo</label>
+        <input id="migration-old-key" class="input-field text-sm" placeholder="a anon key (pública) do projecto antigo">
+      </div>
+
       <div style="border:1px solid #e5e7eb;border-radius:0.6rem;padding:0.9rem;margin-bottom:0.9rem">
-        <h4 class="text-sm font-bold text-gray-700 mb-2">1. Exportar dados deste projecto</h4>
+        <h4 class="text-sm font-bold text-gray-700 mb-2">1. Exportar dados do projecto antigo</h4>
         <button class="btn-main text-sm w-full" onclick="migrationExport()">📤 Descarregar backup (.txt)</button>
         <div id="migration-export-log" class="text-xs text-gray-500 mt-2 whitespace-pre-wrap" style="max-height:140px;overflow-y:auto;font-family:monospace"></div>
       </div>
 
       <div style="border:1px solid #e5e7eb;border-radius:0.6rem;padding:0.9rem;margin-bottom:0.9rem">
-        <h4 class="text-sm font-bold text-gray-700 mb-2">2. Copiar fotos, vídeos e áudio</h4>
-        <p class="text-xs text-gray-500 mb-2">Copia todos os ficheiros deste projecto para o projecto novo (usa os campos do passo 3 abaixo — preenche-os primeiro). Pode demorar alguns minutos.</p>
+        <h4 class="text-sm font-bold text-gray-700 mb-2">2. Copiar fotos, vídeos e áudio (antigo → novo)</h4>
+        <p class="text-xs text-gray-500 mb-2">Copia todos os ficheiros do projecto antigo para o novo (usa os campos preenchidos acima e abaixo). Pode demorar alguns minutos.</p>
         <button class="btn-main text-sm w-full" onclick="migrationCopyFiles()">🖼️ Copiar ficheiros</button>
         <div id="migration-files-log" class="text-xs text-gray-500 mt-2 whitespace-pre-wrap" style="max-height:160px;overflow-y:auto;font-family:monospace"></div>
       </div>
@@ -121,18 +148,23 @@ async function migrationExport() {
   const logId = 'migration-export-log';
   const logEl = document.getElementById(logId);
   if (logEl) logEl.textContent = '';
-  _migLog(logId, 'A iniciar exportação...');
+
+  const oldUrl = document.getElementById('migration-old-url').value.trim().replace(/\/$/, '');
+  const oldKey = document.getElementById('migration-old-key').value.trim();
+  if (!oldUrl || !oldKey) { toast('Preenche primeiro o URL e a Anon Key do projecto ANTIGO, no topo.'); return; }
+
+  _migLog(logId, `A iniciar exportação de ${oldUrl}...`);
 
   const backup = {
     exported_at: new Date().toISOString(),
-    source_url: SUPABASE_URL,
+    source_url: oldUrl,
     tables: {}
   };
   let totalRows = 0;
 
   for (const table of MIGRATION_TABLES) {
     try {
-      const rows = await _migFetchAllRows(table);
+      const rows = await _migFetchAllRows(oldUrl, oldKey, table);
       backup.tables[table] = rows;
       totalRows += rows.length;
       _migLog(logId, `✅ ${table}: ${rows.length} registo(s)`);
@@ -159,14 +191,24 @@ async function migrationExport() {
   toast('Backup descarregado!');
 }
 
-// Percorre uma tabela do projecto ACTUAL em páginas de 1000, usando a
-// sessão do admin já autenticado (a mesma que o resto do site usa).
-async function _migFetchAllRows(table) {
+// Percorre uma tabela do projecto ANTIGO em páginas de 1000, usando o URL
+// e a Anon Key introduzidos nos campos do topo (não depende do config.js).
+async function _migFetchAllRows(oldUrl, oldKey, table) {
   const pageSize = 1000;
+  const orderCol = MIGRATION_KEY_COLUMN[table] || 'id';
   let offset = 0;
   let all = [];
+  const headers = { 'apikey': oldKey, 'Authorization': `Bearer ${oldKey}`, 'Accept': 'application/json' };
   while (true) {
-    const rows = await supabaseRequest(`${table}?select=*&order=id.asc&limit=${pageSize}&offset=${offset}`);
+    let res = await fetch(`${oldUrl}/rest/v1/${table}?select=*&order=${orderCol}.asc&limit=${pageSize}&offset=${offset}`, { headers });
+    if (!res.ok) {
+      // A coluna assumida para ordenar pode não existir nesta tabela —
+      // tenta outra vez sem nenhuma ordenação, em vez de desistir e deixar
+      // a tabela vazia no backup sem se perceber porquê.
+      res = await fetch(`${oldUrl}/rest/v1/${table}?select=*&limit=${pageSize}&offset=${offset}`, { headers });
+    }
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const rows = await res.json();
     if (!Array.isArray(rows) || rows.length === 0) break;
     all = all.concat(rows);
     if (rows.length < pageSize) break;
@@ -176,16 +218,16 @@ async function _migFetchAllRows(table) {
 }
 
 // ===================== COPIAR FICHEIROS (STORAGE) =====================
-// Lista todos os ficheiros de um "balde" (bucket) do projecto ACTUAL,
+// Lista todos os ficheiros de um "balde" (bucket) do projecto ANTIGO,
 // paginando 200 a 200.
-async function _migListAllFiles(bucket) {
+async function _migListAllFiles(oldUrl, oldKey, bucket) {
   const pageSize = 200;
   let offset = 0;
   let all = [];
   while (true) {
-    const res = await fetch(`${SUPABASE_URL}/storage/v1/object/list/${bucket}`, {
+    const res = await fetch(`${oldUrl}/storage/v1/object/list/${bucket}`, {
       method: 'POST',
-      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/json' },
+      headers: { 'apikey': oldKey, 'Authorization': `Bearer ${oldKey}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ limit: pageSize, offset, prefix: '' })
     });
     if (!res.ok) break;
@@ -204,10 +246,13 @@ async function migrationCopyFiles() {
   const logEl = document.getElementById(logId);
   if (logEl) logEl.textContent = '';
 
+  const oldUrl = document.getElementById('migration-old-url').value.trim().replace(/\/$/, '');
+  const oldKey = document.getElementById('migration-old-key').value.trim();
   const newUrl = document.getElementById('migration-new-url').value.trim().replace(/\/$/, '');
   const newKey = document.getElementById('migration-new-key').value.trim();
+  if (!oldUrl || !oldKey) { toast('Preenche primeiro o URL e a Anon Key do projecto ANTIGO, no topo.'); return; }
   if (!newUrl || !newKey) { toast('Preenche primeiro o URL e a Service Role Key do projecto novo (passo 3).'); return; }
-  if (!confirm(`Vais copiar todas as fotos/vídeos/áudio deste projecto para:\n${newUrl}\n\nPode demorar alguns minutos. Continuar?`)) return;
+  if (!confirm(`Vais copiar todas as fotos/vídeos/áudio de:\n${oldUrl}\npara:\n${newUrl}\n\nPode demorar alguns minutos. Continuar?`)) return;
 
   _migLog(logId, 'A listar ficheiros...');
   let totalFiles = 0, totalBytes = 0;
@@ -215,14 +260,14 @@ async function migrationCopyFiles() {
 
   for (const bucket of MIGRATION_BUCKETS) {
     let files;
-    try { files = await _migListAllFiles(bucket); }
+    try { files = await _migListAllFiles(oldUrl, oldKey, bucket); }
     catch (e) { _migLog(logId, `⚠️ ${bucket}: não foi possível listar (${e.message})`); continue; }
     if (!files.length) { _migLog(logId, `— ${bucket}: vazio ou não existe, a saltar`); continue; }
     _migLog(logId, `${bucket}: ${files.length} ficheiro(s) encontrados`);
 
     for (const f of files) {
       const path = f.name;
-      const publicUrl = `${SUPABASE_URL}/storage/v1/object/public/${bucket}/${path}`;
+      const publicUrl = `${oldUrl}/storage/v1/object/public/${bucket}/${path}`;
       try {
         const fileRes = await fetch(publicUrl);
         if (!fileRes.ok) throw new Error('download falhou: HTTP ' + fileRes.status);
@@ -338,16 +383,26 @@ async function migrationImport() {
   toast('Importação terminada — vê o registo abaixo.');
 }
 
-// Importa uma tabela em lotes de 500, com upsert (on_conflict=id) para ser
-// seguro repetir sem duplicar caso a importação seja corrida mais de uma
-// vez. Devolve as linhas que falharam, para se tentar de novo depois.
+// Importa uma tabela em lotes de 500, com upsert (on_conflict pela chave
+// primária certa de cada tabela) para ser seguro repetir sem duplicar caso
+// a importação seja corrida mais de uma vez. Devolve as linhas que
+// falharam, para se tentar de novo depois.
+//
+// Auto-defesa: se a chave de conflito assumida (da lista partilhada no
+// topo do ficheiro, ou "id" por omissão) estiver errada para alguma tabela
+// que ainda não conhecemos bem, o Postgres recusa com um erro específico
+// ("no unique or exclusion constraint..."). Nesse caso, tenta-se
+// automaticamente o mesmo lote como inserção simples (sem upsert) — seguro
+// porque a importação é sempre para um projecto novo/vazio, não há nada
+// para entrar em conflito à primeira vez.
 async function _migImportTable(newUrl, newKey, table, rows, logId) {
   const BATCH = 500;
+  const conflictKey = MIGRATION_KEY_COLUMN[table] || 'id';
   const failed = [];
   for (let i = 0; i < rows.length; i += BATCH) {
     const batch = rows.slice(i, i + BATCH);
     try {
-      const res = await fetch(`${newUrl}/rest/v1/${table}?on_conflict=id`, {
+      let res = await fetch(`${newUrl}/rest/v1/${table}?on_conflict=${conflictKey}`, {
         method: 'POST',
         headers: {
           'apikey': newKey,
@@ -357,6 +412,28 @@ async function _migImportTable(newUrl, newKey, table, rows, logId) {
         },
         body: JSON.stringify(batch)
       });
+
+      if (!res.ok) {
+        const firstErrText = await res.text().catch(() => '');
+        if (/no unique or exclusion constraint/i.test(firstErrText)) {
+          _migLog(logId, `  ↻ ${table}: chave "${conflictKey}" não é a certa aqui, a tentar inserção simples...`);
+          res = await fetch(`${newUrl}/rest/v1/${table}`, {
+            method: 'POST',
+            headers: {
+              'apikey': newKey,
+              'Authorization': `Bearer ${newKey}`,
+              'Content-Type': 'application/json',
+              'Prefer': 'return=minimal'
+            },
+            body: JSON.stringify(batch)
+          });
+        } else {
+          failed.push(...batch);
+          _migLog(logId, `  ⚠️ ${table} [${i}-${i + batch.length}]: HTTP ${res.status} — ${firstErrText.slice(0, 150)}`);
+          continue;
+        }
+      }
+
       if (!res.ok) {
         const errText = await res.text().catch(() => res.statusText);
         failed.push(...batch);

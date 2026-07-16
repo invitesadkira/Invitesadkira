@@ -1,6 +1,6 @@
 // ===================== SUPABASE CONFIG =====================
-const SUPABASE_URL = 'https://kdvgqjpwizplvvlggjtx.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtkdmdxanB3aXpwbHZ2bGdnanR4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA5NDMyMTgsImV4cCI6MjA5NjUxOTIxOH0.E-uDSHQopiDBbRqSUd-fjnz-ONiQGuTOLhdj2uvmVes';
+const SUPABASE_URL = 'https://rirmsuplwpftsjqpektn.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJpcm1zdXBsd3BmdHNqcXBla3RuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQxNzg0ODYsImV4cCI6MjA5OTc1NDQ4Nn0.NOLuNG4Q-XtkMFe_FK4IulNp5RmeBi4Wh8WHP-h0iVc';
 
 // ── Cache do lado do cliente ─────────────────────────────────────────────
 // Convidados que reentram no site dentro de 10 min não fazem pedidos novos
