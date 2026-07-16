@@ -2574,8 +2574,10 @@ function saveConfirmationEdit(confIndex, modal) {
   const conf = ev.confirmations[confIndex];
   
   conf.name = document.getElementById('edit-conf-name').value.trim() || conf.name;
-  conf.attending = document.querySelector('input[name="edit-conf-attending"]:checked').value === 'yes';
-  conf.side = document.querySelector('input[name="edit-conf-side"]:checked').value;
+  const attendingChecked = document.querySelector('input[name="edit-conf-attending"]:checked');
+  if (attendingChecked) conf.attending = attendingChecked.value === 'yes';
+  const sideChecked = document.querySelector('input[name="edit-conf-side"]:checked');
+  if (sideChecked) conf.side = sideChecked.value;
   
   // Recolher acompanhantes atualizados - APENAS os que têm valor
   const companionInputs = document.querySelectorAll('#edit-companions-list [data-edit-companion], #edit-companions-list input[placeholder*="acompanhante"]');

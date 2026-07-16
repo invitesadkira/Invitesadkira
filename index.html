@@ -16,14 +16,14 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script>tailwind.config = { theme: { extend: { colors: { teal: { 500: '#007f9f', 600: '#006b86' } } } } }</script>
   <!-- QRCode local — sem CDN -->
-  <script src="js/qrcode-mini.js?v=1784199780"></script>
-  <script src="js/icons.js?v=1784199780"></script>
+  <script src="js/qrcode-mini.js?v=1784201281"></script>
+  <script src="js/icons.js?v=1784201281"></script>
   <!-- PDF libs — carregadas lazily apenas quando necessário -->
   <!-- jsPDF: carregado por _loadJsPDF() antes de gerar relatórios -->
   <!-- pdf-lib: carregado por _loadPdfLib() antes de gerar tickets -->
   <!-- pdf.js: carregado por _loadPdfJs() antes de pré-visualizar templates -->
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💌</text></svg>">
-  <link rel="stylesheet" href="css/main.css?v=1784199780">
+  <link rel="stylesheet" href="css/main.css?v=1784201281">
 </head>
 <body class="h-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
 
@@ -1568,7 +1568,7 @@ para testemunhar o seu enlace matrimonial</textarea>
         <button class="btn-outline text-sm" onclick="viewAsGuest()"> <span class="flex items-center gap-1"><i data-lucide="eye" class="w-4 h-4"></i> Ver como Convidado</span> </button> <button class="btn-outline text-sm" onclick="downloadGuestListCSV()"> <span class="flex items-center gap-1"><i data-lucide="users" class="w-4 h-4"></i> Exportar Lista</span> </button> <button id="btn-manage-intake" class="btn-outline text-sm hidden" onclick="openIntakeManager(Store.currentEventId)"> <span class="flex items-center gap-1"><i data-lucide="link" class="w-4 h-4"></i> Links Cliente</span> </button> <button class="btn-outline text-sm" onclick="downloadPDF()"> <span class="flex items-center gap-1"><i data-lucide="download" class="w-4 h-4"></i> Baixar PDF</span> </button> <button id="btn-download-gifts-pdf" class="btn-outline text-sm hidden" onclick="downloadGiftsPDF()"> <span class="flex items-center gap-1"><i data-lucide="download" class="w-4 h-4"></i> Baixar Presentes PDF</span> </button> <button id="btn-manage-gifts" class="btn-outline text-sm hidden" onclick="manageGifts()"> <span class="flex items-center gap-1"><i data-lucide="gift" class="w-4 h-4"></i> Editar Presentes</span> </button> <button id="btn-upload-gifts" class="btn-outline text-sm hidden" onclick="showUploadGiftsListModal()"> <span class="flex items-center gap-1"><i data-lucide="upload" class="w-4 h-4"></i> Carregar Presentes</span> </button> <button class="btn-outline text-sm" onclick="editEventURL(Store.currentEventId)"> <span class="flex items-center gap-1"><i data-lucide="link" class="w-4 h-4"></i> Trocar Código</span> </button> <button class="btn-outline text-sm" style="background:#fdf4ff;border-color:#d946ef" onclick="openTicketTemplateEditor()"> <span class="flex items-center gap-1"><i data-lucide="ticket" class="w-4 h-4"></i> Template Ticket</span> </button> <button class="btn-outline text-sm" style="background:#f5f3ff;border-color:#8b5cf6" onclick="openTicketManager()"> <span class="flex items-center gap-1"><i data-lucide="ticket-check" class="w-4 h-4"></i> Gerir Tickets</span> </button> <button class="btn-outline text-sm" style="background:#f0fdf4;border-color:#4ade80" onclick="showScannerToken()"> <span class="flex items-center gap-1"><i data-lucide="scan-line" class="w-4 h-4"></i> Scanner Porta</span> </button> <button class="btn-outline text-sm" onclick="editEventWithLockCheck()"> <span class="flex items-center gap-1"><i data-lucide="pencil" class="w-4 h-4"></i> Editar</span> </button> <button class="btn-outline text-sm" style="background:#fef3c7;border-color:#fbbf24" onclick="openStdEditor()"> <span class="flex items-center gap-1"><i data-lucide="heart" class="w-4 h-4"></i> Save the Date</span> </button> <button class="btn-outline text-sm" style="background:#e0f2fe;border-color:#7dd3fc" onclick="openDressGiftsEditor()"> <span class="flex items-center gap-1"><i data-lucide="shirt" class="w-4 h-4"></i> Dress Code + Presentes</span> </button> <button id="btn-example-event" class="btn-outline text-sm hidden" style="background:#ede9fe;border-color:#a78bfa" onclick="adminToggleExampleEvent()"> <span class="flex items-center gap-1"><i data-lucide="star" class="w-4 h-4"></i> <span id="btn-example-event-label">Marcar como Exemplo</span></span> </button> <button id="btn-delete-event" class="bg-red-500 hover:bg-red-600 text-white text-sm rounded-lg py-2 px-3 font-semibold transition hidden" onclick="deleteEventModal()"> <span class="flex items-center gap-1"><i data-lucide="trash-2" class="w-4 h-4"></i> Eliminar</span> </button>
        </div><!-- Stats -->
        <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6" id="detail-stats"></div><!-- Confirmations List -->
-       <h3 class="font-bold text-gray-700 mb-3">Confirmações</h3>
+       <h3 class="font-bold text-gray-700 mb-3" id="detail-confirmations-title">Confirmações</h3>
        <div id="detail-confirmations"></div>
       </div>
      </div>
@@ -1840,22 +1840,22 @@ para testemunhar o seu enlace matrimonial</textarea>
   </a>
 
   <!-- ===================== SCRIPTS (ordem importa) ===================== -->
-  <script src="js/config.js?v=1784199780"></script>
-  <script src="js/store.js?v=1784199780"></script>
-  <script src="js/visuals.js?v=1784199780"></script>
-  <script src="js/venues.js?v=1784199780"></script>
-  <script src="js/rsvp.js?v=1784199780"></script>
-  <script src="js/ui.js?v=1784199780"></script>
-  <script src="js/auth.js?v=1784199780"></script>
-  <script src="js/dashboard.js?v=1784199780"></script>
-  <script src="js/events.js?v=1784199780"></script>
-  <script src="js/intake-wizard.js?v=1784199780"></script>
-  <script src="js/tickets.js?v=1784199780"></script>
-  <script src="js/guest.js?v=1784199780"></script>
-  <script src="js/sections.js?v=1784199780"></script>
-  <script src="js/admin.js?v=1784199780"></script>
-  <script src="js/migration.js?v=1784199780"></script>
-  <script src="js/router.js?v=1784199780"></script>
+  <script src="js/config.js?v=1784201281"></script>
+  <script src="js/store.js?v=1784201281"></script>
+  <script src="js/visuals.js?v=1784201281"></script>
+  <script src="js/venues.js?v=1784201281"></script>
+  <script src="js/rsvp.js?v=1784201281"></script>
+  <script src="js/ui.js?v=1784201281"></script>
+  <script src="js/auth.js?v=1784201281"></script>
+  <script src="js/dashboard.js?v=1784201281"></script>
+  <script src="js/events.js?v=1784201281"></script>
+  <script src="js/intake-wizard.js?v=1784201281"></script>
+  <script src="js/tickets.js?v=1784201281"></script>
+  <script src="js/guest.js?v=1784201281"></script>
+  <script src="js/sections.js?v=1784201281"></script>
+  <script src="js/admin.js?v=1784201281"></script>
+  <script src="js/migration.js?v=1784201281"></script>
+  <script src="js/router.js?v=1784201281"></script>
 
 </body>
 </html>

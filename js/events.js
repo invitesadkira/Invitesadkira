@@ -1351,15 +1351,28 @@ function renderEventDetails() {
   });
 
   const stats = [];
-  if (hasSides) {
-    stats.push({ label: sideNames.side1, value: side1Total, color: 'bg-teal-50 text-teal-600', icon: 'users' });
-    stats.push({ label: sideNames.side2, value: side2Total, color: 'bg-blue-50 text-blue-600', icon: 'users' });
+  const _rsvpIsEnabled = event.rsvp_enabled !== false;
+  if (_rsvpIsEnabled) {
+    if (hasSides) {
+      stats.push({ label: sideNames.side1, value: side1Total, color: 'bg-teal-50 text-teal-600', icon: 'users' });
+      stats.push({ label: sideNames.side2, value: side2Total, color: 'bg-blue-50 text-blue-600', icon: 'users' });
+    }
+    stats.push(
+      { label: 'Confirmados', value: confirmed.length, color: 'bg-green-50 text-green-600', icon: 'check-circle' },
+      { label: 'Não Comparecem', value: declined.length, color: 'bg-red-50 text-red-600', icon: 'x-circle' },
+      { label: 'Total de Pessoas', value: totalPeople, color: 'bg-indigo-50 text-indigo-600', icon: 'users' }
+    );
+  } else {
+    // ✅ Este evento não tem confirmação de presença activada — ninguém
+    // pôde realmente "confirmar" ou "recusar" nada. As linhas em
+    // `confirmations` aqui são só recados deixados livremente (o
+    // attending:false é só um valor técnico de preenchimento da coluna,
+    // não uma resposta real). Mostrar isso como "Não Comparecem" confundia
+    // o organizador — agora mostra-se apenas a contagem de recados.
+    stats.push({ label: 'Recados', value: confirmations.length, color: 'bg-teal-50 text-teal-600', icon: 'message-square' });
   }
-  stats.push(
-    { label: 'Confirmados', value: confirmed.length, color: 'bg-green-50 text-green-600', icon: 'check-circle' },
-    { label: 'Não Comparecem', value: declined.length, color: 'bg-red-50 text-red-600', icon: 'x-circle' },
-    { label: 'Total de Pessoas', value: totalPeople, color: 'bg-indigo-50 text-indigo-600', icon: 'users' }
-  );
+  const _confTitleEl = document.getElementById('detail-confirmations-title');
+  if (_confTitleEl) _confTitleEl.textContent = _rsvpIsEnabled ? 'Confirmações' : 'Recados';
   document.getElementById('detail-stats').innerHTML = stats.map(s => '<div class="stat-card ' + s.color + ' rounded-xl p-4 text-center"><i data-lucide="' + s.icon + '" class="w-5 h-5 mx-auto mb-1"></i><div class="text-2xl font-bold">' + s.value + '</div><div class="text-xs font-semibold mt-1">' + s.label + '</div></div>').join('');
 
 
@@ -1418,14 +1431,15 @@ function renderEventDetails() {
         actionButtons += '<button class="text-gray-400 hover:text-red-500 transition p-1" onclick="deleteConfirmation(' + idx + ')"><i data-lucide="trash-2" class="w-4 h-4"></i></button>';
         actionButtons += '</div>';
       }
-      
       let removeGiftBtn = '';
       if (hasReservedGift && isOwner) {
         removeGiftBtn = '<button class="text-yellow-500 hover:text-yellow-600 transition p-1" title="Remover presente reservado" onclick="removeGiftReservation(\'' + reservedGift.id + '\', \'' + reservedGiftNameEncoded + '\')"><i data-lucide="gift" class="w-5 h-5"></i></button>';
       }
       let replyMessageBtn = '';
       if (c.message && isOwner) {
-        replyMessageBtn = '<button class="text-teal-500 hover:text-teal-600 transition p-1" title="Responder recado" onclick="replyToGuestMessage(' + idx + ')"><i data-lucide="message-square" class="w-4 h-4"></i></button>';
+        const safeReplyName = escapeHTML(c.name || '').replace(/'/g, "\\'");
+        const safeReplyText = escapeHTML(c.owner_reply || '').replace(/'/g, "\\'");
+        replyMessageBtn = '<button class="text-teal-500 hover:text-teal-600 transition p-1" title="Responder recado" onclick="replyToGuestMessage(\'' + safeReplyName + '\',\'' + safeReplyText + '\',\'' + event.id + '\')"><i data-lucide="message-square" class="w-4 h-4"></i></button>';
       }
       
       const sideLabel = getSideLabel(c.side, event);
@@ -1439,7 +1453,13 @@ function renderEventDetails() {
         ((c.kids || []).length ? 'Crianças: ' + safeKids : ''),
         (hasReservedGift ? safeGiftName : '')
       ].filter(Boolean).join(' · ');
-      return '<div class="flex items-center gap-3 p-3 rounded-xl ' + (c.attending ? 'bg-green-50' : 'bg-red-50') + ' mb-2 ' + (isNew ? 'border-2 border-green-300' : '') + '"><div class="w-9 h-9 rounded-full ' + (c.attending ? 'bg-green-200 text-green-700' : 'bg-red-200 text-red-600') + ' flex items-center justify-center font-bold text-sm">' + escapeHTML((c.name || '?').charAt(0)) + '</div><div class="flex-1 min-w-0"><p class="font-semibold text-gray-800 text-sm truncate">' + safeName + newBadge + '</p><p class="text-xs text-gray-500">' + details + '</p></div><span class="text-xs font-semibold ' + (c.attending ? 'text-green-600' : 'text-red-500') + ' mr-2">' + (c.attending ? 'Vai' : 'Não vai') + '</span><div class="flex gap-1">' + removeGiftBtn + replyMessageBtn + (c.attending && c.rsvpToken && isOwner ? '<button class="ticket-gen-btn text-gray-400 hover:text-purple-500 transition p-1" data-name="' + escapeHTML(c.name || '').replace(/"/g, '&quot;') + '" data-token="' + escapeHTML(c.rsvpToken || '') + '" title="' + (c.ticketIssued ? 'Ticket emitido — Gerar novamente' : 'Gerar Ticket PDF') + '"><i data-lucide="ticket" class="w-4 h-4" style="color:' + (c.ticketIssued ? '#7c3aed' : 'currentColor') + '"></i></button>' : '') + (isOwner ? '<button class="text-gray-400 hover:text-teal-500 transition p-1" onclick="editConfirmationModal(' + idx + ')"><i data-lucide="pencil" class="w-4 h-4"></i></button><button class="text-gray-400 hover:text-red-500 transition p-1" onclick="deleteConfirmation(' + idx + ')"><i data-lucide="trash-2" class="w-4 h-4"></i></button>' : '') + '</div></div>';
+      const _rowIsRsvp = _rsvpIsEnabled;
+      const _rowBg = _rowIsRsvp ? (c.attending ? 'bg-green-50' : 'bg-red-50') : 'bg-gray-50';
+      const _rowAvatarColor = _rowIsRsvp ? (c.attending ? 'bg-green-200 text-green-700' : 'bg-red-200 text-red-600') : 'bg-gray-200 text-gray-600';
+      const _rowAttendingBadge = _rowIsRsvp ? ('<span class="text-xs font-semibold ' + (c.attending ? 'text-green-600' : 'text-red-500') + ' mr-2">' + (c.attending ? 'Vai' : 'Não vai') + '</span>') : '';
+      const _editBtn = (isOwner && _rowIsRsvp) ? '<button class="text-gray-400 hover:text-teal-500 transition p-1" onclick="editConfirmationModal(' + idx + ')"><i data-lucide="pencil" class="w-4 h-4"></i></button>' : '';
+      const _deleteBtn = isOwner ? '<button class="text-gray-400 hover:text-red-500 transition p-1" onclick="deleteConfirmation(' + idx + ')"><i data-lucide="trash-2" class="w-4 h-4"></i></button>' : '';
+      return '<div class="flex items-center gap-3 p-3 rounded-xl ' + _rowBg + ' mb-2 ' + (isNew ? 'border-2 border-green-300' : '') + '"><div class="w-9 h-9 rounded-full ' + _rowAvatarColor + ' flex items-center justify-center font-bold text-sm">' + escapeHTML((c.name || '?').charAt(0)) + '</div><div class="flex-1 min-w-0"><p class="font-semibold text-gray-800 text-sm truncate">' + safeName + newBadge + '</p><p class="text-xs text-gray-500">' + details + '</p></div>' + _rowAttendingBadge + '<div class="flex gap-1">' + removeGiftBtn + replyMessageBtn + (c.attending && c.rsvpToken && isOwner ? '<button class="ticket-gen-btn text-gray-400 hover:text-purple-500 transition p-1" data-name="' + escapeHTML(c.name || '').replace(/"/g, '&quot;') + '" data-token="' + escapeHTML(c.rsvpToken || '') + '" title="' + (c.ticketIssued ? 'Ticket emitido — Gerar novamente' : 'Gerar Ticket PDF') + '"><i data-lucide="ticket" class="w-4 h-4" style="color:' + (c.ticketIssued ? '#7c3aed' : 'currentColor') + '"></i></button>' : '') + _editBtn + _deleteBtn + '</div></div>';
     }).join('');
   }
 
