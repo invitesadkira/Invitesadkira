@@ -215,7 +215,7 @@ async function handleTicketTemplateUpload(input) {
         'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
         'Content-Type': 'application/pdf',
         'x-upsert': 'true',
-        'Cache-Control': '3600',
+        'Cache-Control': '2592000',
       },
       body: file,
     });
@@ -413,7 +413,7 @@ async function handleTicketFontUpload(input) {
     const fileName = `font_ticket_${Date.now()}_${safeName}`;
     const res = await fetch(`${SUPABASE_URL}/storage/v1/object/event-covers/${fileName}`, {
       method: 'POST',
-      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/octet-stream', 'x-upsert': 'true' },
+      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/octet-stream', 'x-upsert': 'true', 'Cache-Control': '2592000' },
       body: file
     });
     if (!res.ok) throw new Error(await res.text());

@@ -342,7 +342,7 @@ async function handleCoverVideoUpload(input) {
     const fileName = `cover_video_${Date.now()}.${ext}`;
     const res = await fetch(`${SUPABASE_URL}/storage/v1/object/event-videos/${fileName}`, {
       method: 'POST',
-      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': file.type || 'video/mp4', 'x-upsert': 'true' },
+      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': file.type || 'video/mp4', 'x-upsert': 'true', 'Cache-Control': '2592000' },
       body: file
     });
     if (!res.ok) throw new Error(await res.text());
@@ -1438,7 +1438,7 @@ async function handleSigFontUpload(input) {
     const fileName = `font_${originalName}_${Date.now()}.${ext}`;
     const res = await fetch(`${SUPABASE_URL}/storage/v1/object/event-covers/${fileName}`, {
       method: 'POST',
-      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/octet-stream', 'x-upsert': 'true' },
+      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/octet-stream', 'x-upsert': 'true', 'Cache-Control': '2592000' },
       body: file
     });
     if (!res.ok) throw new Error(await res.text());
@@ -1468,7 +1468,7 @@ async function handleCouplemsgBodyFontUpload(input) {
     const fileName = `font_${originalName}_${Date.now()}.${ext}`;
     const res = await fetch(`${SUPABASE_URL}/storage/v1/object/event-covers/${fileName}`, {
       method: 'POST',
-      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/octet-stream', 'x-upsert': 'true' },
+      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/octet-stream', 'x-upsert': 'true', 'Cache-Control': '2592000' },
       body: file
     });
     if (!res.ok) throw new Error(await res.text());
@@ -1539,7 +1539,7 @@ async function handleCoupleVideoUpload(input) {
     const fileName = `couple_video_${Date.now()}.${ext}`;
     const res = await fetch(`${SUPABASE_URL}/storage/v1/object/event-videos/${fileName}`, {
       method: 'POST',
-      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': file.type || 'video/mp4', 'x-upsert': 'true' },
+      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': file.type || 'video/mp4', 'x-upsert': 'true', 'Cache-Control': '2592000' },
       body: file
     });
     if (!res.ok) throw new Error(await res.text());

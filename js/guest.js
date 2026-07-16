@@ -2772,7 +2772,7 @@ async function uploadImageToStorage(file, bucket, label) {
   const fileName = `img_${Date.now()}_${Math.random().toString(36).slice(2,8)}.${ext}`;
   const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${bucket}/${fileName}`, {
     method: 'POST',
-    headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': file.type || 'image/jpeg', 'x-upsert': 'true' },
+    headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': file.type || 'image/jpeg', 'x-upsert': 'true', 'Cache-Control': '2592000' },
     body: file
   });
   if (!res.ok) throw new Error(await res.text());
@@ -2934,8 +2934,7 @@ async function handleStdFontUpload(input) {
         'apikey': SUPABASE_ANON_KEY,
         'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
         'Content-Type': 'application/octet-stream',
-        'x-upsert': 'true'
-      },
+        'x-upsert': 'true', 'Cache-Control': '2592000' },
       body: file
     });
     if (!res.ok) throw new Error(await res.text());
@@ -2969,8 +2968,7 @@ async function uploadFontFile(input) {
         'apikey': SUPABASE_ANON_KEY,
         'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
         'Content-Type': 'application/octet-stream',
-        'x-upsert': 'true'
-      },
+        'x-upsert': 'true', 'Cache-Control': '2592000' },
       body: file
     });
     if (!res.ok) throw new Error(await res.text());
@@ -3041,7 +3039,7 @@ async function handleBodyFontUpload(input) {
     const fileName = `font_${name.replace(/\s+/g,'_')}_${Date.now()}.${ext}`;
     const res = await fetch(`${SUPABASE_URL}/storage/v1/object/event-covers/${fileName}`, {
       method: 'POST',
-      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/octet-stream', 'x-upsert': 'true' },
+      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/octet-stream', 'x-upsert': 'true', 'Cache-Control': '2592000' },
       body: file
     });
     if (!res.ok) throw new Error(await res.text());
@@ -3065,7 +3063,7 @@ async function handleBibleFontUpload(input) {
     const fileName = `font_${name.replace(/\s+/g,'_')}_${Date.now()}.${ext}`;
     const res = await fetch(`${SUPABASE_URL}/storage/v1/object/event-covers/${fileName}`, {
       method: 'POST',
-      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/octet-stream', 'x-upsert': 'true' },
+      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': 'application/octet-stream', 'x-upsert': 'true', 'Cache-Control': '2592000' },
       body: file
     });
     if (!res.ok) throw new Error(await res.text());

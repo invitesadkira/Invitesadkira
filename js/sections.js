@@ -2803,7 +2803,7 @@ async function uploadIconToLibrary(file, category) {
         'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
         'Content-Type': contentType,
         'x-upsert': 'true',
-        'Cache-Control': '3600',
+        'Cache-Control': '2592000',
       },
       body: file,
     });

@@ -3946,20 +3946,48 @@ async function renderLandingDemos() {
       grid.closest('.landing-section').style.display = 'none';
       return;
     }
+    demos = demos.slice(0, 3);
+
+    // ── Miniatura leve, em vez de iframe "ao vivo" ──
+    // Antes, cada card carregava o convite completo (vídeo, áudio, fontes,
+    // galeria) num <iframe>, para TODOS os visitantes da página inicial —
+    // mesmo quem nunca clica para ver. Isso multiplicava o consumo de
+    // Cached Egress por cada visita ao site comercial, sem relação nenhuma
+    // com convidados reais de casamentos. Agora só se pede a foto de capa
+    // de cada evento demo (um único campo, um pedido pequeno) — o convite
+    // completo só carrega se a pessoa clicar em "Abrir convite".
+    const codes = demos.map(d => d.code).filter(Boolean);
+    let coverByCode = {};
+    if (codes.length) {
+      try {
+        const codesFilter = codes.map(c => encodeURIComponent(c)).join(',');
+        const evRows = await supabaseRequest(`events?event_code=in.(${codesFilter})&select=event_code,cover_image`);
+        (evRows || []).forEach(r => { coverByCode[r.event_code] = r.cover_image; });
+      } catch(e) { console.warn('Falha ao carregar capas dos demos:', e); }
+    }
+
     grid.closest('.landing-section').style.display = '';
-    grid.innerHTML = demos.slice(0, 3).map(d => `
+    grid.innerHTML = demos.map(d => {
+      const href = `${window.location.origin}${window.location.pathname}?event=${encodeURIComponent(d.code)}`;
+      const cover = coverByCode[d.code];
+      return `
       <div class="ld-card">
         <div class="ld-frame-wrap">
-          <iframe src="${window.location.origin}${window.location.pathname}?event=${encodeURIComponent(d.code)}" loading="lazy"></iframe>
+          <a href="${href}" target="_blank" rel="noopener" style="display:block;width:100%;height:100%">
+            ${cover
+              ? `<img src="${cover}" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block" alt="${escapeHTML(d.label || 'Exemplo de convite')}">`
+              : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#f3f4f6;color:#9ca3af;font-size:0.75rem">Sem pré-visualização</div>`}
+          </a>
           <div class="ld-overlay">
-            <a href="${window.location.origin}${window.location.pathname}?event=${encodeURIComponent(d.code)}" target="_blank" rel="noopener">
+            <a href="${href}" target="_blank" rel="noopener">
               Abrir convite
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7"/><path d="M7 7h10v10"/></svg>
             </a>
           </div>
         </div>
         <div class="ld-label">${escapeHTML(d.label || 'Ver exemplo')}</div>
-      </div>`).join('');
+      </div>`;
+    }).join('');
   } catch(e) {
     console.warn('Falha ao carregar demos:', e);
     grid.closest('.landing-section').style.display = 'none';

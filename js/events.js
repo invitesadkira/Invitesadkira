@@ -252,7 +252,8 @@ async function uploadCoverImageToSupabase(base64Image, eventId) {
       headers: {
         'apikey': SUPABASE_ANON_KEY,
         'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-        'Content-Type': blob.type || 'image/jpeg'
+        'Content-Type': blob.type || 'image/jpeg',
+        'Cache-Control': '2592000'
       },
       body: blob
     });
@@ -288,8 +289,13 @@ async function uploadCoverImageToSupabase(base64Image, eventId) {
 // ── Upload de MP3/áudio para Supabase Storage ──
 async function uploadMusicFileToSupabase(file) {
   const bucketName = 'event-music';
-  // Keep original filename (sanitise special chars only)
-  const fileName = file.name.replace(/[^a-zA-Z0-9._\- ]/g, '_').replace(/\s+/g, '_');
+  // Nome único (com timestamp) — antes reaproveitava o nome original do
+  // ficheiro, o que obrigava a manter a cache curta (um novo upload com o
+  // mesmo nome substituía o conteúdo no mesmo URL). Com nome único, o URL
+  // nunca muda de conteúdo, por isso pode ficar em cache muito mais tempo.
+  const ext = (file.name.split('.').pop() || 'mp3').toLowerCase();
+  const baseName = file.name.replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9._\- ]/g, '_').replace(/\s+/g, '_');
+  const fileName = `${baseName}_${Date.now()}.${ext}`;
   const uploadURL = `${SUPABASE_URL}/storage/v1/object/${bucketName}/${fileName}`;
 
   const uploadResponse = await fetch(uploadURL, {
@@ -298,7 +304,8 @@ async function uploadMusicFileToSupabase(file) {
       'apikey': SUPABASE_ANON_KEY,
       'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
       'Content-Type': file.type || 'audio/mpeg',
-      'x-upsert': 'true'
+      'x-upsert': 'true',
+      'Cache-Control': '2592000'
     },
     body: file
   });
