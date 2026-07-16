@@ -69,6 +69,7 @@ const MIGRATION_KEY_COLUMN = {
   site_config: 'key',
   guest_links: 'code',
   intake_tokens: 'token',
+  legal_pages: 'slug',
 };
 
 function openMigrationTool() {
@@ -415,7 +416,7 @@ async function _migImportTable(newUrl, newKey, table, rows, logId) {
 
       if (!res.ok) {
         const firstErrText = await res.text().catch(() => '');
-        if (/no unique or exclusion constraint/i.test(firstErrText)) {
+        if (/no unique or exclusion constraint/i.test(firstErrText) || /column .* does not exist/i.test(firstErrText)) {
           _migLog(logId, `  ↻ ${table}: chave "${conflictKey}" não é a certa aqui, a tentar inserção simples...`);
           res = await fetch(`${newUrl}/rest/v1/${table}`, {
             method: 'POST',

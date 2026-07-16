@@ -129,14 +129,17 @@ async function refreshSupabaseSessionIfNeeded() {
   }
 }
 
-async function supabaseRequest(endpoint, method = 'GET', body = null) {
+async function supabaseRequest(endpoint, method = 'GET', body = null, _forceAnonKey = false) {
   // ✅ Fase 3 (opt-in): se houver uma sessão real do Supabase Auth guardada,
   // usa o token DESSA pessoa em vez da anon key genérica — é isto que
   // permite às políticas de RLS saberem "quem está a pedir isto" via
   // auth.uid(). Continua a enviar a apikey (a Supabase exige sempre isso).
   let bearerToken = SUPABASE_ANON_KEY;
-  const sbSession = await refreshSupabaseSessionIfNeeded();
-  if (sbSession && sbSession.access_token) bearerToken = sbSession.access_token;
+  let usedSessionToken = false;
+  if (!_forceAnonKey) {
+    const sbSession = await refreshSupabaseSessionIfNeeded();
+    if (sbSession && sbSession.access_token) { bearerToken = sbSession.access_token; usedSessionToken = true; }
+  }
 
   const headers = {
     'Content-Type': 'application/json',
@@ -182,6 +185,19 @@ async function supabaseRequest(endpoint, method = 'GET', body = null) {
     if (!response.ok) {
       const text = await response.text();
       console.error(`❌ Supabase ${response.status} em ${method} ${endpoint}:`, text);
+
+      // ── PGRST301: sessão do Supabase Auth rejeitada pelo projecto ──────────
+      // Já vimos isto acontecer com a sessão do Admin God (login por email) —
+      // o token da sessão é rejeitado com "No suitable key was found to
+      // decode the JWT", apesar da anon key simples funcionar bem. Em vez de
+      // deixar TODOS os pedidos a falhar (obrigando a limpar localStorage à
+      // mão), repete-se automaticamente o mesmo pedido só com a anon key.
+      if (response.status === 401 && usedSessionToken &&
+          (text.includes('PGRST301') || text.includes('No suitable key'))) {
+        console.warn('⚠️ Sessão rejeitada pelo projecto — a limpar e a repetir com a anon key simples...');
+        setStoredSupabaseSession(null);
+        return supabaseRequest(endpoint, method, body, true);
+      }
 
       // ── PGRST204 / 42703: unknown column ────────────────────────────────────
       // ✅ CORREÇÃO: esta condição só reconhecia a frase específica do

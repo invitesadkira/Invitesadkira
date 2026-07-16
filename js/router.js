@@ -62,8 +62,6 @@ const Router = {
       if (typeof loadLandingStats !== 'undefined') loadLandingStats();
       // Load reviews
       if (typeof renderLandingReviews !== 'undefined') renderLandingReviews();
-      // Load live demo events
-      if (typeof renderLandingDemos !== 'undefined') renderLandingDemos();
       if (typeof renderLandingHeroShowcase !== 'undefined') renderLandingHeroShowcase();
       // Botão "Editar Vitrine" do hero — só visível para admin
       const heroShowcaseBtn = document.getElementById('hero-showcase-edit-btn');

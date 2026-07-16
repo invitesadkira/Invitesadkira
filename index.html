@@ -16,14 +16,14 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script>tailwind.config = { theme: { extend: { colors: { teal: { 500: '#007f9f', 600: '#006b86' } } } } }</script>
   <!-- QRCode local — sem CDN -->
-  <script src="js/qrcode-mini.js?v=1784197995"></script>
-  <script src="js/icons.js?v=1784197995"></script>
+  <script src="js/qrcode-mini.js?v=1784199780"></script>
+  <script src="js/icons.js?v=1784199780"></script>
   <!-- PDF libs — carregadas lazily apenas quando necessário -->
   <!-- jsPDF: carregado por _loadJsPDF() antes de gerar relatórios -->
   <!-- pdf-lib: carregado por _loadPdfLib() antes de gerar tickets -->
   <!-- pdf.js: carregado por _loadPdfJs() antes de pré-visualizar templates -->
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💌</text></svg>">
-  <link rel="stylesheet" href="css/main.css?v=1784197995">
+  <link rel="stylesheet" href="css/main.css?v=1784199780">
 </head>
 <body class="h-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
 
@@ -120,16 +120,6 @@
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         <input id="home-search" type="text" placeholder="Já tens código do convite? Pesquisa aqui..." onkeydown="if(event.key==='Enter')searchEvent()">
         <button onclick="searchEvent()">Abrir</button>
-      </div>
-    </div>
-
-    <!-- ── DEMO AO VIVO ── -->
-    <div class="landing-section" id="landing-demo-section">
-      <div class="landing-eyebrow">Exemplos</div>
-      <h2 class="landing-section-title">Veja como os convidados vão abrir</h2>
-      <p class="landing-section-sub">Exemplos reais — toque para abrir e explorar como um convidado faria.</p>
-      <div class="landing-demo-grid" id="landing-demo-grid">
-        <!-- Populated by renderLandingDemos() from Supabase site_config 'demo_events' -->
       </div>
     </div>
 
@@ -1588,9 +1578,6 @@ para testemunhar o seu enlace matrimonial</textarea>
     <!-- ── HERO (capa + nomes dos noivos) ── -->
     <div class="guest-hero" id="guest-hero">
      <div class="guest-hero-bg" id="guest-hero-bg"></div>
-     <!-- Vídeo de fundo desfocado — apenas em ecrãs largos (tablet/desktop), cobre esquerda/direita -->
-     <video id="guest-hero-video-blur" class="hidden" muted loop autoplay playsinline
-       style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;filter:blur(24px) brightness(0.65)"></video>
      <!-- Vídeo principal -->
      <video id="guest-hero-video" class="hidden" muted loop autoplay playsinline
        style="position:absolute;inset:0;width:100%;height:100%;z-index:1"></video>
@@ -1853,22 +1840,22 @@ para testemunhar o seu enlace matrimonial</textarea>
   </a>
 
   <!-- ===================== SCRIPTS (ordem importa) ===================== -->
-  <script src="js/config.js?v=1784197995"></script>
-  <script src="js/store.js?v=1784197995"></script>
-  <script src="js/visuals.js?v=1784197995"></script>
-  <script src="js/venues.js?v=1784197995"></script>
-  <script src="js/rsvp.js?v=1784197995"></script>
-  <script src="js/ui.js?v=1784197995"></script>
-  <script src="js/auth.js?v=1784197995"></script>
-  <script src="js/dashboard.js?v=1784197995"></script>
-  <script src="js/events.js?v=1784197995"></script>
-  <script src="js/intake-wizard.js?v=1784197995"></script>
-  <script src="js/tickets.js?v=1784197995"></script>
-  <script src="js/guest.js?v=1784197995"></script>
-  <script src="js/sections.js?v=1784197995"></script>
-  <script src="js/admin.js?v=1784197995"></script>
-  <script src="js/migration.js?v=1784197995"></script>
-  <script src="js/router.js?v=1784197995"></script>
+  <script src="js/config.js?v=1784199780"></script>
+  <script src="js/store.js?v=1784199780"></script>
+  <script src="js/visuals.js?v=1784199780"></script>
+  <script src="js/venues.js?v=1784199780"></script>
+  <script src="js/rsvp.js?v=1784199780"></script>
+  <script src="js/ui.js?v=1784199780"></script>
+  <script src="js/auth.js?v=1784199780"></script>
+  <script src="js/dashboard.js?v=1784199780"></script>
+  <script src="js/events.js?v=1784199780"></script>
+  <script src="js/intake-wizard.js?v=1784199780"></script>
+  <script src="js/tickets.js?v=1784199780"></script>
+  <script src="js/guest.js?v=1784199780"></script>
+  <script src="js/sections.js?v=1784199780"></script>
+  <script src="js/admin.js?v=1784199780"></script>
+  <script src="js/migration.js?v=1784199780"></script>
+  <script src="js/router.js?v=1784199780"></script>
 
 </body>
 </html>

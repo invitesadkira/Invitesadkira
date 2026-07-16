@@ -3928,71 +3928,10 @@ function previewLandingModel(key) {
   document.body.appendChild(modal);
 }
 
-// ===================== LANDING: DEMO AO VIVO =====================
-async function renderLandingDemos() {
-  const grid = document.getElementById('landing-demo-grid');
-  if (!grid) return;
-  try {
-    const rows = await supabaseRequest('site_config?key=in.(demo_events,demo_events_enabled)&select=key,value').catch(() => []);
-    const demosRow = (rows || []).find(r => r.key === 'demo_events');
-    const enabledRow = (rows || []).find(r => r.key === 'demo_events_enabled');
-    const isEnabled = enabledRow ? enabledRow.value === 'true' : true; // default ON if never configured
-
-    let demos = [];
-    if (demosRow && demosRow.value) {
-      try { demos = JSON.parse(demosRow.value); } catch(e) {}
-    }
-    if (!isEnabled || !demos.length) {
-      grid.closest('.landing-section').style.display = 'none';
-      return;
-    }
-    demos = demos.slice(0, 3);
-
-    // ── Miniatura leve, em vez de iframe "ao vivo" ──
-    // Antes, cada card carregava o convite completo (vídeo, áudio, fontes,
-    // galeria) num <iframe>, para TODOS os visitantes da página inicial —
-    // mesmo quem nunca clica para ver. Isso multiplicava o consumo de
-    // Cached Egress por cada visita ao site comercial, sem relação nenhuma
-    // com convidados reais de casamentos. Agora só se pede a foto de capa
-    // de cada evento demo (um único campo, um pedido pequeno) — o convite
-    // completo só carrega se a pessoa clicar em "Abrir convite".
-    const codes = demos.map(d => d.code).filter(Boolean);
-    let coverByCode = {};
-    if (codes.length) {
-      try {
-        const codesFilter = codes.map(c => encodeURIComponent(c)).join(',');
-        const evRows = await supabaseRequest(`events?event_code=in.(${codesFilter})&select=event_code,cover_image`);
-        (evRows || []).forEach(r => { coverByCode[r.event_code] = r.cover_image; });
-      } catch(e) { console.warn('Falha ao carregar capas dos demos:', e); }
-    }
-
-    grid.closest('.landing-section').style.display = '';
-    grid.innerHTML = demos.map(d => {
-      const href = `${window.location.origin}${window.location.pathname}?event=${encodeURIComponent(d.code)}`;
-      const cover = coverByCode[d.code];
-      return `
-      <div class="ld-card">
-        <div class="ld-frame-wrap">
-          <a href="${href}" target="_blank" rel="noopener" style="display:block;width:100%;height:100%">
-            ${cover
-              ? `<img src="${cover}" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block" alt="${escapeHTML(d.label || 'Exemplo de convite')}">`
-              : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#f3f4f6;color:#9ca3af;font-size:0.75rem">Sem pré-visualização</div>`}
-          </a>
-          <div class="ld-overlay">
-            <a href="${href}" target="_blank" rel="noopener">
-              Abrir convite
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7"/><path d="M7 7h10v10"/></svg>
-            </a>
-          </div>
-        </div>
-        <div class="ld-label">${escapeHTML(d.label || 'Ver exemplo')}</div>
-      </div>`;
-    }).join('');
-  } catch(e) {
-    console.warn('Falha ao carregar demos:', e);
-    grid.closest('.landing-section').style.display = 'none';
-  }
-}
+// ===================== LANDING: DEMO AO VIVO — REMOVIDO =====================
+// A secção "Demo ao vivo" foi removida da página inicial a pedido, porque
+// carregava conteúdo extra para qualquer visitante do site comercial, sem
+// relação com convidados reais de casamentos.
 
 // ===================== ADMIN: VITRINE DO HERO (SITE COMERCIAL) =====================
 // Permite ao admin substituir os 3 cartões ilustrativos do topo do site
@@ -4089,68 +4028,6 @@ async function adminSaveHeroShowcase() {
   renderLandingHeroShowcase();
 }
 
-
-async function adminEditDemoEvents() {
-  const rows = await supabaseRequest('site_config?key=in.(demo_events,demo_events_enabled)&select=key,value').catch(() => []);
-  const demosRow = (rows || []).find(r => r.key === 'demo_events');
-  const enabledRow = (rows || []).find(r => r.key === 'demo_events_enabled');
-  const isEnabled = enabledRow ? enabledRow.value === 'true' : true;
-
-  let demos = [];
-  if (demosRow && demosRow.value) {
-    try { demos = JSON.parse(demosRow.value); } catch(e) {}
-  }
-  while (demos.length < 3) demos.push({ code: '', label: '' });
-
-  const modal = document.createElement('div');
-  modal.className = 'modal-overlay';
-  modal.innerHTML = `<div class="modal-content bg-white rounded-2xl p-5" style="max-width:480px">
-    <h3 class="text-base font-bold mb-1">Eventos de Demonstração</h3>
-    <div class="flex items-center justify-between mb-3 pb-3" style="border-bottom:1px solid #e5e7eb">
-      <span class="text-sm font-semibold text-gray-700">Mostrar secção "Demo ao vivo" no site comercial</span>
-      <div id="sw-demo-enabled" class="switch ${isEnabled ? 'active' : ''}" onclick="toggleSwitch(this)"></div>
-    </div>
-    <p class="text-xs text-gray-500 mb-3">Usa o código de eventos reais já criados (idealmente eventos de teste/demo, não de clientes). Qualquer visitante pode abrir e explorar estes exemplos livremente, sem precisar de criar conta ou fazer login.</p>
-    <div id="demo-events-fields" class="space-y-3">
-      ${demos.slice(0,3).map((d,i) => `
-        <div style="border:1px solid #e5e7eb;border-radius:0.6rem;padding:0.6rem">
-          <label class="text-xs font-semibold text-gray-600 block mb-1">Demo ${i+1}</label>
-          <input id="demo-code-${i}" class="input-field text-sm mb-1" placeholder="Código do evento (ex: ABC123)" value="${escapeHTML(d.code||'')}">
-          <input id="demo-label-${i}" class="input-field text-sm" placeholder="Legenda (ex: Casamento Clássico)" value="${escapeHTML(d.label||'')}">
-        </div>`).join('')}
-    </div>
-    <div class="flex gap-2 mt-4">
-      <button class="flex-1 btn-main text-sm" onclick="adminSaveDemoEvents()">Guardar</button>
-      <button class="btn-outline text-sm" onclick="this.closest('.modal-overlay').remove()">Cancelar</button>
-    </div>
-  </div>`;
-  document.body.appendChild(modal);
-}
-
-async function adminSaveDemoEvents() {
-  const demos = [0,1,2].map(i => ({
-    code: document.getElementById(`demo-code-${i}`)?.value?.trim() || '',
-    label: document.getElementById(`demo-label-${i}`)?.value?.trim() || '',
-  })).filter(d => d.code);
-  const isEnabled = document.getElementById('sw-demo-enabled')?.classList.contains('active') || false;
-
-  const ts = new Date().toISOString();
-  const val = JSON.stringify(demos);
-
-  const patch1 = await supabaseRequest('site_config?key=eq.demo_events', 'PATCH', { value: val, updated_at: ts });
-  if (!patch1 || patch1.length === 0) {
-    await supabaseRequest('site_config', 'POST', { key: 'demo_events', value: val });
-  }
-
-  const patch2 = await supabaseRequest('site_config?key=eq.demo_events_enabled', 'PATCH', { value: String(isEnabled), updated_at: ts });
-  if (!patch2 || patch2.length === 0) {
-    await supabaseRequest('site_config', 'POST', { key: 'demo_events_enabled', value: String(isEnabled) });
-  }
-
-  toast('Eventos de demonstração actualizados!');
-  document.querySelector('.modal-overlay')?.remove();
-  if (typeof renderLandingDemos === 'function') renderLandingDemos();
-}
 
 // ── Painel de leads — respostas ao questionário do evento de exemplo ──
 async function renderAdminLeadsPanel() {

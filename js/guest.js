@@ -343,7 +343,6 @@ async function renderGuestView() {
     const coverVideoUrl = eventData.cover_video_url;
     const videoFit = eventData.cover_video_fit || 'cover';
     const videoEl2     = document.getElementById('guest-hero-video');
-    const videoBlurEl  = document.getElementById('guest-hero-video-blur');
     const heroEl2      = document.getElementById('guest-hero-bg');
     if (coverVideoUrl && coverVideoUrl.startsWith('http') && videoEl2) {
       videoEl2.src = coverVideoUrl;
@@ -351,25 +350,6 @@ async function renderGuestView() {
       videoEl2.classList.remove('hidden');
       videoEl2.load();
       videoEl2.play().catch(() => {});
-      // Blur de fundo — só activo em tablets/desktops (CSS oculta em mobile
-      // via display:none abaixo de 768px). Antes disto, o JS carregava e
-      // tocava este vídeo em TODOS os ecrãs, incluindo telemóvel — onde
-      // fica sempre invisível — descarregando o vídeo de capa a DOBRAR
-      // para a maioria dos convidados (que abrem o convite no telemóvel).
-      // Agora só se descarrega quando o ecrã é largo o suficiente para o
-      // efeito realmente aparecer, poupando metade do egress de vídeo.
-      const _isWideEnoughForBlur = window.matchMedia('(min-width: 768px)').matches;
-      if (videoBlurEl && videoFit === 'contain' && _isWideEnoughForBlur) {
-        videoBlurEl.src = coverVideoUrl;
-        videoBlurEl.classList.remove('hidden');
-        videoBlurEl.classList.add('blur-active');
-        videoBlurEl.load();
-        videoBlurEl.play().catch(() => {});
-      } else if (videoBlurEl) {
-        videoBlurEl.classList.add('hidden');
-        videoBlurEl.classList.remove('blur-active');
-        videoBlurEl.removeAttribute('src');
-      }
       if (heroEl2) heroEl2.style.background = 'none';
     }
   }
