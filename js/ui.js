@@ -693,6 +693,7 @@ function buildAdminQuickGrid() {
     { icon:'file-text',  label:'Política e Termos', action:"openLegalPagesEditor()" },
     { icon:'monitor-play',  label:'Eventos de Demonstração', action:"adminEditDemoEvents()" },
     { icon:'image',  label:'Vitrine do Hero (Site Comercial)', action:"adminEditHeroShowcase()" },
+    { icon:'database', label:'Migração de Dados', action:"openMigrationTool()" },
   ];
   grid.innerHTML = items.map(it => `
     <button class="quick-card" onclick="${it.action}" style="position:relative">
