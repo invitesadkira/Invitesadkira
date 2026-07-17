@@ -518,7 +518,7 @@ function rsvpOpenFelicitacoes() {
   const ev = Store.guestEventData;
   const evColor = ev?.event_color || '#007f9f';
   const messages = (ev?.confirmations || []).filter(c => c.message && String(c.message).trim());
-  const rsvpEnabled = ev?.rsvp_enabled !== false;
+  const rsvpEnabled = !(ev?.rsvp_enabled === false || ev?.rsvp_enabled === 'false');
 
   const overlay = document.createElement('div');
   overlay.id = 'felicitacoes-overlay';

@@ -1,3 +1,17 @@
+// ✅ Carrega as permissões de funcionalidades (allowed_features) da própria
+// conta, logo após o login. Isto faltava em TODOS os pontos de login — o
+// objecto Store.currentUser só guardava {id, phone, role, status}, nunca
+// allowed_features. Sem isto, userHasFeature() nunca via nenhuma restrição
+// configurada pelo Admin God, e os botões bloqueados continuavam a
+// aparecer e a funcionar normalmente para o utilizador comum.
+async function _loadCurrentUserFeatures() {
+  if (!Store.currentUser || !Store.currentUser.id) return;
+  try {
+    const rows = await supabaseRequest(`accounts?id=eq.${Store.currentUser.id}&select=allowed_features&limit=1`);
+    if (rows && rows[0]) Store.currentUser.allowed_features = rows[0].allowed_features;
+  } catch (e) { /* falha silenciosa — por omissão, tudo fica activo */ }
+}
+
 async function handleRegister(e) {
   e.preventDefault();
   const accessToken = document.getElementById('reg-access-token')?.value?.trim().toUpperCase();
@@ -233,6 +247,7 @@ async function handleLoginSecure(e) {
   localStorage.setItem('userRole', user.role || 'user');
 
   Store.currentUser = { id: user.id, phone: user.phone, role: user.role || 'user', status: 'active' };
+  await _loadCurrentUserFeatures();
   toast('Bem-vindo! Carregando seus dados...');
   if (typeof invalidateEventsCache !== 'undefined') invalidateEventsCache();
   Router.go(user.role === 'admin' ? 'admin' : 'dashboard');
@@ -424,6 +439,7 @@ async function handleLogin(e) {
     localStorage.setItem('userPhone', user.phone || '');
     localStorage.setItem('userRole', user.role || 'user');
     Store.currentUser = { id: user.id, phone: user.phone, role: user.role || 'user', status: 'active' };
+    await _loadCurrentUserFeatures();
     toast('Bem-vindo! Carregando seus dados...');
   if (typeof invalidateEventsCache !== 'undefined') invalidateEventsCache();
     Router.go(user.role === 'admin' ? 'admin' : 'dashboard');
@@ -484,6 +500,7 @@ async function handleLogin(e) {
     localStorage.setItem('userPhone', authedUser.phone || '');
     localStorage.setItem('userRole', authedUser.role || 'user');
     Store.currentUser = { id: authedUser.id, phone: authedUser.phone, role: authedUser.role || 'user', status: 'active' };
+    await _loadCurrentUserFeatures();
     toast('Bem-vindo! Carregando seus dados...');
   if (typeof invalidateEventsCache !== 'undefined') invalidateEventsCache();
     Router.go(authedUser.role === 'admin' ? 'admin' : 'dashboard');
@@ -544,6 +561,7 @@ async function handleLogin(e) {
     status: user.status,
     eventLimit: user.event_limit,
     edit_locked: user.edit_locked === true,
+    allowed_features: user.allowed_features,
   };
 
   // Mostrar topbar com hambúrguer

@@ -801,7 +801,7 @@ function renderGuestMessageWall(eventData) {
             <span class="fc-quote">"</span>
             <p class="fc-message">${escapeHTML(item.message)}</p>
             <div class="fc-name">${escapeHTML(item.name)}</div>
-            ${eventData.rsvp_enabled !== false ? `
+            ${!(eventData.rsvp_enabled === false || eventData.rsvp_enabled === 'false') ? `
             <span class="felicitation-card fc-attending ${item.attending ? 'fc-yes' : 'fc-no'}" style="background:none;border:none;padding:0;box-shadow:none;border-top:none;margin-top:0.35rem;display:inline-flex">
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="color:${item.attending ? '#166534' : '#991b1b'}"><polyline points="${item.attending ? '20 6 9 17 4 12' : '18 6 6 18 M6 6 18 18'}"/></svg>
               ${item.attending ? 'Confirmado' : 'Não confirmado'}
@@ -3335,7 +3335,7 @@ function renderSaveTheDateScreen(ev, decision) {
   const nameFont    = ev.std_font_family || ev.custom_font_family || null;
   const nameSize    = parseFloat(ev.std_name_size) || 2.4;
   const titleSize   = parseFloat(ev.std_title_size) || 0.78;
-  const rsvpAllowed = ev.rsvp_enabled !== false;
+  const rsvpAllowed = !(ev.rsvp_enabled === false || ev.rsvp_enabled === 'false');
   // Cover photo: ONLY the dedicated Save the Date cover. Never falls back to
   // the invite's own background photo — the organiser must upload one
   // specifically for this screen if they want a cover here at all.

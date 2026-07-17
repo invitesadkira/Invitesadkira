@@ -160,6 +160,7 @@ async function loadEventosComDelay() {
         role: userRole,
         status: 'active'
       };
+      if (typeof _loadCurrentUserFeatures === 'function') await _loadCurrentUserFeatures();
       
       // Restaurar topbar
       showTopbar(Store.currentUser);
@@ -178,6 +179,7 @@ async function loadEventosComDelay() {
           Store.adminModeActive = true;
           Store.adminOriginalUser = { id: userId, phone: userPhone || 'admin', role: 'admin', status: 'active' };
           Store.currentUser = { id: impersonatingUserId, phone: impersonatingUserPhone || 'cliente', role: 'user', status: 'active' };
+          if (typeof _loadCurrentUserFeatures === 'function') await _loadCurrentUserFeatures();
           const userData = await fetchUserDataForOrganizer(impersonatingUserId);
           Store.events = userData && userData.events ? userData.events : [];
           return true;

@@ -4184,8 +4184,11 @@ async function openUserFeaturesModal(userId) {
 }
 
 // Verificar se o utilizador actual tem acesso a uma funcionalidade
+// ✅ O Admin God vê SEMPRE tudo — mesmo a "impersonalizar" (entrar na conta)
+// de um cliente com funcionalidades bloqueadas. As restrições só se aplicam
+// quando é mesmo o cliente, na sua própria conta, sem o admin por trás.
 function userHasFeature(featureKey) {
-  if (!Store.currentUser || Store.currentUser.role === 'admin') return true;
+  if (!Store.currentUser || Store.currentUser.role === 'admin' || Store.adminModeActive) return true;
   const user = (Store.users || []).find(u => u.id === Store.currentUser.id) || Store.currentUser;
   const perms = _getFeaturePerms(user);
   return perms[featureKey] !== false; // por omissão, tudo activo

@@ -1351,7 +1351,7 @@ function renderEventDetails() {
   });
 
   const stats = [];
-  const _rsvpIsEnabled = event.rsvp_enabled !== false;
+  const _rsvpIsEnabled = !(event.rsvp_enabled === false || event.rsvp_enabled === 'false');
   if (_rsvpIsEnabled) {
     if (hasSides) {
       stats.push({ label: sideNames.side1, value: side1Total, color: 'bg-teal-50 text-teal-600', icon: 'users' });
@@ -1478,13 +1478,21 @@ function renderEventDetails() {
 // Para-se a si próprio quando o utilizador navega para fora desta página.
 function _startEventDetailsPolling(eventId) {
   if (Store._eventDetailsPollInterval) clearInterval(Store._eventDetailsPollInterval);
+  // Guarda a última "fotografia" vinda do polling, para comparar contra ela
+  // própria no ciclo seguinte — comparar contra `event.confirmations`
+  // directamente não é seguro, porque esse array tem campos extra
+  // construídos de forma diferente, e a comparação falhava (ou, pior,
+  // sobrescrevia as confirmações a perder `ownerReply`/`rsvpToken`/etc.).
+  Store._eventDetailsPollLastSnapshot = JSON.stringify(
+    (Store.events.find(e => e.id === eventId)?.confirmations || [])
+  );
   Store._eventDetailsPollInterval = setInterval(async () => {
     const stillHere = Store.currentEventId === eventId &&
       !document.getElementById('screen-event-details')?.classList.contains('hidden');
     if (!stillHere) { clearInterval(Store._eventDetailsPollInterval); Store._eventDetailsPollInterval = null; return; }
     try {
       const rows = await supabaseRequest(
-        `rsvps?event_id=eq.${eventId}&is_manual_ticket=neq.true&select=guest_name,attending,side,companions,kids,wants_gift,message,created_at,updated_at`
+        `rsvps?event_id=eq.${eventId}&is_manual_ticket=neq.true&select=guest_name,attending,side,companions,kids,wants_gift,message,owner_reply,rsvp_token,checked_in,ticket_issued,created_at,updated_at`
       );
       const event = Store.events.find(e => e.id === eventId);
       if (!event || !Array.isArray(rows)) return;
@@ -1495,12 +1503,18 @@ function _startEventDetailsPolling(eventId) {
         companions: r.companions ? r.companions.split('|').filter(Boolean) : [],
         kids: r.kids ? r.kids.split('|').filter(Boolean) : [],
         wantsGift: r.wants_gift === true || r.wants_gift === 'yes',
-        message: r.message || ''
+        message: r.message || '',
+        ownerReply: r.owner_reply || '',
+        rsvpToken: r.rsvp_token || null,
+        checkedIn: r.checked_in || false,
+        ticketIssued: r.ticket_issued || false,
       }));
       // Só voltar a desenhar se algo realmente mudou — evita "tremer" a
       // página (perder posição do scroll, etc.) a cada poucos segundos
       // sem necessidade nenhuma.
-      if (JSON.stringify(newConfirmations) !== JSON.stringify(event.confirmations)) {
+      const newSnapshot = JSON.stringify(newConfirmations);
+      if (newSnapshot !== Store._eventDetailsPollLastSnapshot) {
+        Store._eventDetailsPollLastSnapshot = newSnapshot;
         event.confirmations = newConfirmations;
         renderEventDetails();
       }
