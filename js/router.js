@@ -190,13 +190,12 @@ async function loadEventosComDelay() {
           dlog('👨‍💼 Admin detectado - carregando dados administrativos...');
           
           // Carregar TODAS as contas (excluindo admins)
-          const allAccounts = await supabaseRequest(`accounts?role=eq.user&select=id,phone,password,role,status,created_at,event_limit,admin_label&limit=500&order=created_at.desc`);
+          const allAccounts = await supabaseRequest(`accounts?role=eq.user&select=id,phone,role,status,created_at,event_limit,admin_label&limit=500&order=created_at.desc`);
           dlog('✅ Contas carregadas:', allAccounts?.length || 0);
           
           Store.users = (allAccounts || []).filter(a => a.role !== 'admin' && a.status !== 'deleted').map(u => ({
             id: u.id,
             phone: u.phone,
-            password: u.password,
             role: u.role || 'user',
             status: u.status || 'active',
             eventLimit: u.event_limit || null,

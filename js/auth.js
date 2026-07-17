@@ -581,12 +581,11 @@ async function handleLogin(e) {
     await new Promise(r => setTimeout(r, 300));
     
     // ✅ CARREGA 1: TODAS AS CONTAS
-    const allAccounts = await supabaseRequest(`accounts?select=id,phone,password,role,status,created_at,event_limit,admin_label&limit=500&order=created_at.desc`);
+    const allAccounts = await supabaseRequest(`accounts?select=id,phone,role,status,created_at,event_limit,admin_label&limit=500&order=created_at.desc`);
     
     Store.users = (allAccounts || []).filter(a => a.role !== 'admin' && a.status !== 'deleted').map(u => ({
       id: u.id,
       phone: u.phone,
-      password: u.password,
       role: u.role || 'user',
       status: u.status || 'active',
       eventLimit: u.event_limit || null,
@@ -969,7 +968,16 @@ function saveUserId(userId, modal) {
   }
 
   const oldId = user.id;
-  
+
+  // ⚠️ Esta funcionalidade está temporariamente desactivada. Antes,
+  // recriava a conta com um ID novo copiando a senha directamente — isso
+  // deixou de ser possível desde que a coluna `password` ficou protegida
+  // (só o rpc_login e a Service Role Key conseguem lê-la agora). Continuar
+  // sem isto apagaria a senha do cliente sem se dar por isso. Precisa de
+  // ser reconstruída com uma função RPC dedicada antes de voltar a ser usada.
+  toast('Esta funcionalidade está temporariamente desactivada — precisa de ser reconstruída após a correção de segurança recente. Fala com o suporte técnico.');
+  return;
+
   // ✅ PASSO 1: Atualizar TODOS os eventos deste utilizador
   dlog('🔄 Atualizando user_id em todos os eventos...');
   const userEvents = Store.events.filter(e => e.userId === oldId || e.user_id === oldId);

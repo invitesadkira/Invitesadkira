@@ -118,11 +118,20 @@ function filterAdminAccounts() {
     return;
   }
   
-  // Filtrar por telefone/username OU pelo nome atribuído (admin_label)
-  const filtered = nonAdminUsers.filter(u =>
-    u.phone.toLowerCase().includes(searchTerm) ||
-    (u.admin_label || '').toLowerCase().includes(searchTerm)
-  );
+  // Filtrar por telefone/username, pelo nome atribuído (adminLabel), ou
+  // pelo nome do casal / título de qualquer evento que a conta possua —
+  // é natural procurar "Cheron" e encontrar a conta dona desse casamento,
+  // mesmo que nunca lhe tenhas atribuído um "Nome" manualmente.
+  const filtered = nonAdminUsers.filter(u => {
+    if (u.phone.toLowerCase().includes(searchTerm)) return true;
+    if ((u.adminLabel || '').toLowerCase().includes(searchTerm)) return true;
+    const userEvents = (Store.events || []).filter(e => e.userId === u.id);
+    return userEvents.some(e =>
+      (e.groom_name || '').toLowerCase().includes(searchTerm) ||
+      (e.bride_name || '').toLowerCase().includes(searchTerm) ||
+      (e.title || '').toLowerCase().includes(searchTerm)
+    );
+  });
   
   dlog('🔍 Pesquisa:', { searchTerm, total: nonAdminUsers.length, encontrados: filtered.length });
   
