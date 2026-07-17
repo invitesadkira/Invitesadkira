@@ -338,7 +338,7 @@ async function loginViaSupabaseAuth(phone, password) {
 
   // Agora que já há sessão real, supabaseRequest() vai usar este token —
   // basta procurar a conta correspondente.
-  const accountRows = await supabaseRequest(`accounts?phone=eq.${encodeURIComponent(phone)}&limit=1`);
+  const accountRows = await supabaseRequest(`accounts?phone=eq.${encodeURIComponent(phone)}&select=id,phone,role,status,admin_label,allowed_features,event_limit,edit_locked,auth_uid,login_count,review_requested,created_at&limit=1`);
   const account = accountRows && accountRows[0];
   if (!account) return { error: 'Conta não encontrada em accounts (auth_uid pode não estar ligado).' };
 
@@ -358,7 +358,7 @@ async function bootstrapSupabaseSession() {
   // login (ver loginViaSupabaseAuth) e lemos daqui:
   const phone = localStorage.getItem('sb_session_phone');
   if (!phone) return null;
-  const accountRows = await supabaseRequest(`accounts?phone=eq.${encodeURIComponent(phone)}&limit=1`);
+  const accountRows = await supabaseRequest(`accounts?phone=eq.${encodeURIComponent(phone)}&select=id,phone,role,status,admin_label,allowed_features,event_limit,edit_locked,auth_uid,login_count,review_requested,created_at&limit=1`);
   return (accountRows && accountRows[0]) || null;
 }
 
@@ -386,7 +386,7 @@ async function loginViaSupabaseAuthEmail(email, password) {
   // Agora que já há sessão real, procura a conta (profile) ligada a este
   // utilizador do Auth pelo auth_uid — NÃO pelo telefone, porque esta
   // conta pode nem ter telefone definido.
-  const accountRows = await supabaseRequest(`accounts?auth_uid=eq.${data.user.id}&limit=1`);
+  const accountRows = await supabaseRequest(`accounts?auth_uid=eq.${data.user.id}&select=id,phone,role,status,admin_label,allowed_features,event_limit,edit_locked,auth_uid,login_count,review_requested,created_at&limit=1`);
   const account = accountRows && accountRows[0];
   if (!account) return { error: 'Conta autenticada, mas não encontrada em "accounts" (confirma se o auth_uid foi ligado correctamente).' };
 
@@ -446,75 +446,44 @@ async function handleLogin(e) {
     return;
   }
   
-  // ✅ Buscar no Supabase
-  const accountData = await supabaseRequest(`accounts?phone=eq.${encodeURIComponent(phone)}`);
-  
-  dlog('🔍 Resultado da busca de conta:', {
-    phone: phone,
-    resultado: accountData,
-    encontrou: accountData && accountData.length > 0
-  });
-  
-  if (!accountData || accountData.length === 0) {
-    dlog('❌ Nenhuma conta encontrada para:', phone);
-    _registerFailedLogin(phone);
-    errEl.textContent = 'Conta não encontrada.';
+  // ✅ Verificar telefone + senha através do rpc_login — a comparação da
+  // senha acontece DENTRO do Supabase (a função tem privilégios elevados
+  // para isso), nunca no navegador. As credenciais dos clientes (telefone +
+  // senha) continuam exactamente as mesmas de sempre — só mudou ONDE a
+  // verificação acontece, não o que os clientes usam para entrar.
+  let rows;
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/rpc_login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+      },
+      body: JSON.stringify({ p_phone: phone, p_password: pass })
+    });
+    rows = await res.json();
+  } catch (err) {
+    errEl.textContent = 'Erro de ligação. Tenta novamente.';
     errEl.classList.remove('hidden');
     return;
   }
 
-  const user = accountData[0];
+  if (!Array.isArray(rows) || rows.length === 0) {
+    dlog('❌ Telefone ou senha incorrectos:', phone);
+    _registerFailedLogin(phone);
+    errEl.textContent = 'Telefone ou senha incorrectos.'; // ✅ mensagem única — não revela qual dos dois está errado
+    errEl.classList.remove('hidden');
+    return;
+  }
+
+  const user = rows[0];
   dlog('✅ Conta encontrada:', {
     id: user.id,
     phone: user.phone,
     status: user.status,
     role: user.role
   });
-
-  // ✅ Fase 3, em migração: esta conta já tem auth_uid ligado (foi migrada
-  // para o Supabase Auth real) — usa esse caminho, mais seguro, em vez da
-  // comparação de senha em texto simples. Contas ainda não migradas
-  // (auth_uid vazio) continuam pelo caminho antigo, sem qualquer mudança.
-  if (user.auth_uid) {
-    const result = await loginViaSupabaseAuth(phone, pass);
-    if (result.error) {
-      _registerFailedLogin(phone);
-      errEl.textContent = result.error;
-      errEl.classList.remove('hidden');
-      return;
-    }
-    _clearLoginAttempts(phone);
-    const authedUser = result.account;
-    if (authedUser.status === 'pending') {
-      errEl.textContent = '⏳ Sua conta ainda não foi aprovada pelo administrador.';
-      errEl.classList.remove('hidden');
-      return;
-    }
-    if (authedUser.status === 'blocked') {
-      errEl.textContent = 'Sua conta foi bloqueada. Contacte o administrador.';
-      errEl.classList.remove('hidden');
-      return;
-    }
-    localStorage.setItem('authToken', authedUser.id);
-    localStorage.setItem('userId', authedUser.id);
-    localStorage.setItem('userPhone', authedUser.phone || '');
-    localStorage.setItem('userRole', authedUser.role || 'user');
-    Store.currentUser = { id: authedUser.id, phone: authedUser.phone, role: authedUser.role || 'user', status: 'active' };
-    await _loadCurrentUserFeatures();
-    toast('Bem-vindo! Carregando seus dados...');
-  if (typeof invalidateEventsCache !== 'undefined') invalidateEventsCache();
-    Router.go(authedUser.role === 'admin' ? 'admin' : 'dashboard');
-    return;
-  }
-  
-  // ✅ Validar senha (em produção usar bcrypt)
-  if (user.password !== pass) {
-    dlog('❌ Senha incorreta para:', phone);
-    _registerFailedLogin(phone);
-    errEl.textContent = 'Senha incorreta.';
-    errEl.classList.remove('hidden');
-    return;
-  }
 
   // ✅ Login bem-sucedido — limpar contador de tentativas
   _clearLoginAttempts(phone);
@@ -563,6 +532,10 @@ async function handleLogin(e) {
     edit_locked: user.edit_locked === true,
     allowed_features: user.allowed_features,
   };
+  // Garantia extra: se o rpc_login não devolver allowed_features, isto
+  // vai buscá-lo directamente à conta — evita repetir o mesmo bug de
+  // funcionalidades bloqueadas que não faziam efeito nenhum.
+  await _loadCurrentUserFeatures();
 
   // Mostrar topbar com hambúrguer
   showTopbar(Store.currentUser);
@@ -787,7 +760,7 @@ function editAdminLabel(userId) {
   modal.className = 'modal-overlay';
   modal.innerHTML = `
     <div class="modal-content bg-white rounded-2xl shadow-lg p-6 max-w-sm w-full mx-4">
-      <h3 class="text-lg font-bold text-gray-800 mb-2">Atribuir Nome (Admin Label)</h3>
+      <h3 class="text-lg font-bold text-gray-800 mb-2">Atribuir Nome ao Dono da Conta</h3>
       <p class="text-sm text-gray-500 mb-4">Utilizador: <strong>${user.phone}</strong></p>
       
       <div class="space-y-3 mb-4">

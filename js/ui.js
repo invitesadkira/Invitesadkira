@@ -635,7 +635,7 @@ function buildDrawerNav(user) {
   ] : [
     { icon: 'calendar-check', label: 'Os Meus Eventos', action: "Router.go('dashboard'); closeDrawer();" },
     { icon: 'plus-circle',    label: 'Criar Evento',    action: "goToCreateEvent(); closeDrawer();" },
-    { icon: 'search',         label: 'Buscar Evento',   action: "Router.go('home'); closeDrawer();" },
+    { icon: 'search',         label: 'Buscar Evento',   action: "goToSearchEvent(); closeDrawer();" },
     { id:'drawer-btn-return-admin', hidden: true, icon:'arrow-left', label:'Voltar ao Admin', action:"backToAdminPanel(); closeDrawer();" },
   ];
 
@@ -657,10 +657,10 @@ function buildDashboardQuickGrid(user) {
     { icon:'layout-dashboard', label:'Painel Admin', action:"Router.go('admin')" },
     { icon:'plus-circle',      label:'Criar Evento', action:"goToCreateEvent()" },
     { icon:'users',            label:'Utilizadores',  action:"Router.go('admin')" },
-    { icon:'search',           label:'Buscar Evento', action:"Router.go('home')" },
+    { icon:'search',           label:'Buscar Evento', action:"goToSearchEvent()" },
   ] : [
     { icon:'plus-circle',      label:'Criar Evento',  action:"goToCreateEvent()" },
-    { icon:'search',           label:'Buscar Evento', action:"Router.go('home')" },
+    { icon:'search',           label:'Buscar Evento', action:"goToSearchEvent()" },
     { icon:'calendar',         label:'Meus Eventos',  action:"Router.go('dashboard')" },
   ];
   grid.innerHTML = items.map(it => `

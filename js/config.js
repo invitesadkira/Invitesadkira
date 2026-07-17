@@ -130,6 +130,20 @@ async function refreshSupabaseSessionIfNeeded() {
 }
 
 async function supabaseRequest(endpoint, method = 'GET', body = null, _forceAnonKey = false) {
+  // ✅ A coluna accounts.password deixou de ser legível pela anon/authenticated
+  // key (só o rpc_login, que corre com privilégios elevados, consegue lê-la).
+  // Isso significa que qualquer escrita (PATCH/POST) em `accounts` que peça
+  // "devolve-me a linha actualizada" (ver Prefer: return=representation mais
+  // abaixo) falhava, porque essa devolução tentava ler todas as colunas por
+  // omissão, incluindo a password agora bloqueada. Em vez de mudar esse
+  // comportamento globalmente (usado para detectar PATCHs que não encontram
+  // nenhuma linha), limita-se apenas os pedidos a `accounts` a pedir de volta
+  // só as colunas seguras, sem tocar em mais nada.
+  if ((method === 'PATCH' || method === 'POST') && /^accounts(\?|$)/.test(endpoint) && !endpoint.includes('select=')) {
+    const safeAccountCols = 'id,phone,role,status,admin_label,allowed_features,event_limit,edit_locked,auth_uid,login_count,review_requested,created_at,ticket_limit,tickets_with_table,undo_scans_remaining';
+    endpoint += (endpoint.includes('?') ? '&' : '?') + 'select=' + safeAccountCols;
+  }
+
   // ✅ Fase 3 (opt-in): se houver uma sessão real do Supabase Auth guardada,
   // usa o token DESSA pessoa em vez da anon key genérica — é isto que
   // permite às políticas de RLS saberem "quem está a pedir isto" via

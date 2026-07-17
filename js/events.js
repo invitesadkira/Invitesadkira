@@ -2712,6 +2712,20 @@ function showUserEventOptions(userId) {
 
 
 // ===================== SEARCH =====================
+// ✅ "Buscar Evento" no menu navega para a página inicial (é lá que vive a
+// caixa de pesquisa), mas isso parecia "ir parar ao site comercial" porque
+// aterra no topo, antes da pesquisa. Isto salta logo para lá e foca a caixa.
+function goToSearchEvent() {
+  Router.go('home');
+  setTimeout(() => {
+    const box = document.getElementById('home-search');
+    if (box) {
+      box.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      box.focus();
+    }
+  }, 150);
+}
+
 async function searchEvent() {
   const query = document.getElementById('home-search').value.trim().toUpperCase();
   if (!query) return;

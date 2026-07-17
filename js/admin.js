@@ -118,9 +118,10 @@ function filterAdminAccounts() {
     return;
   }
   
-  // Filtrar por telefone/username (match parcial)
-  const filtered = nonAdminUsers.filter(u => 
-    u.phone.toLowerCase().includes(searchTerm)
+  // Filtrar por telefone/username OU pelo nome atribuído (admin_label)
+  const filtered = nonAdminUsers.filter(u =>
+    u.phone.toLowerCase().includes(searchTerm) ||
+    (u.admin_label || '').toLowerCase().includes(searchTerm)
   );
   
   dlog('🔍 Pesquisa:', { searchTerm, total: nonAdminUsers.length, encontrados: filtered.length });
@@ -174,7 +175,7 @@ function renderAdminAccountsList(users) {
     html += '<div class="grid grid-cols-2 gap-2 mb-3 text-xs">';
     html += '<div class="p-2 rounded" style="background:var(--app-bg)"><p class="mb-0.5" style="color:var(--app-muted)">Username</p><p class="font-semibold break-all" style="color:var(--app-ink)">' + userPhone + '</p></div>';
     html += '<div class="p-2 rounded" style="background:var(--app-bg)"><p class="mb-0.5" style="color:var(--app-muted)">Tipo</p><p class="font-semibold" style="color:var(--app-ink)">' + (userRole === 'moderator' ? 'Moderador' : 'Utilizador') + '</p></div>';
-    html += '<div class="p-2 rounded" style="background:var(--app-bg)"><p class="mb-0.5" style="color:var(--app-muted)">Nome Admin</p><p class="font-semibold" style="color:var(--app-ink)">' + adminLabel + '</p></div>';
+    html += '<div class="p-2 rounded" style="background:var(--app-bg)"><p class="mb-0.5" style="color:var(--app-muted)">Nome</p><p class="font-semibold" style="color:var(--app-ink)">' + adminLabel + '</p></div>';
     html += '<div class="p-2 rounded" style="background:var(--app-bg)"><p class="mb-0.5" style="color:var(--app-muted)">Senha</p><p class="font-mono text-xs break-all" style="color:var(--app-ink)">•••••••• <button class="text-teal-600 underline font-sans not-italic" style="font-size:0.68rem" onclick="changeUserPassword(\'' + u.id + '\')">redefinir</button></p></div>';
     html += '<div class="p-2 rounded" style="background:var(--app-bg)"><p class="mb-0.5" style="color:var(--app-muted)">Status</p><span class="inline-block px-2 py-0.5 rounded-full font-semibold ' + userStatusClass + '">' + userStatus + '</span></div>';
     html += '<div class="p-2 rounded" style="background:var(--app-bg)"><p class="mb-0.5" style="color:var(--app-muted)">Eventos</p><p class="font-semibold" style="color:var(--app-ink)">' + userEvents + '/' + eventLimit + '</p></div>';
