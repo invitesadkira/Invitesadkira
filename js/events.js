@@ -1298,7 +1298,7 @@ function renderEventDetails() {
   const editURLBtn = document.querySelector('button:has(i[data-lucide="link"])');
   if (editURLBtn) editURLBtn.parentElement.parentElement.classList.toggle('hidden', !isAdmin);
   
-  document.getElementById('btn-delete-event').classList.toggle('hidden', !(isOwner || isAdmin));
+  document.getElementById('btn-delete-event').classList.toggle('hidden', !isAdmin);
 
   // Botão "Marcar como Exemplo" — só o admin God real pode usar isto, mas
   // isso TEM de incluir enquanto está a "entrar como" outro utilizador
@@ -2480,6 +2480,12 @@ function _fillEditForm(ev) {
 
 // ===================== DELETE EVENT =====================
 function deleteEventModal() {
+  // ✅ Só o Admin God pode eliminar eventos — não basta esconder o botão,
+  // a própria acção também recusa, mesmo que seja chamada por outro caminho
+  // (ex: consola do navegador).
+  const isRealAdmin = Store.currentUser?.role === 'admin' || Store.adminModeActive;
+  if (!isRealAdmin) { toast('Só o Admin God pode eliminar eventos.'); return; }
+
   const ev = Store.events.find(e => e.id === Store.currentEventId);
   if (!ev) return;
   
@@ -2507,6 +2513,9 @@ function deleteEventModal() {
 }
 
 function confirmDeleteEvent(modal) {
+  const isRealAdmin = Store.currentUser?.role === 'admin' || Store.adminModeActive;
+  if (!isRealAdmin) { toast('Só o Admin God pode eliminar eventos.'); modal?.remove(); return; }
+
   const eventIndex = Store.events.findIndex(e => e.id === Store.currentEventId);
   if (eventIndex !== -1) {
     const deletedEvent = Store.events[eventIndex];
@@ -2661,6 +2670,122 @@ function confirmAdminDeleteEvent(eventId, confirmModal, parentModal) {
 
 
 // ===================== SHOW USER EVENT OPTIONS =====================
+// ===================== DUPLICAR EVENTO (ADMIN GOD) =====================
+// Clona um evento inteiro — todas as secções, cores, fontes, textos,
+// fotos (reutiliza os mesmos URLs, não duplica ficheiros), presentes
+// (como lista, sem as reservas) — para o mesmo dono ou para outro
+// utilizador. Nunca copia RSVPs, recados, links personalizados ou
+// notificações — isso pertence só aos convidados do evento original.
+function adminDuplicateEventPrompt(eventId) {
+  const source = Store.events.find(e => e.id === eventId);
+  if (!source) { toast('Evento não encontrado.'); return; }
+
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.innerHTML = `
+    <div class="modal-content bg-white rounded-2xl shadow-lg p-6 max-w-sm w-full mx-4">
+      <h3 class="text-lg font-bold text-gray-800 mb-1">Duplicar Evento</h3>
+      <p class="text-sm text-gray-500 mb-4">A duplicar: <strong>${escapeHTML(source.title || 'Evento')}</strong></p>
+
+      <label class="block text-sm font-semibold text-gray-600 mb-1">Para qual conta?</label>
+      <select id="dup-target-user" class="input-field text-sm mb-3">
+        <option value="${source.userId}">— Mesma conta (${escapeHTML(Store.users.find(u => u.id === source.userId)?.phone || source.userId)}) —</option>
+        ${Store.users.filter(u => u.id !== source.userId).map(u =>
+          `<option value="${u.id}">${escapeHTML(u.phone)}${u.adminLabel ? ' · ' + escapeHTML(u.adminLabel) : ''}</option>`
+        ).join('')}
+      </select>
+
+      <label class="block text-sm font-semibold text-gray-600 mb-1">Título do novo evento</label>
+      <input id="dup-title" class="input-field text-sm mb-4" value="${escapeHTML((source.title || 'Evento') + ' (cópia)')}">
+
+      <p class="text-xs text-gray-400 mb-4">
+        Copia toda a personalização (secções, cores, fontes, fotos, presentes como lista).
+        Não copia confirmações, recados nem links de convidados — o novo evento começa "limpo" nesse aspecto,
+        com um código/link novo e único.
+      </p>
+
+      <div class="flex gap-2">
+        <button class="flex-1 btn-main" onclick="adminDuplicateEvent('${eventId}', this)">Duplicar</button>
+        <button class="btn-outline" onclick="this.closest('.modal-overlay').remove()">Cancelar</button>
+      </div>
+      <div id="dup-status" class="text-xs text-gray-500 mt-2"></div>
+    </div>`;
+  document.body.appendChild(modal);
+}
+
+async function adminDuplicateEvent(sourceEventId, btn) {
+  const modal = btn.closest('.modal-overlay');
+  const statusEl = modal.querySelector('#dup-status');
+  const targetUserId = modal.querySelector('#dup-target-user').value;
+  const newTitle = modal.querySelector('#dup-title').value.trim() || 'Evento (cópia)';
+
+  btn.disabled = true; btn.textContent = 'A duplicar...';
+  statusEl.textContent = 'A copiar dados do evento original...';
+
+  try {
+    // 1) Buscar o evento original completo, mais as tabelas ligadas
+    const [eventRows, datesRows, visualsRows, venuesRows, giftsRows] = await Promise.all([
+      supabaseRequest(`events?id=eq.${sourceEventId}&select=*`),
+      supabaseRequest(`event_dates?event_id=eq.${sourceEventId}&select=*`),
+      supabaseRequest(`event_visuals?event_id=eq.${sourceEventId}&select=*`),
+      supabaseRequest(`event_venues?event_id=eq.${sourceEventId}&select=*`),
+      supabaseRequest(`gifts?event_id=eq.${sourceEventId}&select=*`),
+    ]);
+
+    const source = eventRows && eventRows[0];
+    if (!source) throw new Error('Não foi possível ler o evento original.');
+
+    // 2) Criar o novo evento — mesmos dados, código novo e único, dono escolhido
+    const newEventCode = Math.random().toString(36).substring(2, 10).toUpperCase();
+    const newEventData = { ...source };
+    delete newEventData.id;
+    delete newEventData.created_at;
+    delete newEventData.updated_at;
+    newEventData.user_id = targetUserId;
+    newEventData.event_code = newEventCode;
+    newEventData.title = newTitle;
+    newEventData.is_example_event = false;
+
+    statusEl.textContent = 'A criar o novo evento...';
+    const newEventRows = await supabaseRequest('events', 'POST', newEventData);
+    const newEvent = newEventRows && newEventRows[0];
+    if (!newEvent || !newEvent.id) throw new Error('Falha ao criar o novo evento.');
+    const newEventId = newEvent.id;
+
+    // 3) Clonar event_dates / event_visuals / event_venues (uma linha por evento cada)
+    statusEl.textContent = 'A copiar secções e visual...';
+    for (const [table, rows] of [['event_dates', datesRows], ['event_visuals', visualsRows], ['event_venues', venuesRows]]) {
+      if (rows && rows[0]) {
+        const clone = { ...rows[0] };
+        delete clone.id;
+        clone.event_id = newEventId;
+        await supabaseRequest(table, 'POST', clone).catch(e => console.warn(`Falha ao clonar ${table}:`, e));
+      }
+    }
+
+    // 4) Clonar presentes como LISTA — sem reservas (novo evento, ninguém reservou nada ainda)
+    if (giftsRows && giftsRows.length) {
+      statusEl.textContent = `A copiar ${giftsRows.length} presente(s)...`;
+      for (const g of giftsRows) {
+        const clone = { ...g };
+        delete clone.id;
+        clone.event_id = newEventId;
+        clone.reserved = false;
+        clone.reserved_by = null;
+        await supabaseRequest('gifts', 'POST', clone).catch(e => console.warn('Falha ao clonar presente:', e));
+      }
+    }
+
+    statusEl.textContent = '✅ Evento duplicado com sucesso!';
+    toast(`Evento duplicado! Novo código: ${newEventCode}`);
+    if (typeof invalidateEventsCache !== 'undefined') invalidateEventsCache();
+    setTimeout(() => { modal.remove(); renderAdmin(); }, 1200);
+  } catch (e) {
+    statusEl.textContent = '⚠️ Erro: ' + e.message;
+    btn.disabled = false; btn.textContent = 'Duplicar';
+  }
+}
+
 function showUserEventOptions(userId) {
   const user = Store.users.find(u => u.id === userId);
   if (!user) return;
@@ -2697,6 +2822,9 @@ function showUserEventOptions(userId) {
         <div class="flex gap-2">
           <button class="flex-1 text-xs bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg py-1 px-2 font-semibold transition" onclick="adminEditEventURL('${event.id}')">
             Alterar URL
+          </button>
+          <button class="flex-1 text-xs bg-purple-500 hover:bg-purple-600 text-white rounded-lg py-1 px-2 font-semibold transition" onclick="adminDuplicateEventPrompt('${event.id}')">
+            Duplicar
           </button>
           <button class="flex-1 text-xs bg-red-500 hover:bg-red-600 text-white rounded-lg py-1 px-2 font-semibold transition" onclick="adminDeleteEvent('${event.id}', this.closest('.modal-overlay'))">
             Eliminar
