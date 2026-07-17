@@ -1553,7 +1553,7 @@ function viewAsGuest() {
   Router.go('guest');
 }
 
-function downloadGiftsPDF() {
+async function downloadGiftsPDF() {
   const ev = Store.events.find(e => e.id === Store.currentEventId);
   if (!ev || !ev.allowGifts || !ev.gifts || ev.gifts.length === 0) {
     toast('Este evento não tem presentes.');
@@ -1669,6 +1669,10 @@ function downloadGiftsPDF() {
     jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
   };
 
+  // ✅ A biblioteca nunca era carregada em lado nenhum do site — só era
+  // verificada. Agora é trazida aqui, na hora, só quando é mesmo precisa.
+  await _loadHtml2Pdf().catch(() => {});
+
   if (typeof html2pdf === 'undefined') {
     toast('A biblioteca de PDF não carregou. Verifica a tua ligação à internet e tenta novamente.');
     return;
@@ -1678,7 +1682,7 @@ function downloadGiftsPDF() {
   toast('PDF de presentes gerado com sucesso!');
 }
 
-function downloadPDF() {
+async function downloadPDF() {
   const ev = Store.events.find(e => e.id === Store.currentEventId);
   if (!ev) return;
 
@@ -1807,6 +1811,10 @@ function downloadPDF() {
     html2canvas: { scale: 2 },
     jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
   };
+
+  // ✅ A biblioteca nunca era carregada em lado nenhum do site — só era
+  // verificada. Agora é trazida aqui, na hora, só quando é mesmo precisa.
+  await _loadHtml2Pdf().catch(() => {});
 
   if (typeof html2pdf === 'undefined') {
     // Salvaguarda: se a biblioteca não tiver carregado por algum motivo

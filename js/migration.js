@@ -1,25 +1,30 @@
 // ===================== MIGRAÇÃO DE DADOS (ADMIN GOD) =====================
 // Ferramenta para migrar TUDO do site — contas, eventos, RSVPs, presentes,
-// links, notificações, E as fotos/vídeos/áudio — para um projecto Supabase
-// NOVO, sem depender do projecto antigo continuar a existir.
+// links, notificações, fotos/vídeos/áudio, a ESTRUTURA (tabelas/políticas)
+// e o auth.users (senhas do Admin God) — para um projecto Supabase NOVO,
+// sem depender do projecto antigo continuar a existir, e sem precisares de
+// abrir um terminal.
 //
-// ⚠️ A única coisa que NÃO é migrada automaticamente por aqui:
-//   auth.users (as senhas) — a anon key nunca consegue ler essa tabela, é
-//   uma zona protegida do Supabase. Tem de ser copiada à parte, uma única
-//   vez, pelo SQL Editor do painel do Supabase, por quem tem acesso de
-//   dono aos dois projectos.
+// ⚠️ PRÉ-REQUISITO ÚNICO, uma vez por projecto NOVO (ver ficheiro
+// BOOTSTRAP.sql / secção "Kit de Arranque" mais abaixo): colar 3 funções
+// especiais no SQL Editor do Supabase. Isto só é preciso UMA vez porque é
+// "o ovo e a galinha" — precisamos de alguma capacidade mínima já instalada
+// para o site conseguir instalar/copiar o resto sozinho. Depois disso,
+// tudo o resto (nesta e em futuras migrações a partir deste projecto) já
+// não precisa de terminal nenhum.
 //
-// Como funciona (3 passos, por esta ordem):
-//   1. Exportar os dados deste projecto para um ficheiro .txt
-//   2. Copiar as fotos/vídeos/áudio deste projecto para o projecto novo
-//      (mesmo nome de balde/ficheiro, para os caminhos coincidirem)
-//   3. Importar o ficheiro no projecto novo — os endereços das fotos são
-//      reescritos automaticamente para apontarem para lá, por isso o
-//      projecto novo fica totalmente independente do antigo.
-//
-// Pré-requisito antes do passo 3: o projecto novo já deve ter as MESMAS
-// tabelas/colunas/políticas/buckets criados (correr lá os scripts SQL
-// habituais) e já deve ter a tabela auth.users copiada.
+// Passos, por esta ordem:
+//   0. (só na primeira vez, no projecto NOVO) Colar o Kit de Arranque no
+//      SQL Editor — ver botão "Ver Kit de Arranque" na ferramenta.
+//   1. Gerar a estrutura do projecto ANTIGO com `pg_dump --schema-only`
+//      (continua a precisar do terminal só para GERAR este ficheiro — é
+//      a única ferramenta fiável para isto, ver nota no botão "Aplicar
+//      Estrutura")
+//   2. "Aplicar Estrutura" — cola aqui o texto do schema.sql, sem psql
+//   3. "Copiar auth.users" — um clique, sem terminal
+//   4. "Exportar dados" (deste projecto)
+//   5. "Copiar ficheiros" (fotos/vídeos/áudio)
+//   6. "Importar" no projecto novo
 
 const MIGRATION_TABLES = [
   // Ordem "melhor esforço" (tabelas-mãe primeiro) — a importação tenta
@@ -95,28 +100,59 @@ function openMigrationTool() {
         <label class="text-xs font-semibold text-gray-600 block mb-1">URL do projecto antigo</label>
         <input id="migration-old-url" class="input-field text-sm mb-2" placeholder="https://xxxx.supabase.co">
         <label class="text-xs font-semibold text-gray-600 block mb-1">Anon Key do projecto antigo</label>
-        <input id="migration-old-key" class="input-field text-sm" placeholder="a anon key (pública) do projecto antigo">
+        <input id="migration-old-key" class="input-field text-sm mb-2" placeholder="a anon key (pública) do projecto antigo">
+        <label class="text-xs font-semibold text-gray-600 block mb-1">Service Role Key do projecto antigo <span class="text-gray-400 font-normal">(só para "Copiar auth.users")</span></label>
+        <input id="migration-old-service-key" type="password" class="input-field text-sm" placeholder="opcional — só se fores usar o passo de auth.users">
+      </div>
+
+      <div style="border:1px solid #6366f1;background:#eef2ff;border-radius:0.6rem;padding:0.9rem;margin-bottom:0.9rem">
+        <h4 class="text-sm font-bold text-gray-700 mb-2">0. Kit de Arranque <span class="text-xs font-normal text-gray-500">(só na primeira vez, por projecto novo)</span></h4>
+        <p class="text-xs text-gray-500 mb-2">
+          3 funções especiais que, uma vez coladas no SQL Editor do projecto novo, eliminam a necessidade de
+          terminal para tudo o que vem a seguir. Só protegidas pela Service Role Key — mais ninguém as consegue usar.
+        </p>
+        <button class="btn-outline text-sm w-full" onclick="migrationShowBootstrapKit()">📋 Ver / Copiar Kit de Arranque</button>
       </div>
 
       <div style="border:1px solid #e5e7eb;border-radius:0.6rem;padding:0.9rem;margin-bottom:0.9rem">
-        <h4 class="text-sm font-bold text-gray-700 mb-2">1. Exportar dados do projecto antigo</h4>
+        <h4 class="text-sm font-bold text-gray-700 mb-2">1. Aplicar Estrutura no projecto novo</h4>
+        <p class="text-xs text-gray-500 mb-2">
+          Ainda precisas do terminal só para <strong>gerar</strong> este texto (o <code>pg_dump</code> é a
+          ferramenta certa para isso, não vale a pena reinventá-la):<br>
+          <code style="font-size:0.65rem;word-break:break-all">pg_dump "CONNECTION_STRING_ANTIGO" --schema-only --no-owner --no-privileges -f schema.sql</code><br>
+          Depois, abre esse ficheiro num editor de texto, copia tudo, e cola aqui — já não precisas do <code>psql</code>.
+        </p>
+        <textarea id="migration-schema-sql" class="input-field text-sm mb-2" rows="4" placeholder="Cola aqui o conteúdo do schema.sql..."></textarea>
+        <button class="btn-main text-sm w-full" onclick="migrationApplySchema()">🏗️ Aplicar Estrutura no projecto novo</button>
+        <div id="migration-schema-log" class="text-xs text-gray-500 mt-2 whitespace-pre-wrap" style="max-height:160px;overflow-y:auto;font-family:monospace"></div>
+      </div>
+
+      <div style="border:1px solid #e5e7eb;border-radius:0.6rem;padding:0.9rem;margin-bottom:0.9rem">
+        <h4 class="text-sm font-bold text-gray-700 mb-2">2. Copiar auth.users (senhas do Admin God)</h4>
+        <p class="text-xs text-gray-500 mb-2">Um clique, sem terminal — usa as Service Role Keys preenchidas acima (antigo) e abaixo (novo).</p>
+        <button class="btn-main text-sm w-full" onclick="migrationCopyAuthUsers()">🔑 Copiar auth.users</button>
+        <div id="migration-auth-log" class="text-xs text-gray-500 mt-2 whitespace-pre-wrap" style="max-height:140px;overflow-y:auto;font-family:monospace"></div>
+      </div>
+
+      <div style="border:1px solid #e5e7eb;border-radius:0.6rem;padding:0.9rem;margin-bottom:0.9rem">
+        <h4 class="text-sm font-bold text-gray-700 mb-2">3. Exportar dados do projecto antigo</h4>
         <button class="btn-main text-sm w-full" onclick="migrationExport()">📤 Descarregar backup (.txt)</button>
         <div id="migration-export-log" class="text-xs text-gray-500 mt-2 whitespace-pre-wrap" style="max-height:140px;overflow-y:auto;font-family:monospace"></div>
       </div>
 
       <div style="border:1px solid #e5e7eb;border-radius:0.6rem;padding:0.9rem;margin-bottom:0.9rem">
-        <h4 class="text-sm font-bold text-gray-700 mb-2">2. Copiar fotos, vídeos e áudio (antigo → novo)</h4>
+        <h4 class="text-sm font-bold text-gray-700 mb-2">4. Copiar fotos, vídeos e áudio (antigo → novo)</h4>
         <p class="text-xs text-gray-500 mb-2">Copia todos os ficheiros do projecto antigo para o novo (usa os campos preenchidos acima e abaixo). Pode demorar alguns minutos.</p>
         <button class="btn-main text-sm w-full" onclick="migrationCopyFiles()">🖼️ Copiar ficheiros</button>
         <div id="migration-files-log" class="text-xs text-gray-500 mt-2 whitespace-pre-wrap" style="max-height:160px;overflow-y:auto;font-family:monospace"></div>
       </div>
 
       <div style="border:1px solid #e5e7eb;border-radius:0.6rem;padding:0.9rem">
-        <h4 class="text-sm font-bold text-gray-700 mb-2">3. Importar no projecto novo</h4>
+        <h4 class="text-sm font-bold text-gray-700 mb-2">5. Importar no projecto novo</h4>
         <p class="text-xs text-red-500 mb-2">
-          ⚠️ Antes de importar: cria o projecto novo no Supabase, corre lá os teus scripts SQL de configuração
-          (as mesmas tabelas e políticas do projecto actual, incluindo os mesmos buckets de Storage) e copia a tabela
-          <code>auth.users</code> manualmente pelo SQL Editor. Depois corre o passo 2 acima. Só então importa os dados aqui.
+          ⚠️ Antes de importar: cria o projecto novo no Supabase, cola o Kit de Arranque (passo 0), aplica a
+          estrutura (passo 1) e copia o auth.users (passo 2) — e cria os mesmos buckets de Storage lá. Só depois
+          corre o passo 4 (copiar ficheiros) e importa os dados aqui.
         </p>
         <label class="text-xs font-semibold text-gray-600 block mb-1">URL do projecto novo</label>
         <input id="migration-new-url" class="input-field text-sm mb-2" placeholder="https://xxxx.supabase.co">
@@ -135,6 +171,200 @@ function openMigrationTool() {
       <button class="btn-outline text-sm w-full mt-3" onclick="this.closest('.modal-overlay').remove()">Fechar</button>
     </div>`;
   document.body.appendChild(modal);
+}
+
+// ===================== KIT DE ARRANQUE =====================
+// As 3 funções abaixo só precisam de ser coladas UMA VEZ, no SQL Editor de
+// cada projecto NOVO. Todas são protegidas pela Service Role Key — a
+// própria função verifica isso lá dentro, por isso nem a anon key nem uma
+// sessão normal de utilizador conseguem usá-las, só quem tiver a chave
+// secreta (Project Settings → API Keys → service_role).
+const MIGRATION_BOOTSTRAP_SQL = `-- ===== KIT DE ARRANQUE — colar uma vez no SQL Editor do projecto novo =====
+
+-- 1) Corre qualquer SQL (usado para "Aplicar Estrutura", sem precisar de psql)
+create or replace function public.rpc_admin_exec_sql(p_sql text)
+returns text
+language plpgsql
+security definer
+set search_path to 'public'
+as $$
+begin
+  if coalesce(current_setting('request.jwt.claims', true)::json->>'role', '') <> 'service_role' then
+    raise exception 'Só a Service Role Key pode executar isto.';
+  end if;
+  execute p_sql;
+  return 'OK';
+end;
+$$;
+
+-- 2) Exporta auth.users + auth.identities deste projecto, como JSON
+create or replace function public.rpc_admin_export_auth_users()
+returns jsonb
+language plpgsql
+security definer
+set search_path to 'public'
+as $$
+declare
+  result jsonb;
+begin
+  if coalesce(current_setting('request.jwt.claims', true)::json->>'role', '') <> 'service_role' then
+    raise exception 'Só a Service Role Key pode executar isto.';
+  end if;
+  select jsonb_build_object(
+    'users', coalesce((select jsonb_agg(to_jsonb(u)) from auth.users u), '[]'::jsonb),
+    'identities', coalesce((select jsonb_agg(to_jsonb(i)) from auth.identities i), '[]'::jsonb)
+  ) into result;
+  return result;
+end;
+$$;
+
+-- 3) Importa auth.users + auth.identities para este projecto, a partir do JSON gerado pela função acima
+create or replace function public.rpc_admin_import_auth_users(p_data jsonb)
+returns text
+language plpgsql
+security definer
+set search_path to 'public'
+as $$
+declare
+  u jsonb;
+  i jsonb;
+  cnt_users int := 0;
+  cnt_idents int := 0;
+begin
+  if coalesce(current_setting('request.jwt.claims', true)::json->>'role', '') <> 'service_role' then
+    raise exception 'Só a Service Role Key pode executar isto.';
+  end if;
+
+  for u in select * from jsonb_array_elements(coalesce(p_data->'users', '[]'::jsonb))
+  loop
+    begin
+      insert into auth.users select * from jsonb_populate_record(null::auth.users, u)
+      on conflict (id) do nothing;
+      cnt_users := cnt_users + 1;
+    exception when others then null; -- regista o que conseguir, não trava tudo por 1 linha problemática
+    end;
+  end loop;
+
+  for i in select * from jsonb_array_elements(coalesce(p_data->'identities', '[]'::jsonb))
+  loop
+    begin
+      insert into auth.identities select * from jsonb_populate_record(null::auth.identities, i)
+      on conflict (id) do nothing;
+      cnt_idents := cnt_idents + 1;
+    exception when others then null;
+    end;
+  end loop;
+
+  return format('Tentados %s users, %s identities (algumas linhas podem já existir e são ignoradas em silêncio)', cnt_users, cnt_idents);
+end;
+$$;
+`;
+
+function migrationShowBootstrapKit() {
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.innerHTML = `
+    <div class="modal-content bg-white rounded-2xl p-5" style="max-width:640px;max-height:85vh;overflow-y:auto">
+      <h3 class="text-base font-bold text-gray-800 mb-1">📋 Kit de Arranque</h3>
+      <p class="text-xs text-gray-500 mb-3">
+        Copia este texto e cola-o no <strong>SQL Editor do projecto NOVO</strong> — uma única vez. Só depois
+        disso os botões "Aplicar Estrutura" e "Copiar auth.users" funcionam.
+      </p>
+      <textarea id="migration-bootstrap-textarea" readonly class="input-field text-xs" rows="16" style="font-family:monospace" onclick="this.select()">${MIGRATION_BOOTSTRAP_SQL.replace(/</g, '&lt;')}</textarea>
+      <div class="flex gap-2 mt-3">
+        <button class="flex-1 btn-main text-sm" onclick="navigator.clipboard.writeText(document.getElementById('migration-bootstrap-textarea').value); toast('Copiado!')">📋 Copiar</button>
+        <button class="btn-outline text-sm" onclick="this.closest('.modal-overlay').remove()">Fechar</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+}
+
+// ===================== APLICAR ESTRUTURA (sem psql) =====================
+async function migrationApplySchema() {
+  const logId = 'migration-schema-log';
+  document.getElementById(logId).textContent = '';
+  const newUrl = document.getElementById('migration-new-url').value.trim().replace(/\/$/, '');
+  const newKey = document.getElementById('migration-new-key').value.trim();
+  const sql = document.getElementById('migration-schema-sql').value.trim();
+  if (!newUrl || !newKey) { toast('Preenche primeiro o URL e a Service Role Key do projecto novo (mais abaixo).'); return; }
+  if (!sql) { toast('Cola o conteúdo do schema.sql primeiro.'); return; }
+  if (!confirm(`Vais aplicar esta estrutura em:\n${newUrl}\n\nIsto corre directamente na base de dados. Confirma que é mesmo o projecto novo e vazio. Continuar?`)) return;
+
+  _migLog(logId, 'A aplicar estrutura...');
+  try {
+    const res = await fetch(`${newUrl}/rest/v1/rpc/rpc_admin_exec_sql`, {
+      method: 'POST',
+      headers: {
+        'apikey': newKey, 'Authorization': `Bearer ${newKey}`, 'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ p_sql: sql })
+    });
+    const text = await res.text();
+    if (!res.ok) {
+      _migLog(logId, `⚠️ Falhou: HTTP ${res.status} — ${text.slice(0, 300)}`);
+      _migLog(logId, 'Se o erro disser que a função não existe, cola primeiro o "Kit de Arranque" (passo 0) no SQL Editor do projecto novo.');
+    } else {
+      _migLog(logId, '✅ Estrutura aplicada! Resultado: ' + text);
+      toast('Estrutura aplicada com sucesso!');
+    }
+  } catch (e) {
+    _migLog(logId, '⚠️ Erro de rede: ' + e.message);
+  }
+}
+
+// ===================== COPIAR auth.users (sem terminal) =====================
+async function migrationCopyAuthUsers() {
+  const logId = 'migration-auth-log';
+  document.getElementById(logId).textContent = '';
+  const oldUrl = document.getElementById('migration-old-url').value.trim().replace(/\/$/, '');
+  const oldServiceKey = document.getElementById('migration-old-service-key').value.trim();
+  const newUrl = document.getElementById('migration-new-url').value.trim().replace(/\/$/, '');
+  const newKey = document.getElementById('migration-new-key').value.trim();
+  if (!oldUrl || !oldServiceKey) { toast('Preenche o URL e a Service Role Key do projecto ANTIGO (no topo).'); return; }
+  if (!newUrl || !newKey) { toast('Preenche o URL e a Service Role Key do projecto NOVO (mais abaixo).'); return; }
+  if (!confirm('Vais copiar auth.users do projecto antigo para o novo. Continuar?')) return;
+
+  _migLog(logId, 'A exportar auth.users do projecto antigo...');
+  let data;
+  try {
+    const res1 = await fetch(`${oldUrl}/rest/v1/rpc/rpc_admin_export_auth_users`, {
+      method: 'POST',
+      headers: { 'apikey': oldServiceKey, 'Authorization': `Bearer ${oldServiceKey}`, 'Content-Type': 'application/json' },
+      body: '{}'
+    });
+    const text1 = await res1.text();
+    if (!res1.ok) {
+      _migLog(logId, `⚠️ Falhou a exportar: HTTP ${res1.status} — ${text1.slice(0, 300)}`);
+      _migLog(logId, 'Se o erro disser que a função não existe, cola o "Kit de Arranque" (passo 0) no SQL Editor do projecto ANTIGO também.');
+      return;
+    }
+    data = JSON.parse(text1);
+    const nUsers = (data.users || []).length;
+    const nIdents = (data.identities || []).length;
+    _migLog(logId, `✅ Exportados: ${nUsers} utilizador(es), ${nIdents} identidade(s).`);
+  } catch (e) {
+    _migLog(logId, '⚠️ Erro de rede ao exportar: ' + e.message);
+    return;
+  }
+
+  _migLog(logId, 'A importar no projecto novo...');
+  try {
+    const res2 = await fetch(`${newUrl}/rest/v1/rpc/rpc_admin_import_auth_users`, {
+      method: 'POST',
+      headers: { 'apikey': newKey, 'Authorization': `Bearer ${newKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ p_data: data })
+    });
+    const text2 = await res2.text();
+    if (!res2.ok) {
+      _migLog(logId, `⚠️ Falhou a importar: HTTP ${res2.status} — ${text2.slice(0, 300)}`);
+      _migLog(logId, 'Se o erro disser que a função não existe, cola o "Kit de Arranque" (passo 0) no SQL Editor do projecto NOVO.');
+    } else {
+      _migLog(logId, '✅ ' + text2);
+      toast('auth.users copiado!');
+    }
+  } catch (e) {
+    _migLog(logId, '⚠️ Erro de rede ao importar: ' + e.message);
+  }
 }
 
 function _migLog(elId, msg) {

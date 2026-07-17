@@ -49,6 +49,11 @@ async function _loadPdfJs() {
       'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
   }
 }
+async function _loadHtml2Pdf() {
+  if (window.html2pdf) return;
+  await _loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js')
+    .catch(() => _loadScript('https://unpkg.com/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js'));
+}
 // Lucide fallback — evita crash se o CDN falhou
 if (typeof window !== 'undefined') {
   if (!window.lucide) window.lucide = { createIcons: () => {} };
