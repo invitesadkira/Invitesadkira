@@ -731,24 +731,24 @@ async function replyToGuestMessage(guestName, currentReply, eventId, guestMessag
   modal.className = 'modal-overlay';
   modal.innerHTML = `
     <div class="modal-content bg-white rounded-2xl p-6" style="max-width:420px">
-      <h3 class="text-base font-bold text-gray-800 mb-1">Responder a ${escapeHTML(guestName)}</h3>
+      <h3 class="text-base font-bold text-gray-800 mb-1">Responder a ${guestName}</h3>
       <p class="text-xs text-gray-400 mb-3">A resposta aparece visível por baixo do recado, no mural de mensagens.</p>
       <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:0.6rem;padding:0.7rem;margin-bottom:0.8rem">
-        <p class="text-xs font-semibold text-gray-500 mb-1">Recado de ${escapeHTML(guestName)}:</p>
-        <p class="text-sm text-gray-700" style="white-space:pre-wrap">${escapeHTML(guestMessage || '(sem texto)')}</p>
+        <p class="text-xs font-semibold text-gray-500 mb-1">Recado de ${guestName}:</p>
+        <p class="text-sm text-gray-700" style="white-space:pre-wrap">${guestMessage || '(sem texto)'}</p>
       </div>
-      <textarea id="owner-reply-text" class="input-field" rows="3" placeholder="Escreva a sua resposta...">${escapeHTML(currentReply || '')}</textarea>
+      <textarea id="owner-reply-text" class="input-field" rows="3" placeholder="Escreva a sua resposta...">${currentReply || ''}</textarea>
       <div class="flex gap-2 mt-3">
         <button class="flex-1 btn-main" onclick="(async ()=>{
           const txt = document.getElementById('owner-reply-text').value.trim();
           const btn = this; btn.disabled = true; btn.textContent = 'A guardar...';
-          const res = await supabaseRequest('rsvps?event_id=eq.${evId}&guest_name=eq.'+encodeURIComponent('${guestName.replace(/'/g,"\\'")}'),'PATCH',{owner_reply:txt});
+          const res = await supabaseRequest('rsvps?event_id=eq.${evId}&guest_name=eq.'+encodeURIComponent('${escapeForInlineJS(guestName)}'),'PATCH',{owner_reply:txt});
           if (res) { toast(txt ? 'Resposta guardada!' : 'Resposta removida.'); document.querySelector('.modal-overlay')?.remove(); renderEventDetails(); renderGuestMessageWall(Store.guestEventData || Store.events.find(e=>e.id===Store.currentEventId)); }
           else { toast('Erro ao guardar.'); btn.disabled=false; btn.textContent='Guardar'; }
         })()">Guardar</button>
         <button class="flex-1 btn-outline" onclick="this.closest('.modal-overlay').remove()">Cancelar</button>
         ${currentReply ? `<button class="text-xs text-red-400 px-2" onclick="(async()=>{
-          await supabaseRequest('rsvps?event_id=eq.${evId}&guest_name=eq.'+encodeURIComponent('${guestName.replace(/'/g,"\\'")}'),'PATCH',{owner_reply:''});
+          await supabaseRequest('rsvps?event_id=eq.${evId}&guest_name=eq.'+encodeURIComponent('${escapeForInlineJS(guestName)}'),'PATCH',{owner_reply:''});
           toast('Resposta removida.'); document.querySelector('.modal-overlay')?.remove(); renderEventDetails();
         })()">Remover</button>` : ''}
       </div>
@@ -813,7 +813,7 @@ function renderGuestMessageWall(eventData) {
               </div>` : ''}
             ${(Store.currentUser && (Store.currentUser.role === 'admin' || Store.currentUser.id === (Store.events.find(e=>e.id===Store.currentEventId)||{}).user_id)) ? `
               <div style="margin-top:0.6rem;text-align:right">
-                <button onclick="replyToGuestMessage('${escapeHTML(item.name).replace(/'/g,"\\'")}','${escapeHTML(item.ownerReply||'').replace(/'/g,"\\'")}','${Store.currentEventId}','${escapeHTML(item.message||'').replace(/'/g,"\\'")}')"
+                <button onclick="replyToGuestMessage('${escapeForInlineJS(item.name)}','${escapeForInlineJS(item.ownerReply||'')}','${Store.currentEventId}','${escapeForInlineJS(item.message||'')}')"
                   style="font-size:0.7rem;color:${evColor};font-weight:700;background:none;border:1px solid ${evColor}33;border-radius:999px;padding:0.2rem 0.7rem;cursor:pointer">
                   ${item.ownerReply ? '✏️ Editar resposta' : '↩ Responder'}
                 </button>

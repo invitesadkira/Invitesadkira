@@ -1437,13 +1437,14 @@ function renderEventDetails() {
       }
       let replyMessageBtn = '';
       if (c.message && isOwner) {
-        const safeReplyName = escapeHTML(c.name || '').replace(/'/g, "\\'");
-        const safeReplyText = escapeHTML(c.owner_reply || '').replace(/'/g, "\\'");
-        const safeGuestMsg = escapeHTML(c.message || '').replace(/'/g, "\\'");
+        const safeReplyName = escapeForInlineJS(c.name || '');
+        const safeReplyText = escapeForInlineJS(c.owner_reply || '');
+        const safeGuestMsg = escapeForInlineJS(c.message || '');
         replyMessageBtn = '<button class="text-teal-500 hover:text-teal-600 transition p-1" title="Responder recado" onclick="replyToGuestMessage(\'' + safeReplyName + '\',\'' + safeReplyText + '\',\'' + event.id + '\',\'' + safeGuestMsg + '\')"><i data-lucide="message-square" class="w-4 h-4"></i></button>';
       }
       
-      const sideLabel = getSideLabel(c.side, event);
+      const _rowIsRsvp = _rsvpIsEnabled;
+      const sideLabel = _rowIsRsvp ? getSideLabel(c.side, event) : '';
       const safeName = escapeHTML(c.name);
       const safeCompanions = (c.companions || []).map(escapeHTML).join(', ');
       const safeKids = (c.kids || []).map(escapeHTML).join(', ');
@@ -1454,7 +1455,6 @@ function renderEventDetails() {
         ((c.kids || []).length ? 'Crianças: ' + safeKids : ''),
         (hasReservedGift ? safeGiftName : '')
       ].filter(Boolean).join(' · ');
-      const _rowIsRsvp = _rsvpIsEnabled;
       const _rowBg = _rowIsRsvp ? (c.attending ? 'bg-green-50' : 'bg-red-50') : 'bg-gray-50';
       const _rowAvatarColor = _rowIsRsvp ? (c.attending ? 'bg-green-200 text-green-700' : 'bg-red-200 text-red-600') : 'bg-gray-200 text-gray-600';
       const _rowAttendingBadge = _rowIsRsvp ? ('<span class="text-xs font-semibold ' + (c.attending ? 'text-green-600' : 'text-red-500') + ' mr-2">' + (c.attending ? 'Vai' : 'Não vai') + '</span>') : '';

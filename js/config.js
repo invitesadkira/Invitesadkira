@@ -83,6 +83,19 @@ function escapeHTML(value) {
   }[char]));
 }
 
+// Para texto que vai dentro de um onclick="...('texto')" embutido em HTML —
+// além do escapeHTML normal, também precisa de tratar quebras de linha
+// (um recado com várias linhas tem \n reais, que partem o JavaScript
+// dentro do atributo, porque uma string entre aspas simples não pode ter
+// uma quebra de linha literal lá dentro) e de escapar a própria aspa
+// simples que delimita a string.
+function escapeForInlineJS(value) {
+  return escapeHTML(value)
+    .replace(/'/g, "\\'")
+    .replace(/\r\n/g, '\\n')
+    .replace(/[\r\n]/g, '\\n');
+}
+
 // Neutraliza "CSV/formula injection": se um nome de convidado começar por
 // =, +, -, @ (ou tab/CR), o Excel/Sheets pode interpretar a célula como uma
 // fórmula ao abrir o ficheiro exportado. Prefixamos com um apóstrofo para
