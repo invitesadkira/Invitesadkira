@@ -4155,6 +4155,35 @@ async function openTicketLimitModal(userId, username) {
   document.body.appendChild(modal);
 }
 
+// ✅ Garante que 3 funcionalidades específicas ficam sempre activas por
+// omissão para todos os clientes, removendo qualquer restrição explícita
+// que possa ter ficado gravada por engano (ex: durante testes).
+async function adminEnsureDefaultFeatures() {
+  const keysToEnsure = ['download_pdf', 'download_gifts_pdf', 'manage_tickets'];
+  if (!confirm(`Vais garantir que "Baixar PDF", "Baixar Presentes PDF" e "Gerir Tickets" ficam activos para TODAS as contas. Continuar?`)) return;
+
+  const users = (Store.users || []).filter(u => u.role !== 'admin');
+  let changed = 0, checked = 0;
+
+  toast(`A verificar ${users.length} conta(s)...`);
+
+  for (const u of users) {
+    checked++;
+    const perms = _getFeaturePerms(u);
+    let touched = false;
+    keysToEnsure.forEach(k => {
+      if (perms[k] === false) { delete perms[k]; touched = true; }
+    });
+    if (touched) {
+      await supabaseRequest(`accounts?id=eq.${u.id}`, 'PATCH', { allowed_features: JSON.stringify(perms) }).catch(() => {});
+      u.allowed_features = perms;
+      changed++;
+    }
+  }
+
+  toast(`Concluído: ${changed} conta(s) actualizada(s) de ${checked} verificada(s).`);
+}
+
 async function openUserFeaturesModal(userId) {
   const user = (Store.users || []).find(u => u.id === userId);
   if (!user) return;
