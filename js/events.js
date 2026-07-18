@@ -1218,7 +1218,8 @@ function renderEventDetails() {
       const notes = rows && rows[0] && rows[0].intake_color_notes;
       const banner = document.getElementById('detail-color-notes-banner');
       if (banner) {
-        if (notes) {
+        const _showColorNotes = notes && ((Store.currentUser && Store.currentUser.role === 'admin') || Store.adminModeActive);
+        if (_showColorNotes) {
           banner.classList.remove('hidden');
           banner.innerHTML = `<div style="background:#fef9c3;border:1px solid #fde68a;border-radius:0.6rem;padding:0.6rem 0.85rem;margin-bottom:0.75rem;display:flex;align-items:center;gap:0.5rem">
             <i data-lucide="palette" class="w-4 h-4" style="color:#a16207;flex-shrink:0"></i>
