@@ -1290,7 +1290,11 @@ function renderEventDetails() {
   document.getElementById('btn-manage-gifts').classList.toggle('hidden', !event.allowGifts);
   document.getElementById('btn-upload-gifts').classList.toggle('hidden', !event.allowGifts);
   document.getElementById('btn-download-gifts-pdf').classList.toggle('hidden', !event.allowGifts);
-  document.getElementById('detail-gifts-link-wrap').classList.toggle('hidden', !event.allowGifts);
+  // ✅ Os links do evento (com e sem presentes) só interessam ao Admin God
+  // — é quem trata da parte técnica de partilhar o link com o cliente.
+  // Os clientes, na sua própria conta, não devem ver isto.
+  document.getElementById('detail-link-wrap').classList.toggle('hidden', !isAdmin);
+  document.getElementById('detail-gifts-link-wrap').classList.toggle('hidden', !(event.allowGifts && isAdmin));
   
   const editBtn = document.querySelector('button:has(i[data-lucide="edit"])');
   if (editBtn) editBtn.parentElement.parentElement.querySelector('button:has(i[data-lucide="edit"])').classList.toggle('hidden', !(isOwner || isAdmin));
@@ -1440,7 +1444,12 @@ function renderEventDetails() {
         const safeReplyName = escapeForInlineJS(c.name || '');
         const safeReplyText = escapeForInlineJS(c.owner_reply || '');
         const safeGuestMsg = escapeForInlineJS(c.message || '');
-        replyMessageBtn = '<button class="text-teal-500 hover:text-teal-600 transition p-1" title="Responder recado" onclick="replyToGuestMessage(\'' + safeReplyName + '\',\'' + safeReplyText + '\',\'' + event.id + '\',\'' + safeGuestMsg + '\')"><i data-lucide="message-square" class="w-4 h-4"></i></button>';
+        const _hasReply = !!(c.owner_reply && c.owner_reply.trim());
+        // ✅ Ícone fica verde e com um pontinho, quando já existe resposta —
+        // para o organizador ver de relance quais recados já respondeu.
+        const _replyIconColor = _hasReply ? 'text-green-500 hover:text-green-600' : 'text-teal-500 hover:text-teal-600';
+        const _replyDot = _hasReply ? '<span style="position:absolute;top:0;right:0;width:7px;height:7px;background:#22c55e;border:1.5px solid #fff;border-radius:50%"></span>' : '';
+        replyMessageBtn = '<button class="' + _replyIconColor + ' transition p-1" style="position:relative" title="' + (_hasReply ? 'Já respondido — clique para editar' : 'Responder recado') + '" onclick="replyToGuestMessage(\'' + safeReplyName + '\',\'' + safeReplyText + '\',\'' + event.id + '\',\'' + safeGuestMsg + '\')"><i data-lucide="message-square" class="w-4 h-4"></i>' + _replyDot + '</button>';
       }
       
       const _rowIsRsvp = _rsvpIsEnabled;
