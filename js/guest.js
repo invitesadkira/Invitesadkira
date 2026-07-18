@@ -730,15 +730,15 @@ async function replyToGuestMessage(guestName, currentReply, eventId, guestMessag
   const modal = document.createElement('div');
   modal.className = 'modal-overlay';
   modal.innerHTML = `
-    <div class="modal-content bg-white rounded-2xl p-6" style="max-width:420px">
-      <h3 class="text-base font-bold text-gray-800 mb-1">Responder a ${guestName}</h3>
-      <p class="text-xs text-gray-400 mb-3">A resposta aparece visível por baixo do recado, no mural de mensagens.</p>
-      <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:0.6rem;padding:0.7rem;margin-bottom:0.8rem">
-        <p class="text-xs font-semibold text-gray-500 mb-1">Recado de ${guestName}:</p>
+    <div class="modal-content bg-white rounded-2xl p-6" style="max-width:420px;max-height:85vh;display:flex;flex-direction:column;overflow:hidden">
+      <h3 class="text-base font-bold text-gray-800 mb-1" style="flex-shrink:0">Responder a ${guestName}</h3>
+      <p class="text-xs text-gray-400 mb-3" style="flex-shrink:0">A resposta aparece visível por baixo do recado, no mural de mensagens.</p>
+      <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:0.6rem;padding:0.7rem;margin-bottom:0.8rem;max-height:35vh;overflow-y:auto;flex-shrink:1">
+        <p class="text-xs font-semibold text-gray-500 mb-1" style="position:sticky;top:0;background:#f9fafb">Recado de ${guestName}:</p>
         <p class="text-sm text-gray-700" style="white-space:pre-wrap">${guestMessage || '(sem texto)'}</p>
       </div>
-      <textarea id="owner-reply-text" class="input-field" rows="3" placeholder="Escreva a sua resposta...">${currentReply || ''}</textarea>
-      <div class="flex gap-2 mt-3">
+      <textarea id="owner-reply-text" class="input-field" rows="3" placeholder="Escreva a sua resposta..." style="flex-shrink:0">${currentReply || ''}</textarea>
+      <div class="flex gap-2 mt-3" style="flex-shrink:0">
         <button class="flex-1 btn-main" onclick="(async ()=>{
           const txt = document.getElementById('owner-reply-text').value.trim();
           const btn = this; btn.disabled = true; btn.textContent = 'A guardar...';

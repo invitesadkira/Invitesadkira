@@ -206,6 +206,23 @@ async function handleTicketTemplateUpload(input) {
   if (file.size > 10 * 1024 * 1024) { toast('PDF muito grande. Máx. 10MB.'); return; }
   toast('A carregar template...');
   try {
+    // ✅ Apagar o template antigo (se existir) antes de subir o novo — o
+    // nome do ficheiro inclui sempre um carimbo de hora único (para o
+    // navegador nunca mostrar uma cópia antiga em cache), por isso o
+    // "x-upsert" nunca o substituía sozinho — ficava sempre lá, esquecido,
+    // a ocupar espaço. Isto resolve isso, sem perder a vantagem do cache.
+    const ev = Store.events.find(e => e.id === Store.currentEventId);
+    const oldUrl = ev && ev.ticket_template_url;
+    if (oldUrl && oldUrl.includes('/ticket-templates/')) {
+      const oldFileName = oldUrl.split('/ticket-templates/')[1];
+      if (oldFileName) {
+        await fetch(`${SUPABASE_URL}/storage/v1/object/ticket-templates/${oldFileName}`, {
+          method: 'DELETE',
+          headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
+        }).catch(() => {}); // não bloqueia o upload novo se isto falhar
+      }
+    }
+
     // ✅ Upload para bucket dedicado 'ticket-templates' que aceita PDFs
     const fileName = `template_${Store.currentEventId}_${Date.now()}.pdf`;
     const res = await fetch(`${SUPABASE_URL}/storage/v1/object/ticket-templates/${fileName}`, {
@@ -222,7 +239,6 @@ async function handleTicketTemplateUpload(input) {
     if (!res.ok) { const t = await res.text(); console.error('PDF upload error:', t); toast('Erro ao carregar PDF. Certifica-te de ter corrido o SQL 22_tickets_and_scanner.sql'); return; }
     const url = `${SUPABASE_URL}/storage/v1/object/public/ticket-templates/${fileName}`;
     await supabaseRequest(`events?id=eq.${Store.currentEventId}`, 'PATCH', { ticket_template_url: url });
-    const ev = Store.events.find(e => e.id === Store.currentEventId);
     if (ev) ev.ticket_template_url = url;
     toast('Template carregado!');
     document.getElementById('ticket-editor-modal')?.remove();

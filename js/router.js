@@ -435,6 +435,18 @@ async function loadEventosComDelay() {
         if (!Store.users || Store.users.length === 0) Store.users = [];
       }
       
+      // ✅ Se o ecrã de detalhes de um evento já estiver aberto quando este
+      // carregamento termina (ex: a pessoa clicou no evento antes dos dados
+      // completos chegarem), volta a desenhá-lo agora com os dados certos —
+      // sem isto, ficava a mostrar informação desactualizada (como o estado
+      // errado de "confirmação de presença") até a pessoa dar refresh à mão.
+      try {
+        const _detailsScreen = document.getElementById('screen-event-details');
+        if (_detailsScreen && !_detailsScreen.classList.contains('hidden') && Store.currentEventId && typeof renderEventDetails === 'function') {
+          renderEventDetails();
+        }
+      } catch (e) {}
+
       return true; // Indicar que dados foram carregados
     }
     return false;
