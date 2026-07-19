@@ -268,6 +268,34 @@ function rsvpAddKid() {
   list.appendChild(div);
 }
 
+// ===================== LISTA DE CONVIDADOS AUTORIZADOS (opcional) =====================
+// Quando activada pelo dono do evento, só nomes que estejam na lista
+// conseguem confirmar presença. Ao fim de 3 tentativas falhadas neste
+// aparelho/navegador, bloqueia e pede para contactar o dono do evento.
+// Quando desactivada (por omissão), a confirmação funciona normalmente,
+// sem nenhuma lista — qualquer nome é aceite, como sempre foi.
+function _rsvpWlKey(eventId) { return `adk_wl_attempts_${eventId}`; }
+function _rsvpWlGetAttempts(eventId) {
+  try { return parseInt(localStorage.getItem(_rsvpWlKey(eventId))) || 0; } catch (e) { return 0; }
+}
+function _rsvpWlIncAttempts(eventId) {
+  const n = _rsvpWlGetAttempts(eventId) + 1;
+  try { localStorage.setItem(_rsvpWlKey(eventId), String(n)); } catch (e) {}
+  return n;
+}
+function _rsvpWlReset(eventId) {
+  try { localStorage.removeItem(_rsvpWlKey(eventId)); } catch (e) {}
+}
+function _rsvpWlNormalize(s) {
+  return String(s || '').trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ');
+}
+function _rsvpWlIsAllowed(name, whitelistText) {
+  const target = _rsvpWlNormalize(name);
+  if (!target) return false;
+  const names = String(whitelistText || '').split('\n').map(n => _rsvpWlNormalize(n)).filter(Boolean);
+  return names.includes(target);
+}
+
 // ── Submit RSVP ───────────────────────────────────────────────────────
 async function rsvpSubmit() {
   const ev      = Store.guestEventData;
@@ -277,6 +305,26 @@ async function rsvpSubmit() {
 
   if (!name) { toast('Por favor insere o teu nome.'); document.getElementById('rsvp-name-new')?.focus(); return; }
   if (!attending) { toast('Por favor indica se confirmas presença.'); return; }
+
+  // ── Lista de convidados autorizados (só se o dono do evento a activou) ──
+  if (_yesOrTrue(ev?.guest_whitelist_enabled)) {
+    if (_rsvpWlGetAttempts(eventId) >= 3) {
+      toast('Já tentaste 3 vezes. Por favor contacta directamente o(a) responsável pelo evento.');
+      return;
+    }
+    if (!_rsvpWlIsAllowed(name, ev.guest_whitelist)) {
+      const attempts = _rsvpWlIncAttempts(eventId);
+      const remaining = 3 - attempts;
+      if (remaining <= 0) {
+        toast('O teu nome não está na lista de convidados. Já tentaste 3 vezes — por favor contacta directamente o(a) responsável pelo evento.');
+      } else {
+        toast(`O teu nome não está na lista de convidados. Verifica a grafia (nome igual ao do convite) e tenta de novo — restam ${remaining} tentativa${remaining === 1 ? '' : 's'}.`);
+      }
+      return;
+    }
+    // Nome encontrado na lista — repõe o contador de falhas para este evento
+    _rsvpWlReset(eventId);
+  }
 
   // ── Desbloquear autoplay de áudio AGORA, dentro do gesto síncrono do
   // clique. Browsers só permitem audio.play() sem bloqueio quando chamado

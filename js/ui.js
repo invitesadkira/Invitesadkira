@@ -674,6 +674,10 @@ function buildAdminQuickGrid() {
   const grid = document.getElementById('admin-quick-grid');
   if (!grid) return;
   const pendingCount = (Store.users || []).filter(u => u.status === 'pending').length;
+  // ✅ Encomendas e Migração de Dados nunca aparecem para um Gestor — ficam
+  // sempre reservadas ao Admin God, mesmo que o Gestor tenha todas as
+  // outras permissões ligadas.
+  const _isRealAdminForGrid = Store.currentUser?.role === 'admin' || Store.adminModeActive;
   const items = [
     { icon:'user-check',   label:'Por Aprovar',     action:"openPendingAccounts()", badge: pendingCount },
     { icon:'user-plus',    label:'Criar Conta',     action:"openCreateUserModal()" },
@@ -687,12 +691,12 @@ function buildAdminQuickGrid() {
     { icon:'package',      label:'Pacotes',          action:"openPackageEditor()" },
     { icon:'send',         label:'Link Cliente',     action:"openIntakeLinkPicker()" },
     { icon:'megaphone',    label:'Avisos Site',      action:"openSiteNoticesManager()" },
-    { icon:'shopping-bag', label:'Encomendas',       action:"openOrdersManager()" },
+    ..._isRealAdminForGrid ? [{ icon:'shopping-bag', label:'Encomendas', action:"openOrdersManager()" }] : [],
     { icon:'bell',         label:'Notificar Todos',  action:"openSendNotificationModal()" },
     { icon:'bar-chart-3',  label:'Análise de Acessos', action:"openAnalyticsPanel()" },
     { icon:'file-text',  label:'Política e Termos', action:"openLegalPagesEditor()" },
     { icon:'image',  label:'Vitrine do Hero (Site Comercial)', action:"adminEditHeroShowcase()" },
-    { icon:'database', label:'Migração de Dados', action:"openMigrationTool()" },
+    ..._isRealAdminForGrid ? [{ icon:'database', label:'Migração de Dados', action:"openMigrationTool()" }] : [],
   ];
   grid.innerHTML = items.map(it => `
     <button class="quick-card" onclick="${it.action}" style="position:relative">

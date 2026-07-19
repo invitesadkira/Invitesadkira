@@ -183,7 +183,7 @@ function renderAdminAccountsList(users) {
     
     html += '<div class="grid grid-cols-2 gap-2 mb-3 text-xs">';
     html += '<div class="p-2 rounded" style="background:var(--app-bg)"><p class="mb-0.5" style="color:var(--app-muted)">Username</p><p class="font-semibold break-all" style="color:var(--app-ink)">' + userPhone + '</p></div>';
-    html += '<div class="p-2 rounded" style="background:var(--app-bg)"><p class="mb-0.5" style="color:var(--app-muted)">Tipo</p><p class="font-semibold" style="color:var(--app-ink)">' + (userRole === 'moderator' ? 'Moderador' : 'Utilizador') + '</p></div>';
+    html += '<div class="p-2 rounded" style="background:var(--app-bg)"><p class="mb-0.5" style="color:var(--app-muted)">Tipo</p><p class="font-semibold" style="color:var(--app-ink)">' + (userRole === 'manager' ? '⭐ Gestor' : (userRole === 'moderator' ? 'Moderador' : 'Utilizador')) + '</p></div>';
     html += '<div class="p-2 rounded" style="background:var(--app-bg)"><p class="mb-0.5" style="color:var(--app-muted)">Nome</p><p class="font-semibold" style="color:var(--app-ink)">' + adminLabel + '</p></div>';
     html += '<div class="p-2 rounded" style="background:var(--app-bg)"><p class="mb-0.5" style="color:var(--app-muted)">Senha</p><p class="font-mono text-xs break-all" style="color:var(--app-ink)">•••••••• <button class="text-teal-600 underline font-sans not-italic" style="font-size:0.68rem" onclick="changeUserPassword(\'' + u.id + '\')">redefinir</button></p></div>';
     html += '<div class="p-2 rounded" style="background:var(--app-bg)"><p class="mb-0.5" style="color:var(--app-muted)">Status</p><span class="inline-block px-2 py-0.5 rounded-full font-semibold ' + userStatusClass + '">' + userStatus + '</span></div>';
@@ -195,6 +195,10 @@ function renderAdminAccountsList(users) {
     html += '<button class="text-xs bg-slate-500 hover:bg-slate-600 text-white rounded-lg py-1.5 px-3 font-semibold transition" onclick="editAdminLabel(\'' + u.id + '\')">Nome</button>';
     html += '<button class="text-xs bg-cyan-500 hover:bg-cyan-600 text-white rounded-lg py-1.5 px-3 font-semibold transition" onclick="setEventLimit(\'' + u.id + '\')">Limite</button>';
     html += '<button class="text-xs bg-purple-500 hover:bg-purple-600 text-white rounded-lg py-1.5 px-3 font-semibold transition" onclick="toggleModeratorRole(\'' + u.id + '\')">' + (userRole === 'moderator' ? 'Utilizador' : 'Moderador') + '</button>';
+    html += '<button class="text-xs ' + (userRole === 'manager' ? 'bg-gray-500 hover:bg-gray-600' : 'bg-amber-600 hover:bg-amber-700') + ' text-white rounded-lg py-1.5 px-3 font-semibold transition" onclick="toggleManagerRole(\'' + u.id + '\')">' + (userRole === 'manager' ? 'Remover Gestor' : '⭐ Tornar Gestor') + '</button>';
+    if (userRole === 'manager') {
+      html += '<button class="text-xs bg-indigo-700 hover:bg-indigo-800 text-white rounded-lg py-1.5 px-3 font-semibold transition" onclick="openManagerPermissionsModal(\'' + u.id + '\')">⚙️ Permissões de Gestor</button>';
+    }
     html += '<button class="text-xs bg-slate-500 hover:bg-slate-600 text-white rounded-lg py-1.5 px-3 font-semibold transition" onclick="changeUserPassword(\'' + u.id + '\')">Senha</button>';
     html += '<button class="text-xs bg-orange-500 hover:bg-orange-600 text-white rounded-lg py-1.5 px-3 font-semibold transition" onclick="changeUserPhone(\'' + u.id + '\')">Username</button>';
     html += '<button class="text-xs bg-violet-600 hover:bg-violet-700 text-white rounded-lg py-1.5 px-3 font-semibold transition" onclick="openUserFeaturesModal(\'' + u.id + '\')">🔐 Permissões</button>';
@@ -254,6 +258,14 @@ function backToAdminPanel() {
 }
 
 function adminAction(userId, action) {
+  if ((action === 'approve' || action === 'block') && !managerCan('mgr_block_accounts')) {
+    toast('Não tens permissão para aprovar/bloquear contas.');
+    return;
+  }
+  if (action === 'delete' && !managerCan('mgr_delete_accounts')) {
+    toast('Não tens permissão para eliminar contas.');
+    return;
+  }
   if (action === 'approve') {
     const u = Store.users.find(u => u.id === userId);
     if (u) {
@@ -330,6 +342,12 @@ async function confirmAdminDeleteUser(userId, modal) {
   const user = Store.users.find(u => u.id === userId);
   if (!user) { modal.remove(); return; }
 
+  if (!managerCan('mgr_delete_accounts')) {
+    modal.remove();
+    toast('Não tens permissão para eliminar contas.');
+    return;
+  }
+
   // 🔒 Admin God can NEVER be deleted
   if (user.role === 'admin' || user.phone === 'invitesadkira@gmail.com') {
     modal.remove();
@@ -343,23 +361,30 @@ async function confirmAdminDeleteUser(userId, modal) {
   document.body.appendChild(btn);
 
   try {
-    // 1. Get all events for this user
-    const userEvents = await supabaseRequest(`events?auth_uid=eq.${userId}&select=id`);
-    const eventIds = (userEvents || []).map(e => e.id);
+    // 1. Ir buscar TODOS os eventos desta conta (a coluna certa é user_id,
+    // não auth_uid — auth_uid é só para o login por email do Admin God;
+    // este era o bug que fazia os eventos nunca serem realmente apagados).
+    const userEvents = await supabaseRequest(`events?user_id=eq.${userId}&select=*`);
 
-    // 2. Delete RSVPs for each event
-    for (const evId of eventIds) {
-      await supabaseRequest(`rsvps?event_id=eq.${evId}`, 'DELETE');
-      await supabaseRequest(`event_visuals?event_id=eq.${evId}`, 'DELETE');
-      await supabaseRequest(`gifts?event_id=eq.${evId}`, 'DELETE');
+    // 2. Limpar tudo o que está ligado a cada evento (dados + ficheiros)
+    for (const ev of (userEvents || [])) {
+      await cascadeDeleteEventData(ev.id, ev);
     }
 
-    // 3. Delete all events
-    if (eventIds.length > 0) {
-      await supabaseRequest(`events?auth_uid=eq.${userId}`, 'DELETE');
+    // 3. Apagar os próprios eventos
+    if ((userEvents || []).length > 0) {
+      await supabaseRequest(`events?user_id=eq.${userId}`, 'DELETE');
     }
 
-    // 4. Delete the account
+    // 4. Limpar dados próprios da conta (não ligados a nenhum evento específico)
+    await Promise.allSettled([
+      supabaseRequest(`intake_submissions?user_id=eq.${userId}`, 'DELETE').catch(() => {}),
+      supabaseRequest(`intake_tokens?user_id=eq.${userId}`, 'DELETE').catch(() => {}),
+      supabaseRequest(`notifications?user_id=eq.${userId}`, 'DELETE').catch(() => {}),
+      supabaseRequest(`media_library?user_id=eq.${userId}`, 'DELETE').catch(() => {}),
+    ]);
+
+    // 5. Apagar a conta em si
     await supabaseRequest(`accounts?id=eq.${userId}`, 'DELETE');
 
     Store.users  = Store.users.filter(u => u.id !== userId);
@@ -2012,6 +2037,127 @@ function confirmToggleModeratorRole(userId, newRole, modal) {
 // Adicionar botão admin para gerir URLs legados (no renderAdmin)
 // Será adicionado no painel admin
 
+// ===================== GESTOR (MANAGER) =====================
+// Um papel novo, "quase admin completo": vê e gere contas E eventos de
+// todos os clientes, mas nunca Encomendas (pagamentos) nem a Migração de
+// Dados — essas duas ficam sempre só para o Admin God, sem excepção.
+// As permissões concretas (o que cada gestor pode ver/editar/eliminar)
+// são configuráveis, uma a uma, por conta — por omissão, tudo começa
+// DESLIGADO (o oposto do sistema de funcionalidades dos clientes, que
+// começa tudo ligado) — o Admin God tem de ligar cada coisa explicitamente.
+const MANAGER_PERMISSION_DEFS = [
+  { key: 'mgr_view_accounts',    label: 'Ver contas dos clientes' },
+  { key: 'mgr_edit_accounts',    label: 'Editar contas (nome, limite, permissões)' },
+  { key: 'mgr_block_accounts',   label: 'Bloquear/Aprovar contas' },
+  { key: 'mgr_delete_accounts',  label: 'Eliminar contas' },
+  { key: 'mgr_view_events',      label: 'Ver eventos de todos os clientes' },
+  { key: 'mgr_edit_events',      label: 'Editar eventos (visual, secções, etc.)' },
+  { key: 'mgr_delete_events',    label: 'Eliminar eventos' },
+  { key: 'mgr_duplicate_events', label: 'Duplicar eventos' },
+  { key: 'mgr_manage_gifts',     label: 'Gerir presentes' },
+  { key: 'mgr_manage_tickets',   label: 'Gerir tickets / scanner' },
+  { key: 'mgr_reply_messages',   label: 'Responder recados' },
+];
+
+function toggleManagerRole(userId) {
+  const user = Store.users.find(u => u.id === userId);
+  if (!user) return;
+  if (!Store.currentUser || Store.currentUser.role !== 'admin') {
+    toast('Apenas o Admin God pode atribuir o papel de Gestor!');
+    return;
+  }
+  const newRole = user.role === 'manager' ? 'user' : 'manager';
+
+  const confirmModal = document.createElement('div');
+  confirmModal.className = 'modal-overlay';
+  confirmModal.innerHTML = `
+    <div class="modal-content bg-white rounded-2xl shadow-lg p-6 max-w-sm w-full mx-4">
+      <h3 class="text-lg font-bold text-gray-800 mb-3">${newRole === 'manager' ? 'Tornar Gestor?' : 'Remover de Gestor?'}</h3>
+      <p class="text-sm text-gray-600 mb-4">Conta: <strong>${escapeHTML(user.phone)}</strong></p>
+      <div class="bg-amber-50 border-l-3 border-amber-500 p-3 rounded mb-4 text-xs text-amber-700">
+        ${newRole === 'manager'
+          ? '<p>Um Gestor tem acesso ao painel de administração, mas nada fica ligado automaticamente — define a seguir, em "⚙️ Permissões de Gestor", exactamente o que esta conta pode ver, editar ou eliminar. Encomendas e Migração de Dados nunca ficam acessíveis a um Gestor, mesmo com todas as permissões ligadas.</p>'
+          : '<p>Esta conta volta a ser um utilizador normal, sem acesso nenhum ao painel de administração.</p>'
+        }
+      </div>
+      <div class="flex gap-2">
+        <button class="flex-1 btn-main" onclick="confirmToggleManagerRole('${userId}', '${newRole}', this.closest('.modal-overlay'))">Confirmar</button>
+        <button class="flex-1 btn-outline" onclick="this.closest('.modal-overlay').remove()">Cancelar</button>
+      </div>
+    </div>`;
+  document.body.appendChild(confirmModal);
+}
+
+function confirmToggleManagerRole(userId, newRole, modal) {
+  const user = Store.users.find(u => u.id === userId);
+  if (!user) return;
+  user.role = newRole;
+  supabaseRequest(`accounts?id=eq.${userId}`, 'PATCH', { role: newRole }).then(() => {
+    modal.remove();
+    toast(newRole === 'manager' ? `${user.phone} agora é Gestor!` : `${user.phone} voltou a ser Utilizador Normal!`);
+    renderAdmin();
+  }).catch(() => toast('Erro ao alterar o papel. Tenta novamente.'));
+}
+
+function openManagerPermissionsModal(userId) {
+  const user = Store.users.find(u => u.id === userId);
+  if (!user) return;
+  if (!Store.currentUser || Store.currentUser.role !== 'admin') {
+    toast('Apenas o Admin God pode configurar permissões de Gestor!');
+    return;
+  }
+  const perms = _getFeaturePerms(user); // mesma coluna (allowed_features), chaves "mgr_..." distintas
+
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.innerHTML = `
+    <div class="modal-content bg-white rounded-2xl shadow-lg p-6 max-w-sm w-full mx-4" style="max-height:85vh;overflow-y:auto">
+      <h3 class="text-lg font-bold text-gray-800 mb-1">⚙️ Permissões de Gestor</h3>
+      <p class="text-sm text-gray-500 mb-1">Conta: <strong>${escapeHTML(user.phone)}</strong></p>
+      <p class="text-xs text-gray-400 mb-4">Tudo começa desligado — liga só o que quiseres mesmo permitir. Encomendas e Migração de Dados nunca aparecem aqui: ficam sempre só para o Admin God.</p>
+      <div class="space-y-2 mb-4">
+        ${MANAGER_PERMISSION_DEFS.map(f => `
+          <div class="flex items-center justify-between p-2 rounded-lg" style="background:var(--app-bg)">
+            <span class="text-sm text-gray-700">${f.label}</span>
+            <div class="switch ${perms[f.key] === true ? 'active' : ''}" data-mgr-key="${f.key}" onclick="toggleSwitch(this)"></div>
+          </div>`).join('')}
+      </div>
+      <div class="flex gap-2">
+        <button class="flex-1 btn-main" onclick="saveManagerPermissions('${userId}', this)">Guardar</button>
+        <button class="flex-1 btn-outline" onclick="this.closest('.modal-overlay').remove()">Cancelar</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+}
+
+async function saveManagerPermissions(userId, btn) {
+  const modal = btn.closest('.modal-overlay');
+  const user = Store.users.find(u => u.id === userId);
+  if (!user) return;
+  const perms = _getFeaturePerms(user);
+  modal.querySelectorAll('[data-mgr-key]').forEach(sw => {
+    const key = sw.dataset.mgrKey;
+    const on = sw.classList.contains('active');
+    if (on) perms[key] = true; else delete perms[key];
+  });
+  await supabaseRequest(`accounts?id=eq.${userId}`, 'PATCH', { allowed_features: JSON.stringify(perms) }).catch(() => {});
+  user.allowed_features = perms;
+  if (Store.currentUser && Store.currentUser.id === userId) Store.currentUser.allowed_features = perms;
+  toast('Permissões de Gestor guardadas!');
+  modal.remove();
+}
+
+// Verifica se a pessoa actual (Admin God, ou um Gestor com a permissão
+// específica ligada) pode fazer uma dada acção de gestor. Admin God (ou a
+// impersonalizar) pode sempre tudo — um Gestor só o que estiver ligado.
+function managerCan(key) {
+  if (!Store.currentUser) return false;
+  if (Store.currentUser.role === 'admin' || Store.adminModeActive) return true;
+  if (Store.currentUser.role !== 'manager') return false;
+  const perms = _getFeaturePerms(Store.currentUser);
+  return perms[key] === true;
+}
+
 
 // ===================== STORAGE MANAGER =====================
 async function openStorageManager() {
@@ -3637,6 +3783,10 @@ async function adminSaveOrderNotes(orderId, notes) {
 }
 
 async function openOrdersManager() {
+  // ✅ Encomendas (pagamentos) ficam sempre só para o Admin God — nunca
+  // acessível a Gestores, mesmo com todas as permissões ligadas.
+  const _isRealAdmin = Store.currentUser?.role === 'admin' || Store.adminModeActive;
+  if (!_isRealAdmin) { toast('Só o Admin God pode aceder a Encomendas.'); return; }
   _ordersCache = await supabaseRequest('orders?select=*&order=created_at.desc&limit=500').catch(() => []) || [];
   const modal = document.createElement('div');
   modal.className = 'modal-overlay';

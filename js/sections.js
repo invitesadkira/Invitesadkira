@@ -544,6 +544,62 @@ function buildCalendarInviteTemplate(ev) {
   </div>`;
 }
 
+// ===================== MENU DE NAVEGAÇÃO DO CONVIDADO =====================
+// Etiquetas amigáveis para cada secção — usadas no menu de navegação que o
+// dono do evento pode ligar/desligar. Em ecrãs largos aparece como barra
+// horizontal fixa; em telemóvel, colapsa num botão de menu hambúrguer.
+const GUEST_NAV_LABELS = {
+  bible: 'Mensagem', invite: 'Convite', date: 'Data', countdown: 'Contagem',
+  parents: 'Pais', sponsors: 'Padrinhos', story: 'Nossa História',
+  youtube_video: 'Vídeo', custom_text: 'Texto', iban: 'Presentes',
+  gift_stores: 'Lista de Presentes', gallery: 'Galeria', venues: 'Local',
+  manual: 'Manual do Convidado', schedule: 'Cronograma', dresscode: 'Dress Code',
+  couplemsg: 'Mensagem do Casal', final_photo: 'Foto Final',
+  couple_photo: 'Foto do Casal', couple_video: 'Vídeo do Casal',
+  event_faq: 'Perguntas Frequentes', messages: 'Recados', rsvp: 'Confirmar Presença'
+};
+
+function buildGuestNavMenu(eventData, presentKeys) {
+  if (!_yesOrTrue(eventData.show_section_nav)) return '';
+  const keys = [...presentKeys];
+  // O RSVP é tratado à parte do resto das secções — junta-o à lista se estiver activo
+  const rsvpOn = !(eventData.rsvp_enabled === false || eventData.rsvp_enabled === 'false');
+  if (rsvpOn && !keys.includes('rsvp')) keys.push('rsvp');
+  if (keys.length < 2) return ''; // não vale a pena um menu para 0-1 secções
+
+  const evColor = eventData.event_color || '#007f9f';
+  const links = keys.map(k => {
+    const anchor = k === 'rsvp' ? 'rsvp-section' : `nav-anchor-${k}`;
+    const label = GUEST_NAV_LABELS[k] || k;
+    return `<a href="#${anchor}" class="guest-nav-link" onclick="closeGuestNavDrawer()">${escapeHTML(label)}</a>`;
+  }).join('');
+
+  return `
+    <div class="guest-nav-menu" id="guest-nav-menu" style="--nav-color:${evColor}">
+      <div class="guest-nav-links-desktop">${links}</div>
+      <button class="guest-nav-hamburger" onclick="toggleGuestNavDrawer()" aria-label="Menu de secções">
+        <i data-lucide="menu" class="w-5 h-5"></i>
+      </button>
+    </div>
+    <div class="guest-nav-drawer-overlay" id="guest-nav-drawer-overlay" onclick="closeGuestNavDrawer()"></div>
+    <div class="guest-nav-drawer" id="guest-nav-drawer">
+      <div class="guest-nav-drawer-header">
+        <span>Ir para</span>
+        <button onclick="closeGuestNavDrawer()" aria-label="Fechar"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+      ${links}
+    </div>`;
+}
+
+function toggleGuestNavDrawer() {
+  document.getElementById('guest-nav-drawer')?.classList.toggle('open');
+  document.getElementById('guest-nav-drawer-overlay')?.classList.toggle('open');
+}
+function closeGuestNavDrawer() {
+  document.getElementById('guest-nav-drawer')?.classList.remove('open');
+  document.getElementById('guest-nav-drawer-overlay')?.classList.remove('open');
+}
+
 async function renderGuestSections(eventData) {
   // Load venues from dedicated table
   try {
@@ -649,9 +705,11 @@ async function renderGuestSections(eventData) {
 
   let html = '';
   const sections = getSectionOrder(eventData);
+  const _presentSectionKeys = []; // ✅ para o menu de navegação — só as secções que realmente aparecem
 
   sections.forEach(sec => {
     try {
+      const _before = html.length;
       switch(sec) {
         case 'bible':    if (eventData.bible_text) html += buildBibleSection(eventData); break;
         case 'invite':
@@ -665,6 +723,7 @@ async function renderGuestSections(eventData) {
           if ((eventData.groom_parents || eventData.bride_parents) && !eventData.bible_text)
             html += buildParentsSection(eventData);
           break;
+        case 'sponsors': if (_yesOrTrue(eventData.show_sponsors) && eventData.sponsors_items) html += buildSponsorsSection(eventData); break;
         case 'story':    if (eventData.story_text && _yesOrTrue(eventData.show_story)) html += buildStorySection(eventData); break;
         case 'youtube_video': if (_yesOrTrue(eventData.show_youtube_video) && eventData.youtube_video_url) html += buildYoutubeVideoSection(eventData); break;
         case 'custom_text': if (_yesOrTrue(eventData.custom_text_show_invite) && eventData.custom_text_body) html += buildCustomTextSection(eventData); break;
@@ -691,6 +750,8 @@ async function renderGuestSections(eventData) {
           break;
         case 'rsvp':     break; // always last, separate element
       }
+      // ✅ Se esta secção acrescentou conteúdo, regista-a para o menu de navegação
+      if (html.length > _before) _presentSectionKeys.push(sec);
     } catch(sectionErr) {
       // CRITICAL: never let one broken section take down the entire page.
       // Previously an error here (e.g. a missing function) silently aborted
@@ -706,14 +767,18 @@ async function renderGuestSections(eventData) {
   const decorOn = _yesOrTrue(eventData.show_decor);
   let bodyHtml = sectionParts.map((part, i) => {
     const div = i === 0 ? '' : `<div class="section-divider"><div class="section-divider-line"></div></div>`;
+    // ✅ Âncora para o menu de navegação — cada parte corresponde, pela
+    // mesma ordem, à secção presente nesse índice de _presentSectionKeys.
+    const _navKey = _presentSectionKeys[i];
+    const _anchorId = _navKey ? ` id="nav-anchor-${_navKey}"` : '';
     if (sideUrl && decorOn) {
-      return div + `<div class="decor-side-wrap" style="position:relative">
+      return div + `<div class="decor-side-wrap" style="position:relative"${_anchorId}>
         <div class="decor-side-img left" style="background-image:url('${sideUrl}')"></div>
         <div class="decor-side-img right" style="background-image:url('${sideUrl}')"></div>
         ${part}
       </div>`;
     }
-    return div + part;
+    return div + `<div${_anchorId}>${part}</div>`;
   }).join('');
 
   // ── Zonas seguras de decoração: topo e os 2 cantos do fim ──
@@ -730,7 +795,7 @@ async function renderGuestSections(eventData) {
       ${eventData.decor_bottom_right_url ? `<div class="decor-bottom-img right" style="background-image:url('${eventData.decor_bottom_right_url}')"></div>` : ''}
     </div>`;
   }
-  container.innerHTML = bodyHtml;
+  container.innerHTML = buildGuestNavMenu(eventData, _presentSectionKeys) + bodyHtml;
 
   lucide.createIcons();
 
@@ -1009,6 +1074,114 @@ function buildDateSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
         <p style="font-size:0.7rem;letter-spacing:0.15em;text-transform:uppercase;color:${eventColor};font-weight:700;margin-bottom:0.4rem">${days[d.getDay()]}</p>
         <p style="font-size:1.6rem;font-weight:800;color:#1e293b">${String(d.getDate()).padStart(2,'0')} de ${months[d.getMonth()]} de ${d.getFullYear()}</p>
         ${showTime ? `<p style="font-size:0.95rem;color:#6b7280;margin-top:0.3rem">${timeLabel}</p>` : ''}
+      </div>
+    </div>`;
+  }
+
+  // ── Style: LINHA ELEGANTE — linhas finas acima/abaixo, data numa linha só ──
+  if (dateStyle === 'elegant-line') {
+    return _SD + `<div class="event-section" style="background:#fff;padding:1.75rem 1rem;text-align:center">
+      <div class="reveal">
+        <p style="font-size:0.68rem;letter-spacing:0.2em;text-transform:uppercase;color:${eventColor};font-weight:700;margin-bottom:0.7rem">${days[d.getDay()]}</p>
+        <div style="display:flex;align-items:center;justify-content:center;gap:0.9rem">
+          <span style="flex:1;max-width:60px;height:1px;background:${eventColor}66"></span>
+          <p style="font-size:1.5rem;font-weight:300;letter-spacing:0.04em;color:#1e293b;font-family:Georgia,serif">${String(d.getDate()).padStart(2,'0')} de ${months[d.getMonth()]} · ${d.getFullYear()}</p>
+          <span style="flex:1;max-width:60px;height:1px;background:${eventColor}66"></span>
+        </div>
+        ${showTime ? `<p style="font-size:0.85rem;color:#6b7280;margin-top:0.6rem;letter-spacing:0.05em">${timeLabel}</p>` : ''}
+      </div>
+    </div>`;
+  }
+
+  // ── Style: SELO/BADGE — círculo com o dia em destaque, mês/ano por fora ──
+  if (dateStyle === 'badge') {
+    return _SD + `<div class="event-section" style="background:#fff;padding:1.75rem 1rem;text-align:center">
+      <div class="reveal scale-in" style="display:inline-flex;flex-direction:column;align-items:center">
+        <div style="width:110px;height:110px;border-radius:50%;border:2.5px solid ${eventColor};display:flex;flex-direction:column;align-items:center;justify-content:center;background:${eventColor}0a">
+          <span style="font-size:2.1rem;font-weight:900;color:${eventColor};line-height:1">${String(d.getDate()).padStart(2,'0')}</span>
+          <span style="font-size:0.6rem;letter-spacing:0.1em;text-transform:uppercase;color:${eventColor};margin-top:0.15rem">${months[d.getMonth()].substring(0,3)}</span>
+        </div>
+        <p style="font-size:0.8rem;font-weight:700;color:#1e293b;margin-top:0.7rem">${days[d.getDay()]}, ${d.getFullYear()}</p>
+        ${showTime ? `<p style="font-size:0.8rem;color:#6b7280;margin-top:0.15rem">${timeLabel}</p>` : ''}
+      </div>
+    </div>`;
+  }
+
+  // ── Style: BILHETE — como um talão de ingresso, com linha tracejada ──
+  if (dateStyle === 'ticket') {
+    return _SD + `<div class="event-section" style="background:#fff;padding:1.5rem 1rem">
+      <div class="section-inner reveal scale-in" style="max-width:340px;margin:0 auto;display:flex;border:1.5px solid ${eventColor}44;border-radius:1rem;overflow:hidden">
+        <div style="flex:1;padding:1.1rem 0.8rem;text-align:center;background:${eventColor}0d">
+          <p style="font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;color:${eventColor};font-weight:700">${months[d.getMonth()].substring(0,3)}</p>
+          <p style="font-size:2rem;font-weight:900;color:${eventColor};line-height:1;margin-top:0.15rem">${String(d.getDate()).padStart(2,'0')}</p>
+        </div>
+        <div style="width:0;border-left:2px dashed ${eventColor}55"></div>
+        <div style="flex:1.4;padding:1.1rem 0.9rem;display:flex;flex-direction:column;justify-content:center">
+          <p style="font-size:0.78rem;font-weight:700;color:#1e293b">${days[d.getDay()]}</p>
+          <p style="font-size:0.72rem;color:#6b7280;margin-top:0.1rem">${d.getFullYear()}</p>
+          ${showTime ? `<p style="font-size:0.72rem;color:${eventColor};font-weight:600;margin-top:0.25rem">${timeLabel}</p>` : ''}
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // ── Style: DIVIDIDO — número gigante à esquerda, detalhes à direita ──
+  if (dateStyle === 'split') {
+    return _SD + `<div class="event-section" style="background:#fff;padding:1.5rem 1rem">
+      <div class="section-inner reveal scale-in" style="max-width:320px;margin:0 auto;display:flex;align-items:center;gap:1.2rem">
+        <div style="background:${eventColor};border-radius:0.9rem;padding:0.8rem 1.1rem;text-align:center;flex-shrink:0">
+          <span style="font-size:2.2rem;font-weight:900;color:#fff;line-height:1;display:block">${String(d.getDate()).padStart(2,'0')}</span>
+        </div>
+        <div style="text-align:left">
+          <p style="font-size:0.68rem;letter-spacing:0.12em;text-transform:uppercase;color:${eventColor};font-weight:700">${days[d.getDay()]}</p>
+          <p style="font-size:1rem;font-weight:700;color:#1e293b;margin-top:0.1rem">${months[d.getMonth()]} ${d.getFullYear()}</p>
+          ${showTime ? `<p style="font-size:0.8rem;color:#6b7280;margin-top:0.15rem">${timeLabel}</p>` : ''}
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // ── Style: MOLDURA — quadro com cantos decorativos, data centrada ──
+  if (dateStyle === 'frame') {
+    return _SD + `<div class="event-section" style="background:#fff;padding:1.75rem 1rem">
+      <div class="section-inner" style="display:flex;justify-content:center">
+        <div class="reveal scale-in" style="position:relative;border:1px solid ${eventColor}55;padding:1.6rem 2.2rem;text-align:center">
+          <span style="position:absolute;top:-1px;left:-1px;width:16px;height:16px;border-top:2.5px solid ${eventColor};border-left:2.5px solid ${eventColor}"></span>
+          <span style="position:absolute;top:-1px;right:-1px;width:16px;height:16px;border-top:2.5px solid ${eventColor};border-right:2.5px solid ${eventColor}"></span>
+          <span style="position:absolute;bottom:-1px;left:-1px;width:16px;height:16px;border-bottom:2.5px solid ${eventColor};border-left:2.5px solid ${eventColor}"></span>
+          <span style="position:absolute;bottom:-1px;right:-1px;width:16px;height:16px;border-bottom:2.5px solid ${eventColor};border-right:2.5px solid ${eventColor}"></span>
+          <p style="font-size:0.65rem;letter-spacing:0.15em;text-transform:uppercase;color:${eventColor};font-weight:700">${days[d.getDay()]}</p>
+          <p style="font-size:2.1rem;font-weight:800;color:${eventColor};line-height:1;margin-top:0.4rem;font-family:Georgia,serif">${String(d.getDate()).padStart(2,'0')}</p>
+          <p style="font-size:0.9rem;font-weight:600;color:#1e293b;margin-top:0.3rem">${months[d.getMonth()]} ${d.getFullYear()}</p>
+          ${showTime ? `<p style="font-size:0.78rem;color:#6b7280;margin-top:0.3rem">${timeLabel}</p>` : ''}
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // ── Style: FAIXA — banner de cor cheia, de ponta a ponta ──
+  if (dateStyle === 'banner') {
+    return _SD + `<div class="event-section" style="background:${eventColor};padding:1.75rem 1rem;text-align:center">
+      <div class="reveal">
+        <p style="font-size:0.68rem;letter-spacing:0.18em;text-transform:uppercase;color:#ffffffcc;font-weight:700;margin-bottom:0.5rem">${days[d.getDay()]}</p>
+        <p style="font-size:2rem;font-style:italic;font-weight:700;color:#fff;font-family:Georgia,serif;line-height:1.1">${String(d.getDate()).padStart(2,'0')} de ${months[d.getMonth()]}</p>
+        <p style="font-size:0.85rem;color:#ffffffdd;margin-top:0.3rem">${d.getFullYear()}${showTime ? ' · ' + timeLabel : ''}</p>
+      </div>
+    </div>`;
+  }
+
+  // ── Style: PONTO NA LINHA — data horizontal com pontos a separar ──
+  if (dateStyle === 'dotline') {
+    return _SD + `<div class="event-section" style="background:#fff;padding:1.5rem 1rem;text-align:center">
+      <div class="reveal">
+        <div style="height:1px;background:${eventColor}33;max-width:200px;margin:0 auto 0.9rem"></div>
+        <p style="font-size:1.3rem;font-weight:700;color:#1e293b;letter-spacing:0.03em">
+          <span style="color:${eventColor}">${String(d.getDate()).padStart(2,'0')}</span>
+          <span style="color:${eventColor}88;margin:0 0.35rem">·</span>${months[d.getMonth()].toUpperCase()}
+          <span style="color:${eventColor}88;margin:0 0.35rem">·</span>${d.getFullYear()}
+        </p>
+        <p style="font-size:0.68rem;letter-spacing:0.12em;text-transform:uppercase;color:#9ca3af;margin-top:0.3rem">${days[d.getDay()]}${showTime ? ' · ' + timeLabel : ''}</p>
+        <div style="height:1px;background:${eventColor}33;max-width:200px;margin:0.9rem auto 0"></div>
       </div>
     </div>`;
   }
@@ -1329,6 +1502,37 @@ function buildParentsSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
   </div>`;
 }
 
+// ===================== SECÇÃO DE PADRINHOS =====================
+// Lista de padrinhos/madrinhas — cada um com nome, um texto opcional, e
+// uma foto opcional (mostra as iniciais do nome se não houver foto).
+function buildSponsorsSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
+  let items = [];
+  if (ev.sponsors_items) { try { items = JSON.parse(ev.sponsors_items); } catch(e) {} }
+  items = (items || []).filter(it => it && it.name && it.name.trim());
+  if (!items.length) return '';
+
+  const evColor = ev.event_color || '#007f9f';
+  const cards = items.map(it => {
+    const initial = escapeHTML((it.name || '?').trim().charAt(0).toUpperCase());
+    const photo = it.photo_url
+      ? `<img src="${it.photo_url}" alt="${escapeHTML(it.name)}" style="width:84px;height:84px;border-radius:50%;object-fit:cover;border:3px solid ${evColor}33">`
+      : `<div style="width:84px;height:84px;border-radius:50%;background:${evColor}1a;color:${evColor};display:flex;align-items:center;justify-content:center;font-size:1.8rem;font-weight:800;border:3px solid ${evColor}33">${initial}</div>`;
+    return `<div class="reveal scale-in" style="display:flex;flex-direction:column;align-items:center;text-align:center;width:150px">
+      ${photo}
+      <p style="font-size:0.92rem;font-weight:800;color:#1e293b;margin-top:0.7rem">${escapeHTML(it.name)}</p>
+      ${it.text ? `<p style="font-size:0.78rem;color:#6b7280;margin-top:0.2rem;line-height:1.5">${escapeHTML(it.text)}</p>` : ''}
+    </div>`;
+  }).join('');
+
+  return _SD + `<div class="event-section" style="background:#fff;padding:2rem 1rem">
+    <div class="section-inner">
+      ${(()=>{const _t=_getSectionTitle(ev,'sponsors','Padrinhos');return _t?`<h2 class="section-title reveal" style="text-align:center;margin-bottom:1.75rem">${escapeHTML(_t)}</h2>`:''})()}
+      <div style="display:flex;flex-wrap:wrap;gap:1.75rem;justify-content:center">
+        ${cards}
+      </div>
+    </div>
+  </div>`;
+}
 
 // Detecta se um URL é do Google Maps e escolhe o label certo
 function _storeUrlLabel(url) {
@@ -1917,6 +2121,177 @@ async function saveManualItems() {
   document.getElementById('manual-editor-modal')?.remove();
   toast('Manual guardado com sucesso!');
 }
+// ===================== EDITOR DE PADRINHOS =====================
+async function openSponsorsEditor(explicitEventId) {
+  const eventId = explicitEventId || Store.currentEventId || Store._intakeEventId;
+  window._sponsorsEditorEventId = eventId;
+  let items = null;
+
+  if (eventId) {
+    try {
+      const visuals = await loadEventVisuals(eventId);
+      if (visuals && visuals.sponsors_items) items = JSON.parse(visuals.sponsors_items);
+    } catch (e) { console.warn('openSponsorsEditor: falha ao carregar event_visuals', e); }
+  }
+  if (!items && Store.eventSponsorsItems && Store._sponsorsItemsEventId === eventId) {
+    items = JSON.parse(JSON.stringify(Store.eventSponsorsItems));
+  }
+  if (!items) {
+    const evFromStore = eventId ? Store.events.find(e => e.id === eventId) : null;
+    if (evFromStore && evFromStore.sponsors_items) {
+      try { items = JSON.parse(evFromStore.sponsors_items); } catch (e) { items = null; }
+    }
+  }
+  if (!items) items = [];
+
+  window._sponsorsEditorItems = items;
+
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.id = 'sponsors-editor-modal';
+  modal.innerHTML = `<div class="modal-content bg-white rounded-2xl shadow-lg p-5 max-w-lg w-full max-h-[85vh] overflow-y-auto">
+    <h3 class="text-base font-bold text-gray-800 mb-1">Padrinhos</h3>
+    <p class="text-xs text-gray-400 mb-3">Nome obrigatório — foto e texto são opcionais. Se não carregares foto, aparecem as iniciais do nome.</p>
+    <div id="sponsors-items-list"></div>
+    <button type="button" class="text-xs text-teal-600 font-semibold mt-2" onclick="addSponsorItem()">+ Adicionar padrinho</button>
+    <div class="flex gap-2 mt-4">
+      <button class="flex-1 btn-main" onclick="saveSponsorsItems()">Guardar</button>
+      <button class="flex-1 btn-outline" onclick="this.closest('.modal-overlay').remove()">Cancelar</button>
+    </div>
+  </div>`;
+  document.body.appendChild(modal);
+  refreshSponsorsEditorList();
+}
+
+function addSponsorItem() {
+  window._sponsorsEditorItems.push({ name: '', text: '', photo_url: '' });
+  refreshSponsorsEditorList();
+}
+function removeSponsorItem(i) {
+  window._sponsorsEditorItems.splice(i, 1);
+  refreshSponsorsEditorList();
+}
+function refreshSponsorsEditorList() {
+  const items = window._sponsorsEditorItems;
+  const list = document.getElementById('sponsors-items-list');
+  if (!list) return;
+  list.innerHTML = items.map((it, i) => `
+    <div class="flex items-start gap-2 mb-3 p-2 bg-gray-50 rounded-lg">
+      <div class="flex flex-col items-center flex-shrink-0" style="width:64px">
+        <div class="w-14 h-14 rounded-full overflow-hidden flex items-center justify-center bg-gray-200" id="sp-photo-prev-${i}">
+          ${it.photo_url ? `<img src="${it.photo_url}" style="width:100%;height:100%;object-fit:cover">` : `<i data-lucide="user" class="w-6 h-6 text-gray-400"></i>`}
+        </div>
+        <label class="text-xs text-teal-600 font-semibold mt-1 cursor-pointer text-center">
+          📤 Foto
+          <input type="file" accept="image/*" class="hidden" onchange="uploadSponsorPhoto(${i}, this)">
+        </label>
+      </div>
+      <div class="flex-1 min-w-0">
+        <input class="input-field text-sm mb-1.5" placeholder="Nome" value="${escapeHTML(it.name || '')}" oninput="window._sponsorsEditorItems[${i}].name=this.value">
+        <textarea class="input-field text-xs" rows="2" placeholder="Texto (opcional)" oninput="window._sponsorsEditorItems[${i}].text=this.value">${escapeHTML(it.text || '')}</textarea>
+      </div>
+      <button type="button" class="text-red-400 flex-shrink-0" onclick="removeSponsorItem(${i})"><i data-lucide="x" class="w-4 h-4"></i></button>
+    </div>`).join('') || '<p class="text-xs text-gray-400 text-center py-3">Ainda sem padrinhos adicionados.</p>';
+  lucide.createIcons({ el: list });
+}
+async function uploadSponsorPhoto(idx, input) {
+  const file = input.files[0];
+  if (!file) return;
+  const url = await uploadImageToStorage(file, 'event-covers', 'Foto de padrinho');
+  if (url) {
+    window._sponsorsEditorItems[idx].photo_url = url;
+    refreshSponsorsEditorList();
+  }
+}
+async function saveSponsorsItems() {
+  const items = (window._sponsorsEditorItems || []).filter(it => it.name && it.name.trim());
+  const eventId = window._sponsorsEditorEventId || Store.currentEventId || Store._intakeEventId;
+
+  Store.eventSponsorsItems = items;
+  Store._sponsorsItemsEventId = eventId;
+
+  if (!eventId) {
+    toast('Erro: não foi possível identificar o evento. As alterações podem não ter sido guardadas.');
+  } else {
+    try {
+      await saveEventVisuals(eventId, {
+        sponsors_items: JSON.stringify(items),
+        show_sponsors: items.length ? 'yes' : 'no'
+      });
+      const ev2 = Store.events.find(e => e.id === eventId);
+      if (ev2) { ev2.sponsors_items = JSON.stringify(items); ev2.show_sponsors = items.length ? 'yes' : 'no'; }
+    } catch (e) {
+      console.error('❌ Erro ao guardar padrinhos:', e);
+      toast('Erro ao guardar os padrinhos. Verifica a consola.');
+    }
+  }
+  document.getElementById('sponsors-editor-modal')?.remove();
+  toast('Padrinhos guardados com sucesso!');
+}
+
+// ===================== LISTA DE CONVIDADOS AUTORIZADOS =====================
+async function openGuestWhitelistEditor(explicitEventId) {
+  const eventId = explicitEventId || Store.currentEventId || Store._intakeEventId;
+  window._wlEditorEventId = eventId;
+
+  let enabled = false, names = '';
+  if (eventId) {
+    try {
+      const visuals = await loadEventVisuals(eventId);
+      enabled = _yesOrTrue(visuals?.guest_whitelist_enabled);
+      names = visuals?.guest_whitelist || '';
+    } catch (e) { console.warn('openGuestWhitelistEditor: falha ao carregar event_visuals', e); }
+  }
+
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay';
+  modal.id = 'guest-whitelist-modal';
+  modal.innerHTML = `<div class="modal-content bg-white rounded-2xl shadow-lg p-5 max-w-md w-full max-h-[85vh] overflow-y-auto">
+    <h3 class="text-base font-bold text-gray-800 mb-1">🔒 Lista de Convidados Autorizados</h3>
+    <p class="text-xs text-gray-400 mb-3">
+      Opcional. Quando activo, só quem escrever um nome que esteja nesta lista consegue confirmar presença —
+      ao fim de 3 tentativas erradas, o convidado é bloqueado e instruído a contactar-te directamente.
+      Quando desactivado, a confirmação funciona normalmente, sem lista nenhuma.
+    </p>
+    <div class="flex items-center justify-between mb-3 p-2 bg-gray-50 rounded-lg">
+      <span class="text-sm font-semibold text-gray-700">Activar lista de convidados</span>
+      <div id="sw-guest-whitelist" class="switch ${enabled ? 'active' : ''}" onclick="toggleSwitch(this)"></div>
+    </div>
+    <label class="text-xs font-semibold text-gray-600 block mb-1">Nomes autorizados (um por linha)</label>
+    <textarea id="guest-whitelist-textarea" class="input-field text-sm" rows="10" placeholder="Ex:&#10;Maria Silva&#10;João Pereira&#10;Ana Costa">${escapeHTML(names)}</textarea>
+    <p class="text-xs text-gray-400 mt-1">A comparação ignora maiúsculas/minúsculas e acentos — não precisa de ser exacto ao milímetro.</p>
+    <div class="flex gap-2 mt-4">
+      <button class="flex-1 btn-main" onclick="saveGuestWhitelist()">Guardar</button>
+      <button class="flex-1 btn-outline" onclick="this.closest('.modal-overlay').remove()">Cancelar</button>
+    </div>
+  </div>`;
+  document.body.appendChild(modal);
+}
+
+async function saveGuestWhitelist() {
+  const eventId = window._wlEditorEventId || Store.currentEventId || Store._intakeEventId;
+  const enabled = document.getElementById('sw-guest-whitelist')?.classList.contains('active') || false;
+  const names = document.getElementById('guest-whitelist-textarea')?.value || '';
+
+  if (!eventId) {
+    toast('Erro: não foi possível identificar o evento.');
+    return;
+  }
+  try {
+    await saveEventVisuals(eventId, {
+      guest_whitelist_enabled: enabled ? 'yes' : 'no',
+      guest_whitelist: names
+    });
+    const ev2 = Store.events.find(e => e.id === eventId);
+    if (ev2) { ev2.guest_whitelist_enabled = enabled ? 'yes' : 'no'; ev2.guest_whitelist = names; }
+    toast('Lista de convidados guardada!');
+  } catch (e) {
+    console.error('❌ Erro ao guardar lista de convidados:', e);
+    toast('Erro ao guardar. Verifica a consola.');
+  }
+  document.getElementById('guest-whitelist-modal')?.remove();
+}
+
 function resetManualItems() {
   const eventId = Store.currentEventId || Store._intakeEventId;
   const evForType = eventId ? Store.events.find(e => e.id === eventId) : null;
@@ -2432,6 +2807,7 @@ const ALL_SECTION_DEFS = [
   { key: 'youtube_video', label: 'Vídeo do YouTube',                 icon: 'play-circle' },
   { key: 'venues',    label: 'Locais do Evento',                     icon: 'map-pin' },
   { key: 'parents',   label: 'Nomes dos Pais',                       icon: 'users' },
+  { key: 'sponsors',  label: 'Padrinhos',                            icon: 'users' },
   { key: 'iban',        label: 'Sugestão de Presente (IBAN)',         icon: 'credit-card' },
   { key: 'gift_stores', label: 'Lojas de Presentes',                  icon: 'shopping-bag' },
   { key: 'gallery',   label: 'Galeria de Fotos',                     icon: 'image' },
@@ -2595,7 +2971,7 @@ function buildVenueSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
 
   const imgFit = ev.venue_image_fit === 'cover' ? 'cover' : 'contain';
   const cards = venues.map(v => `
-    <div style="background:#fff;border-radius:1rem;overflow:hidden;border:1.5px solid color-mix(in srgb,${evColor} 20%,#e5e7eb);text-align:center;flex:1;min-width:180px">
+    <div style="background:#fff;border-radius:1.1rem;overflow:hidden;border:1px solid color-mix(in srgb,${evColor} 15%,#f1f5f9);box-shadow:0 4px 16px rgba(0,0,0,0.07);text-align:center;flex:1;min-width:180px">
       ${v.image ? `<div style="width:100%;height:170px;overflow:hidden;display:flex;align-items:center;justify-content:center;background:color-mix(in srgb,${evColor} 6%,#fff)"><img src="${v.image}" style="width:100%;height:100%;object-fit:${imgFit}" alt="${escapeHTML(v.title)}"></div>` : ''}
       <div style="padding:1.25rem 1rem">
         ${!v.image ? `<div style="width:44px;height:44px;border-radius:50%;background:color-mix(in srgb,${evColor} 12%,white);display:flex;align-items:center;justify-content:center;margin:0 auto 0.6rem">

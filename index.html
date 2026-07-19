@@ -16,14 +16,14 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script>tailwind.config = { theme: { extend: { colors: { teal: { 500: '#007f9f', 600: '#006b86' } } } } }</script>
   <!-- QRCode local — sem CDN -->
-  <script src="js/qrcode-mini.js?v=1784357171"></script>
-  <script src="js/icons.js?v=1784357171"></script>
+  <script src="js/qrcode-mini.js?v=1784482423"></script>
+  <script src="js/icons.js?v=1784482423"></script>
   <!-- PDF libs — carregadas lazily apenas quando necessário -->
   <!-- jsPDF: carregado por _loadJsPDF() antes de gerar relatórios -->
   <!-- pdf-lib: carregado por _loadPdfLib() antes de gerar tickets -->
   <!-- pdf.js: carregado por _loadPdfJs() antes de pré-visualizar templates -->
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💌</text></svg>">
-  <link rel="stylesheet" href="css/main.css?v=1784357171">
+  <link rel="stylesheet" href="css/main.css?v=1784482423">
 </head>
 <body class="h-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
 
@@ -372,7 +372,22 @@
          <option value="classic">Clássico (mês lateral + dia grande)</option>
          <option value="card">Cartão centrado</option>
          <option value="minimal">Minimalista (apenas texto)</option>
+         <option value="elegant-line">Linha elegante</option>
+         <option value="badge">Selo circular</option>
+         <option value="ticket">Bilhete (com linha tracejada)</option>
+         <option value="split">Dividido (número + detalhes)</option>
+         <option value="frame">Moldura com cantos</option>
+         <option value="banner">Faixa de cor cheia</option>
+         <option value="dotline">Linha com pontos</option>
         </select>
+        <p class="text-xs text-gray-400 mt-1">Escolhe o visual que preferires para a secção "Data do Evento" — 10 opções disponíveis.</p>
+       </div>
+       <div class="mb-4 flex items-center justify-between">
+        <div>
+         <span class="text-sm font-semibold text-gray-700 block">Menu de navegação para o convidado</span>
+         <span class="text-xs text-gray-400">Mostra um menu para saltar direto para cada secção (hambúrguer em telemóvel).</span>
+        </div>
+        <div id="sw-section-nav" class="switch" onclick="toggleSwitch(this)"></div>
        </div>
        </div><!-- /pane geral -->
        <div class="event-tab-pane hidden" data-tab="convidados-rsvp">
@@ -1140,6 +1155,12 @@ para testemunhar o seu enlace matrimonial</textarea>
           <option value="numbered">Lista numerada</option>
          </select>
         </div>
+
+        <div class="mt-4">
+         <span class="text-sm font-semibold text-gray-700 block mb-1">Padrinhos</span>
+         <p class="text-xs text-gray-500">Nome, foto opcional e um texto para cada padrinho/madrinha. A secção só aparece se adicionares pelo menos um.</p>
+         <button type="button" class="mt-1 text-xs text-teal-600 font-semibold" onclick="openSponsorsEditor(Store.currentEventId)">Editar padrinhos</button>
+        </div>
        </div><!-- /pane manual -->
        <div class="event-tab-pane hidden" data-tab="manual-monograma">
         <div class="flex items-center justify-between">
@@ -1565,6 +1586,7 @@ para testemunhar o seu enlace matrimonial</textarea>
        <div id="detail-rsvp-toggle" class="flex items-center gap-2 mb-4 hidden">
         <label class="text-xs font-semibold text-gray-600">Permitir confirmação de presença</label>
         <div id="sw-allow-rsvp" class="switch active" onclick="toggleRSVPAllowed()"></div>
+        <button class="text-xs text-teal-600 font-semibold ml-2" onclick="openGuestWhitelistEditor(Store.currentEventId)">🔒 Lista de convidados autorizados</button>
        </div>
        <div class="flex flex-wrap gap-2 mb-6">
         <button class="btn-outline text-sm" id="btn-intake-link" onclick="showIntakeLink(Store.currentEventId)" style="display:none"><span class="flex items-center gap-1"><i data-lucide="link" class="w-4 h-4"></i> Link Cliente</span></button>
@@ -1844,22 +1866,22 @@ para testemunhar o seu enlace matrimonial</textarea>
   </a>
 
   <!-- ===================== SCRIPTS (ordem importa) ===================== -->
-  <script src="js/config.js?v=1784357171"></script>
-  <script src="js/store.js?v=1784357171"></script>
-  <script src="js/visuals.js?v=1784357171"></script>
-  <script src="js/venues.js?v=1784357171"></script>
-  <script src="js/rsvp.js?v=1784357171"></script>
-  <script src="js/ui.js?v=1784357171"></script>
-  <script src="js/auth.js?v=1784357171"></script>
-  <script src="js/dashboard.js?v=1784357171"></script>
-  <script src="js/events.js?v=1784357171"></script>
-  <script src="js/intake-wizard.js?v=1784357171"></script>
-  <script src="js/tickets.js?v=1784357171"></script>
-  <script src="js/guest.js?v=1784357171"></script>
-  <script src="js/sections.js?v=1784357171"></script>
-  <script src="js/admin.js?v=1784357171"></script>
-  <script src="js/migration.js?v=1784357171"></script>
-  <script src="js/router.js?v=1784357171"></script>
+  <script src="js/config.js?v=1784482423"></script>
+  <script src="js/store.js?v=1784482423"></script>
+  <script src="js/visuals.js?v=1784482423"></script>
+  <script src="js/venues.js?v=1784482423"></script>
+  <script src="js/rsvp.js?v=1784482423"></script>
+  <script src="js/ui.js?v=1784482423"></script>
+  <script src="js/auth.js?v=1784482423"></script>
+  <script src="js/dashboard.js?v=1784482423"></script>
+  <script src="js/events.js?v=1784482423"></script>
+  <script src="js/intake-wizard.js?v=1784482423"></script>
+  <script src="js/tickets.js?v=1784482423"></script>
+  <script src="js/guest.js?v=1784482423"></script>
+  <script src="js/sections.js?v=1784482423"></script>
+  <script src="js/admin.js?v=1784482423"></script>
+  <script src="js/migration.js?v=1784482423"></script>
+  <script src="js/router.js?v=1784482423"></script>
 
 </body>
 </html>

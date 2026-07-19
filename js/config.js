@@ -435,7 +435,7 @@ async function fetchEventForGuest(eventId) {
     // ✅ CRÍTICO: SELECT apenas o que convidado precisa (sem informações sensíveis)
     // ✅ Usar event_code ou id com filtro EXATO
     const eventData = await supabaseRequest(
-      `events?or=(event_code.eq.${eventId},id.eq.${eventId})&select=id,title,date,time,confirm_by_date,cover_image,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,music_url,music_title,iban_message,iban_number,iban_holder,iban_footer,groom_name,bride_name,couple_size,show_couple,bg_url,bg_overlay,bible_text,bible_ref,show_bible,invite_text,show_invite,groom_parents,bride_parents,show_parents,gallery_urls,show_gallery,show_manual,manual_items,show_schedule,schedule_items,custom_font_family,section_order,story_text,invite_blessing,event_color,rsvps(guest_name,attending,side,companions,kids,wants_gift,message,created_at,updated_at),gifts(id,name,category,reserved,reserved_by,quantity,image_url)&limit=1`
+      `events?or=(event_code.eq.${eventId},id.eq.${eventId})&select=id,title,date,time,confirm_by_date,cover_image,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,music_url,music_title,iban_message,iban_number,iban_holder,iban_footer,groom_name,bride_name,couple_size,show_couple,bg_url,bg_overlay,bible_text,bible_ref,show_bible,invite_text,show_invite,groom_parents,bride_parents,show_parents,gallery_urls,show_gallery,show_manual,manual_items,show_schedule,schedule_items,custom_font_family,section_order,story_text,invite_blessing,event_color,rsvp_enabled,save_the_date_enabled,show_section_nav,rsvps(guest_name,attending,side,companions,kids,wants_gift,message,created_at,updated_at),gifts(id,name,category,reserved,reserved_by,quantity,image_url)&limit=1`
     );
     
     if (!eventData || eventData.length === 0) {
@@ -515,6 +515,9 @@ async function fetchEventForGuest(eventId) {
       allowMessages: String(event.allow_messages).toLowerCase() === 'yes' || event.allow_messages === true,
       show_guest_messages: event.show_guest_messages,
       showGuestMessages: String(event.show_guest_messages).toLowerCase() === 'yes' || event.show_guest_messages === true,
+      rsvp_enabled: event.rsvp_enabled,
+      save_the_date_enabled: event.save_the_date_enabled,
+      show_section_nav: event.show_section_nav,
       music_url: event.music_url || null,
       music_title: event.music_title || null,
       iban_message: event.iban_message || null,
@@ -577,7 +580,7 @@ async function fetchUserDataForOrganizer(userId) {
   try {
     // ✅ OTIMIZAÇÃO: Um único JOIN para trazer eventos + presentes + RSVPs
     // Selecionar TODOS os campos necessários incluindo cover_image, max_companions, max_kids, event_code
-    const eventsData = await supabaseRequest(`events?user_id=eq.${userId}&select=id,title,date,time,user_id,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,music_url,music_title,iban_message,iban_number,iban_holder,iban_footer,groom_name,bride_name,couple_size,show_couple,bg_url,bg_overlay,bible_text,bible_ref,show_bible,invite_text,show_invite,groom_parents,bride_parents,show_parents,gallery_urls,show_gallery,show_manual,manual_items,show_schedule,schedule_items,custom_font_family,section_order,story_text,invite_blessing,event_color,confirm_by_date,cover_image,event_code,gifts(id,name,category,reserved,reserved_by,quantity,image_url),rsvps(guest_name,attending,side,companions,kids,wants_gift,message,created_at,updated_at)`);
+    const eventsData = await supabaseRequest(`events?user_id=eq.${userId}&select=id,title,date,time,user_id,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,music_url,music_title,iban_message,iban_number,iban_holder,iban_footer,groom_name,bride_name,couple_size,show_couple,bg_url,bg_overlay,bible_text,bible_ref,show_bible,invite_text,show_invite,groom_parents,bride_parents,show_parents,gallery_urls,show_gallery,show_manual,manual_items,show_schedule,schedule_items,custom_font_family,section_order,story_text,invite_blessing,event_color,confirm_by_date,cover_image,event_code,rsvp_enabled,save_the_date_enabled,show_section_nav,gifts(id,name,category,reserved,reserved_by,quantity,image_url),rsvps(guest_name,attending,side,companions,kids,wants_gift,message,created_at,updated_at)`);
     
     dlog('📥 fetchUserDataForOrganizer recebido:', eventsData);
     
@@ -638,6 +641,10 @@ async function fetchUserDataForOrganizer(userId) {
         
         allowKids: String(event.allow_kids).toLowerCase() === 'yes',
         allow_kids: event.allow_kids,
+        
+        rsvp_enabled: event.rsvp_enabled,
+        save_the_date_enabled: event.save_the_date_enabled,
+        show_section_nav: event.show_section_nav,
         
         cover: event.cover_image,
         cover_image: event.cover_image,
@@ -713,4 +720,51 @@ async function fetchAdminStats() {
     console.error('Erro ao buscar estatísticas:', error);
     return null;
   }
+}
+
+// ===================== ELIMINAÇÃO EM CASCATA =====================
+// Apaga um ficheiro do Storage a partir do seu URL público completo —
+// usado para limpar fotos/vídeos/áudio quando um evento ou conta é
+// eliminado, para não ficarem "órfãos" a ocupar espaço para sempre.
+async function _deleteStorageFileByUrl(url) {
+  if (!url || typeof url !== 'string') return;
+  const marker = '/storage/v1/object/public/';
+  const idx = url.indexOf(marker);
+  if (idx === -1) return;
+  const path = url.substring(idx + marker.length);
+  if (!path) return;
+  try {
+    await fetch(`${SUPABASE_URL}/storage/v1/object/${path}`, {
+      method: 'DELETE',
+      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` }
+    });
+  } catch (e) { /* falha silenciosa — não bloqueia o resto da eliminação */ }
+}
+
+// Apaga TODOS os ficheiros de media associados a um evento (capa, vídeo,
+// galeria, música, decoração, template de ticket, fotos do "Save the Date").
+async function _deleteEventStorageFiles(eventRow) {
+  if (!eventRow) return;
+  const urls = [];
+  const singleFields = [
+    'cover_image', 'cover_video_url', 'bg_url', 'music_url', 'couple_photo_url',
+    'decor_ornament_url', 'decor_side_url', 'decor_top_url', 'decor_bottom_left_url', 'decor_bottom_right_url',
+    'ticket_template_url', 'std_cover_url', 'std_cover_mobile_url', 'std_cover_desktop_url',
+    'std_intro_photo_url', 'std_intro_photo_mobile_url', 'std_intro_photo_desktop_url', 'std_scratch_photo_url'
+  ];
+  singleFields.forEach(f => { if (eventRow[f]) urls.push(eventRow[f]); });
+  if (eventRow.gallery_urls) {
+    String(eventRow.gallery_urls).split(/\n|\|/).map(u => u.trim()).filter(Boolean).forEach(u => urls.push(u));
+  }
+  await Promise.allSettled(urls.map(u => _deleteStorageFileByUrl(u)));
+}
+
+// Apaga TUDO o que está ligado a um evento — as tabelas relacionadas E os
+// ficheiros de media — antes (ou em vez) de apagar a linha do evento em si.
+// Usado tanto ao eliminar um evento sozinho, como ao eliminar uma conta
+// inteira (que arrasta todos os eventos dessa conta).
+async function cascadeDeleteEventData(eventId, eventRow) {
+  const tables = ['rsvps', 'gifts', 'event_dates', 'event_visuals', 'event_venues', 'guest_links'];
+  await Promise.allSettled(tables.map(t => supabaseRequest(`${t}?event_id=eq.${eventId}`, 'DELETE', {}).catch(() => {})));
+  await _deleteEventStorageFiles(eventRow).catch(() => {});
 }

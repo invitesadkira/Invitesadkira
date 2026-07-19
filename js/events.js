@@ -1026,6 +1026,7 @@ function saveEventWithUpdatedCover(eventId, title, date, time, finalDeadline, co
           gallery_style: document.getElementById('evt-gallery-style')?.value || 'grid',
           blessing_couple_size: document.getElementById('evt-blessing-couple-size')?.value || null,
           date_style: document.getElementById('evt-date-style')?.value || 'classic',
+          show_section_nav: document.getElementById('sw-section-nav')?.classList.contains('active') ? 'yes' : 'no',
           manual_style: document.getElementById('evt-manual-style')?.value || 'cards',
           story_style: document.getElementById('evt-story-style')?.value || 'centered',
           story_text_color: document.getElementById('evt-story-text-color-hex')?.value?.trim() || null,
@@ -1218,7 +1219,7 @@ function renderEventDetails() {
       const notes = rows && rows[0] && rows[0].intake_color_notes;
       const banner = document.getElementById('detail-color-notes-banner');
       if (banner) {
-        const _showColorNotes = notes && ((Store.currentUser && Store.currentUser.role === 'admin') || Store.adminModeActive);
+        const _showColorNotes = notes && managerCan('mgr_view_events');
         if (_showColorNotes) {
           banner.classList.remove('hidden');
           banner.innerHTML = `<div style="background:#fef9c3;border:1px solid #fde68a;border-radius:0.6rem;padding:0.6rem 0.85rem;margin-bottom:0.75rem;display:flex;align-items:center;gap:0.5rem">
@@ -1294,8 +1295,8 @@ function renderEventDetails() {
   // ✅ Os links do evento (com e sem presentes) só interessam ao Admin God
   // — é quem trata da parte técnica de partilhar o link com o cliente.
   // Os clientes, na sua própria conta, não devem ver isto.
-  document.getElementById('detail-link-wrap').classList.toggle('hidden', !isAdmin);
-  document.getElementById('detail-gifts-link-wrap').classList.toggle('hidden', !(event.allowGifts && isAdmin));
+  document.getElementById('detail-link-wrap').classList.toggle('hidden', !managerCan('mgr_view_events'));
+  document.getElementById('detail-gifts-link-wrap').classList.toggle('hidden', !(event.allowGifts && managerCan('mgr_view_events')));
   
   const editBtn = document.querySelector('button:has(i[data-lucide="edit"])');
   if (editBtn) editBtn.parentElement.parentElement.querySelector('button:has(i[data-lucide="edit"])').classList.toggle('hidden', !(isOwner || isAdmin));
@@ -1303,7 +1304,7 @@ function renderEventDetails() {
   const editURLBtn = document.querySelector('button:has(i[data-lucide="link"])');
   if (editURLBtn) editURLBtn.parentElement.parentElement.classList.toggle('hidden', !isAdmin);
   
-  document.getElementById('btn-delete-event').classList.toggle('hidden', !isAdmin);
+  document.getElementById('btn-delete-event').classList.toggle('hidden', !managerCan('mgr_delete_events'));
 
   // Botão "Marcar como Exemplo" — só o admin God real pode usar isto, mas
   // isso TEM de incluir enquanto está a "entrar como" outro utilizador
@@ -1918,7 +1919,7 @@ async function editEvent() {
   // Fetch fresh data from Supabase (no localStorage)
   try {
     const result = await supabaseRequest(
-      `events?id=eq.${eventId}&select=id,title,date,time,confirm_by_date,cover_image,event_code,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,rsvp_enabled,allow_edit_rsvp,save_the_date_enabled,release_type,release_date,is_invite_released,std_title,std_subtitle,std_font_family,std_name_size,std_title_size,std_intro_enabled,std_intro_text,std_intro_photo_url,std_intro_photo_mobile_url,std_intro_photo_desktop_url,std_intro_on_invite,std_show_cover,std_cover_url,std_cover_mobile_url,std_cover_desktop_url,std_scratch_enabled,std_scratch_mode,std_scratch_photo_url,std_scratch_text,std_date_style,std_extra_phrase,std_extra_phrase_enabled,is_example_event,scanner_token,ticket_template_url,ticket_name_x,ticket_name_y,ticket_qr_x,ticket_qr_y,ticket_name_size,ticket_qr_size,ticket_name_color,ticket_name_font,std_show_iban,personalized_links_enabled,show_rsvp_in_full_invite,show_guest_name_in_invite,allow_messages,show_guest_messages,music_url,music_title,iban_message,iban_number,iban_holder,iban_footer,iban_number_2,iban_holder_2,show_couple,groom_name,bride_name,couple_size,bg_url,bg_overlay,show_bible,bible_text,bible_ref,show_invite,invite_text,show_parents,groom_parents,bride_parents,show_gallery,gallery_urls,show_schedule,schedule_items,custom_font_family,section_order,story_text,invite_blessing,event_color&limit=1`
+      `events?id=eq.${eventId}&select=id,title,date,time,confirm_by_date,cover_image,event_code,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,rsvp_enabled,allow_edit_rsvp,save_the_date_enabled,show_section_nav,release_type,release_date,is_invite_released,std_title,std_subtitle,std_font_family,std_name_size,std_title_size,std_intro_enabled,std_intro_text,std_intro_photo_url,std_intro_photo_mobile_url,std_intro_photo_desktop_url,std_intro_on_invite,std_show_cover,std_cover_url,std_cover_mobile_url,std_cover_desktop_url,std_scratch_enabled,std_scratch_mode,std_scratch_photo_url,std_scratch_text,std_date_style,std_extra_phrase,std_extra_phrase_enabled,is_example_event,scanner_token,ticket_template_url,ticket_name_x,ticket_name_y,ticket_qr_x,ticket_qr_y,ticket_name_size,ticket_qr_size,ticket_name_color,ticket_name_font,std_show_iban,personalized_links_enabled,show_rsvp_in_full_invite,show_guest_name_in_invite,allow_messages,show_guest_messages,music_url,music_title,iban_message,iban_number,iban_holder,iban_footer,iban_number_2,iban_holder_2,show_couple,groom_name,bride_name,couple_size,bg_url,bg_overlay,show_bible,bible_text,bible_ref,show_invite,invite_text,show_parents,groom_parents,bride_parents,show_gallery,gallery_urls,show_schedule,schedule_items,custom_font_family,section_order,story_text,invite_blessing,event_color&limit=1`
     );
     const fresh = (result && result[0]) ? result[0] : evStore;
     // Load visual data from event_visuals table
@@ -2333,6 +2334,7 @@ function _fillEditForm(ev) {
   { const bcsInp = document.getElementById('evt-blessing-couple-size'); const bcsLbl = document.getElementById('blessing-couple-size-label');
     const bcsVal = ev.blessing_couple_size || ev.couple_size || '2.4'; if (bcsInp) bcsInp.value = bcsVal; if (bcsLbl) bcsLbl.textContent = bcsVal + 'rem'; }
   { const dsEl = document.getElementById('evt-date-style'); if (dsEl) dsEl.value = ev.date_style || 'classic'; }
+  { const snEl = document.getElementById('sw-section-nav'); if (snEl) snEl.classList.toggle('active', _yesOrTrue(ev.show_section_nav)); }
   { const msEl = document.getElementById('evt-manual-style'); if (msEl) msEl.value = ev.manual_style || 'cards'; }
   { const stEl = document.getElementById('evt-story-style'); if (stEl) { stEl.value = ev.story_style || 'centered';
       document.getElementById('story-photo-wrap')?.classList.toggle('hidden', stEl.value !== 'photo-side'); } }
@@ -2490,11 +2492,10 @@ function _fillEditForm(ev) {
 
 // ===================== DELETE EVENT =====================
 function deleteEventModal() {
-  // ✅ Só o Admin God pode eliminar eventos — não basta esconder o botão,
-  // a própria acção também recusa, mesmo que seja chamada por outro caminho
-  // (ex: consola do navegador).
-  const isRealAdmin = Store.currentUser?.role === 'admin' || Store.adminModeActive;
-  if (!isRealAdmin) { toast('Só o Admin God pode eliminar eventos.'); return; }
+  // ✅ Só o Admin God, ou um Gestor com a permissão específica, pode
+  // eliminar eventos — não basta esconder o botão, a própria acção também
+  // recusa, mesmo que seja chamada por outro caminho (ex: consola do navegador).
+  if (!managerCan('mgr_delete_events')) { toast('Não tens permissão para eliminar eventos.'); return; }
 
   const ev = Store.events.find(e => e.id === Store.currentEventId);
   if (!ev) return;
@@ -2523,25 +2524,21 @@ function deleteEventModal() {
 }
 
 function confirmDeleteEvent(modal) {
-  const isRealAdmin = Store.currentUser?.role === 'admin' || Store.adminModeActive;
-  if (!isRealAdmin) { toast('Só o Admin God pode eliminar eventos.'); modal?.remove(); return; }
+  if (!managerCan('mgr_delete_events')) { toast('Não tens permissão para eliminar eventos.'); modal?.remove(); return; }
 
   const eventIndex = Store.events.findIndex(e => e.id === Store.currentEventId);
   if (eventIndex !== -1) {
     const deletedEvent = Store.events[eventIndex];
     const eventId = deletedEvent.id;
-    
-    // ✅ Primeiro: Deletar RSVPS (confirmações) do evento
-    supabaseRequest(`rsvps?event_id=eq.${eventId}`, 'DELETE', {}).then(() => {
-      // ✅ Segundo: Deletar PRESENTES do evento
-      supabaseRequest(`gifts?event_id=eq.${eventId}`, 'DELETE', {}).then(() => {
-        // ✅ Terceiro: Deletar o EVENTO
-        supabaseRequest(`events?id=eq.${eventId}`, 'DELETE', {}).then(() => {
-          Store.events.splice(eventIndex, 1);
-          modal.remove();
-          toast(`Evento "${deletedEvent.title}" eliminado com sucesso!`);
-          Router.go('dashboard');
-        });
+
+    // ✅ Limpa tudo o que está ligado ao evento (dados + ficheiros de media)
+    // antes de apagar a linha do evento em si.
+    cascadeDeleteEventData(eventId, deletedEvent).then(() => {
+      supabaseRequest(`events?id=eq.${eventId}`, 'DELETE', {}).then(() => {
+        Store.events.splice(eventIndex, 1);
+        modal.remove();
+        toast(`Evento "${deletedEvent.title}" eliminado com sucesso!`);
+        Router.go('dashboard');
       });
     });
   }
@@ -2630,6 +2627,7 @@ function adminSaveEventURL(eventId, modal) {
 
 // ===================== ADMIN DELETE EVENT =====================
 function adminDeleteEvent(eventId, parentModal) {
+  if (!managerCan('mgr_delete_events')) { toast('Não tens permissão para eliminar eventos.'); return; }
   const event = Store.events.find(e => e.id === eventId);
   if (!event) return;
 
@@ -2660,19 +2658,14 @@ function confirmAdminDeleteEvent(eventId, confirmModal, parentModal) {
   const eventIndex = Store.events.findIndex(e => e.id === eventId);
   if (eventIndex !== -1) {
     const deletedEvent = Store.events[eventIndex];
-    
-    // ✅ Primeiro: Deletar RSVPS (confirmações) do evento
-    supabaseRequest(`rsvps?event_id=eq.${eventId}`, 'DELETE', {}).then(() => {
-      // ✅ Segundo: Deletar PRESENTES do evento
-      supabaseRequest(`gifts?event_id=eq.${eventId}`, 'DELETE', {}).then(() => {
-        // ✅ Terceiro: Deletar o EVENTO
-        supabaseRequest(`events?id=eq.${eventId}`, 'DELETE', {}).then(() => {
-          Store.events.splice(eventIndex, 1);
-          confirmModal.remove();
-          if (parentModal) parentModal.remove();
-          toast(`Evento "${deletedEvent.title}" eliminado com sucesso!`);
-          renderAdmin();
-        });
+
+    cascadeDeleteEventData(eventId, deletedEvent).then(() => {
+      supabaseRequest(`events?id=eq.${eventId}`, 'DELETE', {}).then(() => {
+        Store.events.splice(eventIndex, 1);
+        confirmModal.remove();
+        if (parentModal) parentModal.remove();
+        toast(`Evento "${deletedEvent.title}" eliminado com sucesso!`);
+        renderAdmin();
       });
     });
   }
@@ -2882,7 +2875,7 @@ async function searchEvent() {
     // ✅ PASSO 1: Carregar eventos do Supabase COM JOIN para trazer RSVPS e GIFTS
     dlog('📥 Buscando evento DIRETO do Supabase...');
     
-    const allEvents = await supabaseRequest(`events?select=id,title,date,time,confirm_by_date,cover_image,event_code,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,rsvp_enabled,allow_edit_rsvp,save_the_date_enabled,release_type,release_date,is_invite_released,std_title,std_subtitle,std_font_family,std_name_size,std_title_size,std_intro_enabled,std_intro_text,std_intro_photo_url,std_intro_photo_mobile_url,std_intro_photo_desktop_url,std_intro_on_invite,std_show_cover,std_cover_url,std_cover_mobile_url,std_cover_desktop_url,std_scratch_enabled,std_scratch_mode,std_scratch_photo_url,std_scratch_text,std_date_style,std_extra_phrase,std_extra_phrase_enabled,is_example_event,scanner_token,ticket_template_url,ticket_name_x,ticket_name_y,ticket_qr_x,ticket_qr_y,ticket_name_size,ticket_qr_size,ticket_name_color,ticket_name_font,std_show_iban,personalized_links_enabled,show_rsvp_in_full_invite,show_guest_name_in_invite,allow_messages,show_guest_messages,rsvps(guest_name,attending,side,companions,kids,wants_gift,message,owner_reply,rsvp_token,ticket_issued,checked_in,created_at,updated_at),gifts(id,name,category,reserved,reserved_by,quantity,image_url)`);
+    const allEvents = await supabaseRequest(`events?select=id,title,date,time,confirm_by_date,cover_image,event_code,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,rsvp_enabled,allow_edit_rsvp,save_the_date_enabled,show_section_nav,release_type,release_date,is_invite_released,std_title,std_subtitle,std_font_family,std_name_size,std_title_size,std_intro_enabled,std_intro_text,std_intro_photo_url,std_intro_photo_mobile_url,std_intro_photo_desktop_url,std_intro_on_invite,std_show_cover,std_cover_url,std_cover_mobile_url,std_cover_desktop_url,std_scratch_enabled,std_scratch_mode,std_scratch_photo_url,std_scratch_text,std_date_style,std_extra_phrase,std_extra_phrase_enabled,is_example_event,scanner_token,ticket_template_url,ticket_name_x,ticket_name_y,ticket_qr_x,ticket_qr_y,ticket_name_size,ticket_qr_size,ticket_name_color,ticket_name_font,std_show_iban,personalized_links_enabled,show_rsvp_in_full_invite,show_guest_name_in_invite,allow_messages,show_guest_messages,rsvps(guest_name,attending,side,companions,kids,wants_gift,message,owner_reply,rsvp_token,ticket_issued,checked_in,created_at,updated_at),gifts(id,name,category,reserved,reserved_by,quantity,image_url)`);
     
     dlog(' Total de eventos no Supabase:', allEvents?.length || 0);
     dlog('🔍 Query de busca (uppercase):', query);
@@ -3332,7 +3325,7 @@ async function checkURLForEvent() {
     dlog('🔍 Procurando por event_code=', eventCode);
     
     // ✅ Query otimizada: procurar por event_code OU id, com LIMIT 1
-    const _eventLookupQuery = `events?or=(event_code.eq.${eventCode},id.eq.${eventCode})&select=id,user_id,title,date,time,confirm_by_date,cover_image,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,rsvp_enabled,allow_edit_rsvp,save_the_date_enabled,release_type,release_date,is_invite_released,std_title,std_subtitle,std_font_family,std_name_size,std_title_size,std_intro_enabled,std_intro_text,std_intro_photo_url,std_intro_photo_mobile_url,std_intro_photo_desktop_url,std_intro_on_invite,std_show_cover,std_cover_url,std_cover_mobile_url,std_cover_desktop_url,std_scratch_enabled,std_scratch_mode,std_scratch_photo_url,std_scratch_text,std_date_style,std_extra_phrase,std_extra_phrase_enabled,is_example_event,scanner_token,ticket_template_url,ticket_name_x,ticket_name_y,ticket_qr_x,ticket_qr_y,ticket_name_size,ticket_qr_size,ticket_name_color,ticket_name_font,std_show_iban,personalized_links_enabled,show_rsvp_in_full_invite,show_guest_name_in_invite,allow_messages,show_guest_messages,music_url,music_title,iban_message,iban_number,iban_holder,iban_footer,iban_number_2,iban_holder_2,groom_name,bride_name,couple_size,show_couple,bg_url,bg_overlay,bible_text,bible_ref,show_bible,invite_text,show_invite,groom_parents,bride_parents,show_parents,gallery_urls,show_gallery,show_manual,manual_items,show_schedule,schedule_items,custom_font_family,section_order,story_text,invite_blessing,event_color,show_decor,decor_side_url,decor_ornament_url,decor_top_url,decor_top_position,decor_bottom_left_url,decor_bottom_right_url,rsvps(guest_name,attending,side,companions,kids,wants_gift,message,owner_reply,rsvp_token,ticket_issued,checked_in,created_at,updated_at),gifts(id,name,category,reserved,reserved_by,quantity,image_url)&limit=1`;
+    const _eventLookupQuery = `events?or=(event_code.eq.${eventCode},id.eq.${eventCode})&select=id,user_id,title,date,time,confirm_by_date,cover_image,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,rsvp_enabled,allow_edit_rsvp,save_the_date_enabled,show_section_nav,release_type,release_date,is_invite_released,std_title,std_subtitle,std_font_family,std_name_size,std_title_size,std_intro_enabled,std_intro_text,std_intro_photo_url,std_intro_photo_mobile_url,std_intro_photo_desktop_url,std_intro_on_invite,std_show_cover,std_cover_url,std_cover_mobile_url,std_cover_desktop_url,std_scratch_enabled,std_scratch_mode,std_scratch_photo_url,std_scratch_text,std_date_style,std_extra_phrase,std_extra_phrase_enabled,is_example_event,scanner_token,ticket_template_url,ticket_name_x,ticket_name_y,ticket_qr_x,ticket_qr_y,ticket_name_size,ticket_qr_size,ticket_name_color,ticket_name_font,std_show_iban,personalized_links_enabled,show_rsvp_in_full_invite,show_guest_name_in_invite,allow_messages,show_guest_messages,music_url,music_title,iban_message,iban_number,iban_holder,iban_footer,iban_number_2,iban_holder_2,groom_name,bride_name,couple_size,show_couple,bg_url,bg_overlay,bible_text,bible_ref,show_bible,invite_text,show_invite,groom_parents,bride_parents,show_parents,gallery_urls,show_gallery,show_manual,manual_items,show_schedule,schedule_items,custom_font_family,section_order,story_text,invite_blessing,event_color,show_decor,decor_side_url,decor_ornament_url,decor_top_url,decor_top_position,decor_bottom_left_url,decor_bottom_right_url,rsvps(guest_name,attending,side,companions,kids,wants_gift,message,owner_reply,rsvp_token,ticket_issued,checked_in,created_at,updated_at),gifts(id,name,category,reserved,reserved_by,quantity,image_url)&limit=1`;
 
     let eventsData = await supabaseRequest(_eventLookupQuery).catch(() => null);
 
@@ -4639,7 +4632,7 @@ async function openIntakePreview(eventId) {
 
   try {
     const result = await supabaseRequest(
-      `events?id=eq.${eventId}&select=id,title,date,time,confirm_by_date,cover_image,event_code,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,rsvp_enabled,allow_edit_rsvp,save_the_date_enabled,release_type,release_date,is_invite_released,std_title,std_subtitle,std_font_family,std_name_size,std_title_size,std_intro_enabled,std_intro_text,std_intro_photo_url,std_intro_photo_mobile_url,std_intro_photo_desktop_url,std_intro_on_invite,std_show_cover,std_cover_url,std_cover_mobile_url,std_cover_desktop_url,std_scratch_enabled,std_scratch_mode,std_scratch_photo_url,std_scratch_text,std_date_style,std_extra_phrase,std_extra_phrase_enabled,is_example_event,scanner_token,ticket_template_url,ticket_name_x,ticket_name_y,ticket_qr_x,ticket_qr_y,ticket_name_size,ticket_qr_size,ticket_name_color,ticket_name_font,std_show_iban,personalized_links_enabled,show_rsvp_in_full_invite,show_guest_name_in_invite,allow_messages,show_guest_messages,groom_name,bride_name,couple_size,show_couple,bg_url,bg_overlay,show_bible,bible_text,bible_ref,show_invite,invite_text,show_parents,groom_parents,bride_parents,show_gallery,gallery_urls,show_schedule,schedule_items,custom_font_family,section_order,story_text,event_color,iban_message,iban_number,iban_holder,iban_footer,music_url,music_title,rsvps(guest_name,attending,side,companions,kids,wants_gift,message,owner_reply,rsvp_token,ticket_issued,checked_in),gifts(id,name,category,reserved,reserved_by,quantity,image_url)&limit=1`
+      `events?id=eq.${eventId}&select=id,title,date,time,confirm_by_date,cover_image,event_code,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,rsvp_enabled,allow_edit_rsvp,save_the_date_enabled,show_section_nav,release_type,release_date,is_invite_released,std_title,std_subtitle,std_font_family,std_name_size,std_title_size,std_intro_enabled,std_intro_text,std_intro_photo_url,std_intro_photo_mobile_url,std_intro_photo_desktop_url,std_intro_on_invite,std_show_cover,std_cover_url,std_cover_mobile_url,std_cover_desktop_url,std_scratch_enabled,std_scratch_mode,std_scratch_photo_url,std_scratch_text,std_date_style,std_extra_phrase,std_extra_phrase_enabled,is_example_event,scanner_token,ticket_template_url,ticket_name_x,ticket_name_y,ticket_qr_x,ticket_qr_y,ticket_name_size,ticket_qr_size,ticket_name_color,ticket_name_font,std_show_iban,personalized_links_enabled,show_rsvp_in_full_invite,show_guest_name_in_invite,allow_messages,show_guest_messages,groom_name,bride_name,couple_size,show_couple,bg_url,bg_overlay,show_bible,bible_text,bible_ref,show_invite,invite_text,show_parents,groom_parents,bride_parents,show_gallery,gallery_urls,show_schedule,schedule_items,custom_font_family,section_order,story_text,event_color,iban_message,iban_number,iban_holder,iban_footer,music_url,music_title,rsvps(guest_name,attending,side,companions,kids,wants_gift,message,owner_reply,rsvp_token,ticket_issued,checked_in),gifts(id,name,category,reserved,reserved_by,quantity,image_url)&limit=1`
     );
     if (!result || !result[0]) throw new Error('not found');
 

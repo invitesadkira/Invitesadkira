@@ -26,11 +26,12 @@ html, body { height: 100%; margin: 0; width: 100%; overflow-x: hidden; }
 
 /* ── Brand buttons (dashboard/admin — always AdKira teal) ── */
 .btn-main {
-  background: #007f9f; color: #fff; border-radius: 0.75rem;
+  background: #007f9f; color: #fff; border-radius: 0.9rem;
   padding: 0.65rem 1.5rem; font-weight: 600; transition: all 0.2s;
   white-space: nowrap; display: inline-flex; align-items: center; justify-content: center;
+  box-shadow: 0 3px 10px rgba(0,127,159,0.18);
 }
-.btn-main:hover { background: #006b86; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,127,159,0.3); }
+.btn-main:hover { background: #006b86; transform: translateY(-1px); box-shadow: 0 6px 16px rgba(0,127,159,0.32); }
 
 /* ── Botões: sempre 1 cor sólida (nunca mistura) — a escolha do
    organizador entre cor principal ou 2ª cor já vem em --ev-button-color.
@@ -180,14 +181,14 @@ html.ev-gold-countdown .std-countdown-num {
 #screen-guest.guest-buttons-round .venue-map-btn .action-btn-label,
 #screen-guest.guest-buttons-round .iban-copy-btn .action-btn-label { color: var(--ev-button-color-flat, var(--ev-color, #007f9f)); font-size: 0.78rem; font-weight: 700; }
 .btn-outline {
-  border: 2px solid #007f9f; color: #007f9f; border-radius: 0.75rem;
+  border: 2px solid #007f9f; color: #007f9f; border-radius: 0.9rem;
   padding: 0.6rem 1.5rem; font-weight: 600; transition: all 0.2s; background: transparent;
   white-space: nowrap; display: inline-flex; align-items: center; justify-content: center;
 }
 .btn-outline:hover { background: rgba(0,127,159,0.1); border-color: #005a70; color: #005a70; }
 
 .input-field {
-  border: 1.5px solid #d1d5db; border-radius: 0.6rem; padding: 0.6rem 0.85rem;
+  border: 1.5px solid #d1d5db; border-radius: 0.75rem; padding: 0.6rem 0.85rem;
   width: 100%; transition: all 0.2s; outline: none;
   /* ✅ !important: muitos campos combinam esta classe com utilitários do
      Tailwind tipo "text-xs"/"text-sm" (ambos com a mesma especificidade —
@@ -445,7 +446,7 @@ html.ev-gold-countdown .std-countdown-num {
 /* ── Gallery ── */
 .gallery-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem; }
 @media(min-width:640px) { .gallery-grid { grid-template-columns: repeat(3, 1fr); } }
-.gallery-item { aspect-ratio: 1; overflow: hidden; border-radius: 0.75rem; cursor: pointer; position: relative; box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: transform 0.3s, box-shadow 0.3s; }
+.gallery-item { aspect-ratio: 1; overflow: hidden; border-radius: 1rem; cursor: pointer; position: relative; box-shadow: 0 3px 12px rgba(0,0,0,0.1); transition: transform 0.3s, box-shadow 0.3s; }
 .gallery-item:hover { transform: scale(1.03); box-shadow: 0 6px 20px rgba(0,0,0,0.18); }
 .gallery-item img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s; display: block; }
 .gallery-item:hover img { transform: scale(1.1); }
@@ -459,10 +460,11 @@ html.ev-gold-countdown .std-countdown-num {
 .dg-buttons-grid { display: grid; gap: 1rem; max-width: 480px; margin: 0 auto; }
 .dg-card {
   display: flex; flex-direction: column; align-items: center; text-align: center; gap: 0.4rem;
-  background: #fff; border: 1.5px solid #e5e7eb; border-radius: 1.1rem;
+  background: #fff; border: 1px solid #f1f5f9; border-radius: 1.25rem;
   padding: 1.5rem 1.1rem; transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.06);
 }
-.dg-card:hover { transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0,0,0,0.08); }
+.dg-card:hover { transform: translateY(-3px); box-shadow: 0 10px 24px rgba(0,0,0,0.1); }
 .dg-card-title { font-size: 0.95rem; font-weight: 800; color: #1e293b; margin: 0; }
 .dg-card-sub { font-size: 0.74rem; color: #6b7280; line-height: 1.4; margin: 0 0 0.4rem; }
 .dg-card-btn {
@@ -1648,4 +1650,100 @@ h1.hero-couple-names-simple {
   #guest-hero-video {
     object-fit: cover !important;
   }
+}
+
+/* ===================== MENU DE NAVEGAÇÃO DO CONVIDADO ===================== */
+.guest-nav-menu {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: #fff;
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.6rem 1rem;
+}
+.guest-nav-links-desktop {
+  display: flex;
+  gap: 1.4rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.guest-nav-links-desktop::-webkit-scrollbar { display: none; }
+.guest-nav-link {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: var(--nav-color, #007f9f);
+  text-decoration: none;
+  white-space: nowrap;
+  padding: 0.3rem 0.1rem;
+  border-bottom: 2px solid transparent;
+  transition: border-color 0.2s;
+}
+.guest-nav-link:hover { border-bottom-color: var(--nav-color, #007f9f); }
+.guest-nav-hamburger {
+  display: none;
+  background: none;
+  border: none;
+  color: var(--nav-color, #007f9f);
+  cursor: pointer;
+  padding: 0.3rem;
+}
+.guest-nav-drawer-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 49;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s;
+}
+.guest-nav-drawer-overlay.open { opacity: 1; pointer-events: auto; }
+.guest-nav-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  height: 100%;
+  width: 78%;
+  max-width: 320px;
+  background: #fff;
+  z-index: 50;
+  box-shadow: -8px 0 30px rgba(0,0,0,0.15);
+  transform: translateX(100%);
+  transition: transform 0.3s ease;
+  padding: 1.2rem 1.5rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+.guest-nav-drawer.open { transform: translateX(0); }
+.guest-nav-drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #9ca3af;
+  margin-bottom: 0.4rem;
+  padding-bottom: 0.8rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+.guest-nav-drawer-header button { background: none; border: none; cursor: pointer; color: #6b7280; }
+.guest-nav-drawer .guest-nav-link {
+  font-size: 0.95rem;
+  border-bottom: 1px solid #f3f4f6;
+  padding: 0.6rem 0;
+}
+
+@media (max-width: 767px) {
+  .guest-nav-links-desktop { display: none; }
+  .guest-nav-hamburger { display: block; }
 }

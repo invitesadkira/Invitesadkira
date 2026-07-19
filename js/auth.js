@@ -250,7 +250,7 @@ async function handleLoginSecure(e) {
   await _loadCurrentUserFeatures();
   toast('Bem-vindo! Carregando seus dados...');
   if (typeof invalidateEventsCache !== 'undefined') invalidateEventsCache();
-  Router.go(user.role === 'admin' ? 'admin' : 'dashboard');
+  Router.go((user.role === 'admin' || user.role === 'manager') ? 'admin' : 'dashboard');
 }
 
 // ============================================================================
@@ -442,7 +442,7 @@ async function handleLogin(e) {
     await _loadCurrentUserFeatures();
     toast('Bem-vindo! Carregando seus dados...');
   if (typeof invalidateEventsCache !== 'undefined') invalidateEventsCache();
-    Router.go(user.role === 'admin' ? 'admin' : 'dashboard');
+    Router.go((user.role === 'admin' || user.role === 'manager') ? 'admin' : 'dashboard');
     return;
   }
   
@@ -574,14 +574,14 @@ async function handleLogin(e) {
   toast('Bem-vindo! Carregando seus dados...');
 
   // 🎯 Carregar dados do Supabase
-  if (user.role === 'admin') {
-    dlog('👨‍💼 Admin logado - carregando dados administrativos...');
+  if (user.role === 'admin' || user.role === 'manager') {
+    dlog('👨‍💼 Admin/Gestor logado - carregando dados administrativos...');
     
     // ✅ AGUARDAR um pouco para garantir conexão
     await new Promise(r => setTimeout(r, 300));
     
     // ✅ CARREGA 1: TODAS AS CONTAS
-    const allAccounts = await supabaseRequest(`accounts?select=id,phone,role,status,created_at,event_limit,admin_label&limit=500&order=created_at.desc`);
+    const allAccounts = await supabaseRequest(`accounts?select=id,phone,role,status,created_at,event_limit,admin_label,allowed_features&limit=500&order=created_at.desc`);
     
     Store.users = (allAccounts || []).filter(a => a.role !== 'admin' && a.status !== 'deleted').map(u => ({
       id: u.id,
@@ -590,13 +590,14 @@ async function handleLogin(e) {
       status: u.status || 'active',
       eventLimit: u.event_limit || null,
       adminLabel: u.admin_label || null,
+      allowed_features: u.allowed_features,
       createdAt: u.created_at
     }));
     
     dlog('✅ Contas carregadas:', Store.users?.length || 0, 'contas');
     
     // ✅ CARREGA 2: TODOS OS EVENTOS (COM JOIN para presentes e RSVPs)
-    const allEvents = await supabaseRequest(`events?select=id,title,date,time,user_id,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,music_url,music_title,iban_message,iban_number,iban_holder,iban_footer,groom_name,bride_name,couple_size,show_couple,bg_url,bg_overlay,bible_text,bible_ref,show_bible,invite_text,show_invite,groom_parents,bride_parents,show_parents,gallery_urls,show_gallery,show_manual,manual_items,show_schedule,schedule_items,custom_font_family,section_order,story_text,invite_blessing,event_color,confirm_by_date,cover_image,event_code,rsvp_enabled,save_the_date_enabled,gifts(id,name,category,reserved,reserved_by,quantity,image_url),rsvps(guest_name,attending,side,companions,kids,wants_gift,message,created_at,updated_at)&limit=500&order=date.desc`);
+    const allEvents = await supabaseRequest(`events?select=id,title,date,time,user_id,allow_companions,max_companions,allow_gifts,allow_kids,max_kids,allow_sides,side1_name,side2_name,show_time,allow_messages,show_guest_messages,music_url,music_title,iban_message,iban_number,iban_holder,iban_footer,groom_name,bride_name,couple_size,show_couple,bg_url,bg_overlay,bible_text,bible_ref,show_bible,invite_text,show_invite,groom_parents,bride_parents,show_parents,gallery_urls,show_gallery,show_manual,manual_items,show_schedule,schedule_items,custom_font_family,section_order,story_text,invite_blessing,event_color,confirm_by_date,cover_image,event_code,rsvp_enabled,save_the_date_enabled,show_section_nav,gifts(id,name,category,reserved,reserved_by,quantity,image_url),rsvps(guest_name,attending,side,companions,kids,wants_gift,message,created_at,updated_at)&limit=500&order=date.desc`);
     
     dlog('✅ Eventos carregados:', allEvents?.length || 0, 'eventos');
     
@@ -639,6 +640,7 @@ async function handleLogin(e) {
       showGuestMessages: String(event.show_guest_messages).toLowerCase() === 'yes' || event.show_guest_messages === true,
       rsvp_enabled: event.rsvp_enabled,
       save_the_date_enabled: event.save_the_date_enabled,
+      show_section_nav: event.show_section_nav,
         music_url: event.music_url || null,
         music_title: event.music_title || null,
         iban_message: event.iban_message || null,
