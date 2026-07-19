@@ -552,23 +552,30 @@ const GUEST_NAV_LABELS = {
   bible: 'Mensagem', invite: 'Convite', date: 'Data', countdown: 'Contagem',
   parents: 'Pais', sponsors: 'Padrinhos', story: 'Nossa História',
   youtube_video: 'Vídeo', custom_text: 'Texto', iban: 'Presentes',
-  gift_stores: 'Lista de Presentes', gallery: 'Galeria', venues: 'Local',
+  gift_stores: 'Lista de Presentes', gallery: 'Galeria', venues: 'Locais',
   manual: 'Manual do Convidado', schedule: 'Cronograma', dresscode: 'Dress Code',
   couplemsg: 'Mensagem do Casal', final_photo: 'Foto Final',
   couple_photo: 'Foto do Casal', couple_video: 'Vídeo do Casal',
-  event_faq: 'Perguntas Frequentes', messages: 'Recados', rsvp: 'Confirmar Presença'
+  event_faq: 'Perguntas Frequentes', messages: 'Recados', rsvp: 'Confirmação de Presença'
 };
 
 function buildGuestNavMenu(eventData, presentKeys) {
   if (!_yesOrTrue(eventData.show_section_nav)) return '';
-  const keys = [...presentKeys];
-  // O RSVP é tratado à parte do resto das secções — junta-o à lista se estiver activo
+
+  // ✅ A pedido: o menu mostra sempre só estas 4 (nunca as outras secções),
+  // e só as que realmente existirem/estiverem activas neste evento.
   const rsvpOn = !(eventData.rsvp_enabled === false || eventData.rsvp_enabled === 'false');
-  if (rsvpOn && !keys.includes('rsvp')) keys.push('rsvp');
-  if (keys.length < 2) return ''; // não vale a pena um menu para 0-1 secções
+  const wanted = [
+    rsvpOn ? 'rsvp' : null,
+    presentKeys.includes('venues') ? 'venues' : null,
+    presentKeys.includes('messages') ? 'messages' : null,
+    presentKeys.includes('schedule') ? 'schedule' : null,
+  ].filter(Boolean);
+
+  if (wanted.length < 2) return ''; // não vale a pena um menu para 0-1 secções
 
   const evColor = eventData.event_color || '#007f9f';
-  const links = keys.map(k => {
+  const links = wanted.map(k => {
     const anchor = k === 'rsvp' ? 'rsvp-section' : `nav-anchor-${k}`;
     const label = GUEST_NAV_LABELS[k] || k;
     return `<a href="#${anchor}" class="guest-nav-link" onclick="closeGuestNavDrawer()">${escapeHTML(label)}</a>`;
@@ -587,7 +594,7 @@ function buildGuestNavMenu(eventData, presentKeys) {
         <span>Ir para</span>
         <button onclick="closeGuestNavDrawer()" aria-label="Fechar"><i data-lucide="x" class="w-5 h-5"></i></button>
       </div>
-      ${links}
+      <div class="guest-nav-drawer-links">${links}</div>
     </div>`;
 }
 
