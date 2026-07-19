@@ -13,17 +13,36 @@
   <link rel="preconnect" href="https://cdnjs.cloudflare.com">
   <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,600;0,700;0,800;0,900;1,600;1,700&family=Great+Vibes&display=swap" rel="stylesheet">
   <!-- Tailwind — crítico para o UI -->
+  <script>
+    // ✅ O próprio script do Tailwind CDN imprime sempre este aviso na
+    // consola, de propósito — não há opção oficial para desligar sem
+    // migrar para uma compilação local (PostCSS/CLI). Como só queremos que
+    // pare de poluir a consola, filtramos só esta mensagem específica,
+    // sem tocar em mais nenhum aviso. Verifica TODOS os argumentos (não só
+    // o primeiro), porque alguns avisos vêm formatados com %c/estilos, e a
+    // frase pode estar num argumento diferente do primeiro.
+    (function() {
+      const _tailwindNoticeCheck = args => args.some(a => typeof a === 'string' && a.includes('cdn.tailwindcss.com should not be used in production'));
+      ['warn', 'log', 'error'].forEach(method => {
+        const _orig = console[method];
+        console[method] = function(...args) {
+          if (_tailwindNoticeCheck(args)) return;
+          _orig.apply(console, args);
+        };
+      });
+    })();
+  </script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>tailwind.config = { theme: { extend: { colors: { teal: { 500: '#007f9f', 600: '#006b86' } } } } }</script>
   <!-- QRCode local — sem CDN -->
-  <script src="js/qrcode-mini.js?v=1784484475"></script>
-  <script src="js/icons.js?v=1784484475"></script>
+  <script src="js/qrcode-mini.js?v=1784484975"></script>
+  <script src="js/icons.js?v=1784484975"></script>
   <!-- PDF libs — carregadas lazily apenas quando necessário -->
   <!-- jsPDF: carregado por _loadJsPDF() antes de gerar relatórios -->
   <!-- pdf-lib: carregado por _loadPdfLib() antes de gerar tickets -->
   <!-- pdf.js: carregado por _loadPdfJs() antes de pré-visualizar templates -->
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💌</text></svg>">
-  <link rel="stylesheet" href="css/main.css?v=1784484475">
+  <link rel="stylesheet" href="css/main.css?v=1784484975">
 </head>
 <body class="h-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
 
@@ -1866,22 +1885,22 @@ para testemunhar o seu enlace matrimonial</textarea>
   </a>
 
   <!-- ===================== SCRIPTS (ordem importa) ===================== -->
-  <script src="js/config.js?v=1784484475"></script>
-  <script src="js/store.js?v=1784484475"></script>
-  <script src="js/visuals.js?v=1784484475"></script>
-  <script src="js/venues.js?v=1784484475"></script>
-  <script src="js/rsvp.js?v=1784484475"></script>
-  <script src="js/ui.js?v=1784484475"></script>
-  <script src="js/auth.js?v=1784484475"></script>
-  <script src="js/dashboard.js?v=1784484475"></script>
-  <script src="js/events.js?v=1784484475"></script>
-  <script src="js/intake-wizard.js?v=1784484475"></script>
-  <script src="js/tickets.js?v=1784484475"></script>
-  <script src="js/guest.js?v=1784484475"></script>
-  <script src="js/sections.js?v=1784484475"></script>
-  <script src="js/admin.js?v=1784484475"></script>
-  <script src="js/migration.js?v=1784484475"></script>
-  <script src="js/router.js?v=1784484475"></script>
+  <script src="js/config.js?v=1784484975"></script>
+  <script src="js/store.js?v=1784484975"></script>
+  <script src="js/visuals.js?v=1784484975"></script>
+  <script src="js/venues.js?v=1784484975"></script>
+  <script src="js/rsvp.js?v=1784484975"></script>
+  <script src="js/ui.js?v=1784484975"></script>
+  <script src="js/auth.js?v=1784484975"></script>
+  <script src="js/dashboard.js?v=1784484975"></script>
+  <script src="js/events.js?v=1784484975"></script>
+  <script src="js/intake-wizard.js?v=1784484975"></script>
+  <script src="js/tickets.js?v=1784484975"></script>
+  <script src="js/guest.js?v=1784484975"></script>
+  <script src="js/sections.js?v=1784484975"></script>
+  <script src="js/admin.js?v=1784484975"></script>
+  <script src="js/migration.js?v=1784484975"></script>
+  <script src="js/router.js?v=1784484975"></script>
 
 </body>
 </html>

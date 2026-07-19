@@ -1,5 +1,8 @@
 // ── DEBUG: Diagnóstico completo de ícones ───────────────────────────────
-console.log('[ICONS] icons.js carregado');
+// Desligado por padrão — só liga isto (true) se precisares mesmo de
+// investigar um problema com ícones; o resto do site já funciona sem
+// precisar destes registos, e só poluíam a consola sem necessidade.
+const _ICONS_DEBUG = false;
 
 const _ICONS = {
   'alert-circle':'<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>',
@@ -107,7 +110,6 @@ function _convertIcon(el) {
 function _lucideCreateIcons(root) {
   const scope = root || document;
   const icons = scope.querySelectorAll('i[data-lucide]');
-  console.log('[ICONS] _lucideCreateIcons chamado, encontrou', icons.length, 'ícones em', scope === document ? 'document' : scope);
   icons.forEach(_convertIcon);
 }
 
@@ -125,22 +127,17 @@ const _iconObserver = new MutationObserver(mutations => {
       }
     }
   }
-  if (hasNew) console.log('[ICONS] MutationObserver converteu ícones');
 });
 
 _iconObserver.observe(document.documentElement, { childList: true, subtree: true });
-console.log('[ICONS] MutationObserver activo');
 
 document.addEventListener('DOMContentLoaded', () => {
-  console.log('[ICONS] DOMContentLoaded - a converter ícones existentes');
   _lucideCreateIcons(document);
 });
 
 window.lucide = {
   createIcons: (opts) => {
-    console.log('[ICONS] lucide.createIcons() chamado');
     _lucideCreateIcons(opts?.el || document);
   }
 };
 window._lucideCreateIcons = _lucideCreateIcons;
-console.log('[ICONS] window.lucide definido:', typeof window.lucide);
