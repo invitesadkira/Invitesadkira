@@ -162,7 +162,27 @@ async function openIntakeWizard(eventId) {
   `;
   document.body.innerHTML = '';
   document.body.appendChild(modal);
+  _iwSetupKeyboardAwareNavBar();
   _iwRenderStep(_restoredProgress ? _iwHistory[_iwHistory.length - 1] : 'event_type');
+}
+
+// ✅ Em telemóvel, "position:fixed;bottom:0" não se adapta sozinho quando o
+// teclado abre — em muitos navegadores/Android, o teclado tapa a barra em
+// vez de a empurrar para cima. A Visual Viewport API sabe exatamente
+// quanto espaço o teclado está a ocupar, e usamos isso para deslocar a
+// barra para cima, sempre visível por cima do teclado.
+function _iwSetupKeyboardAwareNavBar() {
+  if (!window.visualViewport || window._iwKeyboardListenerAttached) return;
+  window._iwKeyboardListenerAttached = true;
+  const adjust = () => {
+    const nav = document.getElementById('iw-nav-bar');
+    if (!nav) return;
+    const vv = window.visualViewport;
+    const keyboardHeight = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+    nav.style.bottom = keyboardHeight + 'px';
+  };
+  window.visualViewport.addEventListener('resize', adjust);
+  window.visualViewport.addEventListener('scroll', adjust);
 }
 
 function _iwCurrentStep(key) {

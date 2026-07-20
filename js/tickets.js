@@ -309,6 +309,7 @@ async function _renderTicketPreview(pdfUrl, pageNum) {
 
     const canvas = document.getElementById('ticket-preview-canvas');
     if (!canvas || !wrap) return;
+    wrap._pdfUrl = pdfUrl; // ✅ guardado aqui para a navegação de página nunca depender de voltar a procurar o evento
 
     // Escalar para caber no modal (máx 480px de largura)
     const maxW  = Math.min(480, window.innerWidth - 48);
@@ -352,8 +353,9 @@ async function _ticketGoToPage(delta) {
   const current = wrap?._pdfCurrentPage || 1;
   const next = Math.min(Math.max(current + delta, 1), total);
   if (next === current) return;
-  const ev = Store.events.find(e => e.id === Store.currentEventId);
-  await _renderTicketPreview(ev.ticket_template_url, next);
+  const pdfUrl = wrap?._pdfUrl || Store.events.find(e => e.id === Store.currentEventId)?.ticket_template_url;
+  if (!pdfUrl) { console.warn('_ticketGoToPage: URL do template não encontrado.'); return; }
+  await _renderTicketPreview(pdfUrl, next);
 }
 
 // ✅ Quando o número de página de um elemento muda (input "Pág."), o
