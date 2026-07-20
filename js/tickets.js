@@ -73,7 +73,7 @@ async function openTicketTemplateEditor() {
 
   try {
     const fresh = await supabaseRequest(
-      `events?id=eq.${eventId}&select=ticket_template_url,ticket_name_x,ticket_name_y,ticket_qr_x,ticket_qr_y,ticket_name_size,ticket_qr_size,ticket_name_color,ticket_name_font,scanner_token,ticket_table_x,ticket_table_y,ticket_table_size,ticket_table_color&limit=1`
+      `events?id=eq.${eventId}&select=ticket_template_url,ticket_name_x,ticket_name_y,ticket_qr_x,ticket_qr_y,ticket_name_size,ticket_qr_size,ticket_name_color,ticket_name_font,scanner_token,ticket_table_x,ticket_table_y,ticket_table_size,ticket_table_color,ticket_name_page,ticket_qr_page,ticket_table_page&limit=1`
     );
     if (fresh && fresh[0]) Object.assign(ev, fresh[0]);
   } catch(e) {}
@@ -94,20 +94,26 @@ async function openTicketTemplateEditor() {
         <button class="btn-outline text-xs" onclick="document.getElementById('ticket-template-file').click()">📤 Carregar PDF</button>
       </div>
 
-      <!-- Pré-visualização da 1ª página + marcadores arrastáveis -->
+      <!-- Pré-visualização da página + marcadores arrastáveis -->
       <div id="ticket-preview-wrap" style="display:${ev.ticket_template_url ? 'block' : 'none'}">
         <label class="text-xs font-semibold text-gray-600 block mb-1">Posicionar elementos (arrastar)</label>
-        <p class="text-xs text-gray-400 mb-2">🔵 = Nome &nbsp;|&nbsp; 🟢 = QR Code${withTable?' &nbsp;|&nbsp; 🟠 = Mesa':''}</p>
+        <p class="text-xs text-gray-400 mb-1">🔵 = Nome &nbsp;|&nbsp; 🟢 = QR Code${withTable?' &nbsp;|&nbsp; 🟠 = Mesa':''}</p>
+        <div id="ticket-page-nav" class="hidden flex items-center gap-2 mb-2">
+          <button type="button" onclick="_ticketGoToPage(-1)" style="width:26px;height:26px;border:1px solid #e5e7eb;border-radius:6px;cursor:pointer;font-size:14px">‹</button>
+          <span class="text-xs font-semibold text-gray-600">A ver a página <span id="ticket-page-num">1</span> de <span id="ticket-page-total">1</span></span>
+          <button type="button" onclick="_ticketGoToPage(1)" style="width:26px;height:26px;border:1px solid #e5e7eb;border-radius:6px;cursor:pointer;font-size:14px">›</button>
+        </div>
+        <p class="text-xs text-gray-400 mb-2">Um marcador só aparece quando estiveres a ver a página que lhe atribuíste (campo "Pág." abaixo). O template pode ter várias páginas — nome e QR podem ficar em páginas diferentes.</p>
         <div id="ticket-canvas-wrap" style="position:relative;border:1px solid #e5e7eb;border-radius:0.5rem;overflow:hidden;background:#f8fafc;display:inline-block;max-width:100%">
           <canvas id="ticket-preview-canvas" style="display:block;max-width:100%"></canvas>
           <!-- Marcador do Nome -->
-          <div id="ticket-mark-name" style="position:absolute;background:rgba(59,130,246,0.85);color:#fff;border-radius:6px;padding:4px 10px;font-size:13px;font-weight:700;cursor:grab;user-select:none;white-space:nowrap;left:${(ev.ticket_name_x||0.5)*100}%;top:${(ev.ticket_name_y||0.75)*100}%;transform:translate(-50%,-50%);backdrop-filter:blur(2px);border:2px solid #3b82f6">
+          <div id="ticket-mark-name" data-page="${ev.ticket_name_page||1}" style="position:absolute;background:rgba(59,130,246,0.85);color:#fff;border-radius:6px;padding:4px 10px;font-size:13px;font-weight:700;cursor:grab;user-select:none;white-space:nowrap;left:${(ev.ticket_name_x||0.5)*100}%;top:${(ev.ticket_name_y||0.75)*100}%;transform:translate(-50%,-50%);backdrop-filter:blur(2px);border:2px solid #3b82f6">
             María da Silva
           </div>
           <!-- Marcador do QR -->
-          <canvas id="ticket-mark-qr-canvas" style="position:absolute;left:${(ev.ticket_qr_x||0.5)*100}%;top:${(ev.ticket_qr_y||0.85)*100}%;transform:translate(-50%,-50%);border:2px solid #16a34a;border-radius:4px;cursor:grab;background:#fff" width="${ev.ticket_qr_size||80}" height="${ev.ticket_qr_size||80}"></canvas>
+          <canvas id="ticket-mark-qr-canvas" data-page="${ev.ticket_qr_page||1}" style="position:absolute;left:${(ev.ticket_qr_x||0.5)*100}%;top:${(ev.ticket_qr_y||0.85)*100}%;transform:translate(-50%,-50%);border:2px solid #16a34a;border-radius:4px;cursor:grab;background:#fff" width="${ev.ticket_qr_size||80}" height="${ev.ticket_qr_size||80}"></canvas>
           <!-- Marcador da Mesa (só se mesas activadas) -->
-          ${withTable ? `<div id="ticket-mark-table" style="position:absolute;background:rgba(234,88,12,0.85);color:#fff;border-radius:6px;padding:4px 10px;font-size:13px;font-weight:700;cursor:grab;user-select:none;white-space:nowrap;left:${(ev.ticket_table_x||0.5)*100}%;top:${(ev.ticket_table_y||0.9)*100}%;transform:translate(-50%,-50%);backdrop-filter:blur(2px);border:2px solid #ea580c">
+          ${withTable ? `<div id="ticket-mark-table" data-page="${ev.ticket_table_page||1}" style="position:absolute;background:rgba(234,88,12,0.85);color:#fff;border-radius:6px;padding:4px 10px;font-size:13px;font-weight:700;cursor:grab;user-select:none;white-space:nowrap;left:${(ev.ticket_table_x||0.5)*100}%;top:${(ev.ticket_table_y||0.9)*100}%;transform:translate(-50%,-50%);backdrop-filter:blur(2px);border:2px solid #ea580c">
             🪑 Mesa 5
           </div>` : ''}
         </div>
@@ -123,12 +129,20 @@ async function openTicketTemplateEditor() {
             </div>
           </div>
           <div>
+            <label class="text-xs text-gray-500 block mb-1">🔵 Pág. do nome</label>
+            <input id="ticket-name-page" type="number" value="${ev.ticket_name_page||1}" min="1" class="input-field text-xs text-center" style="width:52px" onchange="_ticketMarkerPageChanged('ticket-mark-name','ticket-name-page')">
+          </div>
+          <div>
             <label class="text-xs text-gray-500 block mb-1">Tamanho do QR (px)</label>
             <div class="flex items-center gap-1">
               <button type="button" onclick="document.getElementById('ticket-qr-size').stepDown();document.getElementById('ticket-qr-size').dispatchEvent(new Event('input'))" style="width:24px;height:24px;border:1px solid #e5e7eb;border-radius:4px;cursor:pointer;font-size:14px;line-height:1">−</button>
               <input id="ticket-qr-size" type="number" value="${ev.ticket_qr_size||80}" min="40" max="300" class="input-field text-xs text-center" style="width:52px" oninput="_updateTicketPreview()">
               <button type="button" onclick="document.getElementById('ticket-qr-size').stepUp();document.getElementById('ticket-qr-size').dispatchEvent(new Event('input'))" style="width:24px;height:24px;border:1px solid #e5e7eb;border-radius:4px;cursor:pointer;font-size:14px;line-height:1">+</button>
             </div>
+          </div>
+          <div>
+            <label class="text-xs text-gray-500 block mb-1">🟢 Pág. do QR</label>
+            <input id="ticket-qr-page" type="number" value="${ev.ticket_qr_page||1}" min="1" class="input-field text-xs text-center" style="width:52px" onchange="_ticketMarkerPageChanged('ticket-mark-qr-canvas','ticket-qr-page')">
           </div>
           <div>
             <label class="text-xs text-gray-500 block mb-1">Cor do nome</label>
@@ -148,6 +162,10 @@ async function openTicketTemplateEditor() {
                 <input id="ticket-table-size" type="number" value="${ev.ticket_table_size||18}" min="6" max="72" class="input-field text-xs text-center" style="width:52px" oninput="_updateTicketPreview()">
                 <button type="button" onclick="document.getElementById('ticket-table-size').stepUp();document.getElementById('ticket-table-size').dispatchEvent(new Event('input'))" style="width:24px;height:24px;border:1px solid #e5e7eb;border-radius:4px;cursor:pointer;font-size:14px;line-height:1">+</button>
               </div>
+            </div>
+            <div>
+              <label class="text-xs text-gray-500 block mb-1">🟠 Pág. da mesa</label>
+              <input id="ticket-table-page" type="number" value="${ev.ticket_table_page||1}" min="1" class="input-field text-xs text-center" style="width:52px" onchange="_ticketMarkerPageChanged('ticket-mark-table','ticket-table-page')">
             </div>
             <div>
               <label class="text-xs text-gray-500 block mb-1">Cor da mesa</label>
@@ -246,8 +264,9 @@ async function handleTicketTemplateUpload(input) {
   } catch(e) { console.error('handleTicketTemplateUpload error:', e); toast('Erro ao carregar PDF.'); }
 }
 
-async function _renderTicketPreview(pdfUrl) {
+async function _renderTicketPreview(pdfUrl, pageNum) {
   try {
+    pageNum = pageNum || 1;
     // ✅ Carregar PDF.js lazily se ainda não estiver carregado
     if (typeof pdfjsLib === 'undefined') {
       await _loadPdfJs().catch(() => {});
@@ -271,11 +290,24 @@ async function _renderTicketPreview(pdfUrl) {
 
     const loadingTask = pdfjsLib.getDocument(pdfUrl);
     const pdf  = await loadingTask.promise;
-    const page = await pdf.getPage(1);
+    const wrap = document.getElementById('ticket-canvas-wrap');
+    if (wrap) wrap._pdfNumPages = pdf.numPages;
+
+    // ✅ Mostrar/actualizar o navegador de páginas, só se o template tiver mais que 1
+    const nav = document.getElementById('ticket-page-nav');
+    if (nav) {
+      nav.classList.toggle('hidden', pdf.numPages <= 1);
+      const numEl = document.getElementById('ticket-page-num');
+      const totEl = document.getElementById('ticket-page-total');
+      if (numEl) numEl.textContent = String(pageNum);
+      if (totEl) totEl.textContent = String(pdf.numPages);
+    }
+
+    const pageSafe = Math.min(Math.max(pageNum, 1), pdf.numPages);
+    const page = await pdf.getPage(pageSafe);
     const viewport = page.getViewport({ scale: 1 });
 
     const canvas = document.getElementById('ticket-preview-canvas');
-    const wrap   = document.getElementById('ticket-canvas-wrap');
     if (!canvas || !wrap) return;
 
     // Escalar para caber no modal (máx 480px de largura)
@@ -294,7 +326,47 @@ async function _renderTicketPreview(pdfUrl) {
     // Guardar dimensões reais (em pts) para calcular coordenadas correctas
     wrap._pdfWidth  = viewport.width;
     wrap._pdfHeight = viewport.height;
+    wrap._pdfCurrentPage = pageSafe;
+
+    _ticketUpdateMarkerVisibility();
   } catch(e) { console.error('_renderTicketPreview error:', e); }
+}
+
+// ✅ Um marcador só é visível/arrastável quando a página que está a ser
+// pré-visualizada é a mesma que lhe foi atribuída — evita confundir
+// marcas de páginas diferentes quando o template tem várias páginas.
+function _ticketUpdateMarkerVisibility() {
+  const wrap = document.getElementById('ticket-canvas-wrap');
+  const currentPage = wrap?._pdfCurrentPage || 1;
+  ['ticket-mark-name', 'ticket-mark-qr-canvas', 'ticket-mark-table'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const elPage = parseInt(el.dataset.page || '1');
+    el.style.display = (elPage === currentPage) ? '' : 'none';
+  });
+}
+
+async function _ticketGoToPage(delta) {
+  const wrap = document.getElementById('ticket-canvas-wrap');
+  const total = wrap?._pdfNumPages || 1;
+  const current = wrap?._pdfCurrentPage || 1;
+  const next = Math.min(Math.max(current + delta, 1), total);
+  if (next === current) return;
+  const ev = Store.events.find(e => e.id === Store.currentEventId);
+  await _renderTicketPreview(ev.ticket_template_url, next);
+}
+
+// ✅ Quando o número de página de um elemento muda (input "Pág."), o
+// marcador passa a pertencer a essa página — actualiza o data-page e
+// mostra/esconde consoante a página actualmente em pré-visualização.
+function _ticketMarkerPageChanged(markerId, pageInputId) {
+  const marker = document.getElementById(markerId);
+  const input  = document.getElementById(pageInputId);
+  if (!marker || !input) return;
+  const n = Math.max(parseInt(input.value) || 1, 1);
+  input.value = n;
+  marker.dataset.page = String(n);
+  _ticketUpdateMarkerVisibility();
 }
 
 function _initTicketLivePreview() {
@@ -483,8 +555,16 @@ async function saveTicketTemplate() {
     ticket_table_x:   tx,  ticket_table_y: ty,
     ticket_table_size: parseInt(document.getElementById('ticket-table-size')?.value || '18'),
     ticket_table_color: document.getElementById('ticket-table-color')?.value || '#000000',
+    ticket_name_page:  Math.max(parseInt(document.getElementById('ticket-name-page')?.value)  || 1, 1),
+    ticket_qr_page:    Math.max(parseInt(document.getElementById('ticket-qr-page')?.value)    || 1, 1),
+    ticket_table_page: Math.max(parseInt(document.getElementById('ticket-table-page')?.value) || 1, 1),
   });
-  if (ev) { ev.ticket_name_x=nx; ev.ticket_name_y=ny; ev.ticket_qr_x=qx; ev.ticket_qr_y=qy; }
+  if (ev) {
+    ev.ticket_name_x=nx; ev.ticket_name_y=ny; ev.ticket_qr_x=qx; ev.ticket_qr_y=qy;
+    ev.ticket_name_page = Math.max(parseInt(document.getElementById('ticket-name-page')?.value) || 1, 1);
+    ev.ticket_qr_page   = Math.max(parseInt(document.getElementById('ticket-qr-page')?.value)   || 1, 1);
+    ev.ticket_table_page = Math.max(parseInt(document.getElementById('ticket-table-page')?.value) || 1, 1);
+  }
   toast('Configuração guardada!');
   document.getElementById('ticket-editor-modal')?.remove();
 }
@@ -543,7 +623,7 @@ async function generateGuestTicket(guestName, rsvpToken, eventId, skipNameEdit) 
   // ✅ Sempre recarregar os campos do ticket para garantir que ticket_name_font
   // e outros campos estão actualizados (evita usar dados cached desactualizados)
   try {
-    const fresh = await supabaseRequest(`events?id=eq.${ev.id}&select=ticket_template_url,ticket_name_x,ticket_name_y,ticket_qr_x,ticket_qr_y,ticket_name_size,ticket_qr_size,ticket_name_color,ticket_name_font,scanner_token,ticket_table_x,ticket_table_y,ticket_table_size,ticket_table_color&limit=1`);
+    const fresh = await supabaseRequest(`events?id=eq.${ev.id}&select=ticket_template_url,ticket_name_x,ticket_name_y,ticket_qr_x,ticket_qr_y,ticket_name_size,ticket_qr_size,ticket_name_color,ticket_name_font,scanner_token,ticket_table_x,ticket_table_y,ticket_table_size,ticket_table_color,ticket_name_page,ticket_qr_page,ticket_table_page&limit=1`);
     if (fresh && fresh[0]) {
       Object.assign(ev, fresh[0]);
       console.log('[TICKET] ticket_name_font carregado:', fresh[0].ticket_name_font);
@@ -568,7 +648,19 @@ async function generateGuestTicket(guestName, rsvpToken, eventId, skipNameEdit) 
     // 1. Carregar template
     const templateBytes = await fetch(ev.ticket_template_url).then(r => r.arrayBuffer());
     const doc  = await PDFDocument.load(templateBytes);
-    const page = doc.getPages()[0];
+    const allPages = doc.getPages();
+    // ✅ Cada elemento (nome/QR/mesa) pode estar numa página diferente do
+    // modelo — útil para PDFs de várias páginas. Por omissão, todos ficam
+    // na página 1 (comportamento de sempre, para não partir templates já
+    // configurados antes desta funcionalidade existir).
+    const _pageAt = (n) => allPages[Math.min(Math.max((n || 1) - 1, 0), allPages.length - 1)];
+    const namePage  = _pageAt(ev.ticket_name_page);
+    const qrPage    = _pageAt(ev.ticket_qr_page);
+    const tablePage = _pageAt(ev.ticket_table_page);
+    // Mantido por compatibilidade com o resto do código, que ainda usa
+    // "page"/"width"/"height" para o nome (o uso mais comum) — os outros
+    // dois elementos usam as suas próprias variáveis mais abaixo.
+    const page = namePage;
     const { width, height } = page.getSize();
 
     // 2. Gerar QR code com token encriptado
@@ -664,23 +756,24 @@ async function generateGuestTicket(guestName, rsvpToken, eventId, skipNameEdit) 
 
     // 4. Desenhar QR code
     const qrSize = ev.ticket_qr_size || 80;
-    const qx = (ev.ticket_qr_x || 0.5) * width  - qrSize / 2;
-    const qy = height - (ev.ticket_qr_y || 0.85) * height - qrSize / 2;
-    page.drawImage(qrImage, { x: qx, y: qy, width: qrSize, height: qrSize });
+    const { width: qrPageW, height: qrPageH } = qrPage.getSize();
+    const qx = (ev.ticket_qr_x || 0.5) * qrPageW  - qrSize / 2;
+    const qy = qrPageH - (ev.ticket_qr_y || 0.85) * qrPageH - qrSize / 2;
+    qrPage.drawImage(qrImage, { x: qx, y: qy, width: qrSize, height: qrSize });
 
     // 4b. Desenhar mesa (apenas se preenchida)
     const tableName = typeof skipNameEdit === 'string' ? skipNameEdit : null;  // 5.º arg é tableName
     if (tableName && ev.ticket_table_x !== undefined) {
       const tableSize  = ev.ticket_table_size || 18;
-      const tableFontP = PDFLib.PDFDocument;
       const tHexColor  = (ev.ticket_table_color || '#000000').replace('#','');
       const tr = parseInt(tHexColor.slice(0,2),16)/255;
       const tg = parseInt(tHexColor.slice(2,4),16)/255;
       const tb = parseInt(tHexColor.slice(4,6),16)/255;
-      const tx  = (ev.ticket_table_x || 0.5) * width;
-      const ty  = height - (ev.ticket_table_y || 0.9) * height;
+      const { width: tPageW, height: tPageH } = tablePage.getSize();
+      const tx  = (ev.ticket_table_x || 0.5) * tPageW;
+      const ty  = tPageH - (ev.ticket_table_y || 0.9) * tPageH;
       const tw  = font.widthOfTextAtSize(tableName, tableSize);
-      page.drawText(tableName, {
+      tablePage.drawText(tableName, {
         x: tx - tw / 2,
         y: ty - tableSize / 2,
         size: tableSize,
@@ -1740,7 +1833,7 @@ async function openTicketManager() {
 
   // Recarregar campos do ticket
   try {
-    const fresh = await supabaseRequest(`events?id=eq.${eventId}&select=ticket_template_url,ticket_name_x,ticket_name_y,ticket_qr_x,ticket_qr_y,ticket_name_size,ticket_qr_size,ticket_name_color,ticket_name_font,scanner_token&limit=1`);
+    const fresh = await supabaseRequest(`events?id=eq.${eventId}&select=ticket_template_url,ticket_name_x,ticket_name_y,ticket_qr_x,ticket_qr_y,ticket_name_size,ticket_qr_size,ticket_name_color,ticket_name_font,scanner_token,ticket_name_page,ticket_qr_page,ticket_table_page&limit=1`);
     if (fresh && fresh[0]) Object.assign(ev, fresh[0]);
   } catch(e) {}
 
