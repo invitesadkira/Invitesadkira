@@ -1929,7 +1929,7 @@ function buildScheduleSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
     <div class="section-inner">
       <h3 class="section-title reveal" style="text-align:center">Itinerário</h3>
       <div data-sc-wrap="1" style="position:relative;max-width:480px;margin:0 auto;text-align:left">
-        <div style="position:absolute;left:76px;top:14px;bottom:14px;width:2px;background:linear-gradient(to bottom,transparent,${evColor}55 5%,${evColor}55 95%,transparent)"></div>
+        <div style="position:absolute;left:76px;top:14px;bottom:14px;width:2.5px;background:linear-gradient(to bottom,transparent,${evColor}dd 5%,${evColor}dd 95%,transparent)"></div>
         ${rows}
       </div>
     </div>
