@@ -353,6 +353,20 @@ async function renderGuestView() {
       if (heroEl2) heroEl2.style.background = 'none';
     }
   }
+  // ✅ Se, depois de tudo carregado, não houver capa nenhuma (nem foto, nem
+  // vídeo), a secção inteira desaparece — antes disto, ficava sempre visível
+  // e preta, mesmo com a foto removida, porque só se escondia quando um
+  // interruptor específico ("show_cover") dizia "no", não quando a foto em
+  // si estava simplesmente vazia.
+  {
+    const heroSectionFinal = document.getElementById('guest-hero');
+    const hasCoverImage = eventData.show_cover !== 'no' && (eventData.cover_image || eventData.cover);
+    const hasCoverVideo = eventData.cover_video_url && eventData.cover_video_url.startsWith('http');
+    if (heroSectionFinal && !hasCoverImage && !hasCoverVideo) {
+      heroSectionFinal.style.display = 'none';
+    }
+  }
+
   // This was previously never loaded for guests — venue_ceremony/venue_civil/venue_reception
   // etc. live ONLY in event_venues, never in the events table, so without this call
   // "Locais do Evento" could never appear no matter how it was configured.
