@@ -3336,7 +3336,7 @@ function buildMessagesSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
       <h2 class="section-title" style="margin-bottom:0.5rem">Correio do Amor</h2>
       <p style="font-size:0.85rem;color:#6b7280;max-width:380px;margin:0 auto 1.25rem;line-height:1.6">${introText}</p>
       <div style="display:flex;gap:0.75rem;justify-content:center;flex-wrap:wrap">
-        ${allowView ? `<button type="button" onclick="rsvpOpenFelicitacoes()" style="background:transparent;border:1.5px solid ${evColor};color:${evColor};border-radius:999px;padding:0.65rem 1.5rem;font-weight:700;font-size:0.85rem;cursor:pointer;font-family:inherit">Ver Recados${count ? ` (${count})` : ''}</button>` : ''}
+        ${allowView ? `<button type="button" onclick="rsvpOpenFelicitacoes()" style="background:transparent;border:1.5px solid var(--ev-button-color,${evColor});color:var(--ev-button-color,${evColor});border-radius:999px;padding:0.65rem 1.5rem;font-weight:700;font-size:0.85rem;cursor:pointer;font-family:inherit">Ver Recados${count ? ` (${count})` : ''}</button>` : ''}
         ${allowWrite ? `<button type="button" onclick="rsvpLeaveFelicitacao()" class="std-rsvp-btn-anim" style="border:none;border-radius:999px;padding:0.7rem 1.6rem;font-weight:700;font-size:0.85rem;cursor:pointer;font-family:inherit">Deixar Recado</button>` : ''}
       </div>
     </div>
