@@ -633,7 +633,7 @@ async function _iwApplyStateToEvent(s, eventId, statusFn) {
   const status = statusFn || (() => {});
 
   // ── Tabela events ──
-  const eventsPatch = { event_type: s.event_type || null, invite_layout: s.layout || 'sections' };
+  const eventsPatch = {};
   if (s.names) { eventsPatch.groom_name = s.names.groom || null; eventsPatch.bride_name = s.names.bride || null; }
   if (s.date) eventsPatch.date = s.date;
   if (s.confirm_by_date) eventsPatch.confirm_by_date = s.confirm_by_date;
@@ -665,6 +665,8 @@ async function _iwApplyStateToEvent(s, eventId, statusFn) {
   // ── event_visuals ──
   status('A guardar conteúdo do convite...');
   const visualsPatch = {};
+  if (s.event_type) visualsPatch.event_type = s.event_type;
+  if (s.layout) visualsPatch.invite_layout = s.layout;
   if (s.colors) visualsPatch.intake_color_notes = `Cor principal: ${s.colors.c1}${s.colors.c2 ? ` | 2ª cor: ${s.colors.c2}` : ''}`;
   if (s.blessing) visualsPatch.invite_blessing = s.blessing;
   if (s.bible) { visualsPatch.bible_text = s.bible.text; visualsPatch.bible_ref = s.bible.ref || null; visualsPatch.show_bible = 'yes'; }
@@ -672,7 +674,16 @@ async function _iwApplyStateToEvent(s, eventId, statusFn) {
   if (s.parents) { visualsPatch.groom_parents = s.parents.groomParents || null; visualsPatch.bride_parents = s.parents.brideParents || null; visualsPatch.show_parents = 'yes'; }
   if (s.gallery && s.gallery.length) { visualsPatch.gallery_urls = s.gallery.join('\n'); visualsPatch.show_gallery = 'yes'; }
   if (s.dresscode) { visualsPatch.dresscode_text = s.dresscode; visualsPatch.show_dresscode = 'yes'; }
-  if (s.manual) { visualsPatch.manual_items = s.manual; visualsPatch.show_manual = 'yes'; }
+  if (s.manual) {
+    // ✅ O cliente escreve o manual como texto livre (uma regra por linha)
+    // no questionário — mas o resto do site espera sempre uma lista JSON
+    // de objectos {icon, text}, tal como o editor dedicado grava. Sem esta
+    // conversão, guardava-se o texto em bruto, e todo o resto do site que
+    // tenta ler manual_items como JSON falhava silenciosamente.
+    const manualLines = String(s.manual).split('\n').map(t => t.trim()).filter(Boolean);
+    const manualItems = manualLines.map(text => ({ icon: 'check-circle', text }));
+    if (manualItems.length) { visualsPatch.manual_items = JSON.stringify(manualItems); visualsPatch.show_manual = 'yes'; }
+  }
   if (s.schedule) { visualsPatch.schedule_items = s.schedule; visualsPatch.show_schedule = 'yes'; }
   if (s.story) { visualsPatch.story_text = s.story; visualsPatch.show_story = 'yes'; }
   if (s.couplemsg) { visualsPatch.couplemsg_text = s.couplemsg; visualsPatch.show_couplemsg = 'yes'; }
