@@ -288,9 +288,20 @@ async function _renderTicketPreview(pdfUrl, pageNum) {
     pdfjsLib.GlobalWorkerOptions.workerSrc =
       'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-    const loadingTask = pdfjsLib.getDocument(pdfUrl);
-    const pdf  = await loadingTask.promise;
     const wrap = document.getElementById('ticket-canvas-wrap');
+    let pdf;
+    // ✅ Só descarrega o ficheiro da rede quando ainda não o temos, ou
+    // quando o URL mudou (ex: template novo carregado). Mudar só de
+    // página reutiliza o documento já carregado — antes disto, cada
+    // clique em "próxima página" descarregava o PDF inteiro outra vez,
+    // gastando egress desnecessariamente.
+    if (wrap && wrap._pdfDoc && wrap._pdfLoadedUrl === pdfUrl) {
+      pdf = wrap._pdfDoc;
+    } else {
+      const loadingTask = pdfjsLib.getDocument(pdfUrl);
+      pdf = await loadingTask.promise;
+      if (wrap) { wrap._pdfDoc = pdf; wrap._pdfLoadedUrl = pdfUrl; }
+    }
     if (wrap) wrap._pdfNumPages = pdf.numPages;
 
     // ✅ Mostrar/actualizar o navegador de páginas, só se o template tiver mais que 1

@@ -1497,7 +1497,8 @@ function _startEventDetailsPolling(eventId) {
   Store._eventDetailsPollLastSnapshot = JSON.stringify(
     (Store.events.find(e => e.id === eventId)?.confirmations || [])
   );
-  Store._eventDetailsPollInterval = setInterval(async () => {
+
+  const _fetchAndUpdate = async () => {
     const stillHere = Store.currentEventId === eventId &&
       !document.getElementById('screen-event-details')?.classList.contains('hidden');
     if (!stillHere) { clearInterval(Store._eventDetailsPollInterval); Store._eventDetailsPollInterval = null; return; }
@@ -1530,7 +1531,16 @@ function _startEventDetailsPolling(eventId) {
         renderEventDetails();
       }
     } catch (e) { /* falha silenciosa — tenta de novo no próximo ciclo */ }
-  }, 15000);
+  };
+
+  // ✅ Corre já uma vez, imediatamente — sem esperar 15 segundos. Isto é
+  // importante porque a lista "em massa" de todos os eventos (usada para o
+  // painel) já não traz o texto dos recados, para poupar dados — este
+  // pedido específico é que traz os detalhes completos de ESTE evento, e
+  // precisa de acontecer logo, para os recados nunca aparecerem vazios
+  // por um instante depois de abrires um evento.
+  _fetchAndUpdate();
+  Store._eventDetailsPollInterval = setInterval(_fetchAndUpdate, 15000);
 }
 
 function copyEventLink(inputId = 'detail-link') {

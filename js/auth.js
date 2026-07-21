@@ -109,7 +109,8 @@ async function handleRegister(e) {
     } else {
       // Create a new blank event for this user, then open intake form for it
       const newEvent = await supabaseRequest('events', 'POST', {
-        title: 'O Meu Evento', user_id: newAccount.id, event_code: Math.random().toString(36).substring(2,10).toUpperCase()
+        title: 'O Meu Evento', user_id: newAccount.id, event_code: Math.random().toString(36).substring(2,10).toUpperCase(),
+        time: '15:00' // ✅ a coluna exige um valor — o cliente ajusta a hora real depois, ao editar o evento
       }).catch(() => null);
       if (newEvent && newEvent[0]) {
         // Increment permanent event counter

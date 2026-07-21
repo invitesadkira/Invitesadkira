@@ -803,6 +803,7 @@ async function _iwConfirmCreateEvent(submissionId, ownerUserId, modalEl) {
     const created = await supabaseRequest('events', 'POST', {
       id: newId, user_id: ownerUserId, title, event_code: newId,
       date: s.date || null,
+      time: s.time || '15:00', // ✅ o questionário nunca pergunta a hora — a coluna exige um valor, o organizador ajusta depois
     });
     if (!created) { toast('Erro ao criar o evento. Tenta novamente.'); return; }
     await _iwApplyStateToEvent(s, newId, () => {});

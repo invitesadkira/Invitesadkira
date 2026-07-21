@@ -328,6 +328,102 @@ function removeCoverImageFromForm() {
   if (input) input.value = '';
 }
 
+// ===================== COMPRESSÃO DE VÍDEO (ANTES DO UPLOAD) =====================
+// Reduz vídeos grandes para 720p antes de enviar para o Supabase — usa só
+// APIs nativas do navegador (canvas + MediaRecorder), sem bibliotecas
+// pesadas (evita problemas de compatibilidade com o GitHub Pages, que não
+// permite configurar os cabeçalhos especiais que ferramentas como
+// ffmpeg.wasm exigem). Se algo correr mal, ou o navegador não suportar,
+// usa sempre o ficheiro original — nunca bloqueia o carregamento.
+async function _compressVideoIfPossible(file) {
+  const SKIP_THRESHOLD = 8 * 1024 * 1024; // vídeos já pequenos não valem o esforço/risco
+  if (!file || file.size <= SKIP_THRESHOLD) return file;
+  if (typeof MediaRecorder === 'undefined' || !window.MediaRecorder) return file;
+
+  let objectUrl;
+  try {
+    toast('A comprimir vídeo antes de enviar, aguarda um momento...');
+    const videoEl = document.createElement('video');
+    videoEl.muted = true;
+    videoEl.playsInline = true;
+    objectUrl = URL.createObjectURL(file);
+    videoEl.src = objectUrl;
+
+    await new Promise((resolve, reject) => {
+      videoEl.onloadedmetadata = resolve;
+      videoEl.onerror = () => reject(new Error('Não foi possível ler o vídeo'));
+      setTimeout(() => reject(new Error('Tempo esgotado a carregar o vídeo')), 15000);
+    });
+
+    const origW = videoEl.videoWidth, origH = videoEl.videoHeight;
+    if (!origW || !origH) { URL.revokeObjectURL(objectUrl); return file; }
+
+    const maxDim = 720;
+    let targetW = origW, targetH = origH;
+    if (Math.max(origW, origH) > maxDim) {
+      const ratio = maxDim / Math.max(origW, origH);
+      targetW = Math.round(origW * ratio / 2) * 2;
+      targetH = Math.round(origH * ratio / 2) * 2;
+    } else {
+      // Já está em 720p ou menos — comprimir só ajudaria se o bitrate
+      // estiver muito alto; ainda assim vale a pena tentar, dado o
+      // tamanho do ficheiro (> 8MB) sugerir isso mesmo.
+    }
+
+    const canvas = document.createElement('canvas');
+    canvas.width = targetW; canvas.height = targetH;
+    const ctx = canvas.getContext('2d');
+
+    const stream = canvas.captureStream(30);
+    try {
+      const audioStream = videoEl.captureStream ? videoEl.captureStream() : null;
+      (audioStream ? audioStream.getAudioTracks() : []).forEach(t => stream.addTrack(t));
+    } catch (e) { /* sem áudio, sem problema — melhor vídeo mudo do que falhar tudo */ }
+
+    const mimeCandidates = ['video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm'];
+    const mimeType = mimeCandidates.find(m => MediaRecorder.isTypeSupported(m)) || 'video/webm';
+    const recorder = new MediaRecorder(stream, { mimeType, videoBitsPerSecond: 2_000_000 });
+    const chunks = [];
+    recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+    const recordingDone = new Promise(resolve => { recorder.onstop = resolve; });
+
+    videoEl.currentTime = 0;
+    recorder.start();
+    await videoEl.play().catch(() => {});
+
+    const drawFrame = () => {
+      if (videoEl.paused || videoEl.ended) return;
+      ctx.drawImage(videoEl, 0, 0, targetW, targetH);
+      requestAnimationFrame(drawFrame);
+    };
+    drawFrame();
+
+    await new Promise(resolve => {
+      videoEl.onended = resolve;
+      setTimeout(resolve, 3 * 60 * 1000); // nunca deixar correr mais que 3 minutos
+    });
+
+    recorder.stop();
+    await recordingDone;
+    URL.revokeObjectURL(objectUrl);
+
+    const compressedBlob = new Blob(chunks, { type: mimeType });
+    if (!compressedBlob.size || compressedBlob.size >= file.size) return file; // não valeu a pena
+
+    const compressedFile = new File(
+      [compressedBlob],
+      file.name.replace(/\.[^.]+$/, '.webm'),
+      { type: mimeType }
+    );
+    toast(`Vídeo comprimido: ${(file.size/1024/1024).toFixed(1)}MB → ${(compressedFile.size/1024/1024).toFixed(1)}MB`);
+    return compressedFile;
+  } catch (e) {
+    console.warn('Compressão de vídeo falhou, a usar o ficheiro original:', e);
+    if (objectUrl) URL.revokeObjectURL(objectUrl);
+    return file;
+  }
+}
+
 async function handleCoverVideoUpload(input) {
   const file = input.files[0];
   if (!file) return;
@@ -338,12 +434,13 @@ async function handleCoverVideoUpload(input) {
   }
   toast('A carregar vídeo de capa...');
   try {
-    const ext = file.name.split('.').pop().toLowerCase();
+    const compressed = await _compressVideoIfPossible(file);
+    const ext = compressed.name.split('.').pop().toLowerCase();
     const fileName = `cover_video_${Date.now()}.${ext}`;
     const res = await fetch(`${SUPABASE_URL}/storage/v1/object/event-videos/${fileName}`, {
       method: 'POST',
-      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': file.type || 'video/mp4', 'x-upsert': 'true', 'Cache-Control': '2592000' },
-      body: file
+      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': compressed.type || 'video/mp4', 'x-upsert': 'true', 'Cache-Control': '2592000' },
+      body: compressed
     });
     if (!res.ok) throw new Error(await res.text());
     const url = `${SUPABASE_URL}/storage/v1/object/public/event-videos/${fileName}`;
@@ -1539,12 +1636,13 @@ async function handleCoupleVideoUpload(input) {
 
   toast('A carregar vídeo...');
   try {
-    const ext = file.name.split('.').pop().toLowerCase();
+    const compressed = await _compressVideoIfPossible(file);
+    const ext = compressed.name.split('.').pop().toLowerCase();
     const fileName = `couple_video_${Date.now()}.${ext}`;
     const res = await fetch(`${SUPABASE_URL}/storage/v1/object/event-videos/${fileName}`, {
       method: 'POST',
-      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': file.type || 'video/mp4', 'x-upsert': 'true', 'Cache-Control': '2592000' },
-      body: file
+      headers: { 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'Content-Type': compressed.type || 'video/mp4', 'x-upsert': 'true', 'Cache-Control': '2592000' },
+      body: compressed
     });
     if (!res.ok) throw new Error(await res.text());
     const url = `${SUPABASE_URL}/storage/v1/object/public/event-videos/${fileName}`;
