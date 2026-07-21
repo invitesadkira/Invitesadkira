@@ -371,14 +371,19 @@ function buildCardInviteTemplate(ev) {
         ${ev.bible_text.split('\n').filter(Boolean).map(l=>`<p style="font-style:var(--ev-bible-style,italic);font-weight:var(--ev-bible-weight,400);font-family:var(--ev-bible-font,inherit);font-size:0.9rem;color:#374151;line-height:1.9;margin:0">${_formatBibleText(l)}</p>`).join('')}
         ${ev.bible_ref ? `<p style="font-size:0.7rem;color:#9ca3af;margin-top:0.5rem;font-weight:700">${escapeHTML(ev.bible_ref)}</p>` : ''}
       </div>` : ''}
-      ${(ev.show_parents !== 'no' && (ev.groom_parents || ev.bride_parents)) ? `<div class="reveal" style="margin-bottom:1.5rem">
-        ${ev.groom_parents ? `<p style="font-size:0.8rem;color:#6b7280;line-height:1.6">${ev.groom_parents.split('\n').filter(Boolean).map(l=>escapeHTML(l)).join(' &amp; ')}</p>` : ''}
-        ${ev.bride_parents ? `<p style="font-size:0.8rem;color:#6b7280;line-height:1.6">${ev.bride_parents.split('\n').filter(Boolean).map(l=>escapeHTML(l)).join(' &amp; ')}</p>` : ''}
-        <p style="font-size:0.7rem;color:#9ca3af;margin-top:0.3rem">convidam para o casamento de</p>
-      </div>` : (ev.invite_text ? `<div class="reveal" style="margin-bottom:1.5rem"><p style="font-size:0.85rem;color:#4b5563;line-height:1.8">${ev.invite_text.split('\n').filter(Boolean).map(l=>escapeHTML(l)).join('<br>')}</p></div>` : '')}
-      <div class="reveal" style="margin-bottom:2rem">
-        <h2 style="font-family:'Great Vibes',cursive;font-size:clamp(2.4rem,10vw,3.2rem);color:${evColor};line-height:1.15;margin:0">${escapeHTML(coupleNames)}</h2>
-      </div>
+      ${(()=>{
+        const _parentsOrInviteHtml = (ev.show_parents !== 'no' && (ev.groom_parents || ev.bride_parents)) ? `<div class="reveal" style="margin-bottom:1.5rem">
+          ${ev.groom_parents ? `<p style="font-size:0.8rem;color:var(--ev-message-color,#6b7280);line-height:1.6">${ev.groom_parents.split('\n').filter(Boolean).map(l=>escapeHTML(l)).join(' &amp; ')}</p>` : ''}
+          ${ev.bride_parents ? `<p style="font-size:0.8rem;color:var(--ev-message-color,#6b7280);line-height:1.6">${ev.bride_parents.split('\n').filter(Boolean).map(l=>escapeHTML(l)).join(' &amp; ')}</p>` : ''}
+          <p style="font-size:0.7rem;color:#9ca3af;margin-top:0.3rem">convidam para o casamento de</p>
+        </div>` : (ev.invite_text ? `<div class="reveal" style="margin-bottom:1.5rem"><p style="font-size:0.85rem;color:var(--ev-message-color,#4b5563);line-height:1.8">${ev.invite_text.split('\n').filter(Boolean).map(l=>escapeHTML(l)).join('<br>')}</p></div>` : '');
+        const _namesHtml = `<div class="reveal" style="margin-bottom:2rem">
+          <h2 style="font-family:'Great Vibes',cursive;font-size:clamp(2.4rem,10vw,3.2rem);color:var(--ev-names-color,${evColor});line-height:1.15;margin:0">${escapeHTML(coupleNames)}</h2>
+        </div>`;
+        // ✅ A mesma opção "antes/depois dos nomes" já usada no texto do
+        // convite também controla a ordem aqui, nesta disposição de cartão.
+        return ev.invite_order === 'before' ? _namesHtml + _parentsOrInviteHtml : _parentsOrInviteHtml + _namesHtml;
+      })()}
       <div class="reveal" style="display:flex;align-items:center;gap:0.75rem;margin-bottom:2rem;justify-content:center;opacity:0.35">
         <div style="height:1px;width:60px;background:${evColor}"></div>
         <svg width="12" height="12" viewBox="0 0 24 24" fill="${evColor}"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.27 2 8.5 2 5.41 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.08C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.41 22 8.5c0 3.77-3.4 6.86-8.55 11.53L12 21.35z"/></svg>

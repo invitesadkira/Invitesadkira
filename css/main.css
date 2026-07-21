@@ -539,8 +539,8 @@ html.ev-gold-countdown .std-countdown-num {
 .rsvp-cta-sub { color: rgba(255,255,255,0.8); font-size: 0.9rem; margin-bottom: 1.5rem; }
 .rsvp-cta-deadline { display: inline-flex; gap: 0.75rem; margin-bottom: 2rem; flex-wrap: wrap; justify-content: center; }
 .rsvp-cta-box { background: rgba(255,255,255,0.18); border-radius: 0.75rem; padding: 0.6rem 0.9rem; min-width: 60px; }
-.rsvp-cta-box .n { font-size: 1.6rem; font-weight: 900; color: #fff; line-height: 1; }
-.rsvp-cta-box .l { font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: rgba(255,255,255,0.75); margin-top: 2px; }
+.rsvp-cta-box .n { font-size: 1.6rem; font-weight: 900; color: var(--ev-countdown-color, #fff); line-height: 1; }
+.rsvp-cta-box .l { font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ev-countdown-color, rgba(255,255,255,0.75)); margin-top: 2px; }
 .rsvp-cta-btn { display: inline-flex; align-items: center; gap: 0.6rem; background: #fff; color: var(--ev-color); font-weight: 800; font-size: 1rem; padding: 0.9rem 2.5rem; border-radius: 999px; border: none; cursor: pointer; box-shadow: 0 4px 20px rgba(0,0,0,0.2); transition: all 0.2s; }
 /* ✅ Esta regra (mais específica) garante que o texto deste botão usa a
    mesma cor do botão (a cor do evento) — sem isto, a regra mais acima

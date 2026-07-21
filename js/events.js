@@ -2482,8 +2482,13 @@ function _fillEditForm(ev) {
         saveEventWithUpdatedCover(ev.id, title, date, time, deadlineWithTime, null, allowComp, maxComp, allowGifts, allowKids, maxKids, allowSides, side1NameVal, side2NameVal, document.getElementById('sw-show-time')?.classList.contains('active'), submitBtn, originalText);
       });
     } else {
-      // Usar imagem existente ou nenhuma
-      const coverImageURL = coverImgEdit.src && coverImgEdit.src.startsWith('http') ? coverImgEdit.src : ev.cover_image;
+      // ✅ Usar imagem existente, ou NADA se foi removida — antes disto,
+      // "coverImgEdit.src" nunca ficava realmente vazio depois de remover a
+      // foto: é um comportamento do próprio navegador, que resolve um
+      // src="" para o endereço da própria página (que também começa por
+      // "http", enganando a verificação anterior). Por isso "remover foto"
+      // nunca guardava mesmo nada — guardava, sem querer, o link da página.
+      const coverImageURL = hasCoverEdit && coverImgEdit.src && coverImgEdit.src.startsWith('http') ? coverImgEdit.src : null;
       // ✅ CRÍTICO: Passar side1NameVal e side2NameVal AQUI
       saveEventWithUpdatedCover(ev.id, title, date, time, deadlineWithTime, coverImageURL, allowComp, maxComp, allowGifts, allowKids, maxKids, allowSides, side1NameVal, side2NameVal, document.getElementById('sw-show-time')?.classList.contains('active'), submitBtn, originalText);
     }

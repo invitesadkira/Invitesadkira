@@ -722,7 +722,10 @@ async function renderGuestView() {
   const deadlineDateOnly = deadlineDate.split(' ')[0];
   
   const deadlineTextEl = document.getElementById('guest-deadline-text');
-  if (deadlineTextEl) deadlineTextEl.textContent = 'Favor confirmar até ' + formatDate(deadlineDateOnly);
+  if (deadlineTextEl) {
+    deadlineTextEl.textContent = 'Favor confirmar até ' + formatDate(deadlineDateOnly);
+    deadlineTextEl.style.color = 'var(--ev-date-color, rgba(255,255,255,0.8))';
+  }
   // Start CTA section deadline countdown
   startDeadlineCountdown(deadlineDateOnly);
 
