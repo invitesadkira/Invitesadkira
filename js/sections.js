@@ -1235,7 +1235,11 @@ function buildDateSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
 
 function buildCountdownSection(ev) { const _SD = '<!-- SECTION_DIVIDER -->';
   if (!ev.date) return '';
-  const c = ev.event_color || '#007f9f';
+  // ✅ Usa a cor específica da Contagem Regressiva, se estiver configurada
+  // — antes, todos os estilos ignoravam esse controlo e usavam sempre a
+  // cor geral do evento, o que fazia parecer que mudar a cor não tinha
+  // efeito nenhum aqui.
+  const c = `var(--ev-countdown-color,${ev.event_color || '#007f9f'})`;
   const style = ev.countdown_style || 'cards';
   const units = [['cd-days','Dias','DIAS'],['cd-hours','Horas','HORAS'],['cd-mins','Min','MIN'],['cd-secs','Seg','SEG']];
 
